@@ -69,9 +69,10 @@ export function Footer() {
             <div className="border-t border-slate-100 dark:border-white/5 px-5 py-4 flex flex-col lg:flex-row items-center justify-between gap-4 text-[10px] lg:text-xs text-slate-400 dark:text-slate-500">
                 <span className="order-2 lg:order-1 opacity-70">© 2026 JTP Partners. All rights reserved.</span>
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 order-1 lg:order-2">
-                    <a href="/terms-of-service" className="hover:text-blue-500 transition-colors">Terms</a>
-                    <a href="/privacy-policy" className="hover:text-blue-500 transition-colors">Privacy</a>
-                    <a href="/cookie-policy" className="hover:text-blue-500 transition-colors">Cookies</a>
+                    <a href="/terms" className="hover:text-blue-500 transition-colors">Terms</a>
+                    <a href="/privacy" className="hover:text-blue-500 transition-colors">Privacy</a>
+                    <a href="/cookies" className="hover:text-blue-500 transition-colors">Cookies</a>
+                    <a href="/refund" className="hover:text-blue-500 transition-colors">Refunds</a>
                     <a href="mailto:support@cheapestgo.com" className="hover:text-blue-500 transition-colors">Contact</a>
                 </div>
             </div>
