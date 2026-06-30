@@ -1,0 +1,34 @@
+import Link from 'next/link';
+import { LoginForm } from '@/features/auth/components/login-form';
+import { PlaneTakeoff } from 'lucide-react';
+
+export const metadata = { title: 'Sign in — CheapestGo' };
+
+export default function LoginPage() {
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-12">
+            <div className="w-full max-w-sm space-y-8">
+                {/* Logo */}
+                <div className="text-center space-y-2">
+                    <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
+                        <PlaneTakeoff size={22} className="text-blue-600" />
+                        CheapestGo
+                    </Link>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome back</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Sign in to your account to continue</p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-white/10 p-8">
+                    <LoginForm />
+                </div>
+
+                <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                    Don&apos;t have an account?{' '}
+                    <Link href="/register" className="text-blue-600 hover:underline font-medium">
+                        Create one
+                    </Link>
+                </p>
+            </div>
+        </div>
+    );
+}
