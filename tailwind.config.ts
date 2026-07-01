@@ -8,7 +8,22 @@ const config: Config = {
         './src/shared/**/*.{ts,tsx}',
     ],
     theme: {
-        extend: {},
+        extend: {
+            colors: {
+                background: 'hsl(var(--background))',
+                foreground: 'hsl(var(--foreground))',
+                alabaster: '#f8fafc',
+                obsidian:  '#020617',
+            },
+            fontFamily: {
+                sans:    ['var(--font-sans)', 'Inter', 'sans-serif'],
+                display: ['var(--font-display)', 'Inter Tight', 'sans-serif'],
+                mono:    ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
+            },
+            transitionDuration: {
+                '800': '800ms',
+            },
+        },
     },
     plugins: [],
 };

@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Plane, Hotel, Sparkles } from 'lucide-react';
+import { Search, Plane, Hotel, Sparkles, Calendar, Users, ChevronDown, MapPin } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/components/ui/button';
-import { useSearchStore } from '@/shared/stores/search.store';
+import { useSearchStore, useDates, useTravelers, useActiveDropdown } from '@/shared/stores/search.store';
 import { DestinationInput } from './destination-input';
 import { DatePicker } from './date-picker';
 import { TravelerPicker } from './traveler-picker';
@@ -18,6 +18,16 @@ const tabs: { id: SearchMode; label: string; icon: React.ReactNode }[] = [
     { id: 'ai',      label: 'AI Plan', icon: <Sparkles size={15} /> },
 ];
 
+function formatDate(date: Date | null): string {
+    if (!date) return 'Select date';
+    return new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function formatTravelers(adults: number, children: number): string {
+    const total = adults + children;
+    return `${total} ${total === 1 ? 'traveler' : 'travelers'}, 1 room`;
+}
+
 export function SearchForm() {
     const router = useRouter();
     const {
@@ -25,7 +35,12 @@ export function SearchForm() {
         destination, dates, travelers,
         flightState,
         setIsSearching,
+        setActiveDropdown,
     } = useSearchStore();
+
+    const { checkIn, checkOut } = useDates();
+    const { adults, children } = useTravelers();
+    const activeDropdown = useActiveDropdown();
 
     const [error, setError] = useState<string | null>(null);
 
@@ -104,50 +119,186 @@ export function SearchForm() {
             {/* Search Panel */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/60 dark:border-white/10 p-4">
                 {searchMode === 'hotels' && (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <div className="flex-1 min-w-0">
-                            <DestinationInput placeholder="Where are you going?" />
+                    <div className="flex flex-col sm:flex-row gap-0 rounded-xl border border-slate-200 dark:border-white/10 overflow-visible">
+                        {/* Destination */}
+                        <div className="relative flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                            <button
+                                type="button"
+                                onClick={() => setActiveDropdown(activeDropdown === 'destination' ? null : 'destination')}
+                                className="w-full h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                            >
+                                <MapPin size={16} className="text-slate-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Destination</div>
+                                    <div className={cn('text-sm truncate', destination ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                        {destination?.title || 'Where are you going?'}
+                                    </div>
+                                </div>
+                            </button>
+                            <DestinationInput />
                         </div>
-                        <div className="shrink-0">
-                            <DatePicker />
+
+                        {/* Check-in */}
+                        <div className="relative shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                            <button
+                                type="button"
+                                data-datepicker-trigger
+                                onClick={() => setActiveDropdown(activeDropdown === 'dates-in' ? null : 'dates-in')}
+                                className="w-full sm:w-44 h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                            >
+                                <Calendar size={16} className="text-slate-400 shrink-0" />
+                                <div className="min-w-0">
+                                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Check-in</div>
+                                    <div className={cn('text-sm truncate', checkIn ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                        {formatDate(checkIn)}
+                                    </div>
+                                </div>
+                            </button>
+                            <DatePicker triggerDropdown="dates-in" />
                         </div>
-                        <div className="shrink-0">
+
+                        {/* Check-out */}
+                        <div className="relative shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                            <button
+                                type="button"
+                                data-datepicker-trigger
+                                onClick={() => setActiveDropdown(activeDropdown === 'dates-out' ? null : 'dates-out')}
+                                className="w-full sm:w-44 h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                            >
+                                <Calendar size={16} className="text-slate-400 shrink-0" />
+                                <div className="min-w-0">
+                                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Check-out</div>
+                                    <div className={cn('text-sm truncate', checkOut ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                        {formatDate(checkOut)}
+                                    </div>
+                                </div>
+                            </button>
+                            <DatePicker triggerDropdown="dates-out" initialCheckOutMode />
+                        </div>
+
+                        {/* Travelers */}
+                        <div className="relative shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                            <button
+                                type="button"
+                                onClick={() => setActiveDropdown(activeDropdown === 'travelers' ? null : 'travelers')}
+                                className="w-full sm:w-48 h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                            >
+                                <Users size={16} className="text-slate-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Travelers</div>
+                                    <div className="text-sm text-slate-800 dark:text-white truncate">
+                                        {formatTravelers(adults, children)}
+                                    </div>
+                                </div>
+                                <ChevronDown
+                                    size={14}
+                                    className={cn('text-slate-400 transition-transform duration-200 shrink-0', activeDropdown === 'travelers' && 'rotate-180')}
+                                />
+                            </button>
                             <TravelerPicker />
                         </div>
-                        <Button
-                            onClick={handleSearch}
-                            className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-6 h-11 rounded-xl gap-2"
-                        >
-                            <Search size={16} />
-                            Search
-                        </Button>
+
+                        {/* Search button */}
+                        <div className="shrink-0 p-1.5">
+                            <Button
+                                onClick={handleSearch}
+                                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 h-8 rounded-lg gap-2"
+                            >
+                                <Search size={16} />
+                                Search
+                            </Button>
+                        </div>
                     </div>
                 )}
 
                 {searchMode === 'flights' && (
                     <div className="flex flex-col gap-3">
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <div className="flex-1 min-w-0">
-                                <DestinationInput placeholder="From where?" segmentIndex={0} field="origin" />
+                        <div className="flex flex-col sm:flex-row gap-0 rounded-xl border border-slate-200 dark:border-white/10 overflow-visible">
+                            {/* Origin */}
+                            <div className="relative flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveDropdown(activeDropdown === 'flight-origin' ? null : 'flight-origin')}
+                                    className="w-full h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                                >
+                                    <Plane size={16} className="text-slate-400 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">From</div>
+                                        <div className={cn('text-sm truncate', flightState.flights[0]?.origin ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                            {flightState.flights[0]?.origin?.title || 'City or airport'}
+                                        </div>
+                                    </div>
+                                </button>
+                                <DestinationInput segmentIndex={0} field="origin" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <DestinationInput placeholder="To where?" segmentIndex={0} field="destination" />
+                            {/* Destination */}
+                            <div className="relative flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveDropdown(activeDropdown === 'flight-destination' ? null : 'flight-destination')}
+                                    className="w-full h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                                >
+                                    <MapPin size={16} className="text-slate-400 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">To</div>
+                                        <div className={cn('text-sm truncate', flightState.flights[0]?.destination ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                            {flightState.flights[0]?.destination?.title || 'City or airport'}
+                                        </div>
+                                    </div>
+                                </button>
+                                <DestinationInput segmentIndex={0} field="destination" />
                             </div>
-                            <div className="shrink-0">
-                                <DatePicker mode="single" label="Departure" />
+
+                            {/* Departure date */}
+                            <div className="relative shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                                <button
+                                    type="button"
+                                    data-datepicker-trigger
+                                    onClick={() => setActiveDropdown(activeDropdown === 'flight-depart' ? null : 'flight-depart')}
+                                    className="w-full sm:w-40 h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                                >
+                                    <Calendar size={16} className="text-slate-400 shrink-0" />
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Depart</div>
+                                        <div className={cn('text-sm truncate', flightState.flights[0]?.date ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                            {formatDate(flightState.flights[0]?.date ?? null)}
+                                        </div>
+                                    </div>
+                                </button>
+                                <DatePicker triggerDropdown="flight-depart" mode="single" segmentIndex={0} />
                             </div>
+
+                            {/* Return date (round-trip only) */}
                             {flightState.tripType === 'round-trip' && (
-                                <div className="shrink-0">
-                                    <DatePicker mode="single" label="Return" segmentIndex={1} />
+                                <div className="relative shrink-0 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-white/10">
+                                    <button
+                                        type="button"
+                                        data-datepicker-trigger
+                                        onClick={() => setActiveDropdown(activeDropdown === 'flight-return' ? null : 'flight-return')}
+                                        className="w-full sm:w-40 h-11 flex items-center gap-2.5 px-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
+                                    >
+                                        <Calendar size={16} className="text-slate-400 shrink-0" />
+                                        <div className="min-w-0">
+                                            <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Return</div>
+                                            <div className={cn('text-sm truncate', flightState.flights[1]?.date ? 'text-slate-800 dark:text-white' : 'text-slate-400')}>
+                                                {formatDate(flightState.flights[1]?.date ?? null)}
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <DatePicker triggerDropdown="flight-return" mode="single" segmentIndex={1} />
                                 </div>
                             )}
-                            <Button
-                                onClick={handleSearch}
-                                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-6 h-11 rounded-xl gap-2"
-                            >
-                                <Search size={16} />
-                                Search
-                            </Button>
+
+                            {/* Search button */}
+                            <div className="shrink-0 p-1.5">
+                                <Button
+                                    onClick={handleSearch}
+                                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 h-8 rounded-lg gap-2"
+                                >
+                                    <Search size={16} />
+                                    Search
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 )}

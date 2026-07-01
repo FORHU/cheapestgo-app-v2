@@ -14,12 +14,19 @@ import {
     useActiveDropdown,
 } from '@/shared/stores/search.store';
 
+type DropdownField = 'origin' | 'destination';
+
 interface DestinationInputProps {
     forceOpen?: boolean;
     onSelect?: (d: Destination) => void;
     placeholder?: string;
     segmentIndex?: number;
-    field?: string;
+    field?: DropdownField;
+}
+
+function getDropdownKey(segmentIndex?: number, field?: DropdownField): string {
+    if (segmentIndex !== undefined && field) return `flight-${field}`;
+    return 'destination';
 }
 
 function getIcon(type: Destination['type']) {
@@ -31,20 +38,25 @@ function getIcon(type: Destination['type']) {
     }
 }
 
-export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps) {
+export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: DestinationInputProps) {
     const ref = useRef<HTMLDivElement>(null);
+    const [localQuery, setLocalQuery] = useState('');
 
     const query = useDestinationQuery();
     const recentSearches = useRecentSearches();
     const activeDropdown = useActiveDropdown();
-    const { setDestination, setDestinationQuery, addRecentSearch, setActiveDropdown, removeRecentSearch } =
+    const { setDestination, setDestinationQuery, addRecentSearch, setActiveDropdown, removeRecentSearch, setFlightSegment } =
         useSearchStore();
 
-    const [debouncedQuery, setDebouncedQuery] = useState(query);
+    const dropdownKey = getDropdownKey(segmentIndex, field);
+    const isFlightField = segmentIndex !== undefined && field !== undefined;
+    const activeQuery = isFlightField ? localQuery : query;
+
+    const [debouncedQuery, setDebouncedQuery] = useState(activeQuery);
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedQuery(query), 350);
+        const t = setTimeout(() => setDebouncedQuery(activeQuery), 350);
         return () => clearTimeout(t);
-    }, [query]);
+    }, [activeQuery]);
 
     const { data: suggestions = [], isFetching } = useQuery<Destination[]>({
         queryKey: ['autocomplete', 'destinations', debouncedQuery],
@@ -57,7 +69,7 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
         placeholderData: (prev) => prev,
     });
 
-    const isOpen = forceOpen || activeDropdown === 'destination';
+    const isOpen = forceOpen || activeDropdown === dropdownKey;
 
     useEffect(() => {
         if (isOpen) return;
@@ -71,11 +83,21 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
     }, [isOpen, forceOpen, setActiveDropdown]);
 
     const handleSelect = (d: Destination) => {
-        setDestination(d);
-        setDestinationQuery(d.title);
-        addRecentSearch(d);
+        if (isFlightField) {
+            setFlightSegment(segmentIndex!, { [field!]: d });
+            setLocalQuery('');
+        } else {
+            setDestination(d);
+            setDestinationQuery(d.title);
+            addRecentSearch(d);
+        }
         onSelect?.(d);
         if (!forceOpen) setActiveDropdown(null);
+    };
+
+    const handleQueryChange = (val: string) => {
+        if (isFlightField) setLocalQuery(val);
+        else setDestinationQuery(val);
     };
 
     return (
@@ -104,8 +126,8 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                             <input
                                 autoFocus
                                 type="text"
-                                value={query}
-                                onChange={(e) => setDestinationQuery(e.target.value)}
+                                value={activeQuery}
+                                onChange={(e) => handleQueryChange(e.target.value)}
                                 onFocus={(e) => e.target.select()}
                                 placeholder="Search destinations..."
                                 className="bg-transparent border-none p-0 text-[13px] font-bold focus:ring-0 outline-none w-full text-slate-900 dark:text-white placeholder:font-normal placeholder:text-slate-400"
@@ -116,9 +138,9 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                                     <div className="absolute inset-0 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                                 </div>
                             )}
-                            {query && (
+                            {activeQuery && (
                                 <button
-                                    onClick={() => setDestinationQuery('')}
+                                    onClick={() => handleQueryChange('')}
                                     className="p-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full"
                                 >
                                     <X size={14} className="text-slate-400" />

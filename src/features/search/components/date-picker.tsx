@@ -4,14 +4,16 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
-import { useSearchStore, useDates, useActiveDropdown } from '@/shared/stores/search.store';
+import { useSearchStore, useDates, useActiveDropdown, useFlightState } from '@/shared/stores/search.store';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+type TriggerDropdown = 'dates-in' | 'dates-out' | 'flight-depart' | 'flight-return';
+
 interface DatePickerProps {
-    triggerDropdown?: 'dates-in' | 'dates-out';
+    triggerDropdown?: TriggerDropdown;
     initialCheckOutMode?: boolean;
     forceOpen?: boolean;
     onDone?: () => void;
@@ -20,14 +22,20 @@ interface DatePickerProps {
     segmentIndex?: number;
 }
 
-export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, onDone }: DatePickerProps) {
+export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, onDone, mode, segmentIndex }: DatePickerProps) {
     const ref = useRef<HTMLDivElement>(null);
     const activeDropdown = useActiveDropdown();
     const { checkIn: rawCheckIn, checkOut: rawCheckOut } = useDates();
-    const { setDates, setActiveDropdown } = useSearchStore();
+    const { setDates, setActiveDropdown, setFlightSegment } = useSearchStore();
+    const flightState = useFlightState();
 
-    const checkIn = rawCheckIn ? new Date(rawCheckIn) : null;
-    const checkOut = rawCheckOut ? new Date(rawCheckOut) : null;
+    const isFlightMode = mode === 'single' && segmentIndex !== undefined;
+    const rawFlightDate = isFlightMode ? flightState.flights[segmentIndex]?.date ?? null : null;
+
+    const checkIn  = isFlightMode
+        ? (rawFlightDate ? new Date(rawFlightDate) : null)
+        : (rawCheckIn ? new Date(rawCheckIn) : null);
+    const checkOut = isFlightMode ? null : (rawCheckOut ? new Date(rawCheckOut) : null);
 
     const [view, setView] = useState<'calendar' | 'month' | 'year'>('calendar');
     const [tab, setTab] = useState<'calendar' | 'flexible'>('calendar');
@@ -42,7 +50,7 @@ export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, on
     const isOpen = forceOpen || (
         triggerDropdown
             ? activeDropdown === triggerDropdown
-            : (activeDropdown === 'dates-in' || activeDropdown === 'dates-out')
+            : (activeDropdown === 'dates-in' || activeDropdown === 'dates-out' || activeDropdown === 'flight-depart' || activeDropdown === 'flight-return')
     );
 
     useEffect(() => {
@@ -84,6 +92,11 @@ export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, on
     }, []);
 
     const handleDateClick = (date: Date) => {
+        if (isFlightMode) {
+            setFlightSegment(segmentIndex!, { date });
+            handleClose();
+            return;
+        }
         if (!selectingCheckOut || !checkIn || date < checkIn) {
             setDates({ checkIn: date, checkOut: null });
             setSelectingCheckOut(true);
