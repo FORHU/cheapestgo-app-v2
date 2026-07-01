@@ -200,7 +200,7 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
         setErrorMsg(null);
         try {
-            await http.post('/api/hotels/confirm', {
+            await http.post('/hotels/confirm', {
                 hotelId,
                 roomId,
                 rateKey,
@@ -239,7 +239,7 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
         setErrorMsg(null);
         try {
-            await http.post('/api/flights/book', {
+            await http.post('/flights/book', {
                 offerId,
                 currency: flightCurrency,
                 passengers: passengers.map((p) => ({

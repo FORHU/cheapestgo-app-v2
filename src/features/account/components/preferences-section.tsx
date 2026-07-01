@@ -40,7 +40,7 @@ export function PreferencesSection() {
         setSaved(false);
         setError(null);
         try {
-            await http.patch('/api/users/preferences', prefs);
+            await http.patch('/users/preferences', prefs);
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch (err: unknown) {

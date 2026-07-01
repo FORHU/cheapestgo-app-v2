@@ -20,7 +20,7 @@ export function ProfileSection() {
         setResetLoading(true);
         setResetError(null);
         try {
-            await http.post('/api/auth/request-reset', { email: user.email });
+            await http.post('/auth/request-reset', { email: user.email });
             setResetSent(true);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to send reset link. Please try again.';
