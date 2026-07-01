@@ -1,0 +1,324 @@
+{
+    "nav": {
+        "support": "고객지원",
+        "openApp": "앱 열기",
+        "signIn": "로그인",
+        "signOut": "로그아웃",
+        "myTrips": "내 여행",
+        "account": "계정",
+        "trips": "여행",
+        "createAccount": "계정 만들기",
+        "accountSettings": "계정 설정",
+        "membersSave": "회원은 10% 이상 절약",
+        "membersSaveSubtitle": "로그인 시 선정 숙소 할인 적용",
+        "accountWorks": "계정은 CheapestGo 및 모든 파트너 사이트에서 사용 가능합니다"
+    },
+    "languagePicker": {
+        "label": "언어 선택",
+        "en": "English",
+        "ko": "한국어",
+        "cn": "中文",
+        "ja": "日本語"
+    },
+    "currencyPicker": {
+        "label": "통화 선택"
+    },
+    "theme": {
+        "switchToDark": "다크 모드로 전환",
+        "switchToLight": "라이트 모드로 전환"
+    },
+    "landing": {
+        "hero": {
+            "title": "가장 저렴한 항공권",
+            "titleLine1": "정밀한 여행.",
+            "titleLine2": "당신만을 위한 설계.",
+            "subtitle": "현대 여행자를 위한 운영체제.",
+            "monoSubtext": "무엇이든 물어보고, 모든 것을 예약하세요.",
+            "cta": "항공편 검색"
+        },
+        "search": {
+            "from": "출발지",
+            "to": "목적지",
+            "depart": "출발일",
+            "return": "귀국일",
+            "passengers": "승객",
+            "rooms": "객실",
+            "placeholder": {
+                "airport": "도시 또는 공항",
+                "date": "날짜 선택"
+            },
+            "tripType": {
+                "roundTrip": "왕복",
+                "oneWay": "편도",
+                "multiCity": "다구간"
+            },
+            "cabinClass": {
+                "economy": "일반석",
+                "premiumEconomy": "프리미엄 일반석",
+                "business": "비즈니스석",
+                "first": "일등석"
+            },
+            "submit": "검색",
+            "anywhere": "어디든지",
+            "anyWeek": "아무 주나",
+            "addGuests": "인원 추가",
+            "guests": "{count}명",
+            "guestsPlural": "{count}명",
+            "clearAll": "모두 지우기",
+            "findDeals": "최저가 찾기",
+            "comingSoon": "출시 예정",
+            "aiDevelopment": "AI 검색 개발 중입니다. 기대해 주세요!",
+            "askAi": "AI에게 물어보기",
+            "aiGreeting": "오늘 아침 무엇을 도와드릴까요?",
+            "results": "검색 결과",
+            "findingFlights": "항공편 검색 중…",
+            "searchFlightsHeader": "항공편 검색",
+            "bundle": {
+                "hotelBooked": "호텔 예약 완료!",
+                "instructions": "{from}과 {to} 공항을 입력하고 날짜를 선택한 후 검색을 누르면 최대 8% 절약됩니다."
+            },
+            "whereTo": "어디로?",
+            "searchDestination": "목적지 검색",
+            "checkIn": "체크인",
+            "checkOut": "체크아웃",
+            "travelers": "여행자",
+            "selectDate": "날짜 선택",
+            "guest": "{count}명",
+            "guestPlural": "{count}명",
+            "guestsRooms": "게스트 및 객실",
+            "adults": "성인",
+            "children": "어린이",
+            "childrenAges": "만 0~17세",
+            "roomsNote": "예약당 1개 객실. 추가 객실은 별도 예약하세요.",
+            "done": "완료",
+            "calendar": "달력",
+            "flexibleDates": "유연한 날짜",
+            "whenTravel": "여행 날짜를 언제로 하시겠어요?",
+            "childLabel": "어린이 {index}: {age}세",
+            "yearsOld": "{age}세",
+            "month": "월",
+            "year": "연도",
+            "searchDestinationsPlaceholder": "목적지 검색...",
+            "recentSearches": "최근 검색",
+            "searching": "검색 중...",
+            "noResults": "검색 결과가 없습니다",
+            "countries": "국가",
+            "cities": "도시",
+            "typeToSearch": "도시 이름 또는 공항 코드를 입력하세요...",
+            "noAirportsFound": "\"{query}\"에 대한 공항을 찾을 수 없습니다",
+            "typeToSearchPrompt": "도시 또는 공항 코드를 입력하여 검색하세요",
+            "cabinClassLabel": "좌석 등급",
+            "infants": "유아",
+            "adultAge": "만 12세 이상",
+            "childAge": "만 2~11세",
+            "infantAge": "만 2세 미만 (무릎 착석)",
+            "months": [
+                "일월",
+                "이월",
+                "삼월",
+                "사월",
+                "오월",
+                "유월",
+                "칠월",
+                "팔월",
+                "구월",
+                "십월",
+                "십일월",
+                "십이월"
+            ],
+            "days": [
+                "일",
+                "월",
+                "화",
+                "수",
+                "목",
+                "금",
+                "토"
+            ],
+            "flexOptions": [
+                "정확한 날짜",
+                "±1일",
+                "±2일",
+                "±3일",
+                "±7일"
+            ],
+            "searchMode": {
+                "stays": "숙소",
+                "flights": "항공편",
+                "aiSearch": "AI 검색"
+            }
+        },
+        "recentlyViewed": {
+            "title": "검색 이어보기",
+            "subtitle": "이전 검색을 이어보세요",
+            "viewAll": "전체 보기",
+            "recentlySearched": "최근 검색",
+            "from": "부터",
+            "stay": "숙소",
+            "flight": "항공편",
+            "showLess": "접기"
+        }
+    },
+    "flights": {
+        "results": {
+            "loading": "최저가 항공편을 찾고 있습니다…",
+            "empty": "해당 날짜에 항공편이 없습니다.",
+            "sortBy": "정렬 기준",
+            "filters": "필터",
+            "price": "가격",
+            "duration": "소요 시간",
+            "stops": {
+                "any": "전체",
+                "direct": "직항",
+                "oneStop": "경유 1회",
+                "twoPlus": "경유 2회 이상"
+            }
+        },
+        "card": {
+            "direct": "직항",
+            "stop": "회 경유",
+            "stops": "회 경유",
+            "viewDeal": "요금 보기",
+            "perPerson": "1인당"
+        }
+    },
+    "auth": {
+        "signIn": {
+            "title": "CheapestGo 로그인",
+            "emailLabel": "이메일 주소",
+            "emailPlaceholder": "example@email.com",
+            "continueWithEmail": "이메일로 계속하기",
+            "continueWithGoogle": "Google로 계속하기",
+            "continueWithApple": "Apple로 계속하기",
+            "orDivider": "또는",
+            "terms": "로그인 시 {terms} 및 {privacy}에 동의하게 됩니다.",
+            "termsLink": "이용약관",
+            "privacyLink": "개인정보처리방침"
+        }
+    },
+    "errors": {
+        "generic": "오류가 발생했습니다. 다시 시도해 주세요.",
+        "notFound": "페이지를 찾을 수 없습니다.",
+        "searchFailed": "검색에 실패했습니다. 연결 상태를 확인하고 다시 시도해 주세요."
+    },
+    "pwa": {
+        "installPrompt": {
+            "title": "CheapestGo 앱 받기",
+            "body": "홈 화면에 추가하면 더 빠르게 이용할 수 있습니다.",
+            "install": "설치",
+            "dismiss": "나중에"
+        }
+    },
+    "footer": {
+        "tagline": "안목 있는 여행자를 위해 정밀하게 설계되었습니다.",
+        "taglinePrecision": "정밀한 데이터. 타협 없는 서비스.",
+        "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
+        "module": "모듈",
+        "flights": "항공편",
+        "hotels": "호텔",
+        "cars": "렌터카",
+        "company": "회사",
+        "aboutUs": "회사 소개",
+        "enterprise": "기업 제휴",
+        "support": "고객지원",
+        "network": "네트워크",
+        "flightsApi": "항공편 API",
+        "paymentGateway": "결제 게이트웨이",
+        "copyright": "© 2026 JTP Partners. All rights reserved.",
+        "terms": "이용약관",
+        "privacy": "개인정보",
+        "cookies": "쿠키",
+        "contact": "문의",
+        "copyrightMinimal": "CheapestGo © 2026",
+        "termsMinimal": "이용약관 및 조건",
+        "privacyMinimal": "개인정보처리방침",
+        "cookiesMinimal": "쿠키 설정",
+        "contactMinimal": "문의하기",
+        "reportBug": "버그 신고"
+    },
+    "appBanner": {
+        "badge": "모바일 앱",
+        "title": "앱으로 더 스마트하게 여행하세요",
+        "subtitle": "앱 전용 특가 혜택, 실시간 알림을 받고 이동 중에도 간편하게 여행을 관리하세요.",
+        "downloads": "다운로드 수",
+        "rating": "앱 평점",
+        "savings": "추가 할인",
+        "installBtn": "앱 설치하기",
+        "downloadBtn": "앱 다운로드",
+        "learnMore": "더 알아보기"
+    },
+    "deals": {
+        "popularRoute": "인기 노선",
+        "searchFlights": "항공편 검색",
+        "all": "전체",
+        "oneWay": "편도",
+        "roundTrip": "왕복",
+        "headerDefault": "독점 특가 및 혜택",
+        "headerPersonalized": "{city} 출발 항공권 특가",
+        "subtitleDefault": "인기 노선 최저가 항공권",
+        "subtitlePersonalized": "{city} 출발 최저가 항공권",
+        "allDealsCount": "전체 {count}개 특가",
+        "collapse": "접기 ↑"
+    },
+    "hotels": {
+        "ratings": {
+            "exceptional": "최고",
+            "excellent": "매우 훌륭함",
+            "superb": "최상급",
+            "veryGood": "훌륭함",
+            "good": "좋음",
+            "average": "보통"
+        },
+        "fromPrice": "{price}부터",
+        "perNight": "/박",
+        "pricesMayVary": "가격은 변동될 수 있습니다",
+        "bookNow": "지금 예약",
+        "guestFavorite": "게스트 최애",
+        "headerDefault": "인기 호텔 특가",
+        "headerPersonalized": "{country} 호텔 특가",
+        "subtitleDefault": "엄선된 호텔을 최저가에 제공",
+        "subtitlePersonalized": "{country} 인기 호텔 · 매일 업데이트",
+        "allHotelsCount": "전체 {count}개 호텔",
+        "collapse": "접기 ↑"
+    },
+    "topCities": {
+        "headerMain": "인기 도시",
+        "headerHighlight": "전 세계",
+        "subtitle": "가장 인기 있는 여행지 · 즉시 호텔 검색",
+        "exploreHotels": "호텔 찾아보기"
+    },
+    "topDestinations": {
+        "headerMain": "인기 여행지",
+        "headerHighlight": "전 세계",
+        "subtitle": "세계 구석구석에서 선사하는 상징적인 경험",
+        "findHotels": "호텔 찾기"
+    },
+    "guestFavorites": {
+        "headerMain": "고객",
+        "headerHighlight": "인기 호텔",
+        "subtitle": "여행자들이 사랑하는 최고 평점 호텔 · 매일 업데이트",
+        "allFavoritesCount": "전체 {count}개 인기 호텔",
+        "collapse": "접기 ↑"
+    },
+    "seo": {
+        "orgDescription": "CheapestGo는 전 세계 최저가 항공권과 호텔을 찾는 현대적인 여행 예약 플랫폼입니다.",
+        "faq": {
+            "q1": "CheapestGo는 어떻게 저렴한 항공권을 찾나요?",
+            "a1": "CheapestGo는 여러 항공사와 글로벌 유통 시스템을 검색해 실시간으로 최저가를 찾아 한 곳에서 비교하고 예약할 수 있게 합니다.",
+            "q2": "CheapestGo에서 항공권과 호텔을 모두 예약할 수 있나요?",
+            "a2": "네. CheapestGo는 항공권, 호텔, 아파트, 독특한 숙소까지 하나의 플랫폼에서 예약할 수 있습니다.",
+            "q3": "CheapestGo는 무료로 사용할 수 있나요?",
+            "a3": "네, 가격 검색과 비교는 완전히 무료입니다. 예약할 때만 비용이 발생합니다.",
+            "q4": "CheapestGo는 어떤 통화를 지원하나요?",
+            "a4": "CheapestGo는 다양한 통화를 지원하며 설정에 따라 자동으로 가격을 변환해 현지 통화로 확인할 수 있습니다."
+        }
+    },
+    "ai": {
+        "prompts": {
+            "bali": "발리 해변 리조트, 성인 2명, 2월 14-21일...",
+            "tokyo": "도쿄 럭셔리 호텔, 1박 $200 이하, 수영장 있는 곳...",
+            "cebu": "다음 달 세부 커플 주말 여행...",
+            "manila": "마닐라 근처 패밀리 리조트, 성인 2명 어린이 2명..."
+        }
+    }
+}

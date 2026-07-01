@@ -1,0 +1,324 @@
+{
+    "nav": {
+        "support": "Support",
+        "openApp": "Open app",
+        "signIn": "Sign in",
+        "signOut": "Sign out",
+        "myTrips": "My trips",
+        "account": "Account",
+        "trips": "Trips",
+        "createAccount": "Create an account",
+        "accountSettings": "Account Settings",
+        "membersSave": "Members save 10% or more",
+        "membersSaveSubtitle": "on select stays when signed in",
+        "accountWorks": "Your account works across CheapestGo and all partner sites"
+    },
+    "languagePicker": {
+        "label": "Select language",
+        "en": "English",
+        "ko": "한국어",
+        "cn": "中文",
+        "ja": "日本語"
+    },
+    "currencyPicker": {
+        "label": "Select currency"
+    },
+    "theme": {
+        "switchToDark": "Switch to dark mode",
+        "switchToLight": "Switch to light mode"
+    },
+    "landing": {
+        "hero": {
+            "title": "Flights at the lowest price",
+            "titleLine1": "Precision Travel.",
+            "titleLine2": "Machined for You.",
+            "subtitle": "The operating system for the modern voyager.",
+            "monoSubtext": "Ask anything. Book everything.",
+            "cta": "Search flights"
+        },
+        "search": {
+            "from": "From",
+            "to": "To",
+            "depart": "Depart",
+            "return": "Return",
+            "passengers": "Passengers",
+            "placeholder": {
+                "airport": "City or airport",
+                "date": "Add date"
+            },
+            "tripType": {
+                "roundTrip": "Round trip",
+                "oneWay": "One way",
+                "multiCity": "Multi-city"
+            },
+            "cabinClass": {
+                "economy": "Economy",
+                "premiumEconomy": "Premium economy",
+                "business": "Business",
+                "first": "First"
+            },
+            "submit": "Search",
+            "anywhere": "Anywhere",
+            "anyWeek": "Any week",
+            "addGuests": "Add guests",
+            "guests": "{count} guest",
+            "guestsPlural": "{count} guests",
+            "clearAll": "Clear all",
+            "findDeals": "Find the best deals",
+            "comingSoon": "Coming Soon",
+            "aiDevelopment": "AI Search is under development. Stay tuned!",
+            "askAi": "Ask AI",
+            "aiGreeting": "How can I help you this morning?",
+            "results": "Results",
+            "findingFlights": "Finding flights…",
+            "searchFlightsHeader": "Search Flights",
+            "bundle": {
+                "hotelBooked": "Hotel booked!",
+                "instructions": "Enter your {from} and {to} airports, pick your dates, then hit Search to bundle and save up to 8%."
+            },
+            "whereTo": "Where to?",
+            "searchDestination": "Search destination",
+            "checkIn": "Check-in",
+            "checkOut": "Check-out",
+            "travelers": "Travelers",
+            "selectDate": "Select date",
+            "guest": "{count} Guest",
+            "guestPlural": "{count} Guests",
+            "guestsRooms": "Guests & Rooms",
+            "adults": "Adults",
+            "children": "Children",
+            "childrenAges": "Ages 0 to 17",
+            "rooms": "Rooms",
+            "roomsNote": "1 room per booking. Book separately for more.",
+            "done": "Done",
+            "calendar": "Calendar",
+            "flexibleDates": "Flexible dates",
+            "whenTravel": "When do you want to travel?",
+            "childLabel": "Child {index}: {age} yrs",
+            "yearsOld": "{age} years old",
+            "month": "Month",
+            "year": "Year",
+            "searchDestinationsPlaceholder": "Search destinations...",
+            "recentSearches": "Recent Searches",
+            "searching": "Searching...",
+            "noResults": "No results found",
+            "countries": "Countries",
+            "cities": "Cities",
+            "typeToSearch": "Type city name or airport code...",
+            "noAirportsFound": "No airports found for \"{query}\"",
+            "typeToSearchPrompt": "Type a city or airport code to search",
+            "cabinClassLabel": "Cabin Class",
+            "infants": "Infants",
+            "adultAge": "Age 12+",
+            "childAge": "Age 2-11",
+            "infantAge": "Under 2 (lap)",
+            "months": [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            ],
+            "days": [
+                "S",
+                "M",
+                "T",
+                "W",
+                "T",
+                "F",
+                "S"
+            ],
+            "flexOptions": [
+                "Exact dates",
+                "\u00b1 1 day",
+                "\u00b1 2 days",
+                "\u00b1 3 days",
+                "\u00b1 7 days"
+            ],
+            "searchMode": {
+                "stays": "Stays",
+                "flights": "Flights",
+                "aiSearch": "AI Search"
+            }
+        },
+        "recentlyViewed": {
+            "title": "Continue Your Search",
+            "subtitle": "Pick up where you left off",
+            "viewAll": "View all",
+            "recentlySearched": "Recently searched",
+            "from": "from",
+            "stay": "Stay",
+            "flight": "Flight",
+            "showLess": "Show less"
+        }
+    },
+    "flights": {
+        "results": {
+            "loading": "Finding the best fares…",
+            "empty": "No flights found for these dates.",
+            "sortBy": "Sort by",
+            "filters": "Filters",
+            "price": "Price",
+            "duration": "Duration",
+            "stops": {
+                "any": "Any",
+                "direct": "Direct",
+                "oneStop": "1 stop",
+                "twoPlus": "2+ stops"
+            }
+        },
+        "card": {
+            "direct": "Direct",
+            "stop": "stop",
+            "stops": "stops",
+            "viewDeal": "View deal",
+            "perPerson": "per person"
+        }
+    },
+    "auth": {
+        "signIn": {
+            "title": "Sign in to CheapestGo",
+            "emailLabel": "Email address",
+            "emailPlaceholder": "you@example.com",
+            "continueWithEmail": "Continue with email",
+            "continueWithGoogle": "Continue with Google",
+            "continueWithApple": "Continue with Apple",
+            "orDivider": "or",
+            "terms": "By signing in you agree to our {terms} and {privacy}.",
+            "termsLink": "Terms",
+            "privacyLink": "Privacy"
+        }
+    },
+    "errors": {
+        "generic": "Something went wrong. Please try again.",
+        "notFound": "Page not found.",
+        "searchFailed": "Search failed. Check your connection and try again."
+    },
+    "pwa": {
+        "installPrompt": {
+            "title": "Get the CheapestGo app",
+            "body": "Add to your home screen for faster access.",
+            "install": "Install",
+            "dismiss": "Not now"
+        }
+    },
+    "footer": {
+        "tagline": "Engineered for the discerning traveler.",
+        "taglinePrecision": "Precision data. Zero compromise.",
+        "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
+        "module": "Module",
+        "flights": "Flights",
+        "hotels": "Hotels",
+        "cars": "Cars",
+        "company": "Company",
+        "aboutUs": "About Us",
+        "enterprise": "Enterprise",
+        "support": "Support",
+        "network": "Network",
+        "flightsApi": "Flights API",
+        "paymentGateway": "Payment Gateway",
+        "copyright": "© 2026 JTP Partners. All rights reserved.",
+        "terms": "Terms",
+        "privacy": "Privacy",
+        "cookies": "Cookies",
+        "contact": "Contact",
+        "copyrightMinimal": "CheapestGo © 2026",
+        "termsMinimal": "Terms & Conditions",
+        "privacyMinimal": "Privacy Policy",
+        "cookiesMinimal": "Cookie preferences",
+        "contactMinimal": "Contact us",
+        "reportBug": "Report a Bug"
+    },
+    "appBanner": {
+        "badge": "Mobile App",
+        "title": "Travel smarter with our app",
+        "subtitle": "Get exclusive app-only deals, instant notifications, and manage your trips on the go.",
+        "downloads": "Downloads",
+        "rating": "App Rating",
+        "savings": "Extra Savings",
+        "installBtn": "Install App",
+        "downloadBtn": "Download App",
+        "learnMore": "Learn More"
+    },
+    "deals": {
+        "popularRoute": "Popular Route",
+        "searchFlights": "Search Flights",
+        "all": "All",
+        "oneWay": "One Way",
+        "roundTrip": "Round Trip",
+        "headerDefault": "Exclusive Deals & Offers",
+        "headerPersonalized": "Flight Deals from {city}",
+        "subtitleDefault": "Low fares on popular routes",
+        "subtitlePersonalized": "Low fares departing from {city}",
+        "allDealsCount": "All {count} deals",
+        "collapse": "Collapse ↑"
+    },
+    "hotels": {
+        "ratings": {
+            "exceptional": "Exceptional",
+            "superb": "Superb",
+            "excellent": "Excellent",
+            "veryGood": "Very Good",
+            "good": "Good",
+            "average": "Average"
+        },
+        "fromPrice": "From {price}",
+        "perNight": "/night",
+        "pricesMayVary": "prices may vary",
+        "bookNow": "Book Now",
+        "guestFavorite": "Guest Favorite",
+        "headerDefault": "Top Hotel Deals",
+        "headerPersonalized": "Hotel Deals in {country}",
+        "subtitleDefault": "Handpicked stays at unbeatable prices",
+        "subtitlePersonalized": "Top-rated stays in {country} · updated daily",
+        "allHotelsCount": "All {count} hotels",
+        "collapse": "Collapse ↑"
+    },
+    "topCities": {
+        "headerMain": "Top Cities",
+        "headerHighlight": "Worldwide",
+        "subtitle": "Most visited destinations · find hotels instantly",
+        "exploreHotels": "Explore Hotels"
+    },
+    "topDestinations": {
+        "headerMain": "Top Destinations",
+        "headerHighlight": "Worldwide",
+        "subtitle": "Iconic experiences from every corner of the globe",
+        "findHotels": "Find Hotels"
+    },
+    "guestFavorites": {
+        "headerMain": "Guest",
+        "headerHighlight": "Favorites",
+        "subtitle": "Top-rated hotels loved by travellers · updated daily",
+        "allFavoritesCount": "All {count} favorites",
+        "collapse": "Collapse ↑"
+    },
+    "seo": {
+        "orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
+        "faq": {
+            "q1": "How does CheapestGo find cheap flights?",
+            "a1": "CheapestGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
+            "q2": "Can I book both flights and hotels on CheapestGo?",
+            "a2": "Yes. CheapestGo supports booking flights, hotels, apartments, and unique stays — all from a single platform.",
+            "q3": "Is CheapestGo free to use?",
+            "a3": "Yes, searching and comparing prices on CheapestGo is completely free. You only pay when you book.",
+            "q4": "What currencies does CheapestGo support?",
+            "a4": "CheapestGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency."
+        }
+    },
+    "ai": {
+        "prompts": {
+            "bali": "Find me a beachfront resort in Bali for 2 adults, Feb 14-21...",
+            "tokyo": "Luxury hotel in Tokyo under $200/night with pool...",
+            "cebu": "Weekend getaway in Cebu for a couple, next month...",
+            "manila": "Family resort near Manila, 2 adults 2 kids..."
+        }
+    }
+}

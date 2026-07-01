@@ -1,213 +1,169 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Moon, Sun, PlaneTakeoff, User, LogOut, ChevronDown } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useAuthStore } from '@/shared/auth/store';
-import { useUserCurrency, useSearchStore } from '@/shared/stores/search.store';
-import { CURRENCIES } from '@/shared/lib/currency';
-import { cn } from '@/shared/lib/cn';
+import Image from 'next/image';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Moon, Sun, Download, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '@/shared/components/ThemeContext';
+import SignInDropdown from '@/shared/auth/SignInDropdown';
+import { useUserCurrency, useSearchActions } from '@/stores/searchStore';
+import { usePWAInstall } from '@/contexts/PWAInstallContext';
 
-// ─── Currency Selector ────────────────────────────────────────────────────────
-function CurrencySelector() {
-    const currency = useUserCurrency();
-    const { setUserCurrency } = useSearchStore();
-    const [open, setOpen] = useState(false);
-    const ref = React.useRef<HTMLDivElement>(null);
+const CURRENCY_FLAGS: Record<string, string> = {
+  PHP: '🇵🇭',
+  USD: '🇺🇸',
+  KRW: '🇰🇷',
+};
 
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        if (open) document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+const CURRENCIES = ['KRW', 'USD', 'PHP'] as const;
 
-    return (
-        <div ref={ref} className="relative">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-            >
-                {currency}
-                <ChevronDown size={10} />
-            </button>
-            {open && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-xl z-50 overflow-hidden max-h-64 overflow-y-auto">
-                    {CURRENCIES.map((c) => (
-                        <button
-                            key={c.code}
-                            onClick={() => { setUserCurrency(c.code); setOpen(false); }}
-                            className={cn(
-                                'w-full text-left px-4 py-2 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-white/5',
-                                currency === c.code
-                                    ? 'text-blue-600 dark:text-blue-400 font-bold'
-                                    : 'text-slate-700 dark:text-slate-300'
-                            )}
-                        >
-                            <span className="font-mono mr-2">{c.code}</span>
-                            <span className="text-slate-400">{c.label}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
+const HeaderContent = () => {
+  const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const currencyRef = useRef<HTMLDivElement>(null);
 
-// ─── User Menu ────────────────────────────────────────────────────────────────
-function UserMenu() {
-    const { user, logout } = useAuthStore();
-    const [open, setOpen] = useState(false);
-    const ref = React.useRef<HTMLDivElement>(null);
+  const userCurrency = useUserCurrency();
+  const { setUserCurrency } = useSearchActions();
+  const { isInstallable, isIOS, isInstalled, triggerInstall } = usePWAInstall();
+  const showInstallButton = !isInstalled && (isInstallable || isIOS);
 
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        if (open) document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+  const currencyFlag = CURRENCY_FLAGS[userCurrency] || '🌐';
 
-    if (!user) {
-        return (
-            <Link
-                href="/login"
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-                Sign in
-            </Link>
-        );
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (currencyRef.current && !currencyRef.current.contains(e.target as Node)) {
+        setIsCurrencyOpen(false);
+      }
+    };
+    if (isCurrencyOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isCurrencyOpen]);
 
-    return (
-        <div ref={ref} className="relative">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-            >
-                <div className="size-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">
-                    {(user.first_name?.[0] ?? user.email[0]).toUpperCase()}
-                </div>
-                <span className="hidden sm:inline max-w-[100px] truncate">{user.first_name || user.email}</span>
-                <ChevronDown size={10} />
-            </button>
-            {open && (
-                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-white/5">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                            {user.first_name ? `${user.first_name} ${user.last_name ?? ''}`.trim() : user.email}
-                        </p>
-                        <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
-                    </div>
-                    <Link
-                        href="/account"
-                        onClick={() => setOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                    >
-                        <User size={14} />
-                        My Account
-                    </Link>
-                    <Link
-                        href="/trips"
-                        onClick={() => setOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                    >
-                        <PlaneTakeoff size={14} />
-                        My Trips
-                    </Link>
-                    <div className="border-t border-slate-100 dark:border-white/5">
-                        <button
-                            onClick={() => { logout(); setOpen(false); }}
-                            className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                        >
-                            <LogOut size={14} />
-                            Sign out
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
+  const handleCurrencySelect = (currency: string) => {
+    setUserCurrency(currency);
+    setIsCurrencyOpen(false);
+    if (pathname.includes('/property/') || pathname.includes('/search')) {
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.set('currency', currency);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  };
 
-// ─── Theme Toggle ─────────────────────────────────────────────────────────────
-function ThemeToggle() {
-    const { theme, setTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-    if (!mounted) return <div className="size-7" />;
-    return (
-        <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            aria-label="Toggle theme"
-        >
-            {theme === 'dark'
-                ? <Sun className="w-4 h-4 text-slate-300" />
-                : <Moon className="w-4 h-4 text-slate-700" />
-            }
-        </button>
-    );
-}
+  return (
+    <header className="fixed top-0 z-50 w-full px-4 pt-1.5 bg-transparent landscape-compact-header font-nunito">
+      <div className="w-full sm:w-[95%] mx-auto p-1 px-4 sm:px-6 h-11 md:h-16 flex items-center justify-between bg-slate/20 backdrop-blur rounded-full">
 
-// ─── Nav Links ────────────────────────────────────────────────────────────────
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-    const pathname = usePathname();
-    const isActive = pathname === href;
-    return (
-        <Link
-            href={href}
-            className={cn(
-                'flex items-center px-2 py-1 text-[10px] sm:text-xs font-medium rounded-lg transition-colors',
-                isActive
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5'
-            )}
-        >
-            {children}
+        {/* Logo */}
+        <Link href="/" className="flex items-center hover:opacity-80 transition-opacity shrink-0">
+          <Image
+            src="/Web_Logo_Transparent.png"
+            alt="CheapestGo"
+            width={140}
+            height={36}
+            className="h-7 md:h-9 w-auto object-contain dark:brightness-[1.15]"
+            priority
+          />
         </Link>
-    );
-}
 
-// ─── Header ───────────────────────────────────────────────────────────────────
-function HeaderContent() {
-    return (
-        <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-colors">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-11 md:h-14 flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
-                    <h1 className="text-base sm:text-lg md:text-xl text-slate-900 dark:text-white font-bold tracking-tight">
-                        Cheapest<span className="text-blue-600 dark:text-blue-400">Go</span>
-                    </h1>
-                </Link>
+        {/* Navigation Items */}
+        <nav className="flex items-center gap-1 sm:gap-2">
+          {/* NavLinks */}
+          <div className="hidden xs:flex items-center gap-2">
+            <a
+              href="mailto:support@cheapestgo.com"
+              className="flex items-center gap-1.5 px-3 py-2 text-[10px] sm:text-xs text-blue-600 dark:text-white hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+            >
+              Support
+            </a>
+          </div>
 
-                {/* Nav */}
-                <nav className="flex items-center gap-1 sm:gap-2">
-                    <NavLink href="/trips">Trips</NavLink>
-                    <a
-                        href="mailto:support@cheapestgo.com"
-                        className="hidden xs:flex items-center px-2 py-1 text-[10px] sm:text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-                    >
-                        Support
-                    </a>
-                    <CurrencySelector />
-                    <ThemeToggle />
-                    <div className="hidden lg:block shrink-0">
-                        <UserMenu />
-                    </div>
-                </nav>
-            </div>
-        </header>
-    );
-}
+          {/* Install / Open App Button */}
+          {showInstallButton && (
+            <button
+              onClick={triggerInstall}
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-blue-400 border border-blue-600/20 dark:border-blue-400/20 rounded-full hover:bg-white/5 dark:hover:bg-blue-500/10 transition-colors shrink-0"
+            >
+              <Download size={12} />
+              <span className="hidden sm:inline">Open app</span>
+            </button>
+          )}
+
+          {/* Currency dropdown */}
+          <div className="relative shrink-0" ref={currencyRef}>
+            <button
+              onClick={() => setIsCurrencyOpen((o) => !o)}
+              className="flex items-center gap-1 px-1.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-slate-300 hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+              aria-expanded={isCurrencyOpen}
+              aria-haspopup="listbox"
+              aria-label="Select currency"
+            >
+              <span className="text-sm">{currencyFlag}</span>
+              <span className="hidden xs:inline">{userCurrency}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${isCurrencyOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence>
+              {isCurrencyOpen && (
+                <motion.ul
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  role="listbox"
+                  className="absolute right-0 top-full mt-1 min-w-[120px] py-1 rounded-lg dark:border-white/10 bg-white/20 backdrop-blur dark:bg-slate-900 shadow-lg z-50 cursor-pointer"
+                >
+                  {CURRENCIES.map((currency) => (
+                    <li key={currency} role="option" aria-selected={userCurrency === currency}>
+                      <button
+                        type="button"
+                        onClick={() => handleCurrencySelect(currency)}
+                        className={`flex items-center gap-2 w-full px-3 py-2 text-left text-xs font-normal transition-colors ${
+                          userCurrency === currency
+                            ? 'dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="text-sm">{CURRENCY_FLAGS[currency]}</span>
+                        {currency}
+                      </button>
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-1 sm:p-1.5 rounded-lg hover:bg-white/5 dark:hover:bg-white/10 transition-colors shrink-0"
+          >
+            {theme === 'dark'
+              ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+              : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+            }
+          </button>
+
+          {/* Sign in Dropdown (Desktop only) */}
+          <div className="hidden lg:block shrink-0">
+            <SignInDropdown />
+          </div>
+        </nav>
+      </div>
+    </header>
+  );
+};
 
 export function Header() {
-    return (
-        <Suspense fallback={null}>
-            <HeaderContent />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={null}>
+      <HeaderContent />
+    </Suspense>
+  );
 }

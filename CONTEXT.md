@@ -1,5 +1,14 @@
 # CheapestGo Domain Glossary
 
+## cheapest-go-app (V1)
+The original monolithic Next.js frontend. Source of truth for all UI, styling, and feature decisions. Uses Tailwind v4, next-intl (en/ko/ja/cn), Lucia auth, and a rich landing page. V2 is being made a pixel-perfect clone of this.
+
+## cheapestgo-app-v2 (V2)
+The refactored frontend using a feature-based folder structure (`src/features/`, `src/shared/`). Currently being migrated to be a full visual and feature clone of V1, while preserving V2's cleaner architecture. Connects to `cheapestgo-api-v2` (separate backend).
+
+## UI Migration (V1 → V2)
+The process of making V2 look and work identically to V1. Scope: Tailwind v4, next-intl i18n, all landing sections, all providers (Auth, PWA, Theme, Exchange Rate), MobileBottomNav, GlobalSparkle, and every page. V2-unique AI features (ChatWonder, Voice Layer) are deferred in favor of Phase 1 parity first.
+
 ## ChatWonder AI
 Third-party AI chat engine provided by **forhu.ai**. Powers the conversational interface in Phase 2. Exposes a WebSocket endpoint for real-time streaming (`wss://chat-dev.forhu.ai/chat-stream`) and a REST API (`https://chat-dev.forhu.ai`). The frontend connects directly via WebSocket; the backend also calls it via REST for server-side orchestration. Not to be confused with an in-house model — CheapestGo does not train or fine-tune this model.
 
