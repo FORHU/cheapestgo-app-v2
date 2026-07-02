@@ -10,6 +10,9 @@ const config: NextConfig = {
         imageSizes: [16, 32, 64, 96, 128, 256, 320],
         localPatterns: [
             { pathname: '/images/**' },
+            { pathname: '/*.png' },
+            { pathname: '/*.svg' },
+            { pathname: '/*.jpg' },
         ],
         remotePatterns: [
             { protocol: 'https', hostname: '**' },
