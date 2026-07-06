@@ -6,6 +6,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { useLogin } from '../hooks/use-auth';
+import { SocialLoginButtons } from './social-login-buttons';
 
 export function LoginForm() {
     const [email, setEmail] = useState('');
@@ -33,6 +34,8 @@ export function LoginForm() {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            <SocialLoginButtons label="Sign in with Google" />
+
             <Input
                 id="email"
                 type="email"

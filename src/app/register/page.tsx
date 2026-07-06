@@ -22,12 +22,7 @@ export default function RegisterPage() {
                     <RegisterForm />
                 </div>
 
-                <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                    Already have an account?{' '}
-                    <Link href="/login" className="text-blue-600 hover:underline font-medium">
-                        Sign in
-                    </Link>
-                </p>
+
             </div>
         </div>
     );

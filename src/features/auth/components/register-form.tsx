@@ -6,6 +6,7 @@ import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Check, X } from 'lucide-reac
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { useRegister } from '../hooks/use-auth';
+import { SocialLoginButtons } from './social-login-buttons';
 
 interface PasswordRule {
     label: string;
@@ -71,6 +72,8 @@ export function RegisterForm() {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            <SocialLoginButtons label="Sign up with Google" />
+
             <div className="grid grid-cols-2 gap-3">
                 <Input
                     id="firstName"

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, History, Plane, Building2, Globe, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
 import type { Destination } from '@/shared/types';
 import {
@@ -61,9 +60,9 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     const { data: suggestions = [], isFetching } = useQuery<Destination[]>({
         queryKey: ['autocomplete', 'destinations', debouncedQuery],
         queryFn: () =>
-            http.get<{ success: boolean; data: Destination[] }>(
-                `/api/v2/autocomplete?query=${encodeURIComponent(debouncedQuery)}`
-            ).then((res) => (res.success ? res.data : [])),
+            fetch(`/api/autocomplete?query=${encodeURIComponent(debouncedQuery)}`)
+                .then(r => r.json())
+                .then((res: { success: boolean; data: Destination[] }) => res.success ? res.data : []),
         enabled: debouncedQuery.length >= 2,
         staleTime: 5 * 60 * 1000,
         placeholderData: (prev) => prev,
@@ -112,7 +111,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                     className={
                         forceOpen
                             ? 'w-full z-10'
-                            : 'absolute top-full left-0 mt-3 w-[480px] min-w-[480px] max-w-[480px] bg-white dark:bg-slate-900 shadow-2xl rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden z-[100]'
+                            : 'absolute top-full left-0 mt-3 w-[480px] min-w-[480px] max-w-[480px] bg-white dark:bg-slate-900 shadow-2xl rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden z-100'
                     }
                     onClick={(e) => e.stopPropagation()}
                 >

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Settings, Heart, Bell } from 'lucide-react';
 import { Header } from '@/shared/components/header';
-import { useAuthStore } from '@/shared/auth/store';
+import { useAuthStore } from '@/stores/authStore';
 import { ProfileSection } from '@/features/account/components/profile-section';
 import { PreferencesSection } from '@/features/account/components/preferences-section';
 import { SavedTripsSection } from '@/features/account/components/saved-trips-section';
@@ -26,12 +26,12 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 export default function AccountPage() {
     const router = useRouter();
-    const { user, isLoading, fetchUser } = useAuthStore();
+    const { user, isLoading, initSession } = useAuthStore();
     const [activeTab, setActiveTab] = useState<TabId>('profile');
 
     useEffect(() => {
-        fetchUser();
-    }, [fetchUser]);
+        initSession();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Redirect to login if not authenticated
     useEffect(() => {
