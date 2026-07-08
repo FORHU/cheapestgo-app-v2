@@ -1,12 +1,20 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
 import { http } from '@/shared/lib/http';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
+import type { MappableProperty } from '@/shared/components/map/types';
+
+// Mapbox requires browser — always lazy-load with ssr: false
+const SearchMapContainer = dynamic(
+    () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
+    { ssr: false, loading: () => <div className="w-full h-full bg-slate-100 dark:bg-slate-900 animate-pulse rounded-xl" /> }
+);
 
 // ─── Search API response shape ────────────────────────────────────────────────
 
@@ -17,10 +25,35 @@ interface HotelSearchResponse {
     error?: string;
 }
 
+// ─── Adapter: HotelResult → MappableProperty ─────────────────────────────────
+
+function toMappable(h: HotelResult): MappableProperty | null {
+    if (!h.lat || !h.lng) return null;
+    return {
+        id: h.id,
+        name: h.name,
+        price: h.price,
+        currency: h.currency,
+        coordinates: { lat: h.lat, lng: h.lng },
+        images: h.images,
+        image: h.images?.[0],
+        rating: h.reviewScore,
+        reviewScore: h.reviewScore,
+        reviewCount: h.reviewCount,
+        refundableTag: h.refundableTag,
+        starRating: h.starRating,
+        location: h.location,
+        city: h.city,
+        country: h.country,
+        boardType: h.boardType,
+    };
+}
+
 // ─── Inner client component (reads searchParams) ──────────────────────────────
 
 function HotelSearchContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     const destination  = searchParams.get('destination') ?? '';
     const checkIn      = searchParams.get('checkIn')      ?? '';
@@ -36,7 +69,10 @@ function HotelSearchContent() {
     const [loading, setLoading] = useState(true);
     const [error, setError]     = useState<string | null>(null);
 
-    // Preserve search params for property detail links
+    // Map selection state
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [hoveredId, setHoveredId]   = useState<string | null>(null);
+
     const searchQs = searchParams.toString();
 
     useEffect(() => {
@@ -46,6 +82,7 @@ function HotelSearchContent() {
         setLoading(true);
         setError(null);
         setHotels([]);
+        setSelectedId(null);
 
         http
             .post<HotelSearchResponse>('/api/hotels/search', {
@@ -75,32 +112,68 @@ function HotelSearchContent() {
         return () => { cancelled = true; };
     }, [destination, checkIn, checkOut, adults, children, rooms, lat, lng, countryCode]);
 
-    return (
-        <div className="flex-1 px-4 py-6 max-w-[1200px] mx-auto w-full">
-            {/* Breadcrumb */}
-            <nav className="text-xs text-slate-400 dark:text-slate-500 mb-4">
-                <span>Hotels</span>
-                {destination && (
-                    <>
-                        <span className="mx-1.5">›</span>
-                        <span className="text-slate-600 dark:text-slate-300">{destination}</span>
-                    </>
-                )}
-                {checkIn && checkOut && (
-                    <>
-                        <span className="mx-1.5">›</span>
-                        <span>{checkIn} — {checkOut}</span>
-                    </>
-                )}
-            </nav>
+    // Derive mappable properties (hotels that have coordinates)
+    const mappableProperties = React.useMemo<MappableProperty[]>(() => {
+        const result: MappableProperty[] = [];
+        for (const h of hotels) {
+            const m = toMappable(h);
+            if (m) result.push(m);
+        }
+        return result;
+    }, [hotels]);
 
-            <HotelResults
-                hotels={hotels}
-                loading={loading}
-                error={error}
-                destination={destination}
-                searchQs={searchQs}
-            />
+    const defaultCenter = lat && lng
+        ? { lat: Number(lat), lng: Number(lng) }
+        : undefined;
+
+    const handleViewDetails = (id: string) => {
+        router.push(`/property/${id}?${searchQs}`);
+    };
+
+    return (
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            {/* ── Left: Hotel list ──────────────────────────────────────────── */}
+            <div className="flex-1 lg:max-w-[600px] xl:max-w-[680px] overflow-y-auto px-4 py-6">
+                {/* Breadcrumb */}
+                <nav className="text-xs text-slate-400 dark:text-slate-500 mb-4">
+                    <span>Hotels</span>
+                    {destination && (
+                        <>
+                            <span className="mx-1.5">›</span>
+                            <span className="text-slate-600 dark:text-slate-300">{destination}</span>
+                        </>
+                    )}
+                    {checkIn && checkOut && (
+                        <>
+                            <span className="mx-1.5">›</span>
+                            <span>{checkIn} — {checkOut}</span>
+                        </>
+                    )}
+                </nav>
+
+                <HotelResults
+                    hotels={hotels}
+                    loading={loading}
+                    error={error}
+                    destination={destination}
+                    searchQs={searchQs}
+                />
+            </div>
+
+            {/* ── Right: Map ───────────────────────────────────────────────── */}
+            <div className="hidden lg:flex flex-1 sticky top-0 h-screen">
+                <div className="w-full h-full p-3">
+                    <SearchMapContainer
+                        properties={mappableProperties}
+                        selectedId={selectedId}
+                        onSelectId={setSelectedId}
+                        hoveredId={hoveredId}
+                        onHoverId={setHoveredId}
+                        onViewDetails={handleViewDetails}
+                        defaultCenter={defaultCenter}
+                    />
+                </div>
+            </div>
         </div>
     );
 }

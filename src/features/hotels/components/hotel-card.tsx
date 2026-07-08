@@ -32,6 +32,9 @@ export interface HotelResult {
     adults?: number;
     children?: number;
     rooms?: number;
+    /** Coordinates returned by the search API (used by map view) */
+    lat?: number;
+    lng?: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -81,7 +84,7 @@ interface HotelCardProps {
 export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
     const image = hotel.images?.[0];
     const locationText = [hotel.location, hotel.city, hotel.country].filter(Boolean).join(', ') || hotel.city || '';
-    const detailHref = `/hotels/${hotel.id}${searchQs ? `?${searchQs}` : ''}`;
+    const detailHref = `/property/${hotel.id}${searchQs ? `?${searchQs}` : ''}`;
 
     return (
         <Link
@@ -101,7 +104,7 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
                         priority={index === 0}
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                    <div className="w-full h-full bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
                         <svg viewBox="0 0 64 64" className="w-10 h-10 text-slate-300 dark:text-slate-600" fill="currentColor">
                             <rect x="8" y="20" width="48" height="36" rx="2" />
                             <rect x="14" y="28" width="8" height="8" fill="white" opacity="0.6" />

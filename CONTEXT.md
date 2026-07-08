@@ -27,5 +27,60 @@ Expansion from travel into e-commerce using travel intent as a purchase signal. 
 ## Chat Session Context
 The set of user parameters collected before a ChatWonder chat session begins. Passed as initial context to ChatWonder to personalize the conversation. Fields: **travel date(s)**, **destination/location**, **traveler gender**, **traveler age**, **party size** (number of people). This is not fetched from the BE at runtime — it is collected from the user via an intake form on the FE before the WebSocket connection opens.
 
+## V2 Phase 1 Scope (confirmed)
+
+### In scope — must ship before V2 launch
+- All admin panels fully implemented (Duffel dashboard, TGX admin, Stripe admin, communication, user promote/ban). V1 `/api/internal/auto-recover` and `/api/fn/` function runner folded into admin panel actions — no generic function runner in V2.
+- Mapbox map on search page (clustering, markers, click-to-filter) and property page sidebar
+- POI discovery on property page (Google Places)
+- ETG hotel reviews on property page
+- PWA: service worker + install prompt
+- Voucher system: validate, list, and record-on-booking endpoints
+- User preferences: GET/PUT cabin class, seat, meal preference
+- Booking amend: local DB update for contact details + special requests (no TGX call)
+- All safe cron jobs (see Cron Jobs section)
+- Error monitoring: CloudWatch Logs on EC2 via winston-cloudwatch; Vercel Analytics on frontend
+- Flight post-booking: cancel (unified Duffel+Mystifly), void/reissue/refund as Mystifly-only stubs returning 503 until live key
+- Image handling: hotel + destination images via Next.js `<Image>` with `remotePatterns` (no proxy); only Google Places photos proxied through V2 API to protect API key
+
+### Deferred — not in Phase 1
+- PDF invoice generation (print-friendly HTML page is acceptable fallback)
+- SSE streaming hotel search (single provider, blocking response is fine)
+- Weather widget on property page
+- Push notifications / Expo device token registration
+- AI search bar (ChatWonder, Voice Layer) — Phase 2
+- Hotel price alerts — TGX constraint blocks automated polling
+- Sentry — replaced by CloudWatch + Vercel Analytics
+- Mobile `/register-device` endpoint — push notifications deferred
+
+## Infrastructure (Production)
+- **Database:** AWS RDS (PostgreSQL)
+- **API server:** AWS EC2 (Express.js V2 API)
+- **Frontend:** Vercel (Next.js V2 App)
+- **Logging:** CloudWatch Logs via winston-cloudwatch on EC2
+
 ## Voice Layer
 AWS services (region: ap-southeast-1) used for voice input and output in the chat interface. Likely Amazon Transcribe (speech-to-text) and Amazon Polly (text-to-speech). Distinct from ChatWonder AI, which handles text reasoning.
+
+## Price Alert
+A user-saved route + cabin class combination for which CheapestGo monitors flight fares and emails the user when the price drops below their last-seen price or a target they set. **Scope: flights only.** Hotel price alerts are not supported — TGX prohibits automated/scheduled search calls (searches must be user-initiated with real intent), so periodic hotel price polling is contractually illegal.
+
+## TGX Scheduling Constraint
+TravelgateX (OTV/WorldOTA) prohibits automated, scheduled, or background API calls that are not triggered by real user intent. This means: no cron-based hotel search, no hotel cache warming, no hotel deal syncing via TGX. All TGX calls must originate from a live user action. Any cron job that would require calling the TGX search API is out of scope for V2. User-initiated calls (search, quote, book, cancel) are fully permitted.
+
+## Cron Jobs (V2 Scope)
+Jobs that are safe and in-scope for V2 API (all DB-only or non-TGX providers):
+- `check-price-alerts` — flights only (Duffel/Mystifly)
+- `cleanup-sessions` — DB housekeeping
+- `cache-cleanup` — DB housekeeping
+- `duffel-balance-check` — Duffel API
+- `poll-pending-tickets` — Duffel/Mystifly
+- `sync-flight-deals` — Duffel
+- `refresh-popular-flights` — Duffel
+- `cleanup-orphaned-duffel-orders` — Duffel
+- `etg-reviews-sync` — ETG/WorldOTA content API (read-only hotel data, not booking/search)
+- `otv-credit-check` — DB-only (counts TGX bookings in local DB; no TGX API call)
+
+Jobs that are **out of scope** due to TGX constraint:
+- `sync-hotel-deals` (V2 stub) — would require TGX polling; drop it
+- `warm-hotel-cache` (V1 fn) — TGX polling; do not port to V2

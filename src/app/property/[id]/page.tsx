@@ -9,27 +9,60 @@ import { Footer } from '@/shared/components/footer';
 import { PropertyGallery } from '@/features/hotels/components/property-gallery';
 import { PropertyInfo } from '@/features/hotels/components/property-info';
 import { RoomList, RoomListSkeleton, type RoomOption } from '@/features/hotels/components/room-list';
+import { ReviewsSection } from '@/features/hotels/components/reviews-section';
+import { type HotelReview } from '@/features/hotels/lib/reviewsUtils';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { http } from '@/shared/lib/http';
+import dynamic from 'next/dynamic';
+
+// Both Mapbox + POI fetch require browser — lazy-load with ssr: false
+const PoiDiscovery = dynamic(
+    () => import('@/features/hotels/components/poi-discovery').then(m => m.PoiDiscovery),
+    { ssr: false }
+);
+
+const PropertyMapSidebar = dynamic(
+    () => import('@/shared/components/map/PropertyMapSidebar').then(m => m.PropertyMapSidebar),
+    { ssr: false, loading: () => <div className="w-full h-[200px] rounded-xl bg-slate-200 dark:bg-white/5 animate-pulse" /> }
+);
 
 // ─── API response shape ───────────────────────────────────────────────────────
 
+interface HotelContent {
+    hotel_id: string;
+    name: string | null;
+    address: string | null;
+    city: string | null;
+    country: string | null;
+    star_rating: number | null;
+    description: string | null;
+    images: string[];
+    amenities: string[] | null;
+    lat: number | null;
+    lng: number | null;
+}
+
+interface HotelReviewSummary {
+    rating: number | string | null;
+    reviews_count: number;
+}
+
+interface HotelReviewItem {
+    reviewer_name: string | null;
+    review_date: string | null;
+    score: number | string | null;
+    pros: string | null;
+    cons: string | null;
+    traveler_type: string | null;
+    language: string | null;
+    headline: string | null;
+    country: string | null;
+}
+
 interface PropertyApiResponse {
-    property?: {
-        id: string;
-        name: string;
-        address?: string;
-        city?: string;
-        country?: string;
-        starRating?: number;
-        reviewScore?: number;
-        reviewCount?: number;
-        description?: string;
-        images?: string[];
-        amenities?: string[];
-        propertyType?: string;
-        coordinates?: { lat: number; lng: number };
-    };
+    content?: HotelContent;
+    reviews?: HotelReviewSummary | null;
+    reviewItems?: HotelReviewItem[];
     rooms?: RoomOption[];
     error?: string;
 }
@@ -94,11 +127,39 @@ function PropertyContent() {
         return () => { cancelled = true; };
     }, [hotelId, checkIn, checkOut, adults, children]);
 
-    const property = data?.property;
+    const content  = data?.content;
     const rooms    = data?.rooms ?? [];
 
+    // Map snake_case API fields to camelCase for components
+    const property = content ? {
+        id:           content.hotel_id,
+        name:         content.name ?? '',
+        address:      content.address ?? undefined,
+        city:         content.city ?? undefined,
+        country:      content.country ?? undefined,
+        starRating:   content.star_rating ?? undefined,
+        reviewScore:  data?.reviews?.rating ?? undefined,
+        reviewCount:  data?.reviews?.reviews_count ?? undefined,
+        description:  content.description ?? undefined,
+        images:       content.images,
+        amenities:    content.amenities ?? undefined,
+        coordinates:  (content.lat && content.lng) ? { lat: content.lat, lng: content.lng } : undefined,
+    } : null;
+
+    const reviewItems: HotelReview[] = (data?.reviewItems ?? []).map(r => ({
+        averageScore: Number(r.score ?? 0),
+        name:         r.reviewer_name ?? 'Anonymous',
+        date:         r.review_date ?? '',
+        headline:     r.headline ?? undefined,
+        pros:         r.pros ?? undefined,
+        cons:         r.cons ?? undefined,
+        country:      r.country ?? undefined,
+        type:         r.traveler_type ?? undefined,
+        language:     r.language ?? undefined,
+    }));
+
     // ── Error ──────────────────────────────────────────────────────────────────
-    if (!loading && (error || !property)) {
+    if (!loading && (error || !content)) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 py-24">
                 <p className="text-slate-500 dark:text-slate-400 text-sm">
@@ -143,11 +204,10 @@ function PropertyContent() {
                                 city={property.city}
                                 country={property.country}
                                 starRating={property.starRating}
-                                reviewScore={property.reviewScore}
+                                reviewScore={Number(property.reviewScore ?? 0) || undefined}
                                 reviewCount={property.reviewCount}
                                 description={property.description}
                                 amenities={property.amenities}
-                                propertyType={property.propertyType}
                             />
 
                             <hr className="border-slate-200 dark:border-white/10" />
@@ -176,6 +236,26 @@ function PropertyContent() {
                                     adults={adults}
                                     children={children}
                                 />
+                            )}
+
+                            {/* Guest reviews */}
+                            {!loading && reviewItems.length > 0 && (
+                                <>
+                                    <hr className="border-slate-200 dark:border-white/10" />
+                                    <ReviewsSection
+                                        reviews={reviewItems}
+                                        averageRating={Number(data?.reviews?.rating ?? 0)}
+                                        totalCount={data?.reviews?.reviews_count ?? 0}
+                                    />
+                                </>
+                            )}
+
+                            {/* Nearby POI discovery */}
+                            {!loading && property.coordinates && (
+                                <>
+                                    <hr className="border-slate-200 dark:border-white/10" />
+                                    <PoiDiscovery coordinates={property.coordinates} />
+                                </>
                             )}
                         </>
                     ) : null}
@@ -223,6 +303,21 @@ function PropertyContent() {
                             >
                                 See available rooms
                             </a>
+
+                            {/* Map — only shown when coordinates are available */}
+                            {property.coordinates && (
+                                <div className="pt-2 border-t border-slate-100 dark:border-white/5">
+                                    <p className="text-xs text-slate-400 mb-2">Location</p>
+                                    <PropertyMapSidebar
+                                        property={{
+                                            id: property.id,
+                                            name: property.name,
+                                            coordinates: property.coordinates,
+                                        }}
+                                        className="w-full h-[200px] rounded-xl overflow-hidden border border-slate-200 dark:border-white/10"
+                                    />
+                                </div>
+                            )}
                         </div>
                     </aside>
                 )}

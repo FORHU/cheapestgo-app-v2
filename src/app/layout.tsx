@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Metadata, Viewport } from 'next';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Inter, Inter_Tight, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
@@ -10,6 +12,8 @@ import { ExchangeRateListener } from '@/shared/components/ExchangeRateListener';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
 import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
+import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
+import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const interTight = Inter_Tight({ subsets: ['latin'], variable: '--font-display' });
@@ -78,9 +82,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                             </div>
                             <ScrollToTop />
                             <MobileBottomNav />
+                            <InstallPWAPrompt />
                         </div>
+                        <PWAServiceWorkerRegistrar />
                     </Providers>
                 </NextIntlClientProvider>
+                <Analytics />
+                <SpeedInsights />
             </body>
         </html>
     );
