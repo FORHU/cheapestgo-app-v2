@@ -43,6 +43,7 @@ export function SearchForm() {
     const activeDropdown = useActiveDropdown();
 
     const [error, setError] = useState<string | null>(null);
+    const [aiQuery, setAiQuery] = useState('');
 
     const handleSearch = () => {
         setError(null);
@@ -64,7 +65,7 @@ export function SearchForm() {
                 rooms:        String(travelers.rooms),
             });
             setIsSearching(true);
-            router.push(`/hotels/search?${params}`);
+            router.push(`/search?${params}`);
         }
 
         if (searchMode === 'flights') {
@@ -91,7 +92,8 @@ export function SearchForm() {
         }
 
         if (searchMode === 'ai') {
-            router.push('/ai-chat');
+            const q = aiQuery.trim();
+            router.push(q ? `/ai-chat?q=${encodeURIComponent(q)}` : '/ai-chat');
         }
     };
 
@@ -139,10 +141,24 @@ export function SearchForm() {
             </div>
 
             {/* Search Card */}
-            <div
-                className="bg-white dark:bg-[#0f172a] rounded-2xl p-2"
-                style={{ boxShadow: '0 0 0 1px rgba(37,99,235,0.12), 0 8px 32px rgba(37,99,235,0.10), 0 2px 8px rgba(0,0,0,0.06)' }}
-            >
+            <div className="relative">
+                {/* Animated RGB glow — soft halo behind the card */}
+                <motion.div
+                    className="absolute -inset-[3px] pointer-events-none z-0 rounded-2xl blur-sm"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(37,99,235,0.9), rgba(34,211,238,0.8), rgba(139,92,246,0.6), rgba(34,211,238,0.8), rgba(37,99,235,0.9))',
+                        backgroundSize: '300% 300%',
+                    }}
+                    animate={{
+                        opacity: [0.5, 1, 0.5],
+                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                    }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <div
+                    className="relative z-10 bg-white dark:bg-[#0f172a] rounded-2xl p-2"
+                    style={{ boxShadow: '0 8px 32px rgba(37,99,235,0.10), 0 2px 8px rgba(0,0,0,0.06)' }}
+                >
                 {searchMode === 'hotels' && (
                     <div className="flex flex-col sm:flex-row bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-white/5 overflow-visible">
                         {/* Destination */}
@@ -267,18 +283,31 @@ export function SearchForm() {
                 )}
 
                 {searchMode === 'ai' && (
-                    <div className="flex flex-col items-center gap-4 py-8">
-                        <p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-xs">
-                            Let AI plan your perfect trip — tell it where you want to go, when, and with whom.
-                        </p>
-                        <button onClick={handleSearch} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 h-12 rounded-xl shadow-md shadow-blue-500/20 transition-colors">
-                            <Sparkles size={16} />
-                            Start AI Trip Planning
+                    <div className="flex flex-col sm:flex-row items-center gap-2 p-1.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-white/5">
+                        <div className="flex items-center gap-3 flex-1 w-full min-w-0 px-3 py-2">
+                            <Sparkles size={15} className="text-blue-400 shrink-0" />
+                            <input
+                                type="text"
+                                value={aiQuery}
+                                onChange={e => setAiQuery(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                placeholder="Ask anything — flights, hotels, trip planning..."
+                                className="flex-1 bg-transparent text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none min-w-0"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <button
+                            onClick={handleSearch}
+                            className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 h-11 rounded-xl shadow-md shadow-blue-500/20 transition-colors whitespace-nowrap w-full sm:w-auto justify-center"
+                        >
+                            <Sparkles size={14} />
+                            Chat with Cheap
                         </button>
                     </div>
                 )}
 
                 {error && <p className="mt-2 px-2 text-sm text-red-500">{error}</p>}
+                </div>
             </div>
         </div>
     );
