@@ -74,56 +74,67 @@ export interface FlightState {
     };
 }
 
+/** Normalized segment as returned by the backend search endpoint */
+export interface NormalizedSegment {
+    segmentIndex: number;
+    airline: string;
+    airlineName?: string;
+    origin: string;
+    destination: string;
+    flightNumber?: string;
+    departure: { airport: string; terminal?: string; time: string };
+    arrival: { airport: string; terminal?: string; time: string };
+    duration: number;
+    stops: number;
+    aircraft?: string;
+    cabinClass?: string;
+}
+
+/** Normalized flight offer as returned by GET /api/v2/flights/search */
 export interface FlightOffer {
-    id: string;
-    totalAmount: string;
-    totalCurrency: string;
-    slices: FlightSlice[];
-    passengers: FlightPassenger[];
+    offerId: string;
+    provider: string;
+    price: {
+        total: number;
+        base: number;
+        taxes: number;
+        currency: string;
+        pricePerAdult: number;
+    };
+    segments: NormalizedSegment[];
+    totalDuration: number;
+    totalStops: number;
+    refundable: boolean;
+    farePolicy?: {
+        isRefundable: boolean;
+        isChangeable: boolean;
+        refundPenaltyAmount?: number | null;
+        refundPenaltyCurrency?: string | null;
+    } | null;
+    seatsRemaining?: number;
+    baggage?: {
+        checkedBags?: number;
+        weightPerBag?: string;
+        cabinBag?: boolean;
+    };
+    brandedFare?: {
+        brandName?: string;
+        brandId?: string;
+        fareType?: string;
+    };
+    alternatives?: FlightOffer[];
+    tripType?: 'one-way' | 'round-trip' | 'multi-city';
+    traceId?: string;
+    normalizedPriceUsd: number;
+    bestScore: number;
+    physicalFlightId: string;
+    _rawOffer?: unknown;
 }
 
-export interface FlightSlice {
-    id: string;
-    origin: FlightAirport;
-    destination: FlightAirport;
-    duration: number;
-    segments: FlightSegmentData[];
-    departureAt: string;
-    arrivalAt: string;
-}
-
-export interface FlightSegmentData {
-    id: string;
-    origin: FlightAirport;
-    destination: FlightAirport;
-    departingAt: string;
-    arrivingAt: string;
-    duration: number;
-    operatingCarrierFlightNumber: string;
-    marketingCarrier: Carrier;
-    operatingCarrier: Carrier;
-    aircraft: { iataCode: string; name: string };
-}
-
-export interface FlightAirport {
-    iataCode: string;
-    name: string;
-    cityName: string;
-    countryName: string;
-    timeZone?: string;
-}
-
-export interface Carrier {
-    iataCode: string;
-    name: string;
-    logoSymbolUrl?: string;
-    logotype_url?: string;
-}
-
+/** @deprecated — kept for reference only. Use FlightOffer above. */
 export interface FlightPassenger {
     id: string;
     type: 'adult' | 'child' | 'infant_without_seat';
-    baggageAllowance?: { quantity: number; type: string };
 }
 
 // ─── Hotels / Properties ──────────────────────────────────────────────────────

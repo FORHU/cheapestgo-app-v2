@@ -188,11 +188,13 @@ function FlightCard({ booking }: { booking: FlightBooking }) {
     );
 }
 
+import { FlightBookingCard } from '@/app/trips/components/FlightBookingCard';
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 export function BookingCard({ booking }: { booking: AnyBooking }) {
     if (booking.type === 'hotel') {
         return <HotelCard booking={booking} />;
     }
-    return <FlightCard booking={booking} />;
+    return <FlightBookingCard booking={booking} />;
 }
