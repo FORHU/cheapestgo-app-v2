@@ -76,7 +76,7 @@ export function SearchForm() {
             const params = new URLSearchParams({
                 origin:      first.origin.code ?? first.origin.title,
                 destination: first.destination.code ?? first.destination.title,
-                depart:      first.date.toISOString().slice(0, 10),
+                depart:      new Date(first.date).toISOString().slice(0, 10),
                 tripType,
                 cabin:       cabinClass,
                 adults:      String(passengers.adults),
@@ -84,7 +84,7 @@ export function SearchForm() {
                 infants:     String(passengers.infants),
             });
             if (tripType === 'round-trip' && flights[1]?.date) {
-                params.set('return', flights[1].date.toISOString().slice(0, 10));
+                params.set('return', new Date(flights[1].date).toISOString().slice(0, 10));
             }
             setIsSearching(true);
             router.push(`/flights/search?${params}`);

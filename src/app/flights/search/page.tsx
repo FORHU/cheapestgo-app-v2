@@ -14,12 +14,18 @@ export async function generateMetadata({
     const destination = (sp.destination as string) ?? '';
 
     const title = origin && destination
-        ? `Flights ${origin} → ${destination}`
-        : 'Flight Search Results';
+        ? `Flights ${origin} → ${destination} | CheapestGo`
+        : 'Flight Search Results | CheapestGo';
+
+    const description = origin && destination
+        ? `Compare and book the cheapest flights from ${origin} to ${destination}. Find the best deals on CheapestGo.`
+        : 'Compare and book cheap flights worldwide. Find the best deals on CheapestGo.';
 
     return {
         title,
+        description,
         robots: { index: false, follow: false },
+        alternates: { canonical: '/flights/search' },
     };
 }
 
