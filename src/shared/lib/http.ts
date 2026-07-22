@@ -1,12 +1,22 @@
-import { env } from './env';
+/**
+ * HTTP client for backend API calls.
+ *
+ * All requests go through the BFF proxy at /api/bff/* which:
+ *   1. Reads the cg-session cookie (Lucia)
+ *   2. Generates a backend JWT
+ *   3. Forwards the request to the Express backend with Authorization header
+ *
+ * The client-side never handles JWTs directly.
+ */
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const { body, ...rest } = options;
-    const cleanPath = path.startsWith('/api') ? path.slice(4) : path;
+    // Strip leading /api if present (e.g. /api/bookings → bookings)
+    const cleanPath = path.startsWith('/api') ? path.slice(5) : path.replace(/^\//, '');
 
-    const res = await fetch(`${env.NEXT_PUBLIC_API_URL}${cleanPath}`, {
+    const res = await fetch(`/api/bff/${cleanPath}`, {
         ...rest,
         credentials: 'include',
         headers: {

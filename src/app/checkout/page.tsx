@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Header } from '@/shared/components/header';
@@ -17,6 +17,7 @@ import {
     PaymentSection,
     type CardInfo,
 } from '@/features/checkout/components/payment-section';
+import type { FlightOffer } from '@/shared/types';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -123,6 +124,10 @@ export default function CheckoutPage() {
     );
     const [passengerErrors, setPassengerErrors] = useState<Record<string, string>>({});
 
+    // Full flight offer from sessionStorage (written by search results page)
+    const [selectedFlight, setSelectedFlight] = useState<FlightOffer | null>(null);
+    const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+
     // Pre-fill email from logged-in user
     useEffect(() => {
         if (user?.email) {
@@ -131,6 +136,22 @@ export default function CheckoutPage() {
             if (user.lastName) setGuest((g) => ({ ...g, lastName: g.lastName || (user.lastName ?? '') }));
         }
     }, [user]);
+
+    // Read selected flight from sessionStorage (written by search results page)
+    useEffect(() => {
+        if (mode !== 'flight') return;
+        try {
+            const raw = sessionStorage.getItem('selectedFlight');
+            if (raw) {
+                const offer = JSON.parse(raw) as FlightOffer;
+                if (offer?.offerId && offer?.provider) {
+                    setSelectedFlight(offer);
+                }
+            }
+        } catch {
+            // Corrupted data — ignore
+        }
+    }, [mode]);
 
     // ── Guest helpers ──
     const handleGuestChange = useCallback((field: keyof GuestInfo, value: string) => {
@@ -236,32 +257,97 @@ export default function CheckoutPage() {
             return;
         }
 
+        if (!selectedFlight) {
+            setErrorMsg('Flight offer not found. Please go back and select a flight again.');
+            return;
+        }
+
         setIsSubmitting(true);
         setErrorMsg(null);
         try {
+            const bundleHotelId = searchParams.get('bundleHotelId');
+
+            // Build passengers array matching backend expectations
+            const bookingPassengers = passengers.map((p) => ({
+                type: 'ADT' as const,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                gender: 'M' as const,
+                birthDate: p.dateOfBirth,
+                nationality: 'KR',
+                passport: p.passportNumber,
+                passportExpiry: '',
+            }));
+
+            // Build contact from first passenger + user
+            const contact = {
+                email: passengers[0]?.email || user.email || '',
+                phone: passengers[0]?.phone || '',
+                countryCode: '82',
+            };
+
+            // Build flight payload matching V1's shape
+            const flightPayload = {
+                traceId: selectedFlight.traceId || selectedFlight.offerId,
+                resultIndex: selectedFlight.physicalFlightId || selectedFlight.offerId,
+                price: selectedFlight.price.total,
+                currency: selectedFlight.price.currency,
+                tripType: selectedFlight.tripType ?? 'one-way',
+                validatingAirline: (selectedFlight as any).validatingAirline || selectedFlight.segments?.[0]?.airline,
+                segments: selectedFlight.segments?.map((seg: any) => ({
+                    airline: typeof seg.airline === 'object' ? seg.airline.code : seg.airline,
+                    airlineName: typeof seg.airline === 'object' ? seg.airline.name : undefined,
+                    flightNumber: seg.flightNumber,
+                    origin: seg.origin || seg.departure?.airport,
+                    destination: seg.destination || seg.arrival?.airport,
+                    departureTime: seg.departureTime || seg.departure?.time,
+                    arrivalTime: seg.arrivalTime || seg.arrival?.time,
+                    cabinClass: seg.cabinClass,
+                    bookingClass: seg.bookingClass,
+                    fareBasis: seg.fareBasis,
+                    itineraryIndex: seg.itineraryIndex,
+                })) ?? [],
+                // Duffel requires the raw offer to complete booking
+                ...(selectedFlight.provider === 'duffel' ? {
+                    _rawOffer: selectedFlight._rawOffer || (selectedFlight as any).raw || selectedFlight,
+                } : {}),
+            };
+
             await http.post('/flights/book', {
-                offerId,
-                currency: flightCurrency,
-                passengers: passengers.map((p) => ({
-                    firstName: p.firstName,
-                    lastName: p.lastName,
-                    email: p.email,
-                    phone: p.phone,
-                    dateOfBirth: p.dateOfBirth,
-                    passportNumber: p.passportNumber,
-                    type: 'adult',
-                })),
+                provider: selectedFlight.provider,
+                flight: flightPayload,
+                passengers: bookingPassengers,
+                contact,
+                idempotencyKey: idempotencyKeyRef.current,
+                farePolicy: selectedFlight.farePolicy || {
+                    isRefundable: false,
+                    isChangeable: false,
+                    policyVersion: 'search' as const,
+                    policySource: 'duffel' as const,
+                },
+                displayCurrency: 'USD',
+                ...(bundleHotelId ? { bundleHotelId } : {}),
             });
+
+            // Clean up sessionStorage on success
+            sessionStorage.removeItem('selectedFlight');
+            sessionStorage.removeItem('flightSearchPassengers');
             setStep('success');
-        } catch (err) {
+        } catch (err: any) {
+            if (err?.code === 'unauthenticated') {
+                router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+                return;
+            }
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
-    }, [passengers, user, router, offerId, flightCurrency]);
+    }, [passengers, user, router, selectedFlight, searchParams]);
 
     // ── Success screen ──
     if (step === 'success') {
+        const displayOrigin = selectedFlight?.segments?.[0]?.origin || origin || '—';
+        const displayDestination = selectedFlight?.segments?.[selectedFlight.segments.length - 1]?.destination || destination || '—';
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
                 <Header />
@@ -275,7 +361,7 @@ export default function CheckoutPage() {
                     <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm">
                         {mode === 'hotel'
                             ? `Your stay at ${hotelName} is confirmed. A confirmation has been sent to ${guest.email}.`
-                            : `Your flight from ${origin} to ${destination} is confirmed.`}
+                            : `Your flight from ${displayOrigin} to ${displayDestination} is confirmed.`}
                     </p>
                     <Button onClick={() => router.push('/trips')}>View my trips</Button>
                 </main>
@@ -298,12 +384,12 @@ export default function CheckoutPage() {
               }
             : {
                   mode: 'flight' as const,
-                  origin,
-                  destination,
-                  departureDate,
-                  cabin,
-                  totalAmount,
-                  currency: flightCurrency,
+                  origin: selectedFlight?.segments?.[0]?.origin || origin,
+                  destination: selectedFlight?.segments?.[selectedFlight.segments.length - 1]?.destination || destination,
+                  departureDate: selectedFlight?.segments?.[0]?.departure?.time?.slice(0, 10) || departureDate,
+                  cabin: selectedFlight?.segments?.[0]?.cabinClass || cabin,
+                  totalAmount: selectedFlight?.price?.total || totalAmount,
+                  currency: selectedFlight?.price?.currency || flightCurrency,
                   passengers: adults,
               };
 
@@ -407,6 +493,13 @@ export default function CheckoutPage() {
                         ) : (
                             /* Flight: single-step form */
                             <>
+                                {!selectedFlight && (
+                                    <div className="rounded-xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-4 mb-4">
+                                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                                            Loading flight details… If this persists, go back and select a flight again.
+                                        </p>
+                                    </div>
+                                )}
                                 <GuestForm
                                     mode="flight"
                                     passengers={passengers}
@@ -418,8 +511,9 @@ export default function CheckoutPage() {
                                     size="lg"
                                     isLoading={isSubmitting}
                                     onClick={handleFlightSubmit}
+                                    disabled={!selectedFlight}
                                 >
-                                    Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    Confirm booking — {selectedFlight?.price?.currency || flightCurrency} {(selectedFlight?.price?.total || totalAmount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </Button>
                             </>
                         )}
