@@ -13,6 +13,8 @@ import { formatCurrency, formatDate } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 import type { AnyBooking, HotelBooking, FlightBooking } from '@/shared/types';
 
+import { CancellationModal } from '@/app/trips/components/CancellationModal';
+
 // ─── Status maps ──────────────────────────────────────────────────────────────
 
 const HOTEL_STATUS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -226,7 +228,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
                 </div>
             )}
             {cancelled && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
                     <CheckCircle size={16} />
                     Booking cancelled successfully.
                 </div>
@@ -237,10 +239,13 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
 
 // ─── Flight Detail ────────────────────────────────────────────────────────────
 
-function FlightDetail({ booking }: { booking: FlightBooking }) {
-    const [cancelling, setCancelling] = useState(false);
-    const [cancelled, setCancelled] = useState(false);
-    const [cancelError, setCancelError] = useState<string | null>(null);
+interface FlightDetailProps {
+    booking: FlightBooking;
+    onSuccess: () => void;
+}
+
+function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     const segments = booking.flight_segments ?? [];
     const passengers = booking.passengers ?? [];
@@ -249,22 +254,7 @@ function FlightDetail({ booking }: { booking: FlightBooking }) {
     const departDate = segments[0]?.departure ? fmtDate(segments[0].departure) : '—';
 
     const CANCELLABLE = new Set(['ticketed', 'booked', 'pnr_created', 'awaiting_ticket', 'cancel_failed']);
-    const canCancel = !cancelled && CANCELLABLE.has(booking.status);
-
-    const handleCancel = async () => {
-        if (!confirm('Are you sure you want to cancel this flight booking? This action cannot be undone.')) return;
-        setCancelling(true);
-        setCancelError(null);
-        try {
-            await http.post(`/api/bookings/${booking.id}/cancel`);
-            setCancelled(true);
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Cancellation failed. Please contact support.';
-            setCancelError(msg);
-        } finally {
-            setCancelling(false);
-        }
-    };
+    const canCancel = CANCELLABLE.has(booking.status);
 
     return (
         <div className="space-y-4">
@@ -280,7 +270,7 @@ function FlightDetail({ booking }: { booking: FlightBooking }) {
                     {departDate} · {booking.trip_type ?? 'one-way'}
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
-                    <StatusBadge status={cancelled ? 'cancelled' : booking.status} isHotel={false} />
+                    <StatusBadge status={booking.status} isHotel={false} />
                     {booking.pnr && (
                         <span className="text-xs text-slate-500">
                             PNR: <span className="font-mono font-semibold text-slate-800 dark:text-white tracking-wider">{booking.pnr}</span>
@@ -362,30 +352,28 @@ function FlightDetail({ booking }: { booking: FlightBooking }) {
             {/* Cancel action */}
             {canCancel && (
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-                    {cancelError && (
-                        <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400">
-                            {cancelError}
-                        </div>
-                    )}
                     <button
-                        onClick={handleCancel}
-                        disabled={cancelling}
+                        onClick={() => setIsCancelModalOpen(true)}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
                     >
-                        {cancelling ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
-                        {cancelling ? 'Cancelling…' : 'Cancel Booking'}
+                        <XCircle size={14} />
+                        Cancel Booking
                     </button>
                     <p className="mt-2 text-[10px] text-slate-400 text-center">
                         Refund eligibility is subject to airline fare rules.
                     </p>
                 </div>
             )}
-            {cancelled && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
-                    <CheckCircle size={16} />
-                    Booking cancelled successfully. Refund will be processed per airline policy.
-                </div>
-            )}
+
+            {/* Cancellation Modal */}
+            <CancellationModal
+                isOpen={isCancelModalOpen}
+                onClose={() => setIsCancelModalOpen(false)}
+                bookingId={booking.id}
+                originalAmount={booking.charged_price ?? booking.total_price}
+                currency={booking.currency}
+                onSuccess={onSuccess}
+            />
         </div>
     );
 }
@@ -402,7 +390,8 @@ export function BookingDetail({ id }: BookingDetailProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+    const fetchBooking = () => {
+        setIsLoading(true);
         http.get<AnyBooking>(`/api/bookings/${id}`)
             .then(setBooking)
             .catch((err: Error & { status?: number }) => {
@@ -415,6 +404,10 @@ export function BookingDetail({ id }: BookingDetailProps) {
                 }
             })
             .finally(() => setIsLoading(false));
+    };
+
+    useEffect(() => {
+        fetchBooking();
     }, [id, router]);
 
     return (
@@ -430,7 +423,7 @@ export function BookingDetail({ id }: BookingDetailProps) {
                     </Link>
                 </div>
 
-                {isLoading && (
+                {isLoading && !booking && (
                     <div className="space-y-4 animate-pulse">
                         <div className="h-48 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
                         <div className="h-36 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
@@ -451,10 +444,10 @@ export function BookingDetail({ id }: BookingDetailProps) {
                     </div>
                 )}
 
-                {!isLoading && booking && (
+                {booking && (
                     booking.type === 'hotel'
                         ? <HotelDetail booking={booking} />
-                        : <FlightDetail booking={booking} />
+                        : <FlightDetail booking={booking} onSuccess={fetchBooking} />
                 )}
             </div>
         </main>

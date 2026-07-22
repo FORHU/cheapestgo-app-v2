@@ -10,27 +10,27 @@ import type { AnyBooking, HotelBooking, FlightBooking } from '@/shared/types';
 // ─── Status badge config ──────────────────────────────────────────────────────
 
 const HOTEL_STATUS_MAP: Record<string, { label: string; color: string }> = {
-    pending:                 { label: 'Pending',      color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    confirmed:               { label: 'Confirmed',    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    completed:               { label: 'Completed',    color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
-    cancelled:               { label: 'Cancelled',    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    cancelled_refunded:      { label: 'Refunded',     color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
-    cancelled_refund_failed: { label: 'Refund Failed',color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    confirmed: { label: 'Confirmed', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+    completed: { label: 'Completed', color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
+    cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    cancelled_refunded: { label: 'Refunded', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+    cancelled_refund_failed: { label: 'Refund Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
 const FLIGHT_STATUS_MAP: Record<string, { label: string; color: string }> = {
-    booked:                    { label: 'Processing',          color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    pnr_created:               { label: 'Booked',              color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    awaiting_ticket:           { label: 'Ticketing',           color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    ticketed:                  { label: 'Confirmed',           color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    failed:                    { label: 'Failed',              color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    cancel_requested:          { label: 'Cancel Pending',      color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-    cancel_failed:             { label: 'Cancel Failed',       color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    cancelled:                 { label: 'Cancelled',           color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
-    refund_pending:            { label: 'Refund Pending',      color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-    refund_failed:             { label: 'Refund Failed',       color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    refunded:                  { label: 'Refunded',            color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
-    cancelled_provider_missing:{ label: 'Cancelled',           color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
+    booked: { label: 'Processing', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    pnr_created: { label: 'Booked', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    awaiting_ticket: { label: 'Ticketing', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    ticketed: { label: 'Confirmed', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+    failed: { label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    cancel_requested: { label: 'Cancel Pending', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+    cancel_failed: { label: 'Cancel Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    cancelled: { label: 'Cancelled', color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
+    refund_pending: { label: 'Refund Pending', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+    refund_failed: { label: 'Refund Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    refunded: { label: 'Refunded', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+    cancelled_provider_missing: { label: 'Cancelled', color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
 };
 
 function StatusBadge({ status, isHotel }: { status: string; isHotel: boolean }) {
@@ -53,7 +53,7 @@ function HotelCard({ booking }: { booking: HotelBooking }) {
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
             <div className="flex min-h-[100px]">
-                {/* Image / Icon */}
+                {/* Image/Icon */}
                 <div className="relative w-24 sm:w-32 flex-shrink-0 overflow-hidden">
                     {booking.property_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -188,11 +188,13 @@ function FlightCard({ booking }: { booking: FlightBooking }) {
     );
 }
 
+import { FlightBookingCard } from '@/app/trips/components/FlightBookingCard';
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 export function BookingCard({ booking }: { booking: AnyBooking }) {
     if (booking.type === 'hotel') {
         return <HotelCard booking={booking} />;
     }
-    return <FlightCard booking={booking} />;
+    return <FlightBookingCard booking={booking} />;
 }
