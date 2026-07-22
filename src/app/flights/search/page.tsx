@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { FlightSearchClient } from './flight-search-client';
+import { Header } from '@/shared/components/header';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +32,12 @@ export async function generateMetadata({
 
 export default function FlightSearchPage() {
     return (
-        <Suspense fallback={null}>
-            <FlightSearchClient />
-        </Suspense>
+        <div className="min-h-screen flex flex-col">
+            <Header />
+            <Suspense fallback={null}>
+                <FlightSearchClient />
+            </Suspense>
+        </div>
     );
 }
+

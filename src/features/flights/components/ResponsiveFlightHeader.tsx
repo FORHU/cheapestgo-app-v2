@@ -121,43 +121,6 @@ export function ResponsiveFlightHeader({
                     )}
                 </div>
             </div>
-
-            {/* Desktop: Inline header */}
-            <div className="hidden lg:flex lg:items-center lg:justify-between lg:gap-4 lg:px-0 lg:py-2 lg:border-b lg:border-slate-200/50 dark:lg:border-slate-800/50">
-                <button
-                    onClick={onSearchEdit}
-                    className="flex-1 flex flex-col items-start justify-center min-w-0 pr-3"
-                >
-                    <span className="text-sm font-medium text-slate-900 dark:text-white truncate w-full text-left">
-                        {origin} → {destination}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 truncate w-full text-left">
-                        {dateStr} • {passengersStr}
-                    </span>
-                </button>
-
-                <div className="flex items-center gap-3 shrink-0">
-                    {statusElement && <div className="flex-1 min-w-0">{statusElement}</div>}
-
-                    <button
-                        onClick={onFiltersOpen}
-                        className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors shrink-0 relative"
-                    >
-                        <SlidersHorizontal size={18} className="text-slate-600 dark:text-slate-400" />
-                        {activeFilterCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white border-2 border-white dark:border-slate-900">
-                                {activeFilterCount}
-                            </span>
-                        )}
-                    </button>
-
-                    {resultCount != null && (
-                        <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">
-                            {resultCount} {resultCount === 1 ? 'flight' : 'flights'}
-                        </span>
-                    )}
-                </div>
-            </div>
         </>
     );
 }

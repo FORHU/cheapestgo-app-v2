@@ -318,7 +318,7 @@ export function FlightSearchClient() {
     // ─── Non-result states (full-width, no sidebar) ───────────────────────────
     if (state.status === 'timeout') {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-4">
                 <TimeoutBanner onRetry={handleRetry} />
             </div>
         );
@@ -326,7 +326,7 @@ export function FlightSearchClient() {
 
     if (state.status === 'error') {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-4">
                 <ErrorBanner message={state.message} />
             </div>
         );
@@ -402,7 +402,7 @@ export function FlightSearchClient() {
     ].filter(Boolean).join(' · ');
 
     return (
-        <main className="min-h-screen pt-2 pb-12 px-4 md:pt-6 md:pb-20 overflow-x-hidden bg-slate-50 dark:bg-slate-950">
+        <main className="flex-1 pt-2 pb-12 px-4 md:pt-6 md:pb-20 overflow-x-hidden">
             <div className="max-w-7xl mx-auto space-y-3 lg:space-y-6">
                 {/* Desktop: BackButton + SectionHeader + PriceAlertButton */}
                 <div className="hidden lg:block">
