@@ -260,12 +260,12 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                             {offer.baggage && (() => {
                                 const checkedBags = offer.baggage?.checkedBags ?? 0;
                                 return (
-                                <span className="inline-flex items-center gap-0.5 px-1 lg:px-2 py-px lg:py-0.5 rounded-full text-[8px] lg:text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
-                                    <Luggage className="w-2 h-2 lg:w-3 lg:h-3" />
-                                    {checkedBags > 0
-                                        ? `${checkedBags} Checked Bag${checkedBags > 1 ? 's' : ''}`
-                                        : 'No Checked Bag'}
-                                </span>
+                                    <span className="inline-flex items-center gap-0.5 px-1 lg:px-2 py-px lg:py-0.5 rounded-full text-[8px] lg:text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                                        <Luggage className="w-2 h-2 lg:w-3 lg:h-3" />
+                                        {checkedBags > 0
+                                            ? `${checkedBags} Checked Bag${checkedBags > 1 ? 's' : ''}`
+                                            : 'No Checked Bag'}
+                                    </span>
                                 );
                             })()}
 
@@ -465,7 +465,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                             imageUrl={`https://pics.avs.io/40/40/${(primary.airline || '').toUpperCase()}.png`}
                             deepLink={`/flights/search?origin=${primary.origin}&destination=${last.destination}&departure=${primary.departure?.time?.slice(0, 10) ?? ''}`}
                             snapshot={{ offerId: offer.offerId, provider: offer.provider }}
-                            size="sm"
+
                         />
                     </div>
 
