@@ -127,8 +127,8 @@ export default function CheckoutPage() {
     useEffect(() => {
         if (user?.email) {
             setGuest((g) => ({ ...g, email: g.email || user.email }));
-            if (user.first_name) setGuest((g) => ({ ...g, firstName: g.firstName || (user.first_name ?? '') }));
-            if (user.last_name) setGuest((g) => ({ ...g, lastName: g.lastName || (user.last_name ?? '') }));
+            if (user.firstName) setGuest((g) => ({ ...g, firstName: g.firstName || (user.firstName ?? '') }));
+            if (user.lastName) setGuest((g) => ({ ...g, lastName: g.lastName || (user.lastName ?? '') }));
         }
     }, [user]);
 

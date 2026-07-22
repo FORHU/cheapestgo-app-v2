@@ -4,14 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Settings, Heart, Bell } from 'lucide-react';
 import { Header } from '@/shared/components/header';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/shared/auth/store';
 import { ProfileSection } from '@/features/account/components/profile-section';
 import { PreferencesSection } from '@/features/account/components/preferences-section';
 import { SavedTripsSection } from '@/features/account/components/saved-trips-section';
 import { PriceAlertsSection } from '@/features/account/components/price-alerts-section';
 import { cn } from '@/shared/lib/cn';
 
-// ─── Tabs config ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tabs config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type TabId = 'profile' | 'preferences' | 'saved' | 'alerts';
 
@@ -22,7 +22,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'alerts',      label: 'Alerts',       icon: <Bell size={15} /> },
 ];
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function AccountPage() {
     const router = useRouter();

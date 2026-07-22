@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/shared/auth/store';
 
 export const AuthListener = () => {
     const { initSession, fetchAndSyncRole } = useAuthStore();
