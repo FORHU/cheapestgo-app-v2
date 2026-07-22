@@ -32,7 +32,7 @@ interface FlightFiltersProps {
     className?: string;
 }
 
-// ─── Helper: Extract unique airlines from offers ──────────────────────────────
+// ─── Extract airlines ──────────────────────────────
 
 function getAirlines(offers: FlightOffer[]): string[] {
     const set = new Set<string>();
@@ -43,7 +43,7 @@ function getAirlines(offers: FlightOffer[]): string[] {
     return Array.from(set).sort();
 }
 
-// ─── Helper: Extract unique providers from offers ─────────────────────────────
+// ─── Extract providers ─────────────────────────────
 
 function getProviders(offers: FlightOffer[]): string[] {
     const set = new Set<string>();
@@ -133,7 +133,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
                 </div>
             </div>
 
-            {/* Fare Type - Refundable Only */}
+            {/* Fare Type: Refundable */}
             <div className="space-y-1.5 lg:space-y-2">
                 <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Fare Type</p>
                 <label className="flex items-center justify-between cursor-pointer group">
@@ -162,7 +162,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
                 </label>
             </div>
 
-            {/* Provider — dev only */}
+            {/* Provider */}
             {process.env.NODE_ENV !== 'production' && providers.length > 0 && (
                 <div className="space-y-1.5 lg:space-y-2">
                     <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Provider</p>

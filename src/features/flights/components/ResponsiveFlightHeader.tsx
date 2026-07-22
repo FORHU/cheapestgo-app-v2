@@ -80,7 +80,7 @@ export function ResponsiveFlightHeader({
 }: ResponsiveFlightHeaderProps) {
     return (
         <>
-            {/* Mobile: Sticky header */}
+            {/* Mobile: header */}
             <div className="lg:hidden sticky top-[14px] z-40 w-full py-1">
                 <div className="flex flex-col gap-2 w-full bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 p-4 shadow-lg ring-1 ring-black/5">
                     <div className="flex items-center justify-between w-full">

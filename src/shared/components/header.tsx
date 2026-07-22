@@ -171,9 +171,9 @@ const HeaderContent = () => {
             </h1>
           </Link>
 
-          {/* Navigation Items (Visible on all screens) */}
+          {/* Navigation Items*/}
           <nav className="flex items-center gap-1 sm:gap-2">
-            {/* Open App Button (Compact on mobile) */}
+            {/* Open App */}
             {showInstallButton && (
               <button
                 onClick={triggerInstall}
@@ -195,7 +195,7 @@ const HeaderContent = () => {
               {t('trips')}
             </Link>
 
-            {/* Support (Hidden on very small mobile) */}
+            {/* Support */}
             <a href="mailto:support@cheapestgo.com" className="hidden xs:flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
               {t('support')}
             </a>
@@ -208,7 +208,7 @@ const HeaderContent = () => {
               {mounted && (theme === 'dark' ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />)}
             </button>
 
-            {/* Sign in Dropdown (Desktop only) */}
+            {/* Sign in */}
             <div className="hidden lg:block shrink-0">
               <SignInDropdown />
             </div>

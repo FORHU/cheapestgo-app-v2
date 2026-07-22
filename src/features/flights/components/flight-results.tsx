@@ -16,7 +16,7 @@ function FlightCardSkeleton({ index = 0 }: { index?: number }) {
             className="flex flex-col lg:flex-row bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 animate-pulse"
             style={{ animationDelay: `${index * 150}ms` }}
         >
-            {/* Left: flight info skeleton */}
+            {/* flight info */}
             <div className="flex-1 px-2.5 pt-2.5 pb-2 lg:p-5">
                 {/* Airline header */}
                 <div className="flex items-center gap-1.5 lg:gap-3 mb-1.5 lg:mb-4">
@@ -52,7 +52,7 @@ function FlightCardSkeleton({ index = 0 }: { index?: number }) {
                 </div>
             </div>
 
-            {/* Right: price skeleton */}
+            {/* price */}
             <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-1.5 lg:gap-2 lg:w-[180px] px-2.5 py-2 lg:p-5 lg:border-l border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
                 <div>
                     <div className="h-5 w-[70px] lg:h-7 lg:w-[100px] rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
@@ -89,10 +89,8 @@ export function FlightResults({
     const [isAutoLoading, setIsAutoLoading] = useState(false);
     const sentinelRef = useRef<HTMLDivElement>(null);
 
-    // Reset to first page whenever offers change (new search or filter change)
     useEffect(() => { setVisibleCount(PAGE_SIZE); }, [offers]);
 
-    // Infinite Scroll
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
@@ -197,10 +195,9 @@ export function FlightResults({
                 ))}
             </AnimatePresence>
 
-            {/* Sentinel element for infinite scroll */}
             <div ref={sentinelRef} className="h-1 w-full pointer-events-none" />
 
-            {/* Loading Skeleton for Infinite Scroll */}
+
             {(hasMore || isAutoLoading) && (
                 <div className="space-y-3 pb-8">
                     <FlightCardSkeleton index={0} />
@@ -217,7 +214,6 @@ export function FlightResults({
                 </div>
             )}
 
-            {/* End of Results Message */}
             {!hasMore && !isAutoLoading && offers.length > 0 && (
                 <div className="pt-4 pb-12 text-center">
                     <p className="text-[10px] font-normal text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-60">

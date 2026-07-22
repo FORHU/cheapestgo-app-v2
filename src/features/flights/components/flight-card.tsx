@@ -53,7 +53,7 @@ function stopsLabel(stops: number): string {
     return `${stops} stops`;
 }
 
-/** Groups flat segments into slices by segmentIndex */
+/** Groups flat segments -> slices by segmentIndex */
 function groupSegmentsIntoSlices(segments: NormalizedSegment[]): NormalizedSegment[][] {
     const map = new Map<number, NormalizedSegment[]>();
     for (const seg of segments) {
@@ -92,7 +92,7 @@ function AirlineLogo({ code, name }: { code: string; name?: string }) {
     );
 }
 
-// ─── Segment Row (for expanded view) ──────────────────────────────────────────
+// ─── Segment Row (expanded view) ──────────────────────────────────────────
 
 function SegmentRow({ segment }: { segment: NormalizedSegment }) {
     return (
@@ -166,7 +166,6 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
 
     const priceTotal = offer.price?.total ?? 0;
     const currency = offer.price?.currency ?? 'USD';
-    // Use pricePerAdult if available; fallback to dividing by adults
     const pricePerPerson = offer.price?.pricePerAdult ?? (adults > 0 ? priceTotal / adults : priceTotal);
 
     const handleSelect = (selectedOffer: FlightOffer) => {
@@ -192,7 +191,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                 className
             )}
         >
-            {/* ─── Save/Heart Button (mobile only — top-right corner) ─── */}
+            {/* ─── Heart Btn (mobile) */}
             <div className="absolute top-2 right-2 z-10 lg:hidden">
                 <SaveButton
                     type="flight"
@@ -208,7 +207,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
             </div>
 
             <div className="flex flex-col lg:flex-row">
-                {/* ─── Flight Info + Expand (left) ─── */}
+                {/* Flight Info */}
                 <div className="flex-1 min-w-0">
                     <div className="px-3 py-2 lg:px-4 lg:py-2.5">
                         {/* Airline header */}
@@ -328,7 +327,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                 </span>
                             )}
 
-                            {/* Seats — show for any positive value */}
+                            {/* Seats */}
                             {offer.seatsRemaining != null && offer.seatsRemaining > 0 && (
                                 <span className={cn(
                                     "inline-flex items-center gap-0.5 px-1 lg:px-2 py-px lg:py-0.5 rounded-full text-[9px] lg:text-xs font-normal border",
@@ -356,7 +355,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                         </button>
                     )}
 
-                    {/* ─── Expanded View (Details + Alternatives) ─── */}
+                    {/* ─── Expanded View ── */}
                     <AnimatePresence>
                         {expanded && (
                             <motion.div
@@ -451,7 +450,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                     </AnimatePresence>
                 </div>
 
-                {/* ─── Price + CTA (right) ─── */}
+                {/* ─── Price, CTA ─── */}
                 <div className="relative flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-between gap-1 lg:gap-1.5 lg:w-[180px] px-3 py-1.5 lg:py-3 lg:px-4 lg:border-l border-t lg:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
 
                     {/* Heart button — desktop only, inline */}

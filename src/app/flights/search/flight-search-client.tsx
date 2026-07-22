@@ -145,15 +145,15 @@ export function FlightSearchClient() {
     const router = useRouter();
 
     const params: SearchParams = {
-        origin:      sp.get('origin') ?? '',
+        origin: sp.get('origin') ?? '',
         destination: sp.get('destination') ?? '',
-        departure:   sp.get('depart') ?? sp.get('departure') ?? '',
-        returnDate:  sp.get('return') ?? undefined,
-        adults:      Math.max(1, parseInt(sp.get('adults') ?? '1', 10)),
-        children:    Math.max(0, parseInt(sp.get('children') ?? '0', 10)),
-        infants:     Math.max(0, parseInt(sp.get('infants') ?? '0', 10)),
-        cabin:       sp.get('cabin') ?? 'economy',
-        tripType:    sp.get('tripType') ?? (sp.get('return') ? 'round-trip' : 'one-way'),
+        departure: sp.get('depart') ?? sp.get('departure') ?? '',
+        returnDate: sp.get('return') ?? undefined,
+        adults: Math.max(1, parseInt(sp.get('adults') ?? '1', 10)),
+        children: Math.max(0, parseInt(sp.get('children') ?? '0', 10)),
+        infants: Math.max(0, parseInt(sp.get('infants') ?? '0', 10)),
+        cabin: sp.get('cabin') ?? 'economy',
+        tripType: sp.get('tripType') ?? (sp.get('return') ? 'round-trip' : 'one-way'),
     };
 
     const bundleHotelId = sp.get('bundleHotelId');
@@ -281,7 +281,6 @@ export function FlightSearchClient() {
                 clearTimeout(timeoutId);
                 clearTimeout(slowId);
 
-                // Ensure skeleton is visible for at least 1.5s
                 const elapsed = Date.now() - startTime;
                 if (elapsed < 1500) {
                     await new Promise((r) => setTimeout(r, 1500 - elapsed));
@@ -315,7 +314,6 @@ export function FlightSearchClient() {
         router.push('/?mode=flights');
     };
 
-    // ─── Non-result states (full-width, no sidebar) ───────────────────────────
     if (state.status === 'timeout') {
         return (
             <div className="flex-1 flex items-center justify-center p-4">
@@ -332,7 +330,6 @@ export function FlightSearchClient() {
         );
     }
 
-    // ─── Mobile filter modal (portal) ─────────────────────────────────────────
     const mobileFilterModal = (
         <AnimatePresence>
             {mobileFiltersOpen && (
@@ -352,12 +349,11 @@ export function FlightSearchClient() {
                         className="fixed bottom-0 left-0 right-0 sm:top-[88px] sm:bottom-auto sm:left-auto sm:w-[340px] sm:max-h-[calc(100vh-120px)] max-h-[85vh] z-[100] bg-white dark:bg-slate-900 bg-grid-slate-100 dark:bg-grid-slate-800/50 bg-[length:40px_40px] flex flex-col lg:hidden shadow-2xl rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200/50 dark:border-slate-800/50 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Background Sparkles */}
                         <div className="absolute inset-0 z-0 pointer-events-none opacity-50">
                             <GlobalSparkle />
                         </div>
 
-                        {/* Header */}
+
                         <div className="p-3 border-b border-slate-200/50 dark:border-white/5 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
                             <button
                                 onClick={() => setMobileFiltersOpen(false)}
@@ -404,7 +400,6 @@ export function FlightSearchClient() {
     return (
         <main className="flex-1 pt-2 pb-12 px-4 md:pt-6 md:pb-20 overflow-x-hidden">
             <div className="max-w-7xl mx-auto space-y-3 lg:space-y-6">
-                {/* Desktop: BackButton + SectionHeader + PriceAlertButton */}
                 <div className="hidden lg:block">
                     <BackButton href="/" bareIcon className="mb-1 lg:mb-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shadow-sm p-0!" />
                     <div className="flex items-start justify-between gap-2 lg:gap-4 flex-wrap">
@@ -421,7 +416,6 @@ export function FlightSearchClient() {
                         />
                     </div>
 
-                    {/* Bundle context banner */}
                     {bundleHotelId && (
                         <div className="mt-4 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700/50">
                             <div className="p-1.5 bg-violet-100 dark:bg-violet-900/40 rounded-lg shrink-0">
@@ -440,7 +434,7 @@ export function FlightSearchClient() {
                     )}
                 </div>
 
-                {/* Loading + Results layout */}
+                {/* Loading, Results layout */}
                 <div className="flex flex-col gap-3 lg:gap-6 relative pb-24 pt-0 lg:pt-0">
                     <ResponsiveFlightHeader
                         origin={params.origin}
@@ -456,7 +450,6 @@ export function FlightSearchClient() {
 
                     {typeof window !== 'undefined' && createPortal(mobileFilterModal, document.body)}
 
-                    {/* Slow-search warning */}
                     {isSlowSearch && (
                         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl px-5 py-4 flex items-center gap-3">
                             <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
@@ -490,7 +483,6 @@ export function FlightSearchClient() {
                         </AnimatePresence>
 
                         <div className="flex-1 min-w-0 space-y-4">
-                            {/* No results after filtering */}
                             {state.status === 'success' && filteredOffers.length === 0 && allOffers.length > 0 ? (
                                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 text-center space-y-3">
                                     <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No flights match your filters</p>

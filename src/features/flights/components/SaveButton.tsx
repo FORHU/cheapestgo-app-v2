@@ -86,7 +86,6 @@ export function SaveButton({
         const wasSaved = existsIndex >= 0;
 
         if (wasSaved) {
-            // Try API delete if user is logged in
             if (user) {
                 try {
                     const res = await fetch(`/api/saved-trips/${saved[existsIndex].id}`, { method: 'DELETE' });
@@ -99,22 +98,19 @@ export function SaveButton({
                         return;
                     }
                 } catch {
-                    // Fall back to localStorage
                 }
             }
-            // LocalStorage fallback
             saved.splice(existsIndex, 1);
             setIsSaved(false);
             onSavedChange?.(false);
         } else {
-            // Redirect to login if not authenticated
+            // Redirect login 
             if (!user) {
                 router.push('/login');
                 setIsLoading(false);
                 return;
             }
 
-            // Try API save if user is logged in
             const newItem: SavedFlight = {
                 id: `${snapshot.provider}-${snapshot.offerId}-${Date.now()}`,
                 type,
@@ -148,10 +144,8 @@ export function SaveButton({
                     return;
                 }
             } catch {
-                // Fall back to localStorage
             }
 
-            // LocalStorage fallback
             saved.unshift(newItem);
             setIsSaved(true);
             onSavedChange?.(true);
