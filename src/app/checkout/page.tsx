@@ -7,6 +7,7 @@ import { Header } from '@/shared/components/header';
 import { Button } from '@/shared/components/ui/button';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
+import { StripePaymentSection } from '@/features/checkout/components/stripe-payment-section';
 import { BookingSummary } from '@/features/checkout/components/booking-summary';
 import {
     GuestForm,
@@ -128,6 +129,13 @@ export default function CheckoutPage() {
     const [selectedFlight, setSelectedFlight] = useState<FlightOffer | null>(null);
     const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
+    // Flight payment session (populated by POST /flights/book, consumed by confirm)
+    const [flightSession, setFlightSession] = useState<{
+        clientSecret: string;
+        sessionId: string;
+        paymentIntentId: string;
+    } | null>(null);
+
     // Pre-fill email from logged-in user
     useEffect(() => {
         if (user?.email) {
@@ -244,7 +252,7 @@ export default function CheckoutPage() {
         }
     }, [card, hotelId, roomId, rateKey, checkIn, checkOut, adults, currency, totalPrice, guest]);
 
-    // ── Submit: flight ──
+    // ── Submit: flight — create payment intent ──
     const handleFlightSubmit = useCallback(async () => {
         const pErr = validatePassengers(passengers);
         if (Object.keys(pErr).length > 0) {
@@ -313,7 +321,11 @@ export default function CheckoutPage() {
                 } : {}),
             };
 
-            await http.post('/flights/book', {
+            const res = await http.post<{
+                clientSecret: string;
+                sessionId: string;
+                paymentIntentId: string;
+            }>('/flights/book', {
                 provider: selectedFlight.provider,
                 flight: flightPayload,
                 passengers: bookingPassengers,
@@ -329,10 +341,12 @@ export default function CheckoutPage() {
                 ...(bundleHotelId ? { bundleHotelId } : {}),
             });
 
-            // Clean up sessionStorage on success
-            sessionStorage.removeItem('selectedFlight');
-            sessionStorage.removeItem('flightSearchPassengers');
-            setStep('success');
+            setFlightSession({
+                clientSecret: res.clientSecret,
+                sessionId: res.sessionId,
+                paymentIntentId: res.paymentIntentId,
+            });
+            setStep('payment');
         } catch (err: any) {
             if (err?.code === 'unauthenticated') {
                 router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
@@ -491,30 +505,65 @@ export default function CheckoutPage() {
                                 )}
                             </>
                         ) : (
-                            /* Flight: single-step form */
                             <>
-                                {!selectedFlight && (
-                                    <div className="rounded-xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-4 mb-4">
-                                        <p className="text-sm text-amber-700 dark:text-amber-300">
-                                            Loading flight details… If this persists, go back and select a flight again.
-                                        </p>
-                                    </div>
+                                {/* Step 1: Passenger info */}
+                                {step === 'form' && (
+                                    <>
+                                        {!selectedFlight && (
+                                            <div className="rounded-xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-4 mb-4">
+                                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                                    Loading flight details… If this persists, go back and select a flight again.
+                                                </p>
+                                            </div>
+                                        )}
+                                        <GuestForm
+                                            mode="flight"
+                                            passengers={passengers}
+                                            errors={passengerErrors}
+                                            onChange={handlePassengerChange}
+                                        />
+                                        <Button
+                                            fullWidth
+                                            size="lg"
+                                            isLoading={isSubmitting}
+                                            onClick={handleFlightSubmit}
+                                            disabled={!selectedFlight}
+                                        >
+                                            Continue to payment
+                                        </Button>
+                                    </>
                                 )}
-                                <GuestForm
-                                    mode="flight"
-                                    passengers={passengers}
-                                    errors={passengerErrors}
-                                    onChange={handlePassengerChange}
-                                />
-                                <Button
-                                    fullWidth
-                                    size="lg"
-                                    isLoading={isSubmitting}
-                                    onClick={handleFlightSubmit}
-                                    disabled={!selectedFlight}
-                                >
-                                    Confirm booking — {selectedFlight?.price?.currency || flightCurrency} {(selectedFlight?.price?.total || totalAmount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                </Button>
+
+                                {/* Step 2: Payment (Stripe Elements) */}
+                                {step === 'payment' && flightSession && (
+                                    <StripePaymentSection
+                                        clientSecret={flightSession.clientSecret}
+                                        onSuccess={async (paymentIntentId) => {
+                                            setIsSubmitting(true);
+                                            setErrorMsg(null);
+                                            try {
+                                                await http.post<{ bookingId?: string; pnr?: string; status?: string }>(
+                                                    '/flights/confirm',
+                                                    {
+                                                        paymentIntentId,
+                                                        sessionId: flightSession.sessionId,
+                                                    },
+                                                );
+                                                sessionStorage.removeItem('selectedFlight');
+                                                sessionStorage.removeItem('flightSearchPassengers');
+                                                setStep('success');
+                                            } catch (err: any) {
+                                                if (err?.code === 'unauthenticated') {
+                                                    router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+                                                    return;
+                                                }
+                                                setErrorMsg(err instanceof Error ? err.message : 'Booking confirmation failed. Your payment was received — please check your trips.');
+                                            } finally {
+                                                setIsSubmitting(false);
+                                            }
+                                        }}
+                                    />
+                                )}
                             </>
                         )}
 
