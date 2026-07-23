@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Settings, ChevronDown } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/shared/auth/store';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';

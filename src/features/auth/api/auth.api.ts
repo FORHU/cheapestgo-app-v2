@@ -1,4 +1,4 @@
-import type { User } from '@/shared/types';
+import type { User } from '@/shared/auth/store';
 
 export interface LoginBody { email: string; password: string; }
 export interface RegisterBody { email: string; password: string; firstName?: string; lastName?: string; }

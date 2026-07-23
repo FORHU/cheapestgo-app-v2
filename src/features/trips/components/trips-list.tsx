@@ -70,8 +70,8 @@ export function TripsList() {
 
     useEffect(() => {
         setIsLoading(true);
-        http.get<AnyBooking[]>('/api/bookings')
-            .then(setBookings)
+        http.get<{ bookings: AnyBooking[] }>('/api/bookings')
+            .then(res => setBookings(res.bookings ?? []))
             .catch((err: Error & { status?: number }) => {
                 if (err.status === 401) {
                     router.push('/login?next=/trips');

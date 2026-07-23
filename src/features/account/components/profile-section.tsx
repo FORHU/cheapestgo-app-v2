@@ -13,8 +13,8 @@ export function ProfileSection() {
 
     if (!user) return null;
 
-    const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email;
-    const initials = (user.first_name?.[0] ?? user.email[0]).toUpperCase();
+    const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+    const initials = (user.firstName?.[0] ?? user.email[0]).toUpperCase();
 
     const handleChangePassword = async () => {
         setResetLoading(true);
@@ -66,7 +66,7 @@ export function ProfileSection() {
                     </div>
                 </div>
 
-                {(user.first_name || user.last_name) && (
+                {(user.firstName || user.lastName) && (
                     <div>
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                             Display name
