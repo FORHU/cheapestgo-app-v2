@@ -2,9 +2,11 @@
 @source "..";
 
 @theme {
-  --font-sans: 'Inter',
+  --font-sans: 'Plus Jakarta Sans',
+    'Inter',
     sans-serif;
-  --font-display: 'Inter Tight',
+  --font-display: 'Plus Jakarta Sans',
+    'Inter Tight',
     sans-serif;
   --font-mono: 'JetBrains Mono',
     monospace;
@@ -163,6 +165,15 @@
 
 /* Enable landscape orientation variant — mobile only */
 @custom-variant landscape (@media (orientation: landscape) and (max-width: 1024px));
+
+/* next/font self-hosts Plus Jakarta Sans and declares --font-plus-jakarta on
+   <body>. Rebind the two stacks here rather than in @theme: a var() inside a
+   :root custom property resolves against :root, where --font-plus-jakarta does
+   not exist. */
+body {
+  --font-sans: var(--font-plus-jakarta), 'Inter', sans-serif;
+  --font-display: var(--font-plus-jakarta), 'Inter Tight', sans-serif;
+}
 
 /* Prevent horizontal scrolling */
 body {

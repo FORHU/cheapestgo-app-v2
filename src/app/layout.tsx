@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Inter, Inter_Tight, JetBrains_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import './globals.css';
@@ -15,8 +15,15 @@ import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-const interTight = Inter_Tight({ subsets: ['latin'], variable: '--font-display' });
+// Plus Jakarta Sans is the app-wide typeface: one variable family covering the
+// 400–800 range, carrying both body and display weights (see globals.css, which
+// binds --font-sans and --font-display to it). JetBrains Mono stays reserved for
+// prices, times and durations so numeric columns keep their tabular alignment.
+const plusJakartaSans = Plus_Jakarta_Sans({
+    subsets: ['latin'],
+    variable: '--font-plus-jakarta',
+    display: 'swap',
+});
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'optional' });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cheapestgo.com';
@@ -70,7 +77,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
     return (
         <html lang={locale} suppressHydrationWarning>
-            <body className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} font-sans`}>
+            <body className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} font-sans`}>
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <Providers>
                         <AuthListener />

@@ -85,7 +85,7 @@ function HotelSearchContent() {
         setSelectedId(null);
 
         http
-            .post<HotelSearchResponse>('/api/hotels/search', {
+            .post<HotelSearchResponse>('/hotels/search', {
                 destination,
                 checkIn,
                 checkOut,

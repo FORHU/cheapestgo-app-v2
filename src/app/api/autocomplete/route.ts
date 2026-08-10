@@ -101,12 +101,18 @@ async function fetchCitiesFromMapbox(query: string) {
                 ? rawCode.toUpperCase().slice(0, 2)
                 : extractCountryCode(placeName);
 
+            // Mapbox returns [lng, lat]; hotel search and the results map both
+            // need the centre, so carry it through rather than dropping it.
+            const center = Array.isArray(feature.center) ? feature.center : [];
+
             return {
                 type: 'city' as const,
                 title: cityName,
                 subtitle: placeName,
                 countryCode,
                 id: feature.id ?? undefined,
+                lng: typeof center[0] === 'number' ? center[0] : undefined,
+                lat: typeof center[1] === 'number' ? center[1] : undefined,
             };
         });
     } catch {

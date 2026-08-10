@@ -20,6 +20,9 @@ export interface Destination {
     code?: string;
     countryCode?: string;
     id?: string;
+    /** Geocoded centre — passed to hotel search so the map can open on the city. */
+    lat?: number;
+    lng?: number;
     lowestPrice?: number;
     priceCurrency?: string;
 }

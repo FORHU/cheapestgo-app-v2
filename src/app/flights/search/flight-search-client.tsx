@@ -214,7 +214,7 @@ export function FlightSearchClient() {
             const startTime = Date.now();
 
             const data = await http.post<{ offers: FlightOffer[] }>(
-                '/api/flights/search',
+                '/flights/search',
                 body,
                 { signal: controller.signal }
             );

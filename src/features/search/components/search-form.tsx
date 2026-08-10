@@ -6,6 +6,7 @@ import { Search, Plane, BedDouble, Sparkles, Calendar, Users, ChevronDown, MapPi
 import { motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { useSearchStore, useDates, useTravelers, useActiveDropdown } from '@/shared/stores/search.store';
+import { TicketStub, TICKET_SURFACE } from '@/shared/components/ui/ticket-stub';
 import { DestinationInput } from './destination-input';
 import { DatePicker } from './date-picker';
 import { TravelerPicker } from './traveler-picker';
@@ -55,16 +56,20 @@ export function SearchForm() {
                 destination:  destination.title,
                 code:         destination.code ?? '',
                 type:         destination.type,
-                lat:          String(destination.id?.split(',')[0] ?? ''),
-                lng:          String(destination.id?.split(',')[1] ?? ''),
                 checkIn:      dates.checkIn.toISOString().slice(0, 10),
                 checkOut:     dates.checkOut.toISOString().slice(0, 10),
                 adults:       String(travelers.adults),
                 children:     String(travelers.children),
                 rooms:        String(travelers.rooms),
             });
+            // Coordinates come from the geocoder, not from the opaque Mapbox feature id.
+            if (destination.lat != null && destination.lng != null) {
+                params.set('lat', String(destination.lat));
+                params.set('lng', String(destination.lng));
+            }
+            if (destination.countryCode) params.set('countryCode', destination.countryCode);
             setIsSearching(true);
-            router.push(`/hotels/search?${params}`);
+            router.push(`/search?${params}`);
         }
 
         if (searchMode === 'flights') {
@@ -102,6 +107,10 @@ export function SearchForm() {
         cn('text-sm font-medium truncate mt-0.5', hasValue ? 'text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-500');
     const divider = 'border-b sm:border-b-0 sm:border-r border-slate-100 dark:border-white/5';
 
+    const stubNote = searchMode === 'ai'
+        ? 'AI trip planning — describe the trip you want'
+        : 'Taxes and fees included';
+
     return (
         <div className="w-full max-w-4xl mx-auto">
             {/* Tabs */}
@@ -138,10 +147,13 @@ export function SearchForm() {
                 </div>
             </div>
 
-            {/* Search Card */}
+            {/* Search Card — a boarding pass: fields above the perforation, stub below */}
             <div
-                className="bg-white dark:bg-[#0f172a] rounded-2xl p-2"
-                style={{ boxShadow: '0 0 0 1px rgba(37,99,235,0.12), 0 8px 32px rgba(37,99,235,0.10), 0 2px 8px rgba(0,0,0,0.06)' }}
+                className="relative rounded-2xl p-2 pb-0 [--ticket-bg:#ffffff] dark:[--ticket-bg:#0f172a]"
+                style={{
+                    ...TICKET_SURFACE,
+                    boxShadow: '0 0 0 1px rgba(37,99,235,0.12), 0 8px 32px rgba(37,99,235,0.10), 0 2px 8px rgba(0,0,0,0.06)',
+                }}
             >
                 {searchMode === 'hotels' && (
                     <div className="flex flex-col sm:flex-row bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-white/5 overflow-visible">
@@ -279,6 +291,8 @@ export function SearchForm() {
                 )}
 
                 {error && <p className="mt-2 px-2 text-sm text-red-500">{error}</p>}
+
+                <TicketStub note={stubNote} />
             </div>
         </div>
     );
