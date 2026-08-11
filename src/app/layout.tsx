@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Inter, Inter_Tight, JetBrains_Mono } from 'next/font/google';
+import { Inter, Inter_Tight, JetBrains_Mono, Fredoka, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import './globals.css';
@@ -18,6 +18,8 @@ import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerR
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const interTight = Inter_Tight({ subsets: ['latin'], variable: '--font-display' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'optional' });
+const fredoka = Fredoka({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-fredoka' });
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-jakarta' });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cheapestgo.com';
 
@@ -70,7 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
     return (
         <html lang={locale} suppressHydrationWarning>
-            <body className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} font-sans`}>
+            <body className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} ${fredoka.variable} ${plusJakarta.variable} font-sans`}>
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <Providers>
                         <AuthListener />

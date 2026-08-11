@@ -2,11 +2,10 @@ export const revalidate = 300;
 
 import { Suspense } from 'react';
 import Script from 'next/script';
-import { Tag } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
-import { SearchForm } from '@/features/search/components/search-form';
+import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
 import { YourRecentSearches } from '@/shared/components/landing/YourRecentSearches';
 import RecentlyViewed from '@/shared/components/landing/RecentlyViewed';
 import PhilippinesCitiesSection from '@/shared/components/landing/PhilippinesCitiesSection';
@@ -55,36 +54,9 @@ export default async function HomePage() {
 
             <Header />
 
-            {/* Hero */}
-            <section className="relative flex flex-col items-center justify-center w-full px-4 pt-24 pb-16 text-center">
-                {/* Background decorative elements — overflow-hidden is scoped here so dropdowns aren't clipped */}
-                <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
-                    <div className="absolute inset-0 bg-linear-to-b from-blue-50 via-white to-transparent dark:from-blue-950/30 dark:via-obsidian dark:to-transparent" />
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-400/10 dark:bg-blue-500/10 rounded-full blur-3xl" />
-                </div>
-
-                <div className="max-w-3xl mx-auto space-y-5">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-semibold tracking-wide uppercase">
-                        <Tag size={11} />
-                        Lowest fares guaranteed
-                    </div>
-
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-slate-900 dark:text-white tracking-tighter leading-[1.1] drop-shadow-sm">
-                        Find the{' '}
-                        <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-cyan-400 dark:from-blue-400 dark:to-cyan-300">
-                            cheapest
-                        </span>
-                        {' '}flights &amp; hotels
-                    </h1>
-
-                    <p className="text-base sm:text-lg md:text-xl text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-                        Compare prices across hundreds of airlines and hotels in real time. Book smarter with AI-powered trip planning.
-                    </p>
-                </div>
-
-                <div className="mt-10 w-full max-w-4xl mx-auto px-4">
-                    <SearchForm />
-                </div>
+            {/* Hero — Immersive search bar */}
+            <section className="relative w-full px-4 pt-24 pb-20">
+                <ImmersiveSearchBar />
             </section>
 
             {/* Sections */}
