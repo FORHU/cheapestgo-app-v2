@@ -2,38 +2,69 @@
 
 import React, { Suspense, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Moon, Sun, Download, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/shared/components/ThemeContext';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
 import { useUserCurrency, useSearchActions } from '@/stores/searchStore';
+import { useAuthStore } from '@/shared/auth/store';
 import { usePWAInstall } from '@/contexts/PWAInstallContext';
+import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
+import { cn } from '@/shared/lib/cn';
+import { useTranslations } from 'next-intl';
 
-const CURRENCY_FLAGS: Record<string, string> = {
-  PHP: '🇵🇭',
-  USD: '🇺🇸',
-  KRW: '🇰🇷',
+const LOCALE_COUNTRIES: Record<string, string> = {
+  en: 'US',
+  ko: 'KR',
+  cn: 'CN',
+  ja: 'JP',
 };
 
-const CURRENCIES = ['KRW', 'USD', 'PHP'] as const;
+const LOCALE_FLAGS: Record<string, string> = {
+  en: '🇺🇸',
+  ko: '🇰🇷',
+  cn: '🇨🇳',
+  ja: '🇯🇵',
+};
 
-const LOCALES = [
-  { code: 'en', label: 'EN', flag: '🇺🇸' },
-  { code: 'ko', label: 'KO', flag: '🇰🇷' },
-  { code: 'ja', label: 'JA', flag: '🇯🇵' },
-  { code: 'cn', label: 'CN', flag: '🇨🇳' },
-] as const;
+const LOCALE_NAMES: Record<string, string> = {
+  en: 'EN',
+  ko: '한국어',
+  cn: '中文',
+  ja: '日本語',
+};
+
+const LOCALES = ['en', 'ko', 'cn', 'ja'] as const;
+type Locale = (typeof LOCALES)[number];
+
+const LOCALE_COOKIE = 'locale';
+
+function getLocaleCookie(): Locale | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`));
+  const value = match ? decodeURIComponent(match[1]) : undefined;
+  return (LOCALES as readonly string[]).includes(value ?? '') ? (value as Locale) : undefined;
+}
+
+function setLocaleCookie(locale: Locale) {
+  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+}
 
 function LocaleSelector() {
+  const [mounted, setMounted] = useState(false);
+  const [locale, setLocale] = useState<Locale>('en');
   const [open, setOpen] = useState(false);
-  const [currentLocale, setCurrentLocale] = useState('en');
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const t = useTranslations('nav');
 
   useEffect(() => {
-    const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/);
-    if (match) setCurrentLocale(match[1]);
+    setMounted(true);
+    const cookieLocale = getLocaleCookie();
+    if (cookieLocale) {
+      setLocale(cookieLocale);
+    }
   }, []);
 
   useEffect(() => {
@@ -44,25 +75,26 @@ function LocaleSelector() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const switchLocale = (code: string) => {
-    document.cookie = `locale=${code}; path=/; max-age=31536000; SameSite=Lax`;
-    setCurrentLocale(code);
+  const handleLocaleSelect = (next: Locale) => {
+    if (next === locale) return;
+    setLocale(next);
+    setLocaleCookie(next);
     setOpen(false);
-    window.location.reload();
+    router.refresh();
   };
 
-  const current = LOCALES.find(l => l.code === currentLocale) ?? LOCALES[0];
+  if (!mounted) return null;
 
   return (
     <div className="relative shrink-0" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 px-1.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-slate-300 hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+        className="flex items-center gap-1 px-1 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors group cursor-pointer"
         aria-label="Select language"
       >
-        <span className="text-sm">{current.flag}</span>
-        <span className="hidden xs:inline">{current.label}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="text-sm">{LOCALE_FLAGS[locale]}</span>
+        <span className="hidden xs:inline">{locale.toUpperCase()}</span>
+        <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
@@ -71,21 +103,22 @@ function LocaleSelector() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-1 min-w-[120px] py-1 rounded-lg dark:border-white/10 bg-white/20 backdrop-blur dark:bg-slate-900 shadow-lg z-50"
+            className="absolute right-0 top-full mt-1 min-w-[110px] py-1 rounded-xl dark:border-white/10 bg-white/20 backdrop-blur dark:bg-slate-900 shadow-lg z-[1001]"
           >
-            {LOCALES.map(locale => (
-              <li key={locale.code}>
+            {LOCALES.map((loc) => (
+              <li key={loc}>
                 <button
                   type="button"
-                  onClick={() => switchLocale(locale.code)}
-                  className={`flex items-center gap-2 w-full px-3 py-2 text-left text-xs font-normal transition-colors ${
-                    currentLocale === locale.code
-                      ? 'dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                  onClick={() => handleLocaleSelect(loc)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer w-full text-left",
+                    locale === loc
+                      ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
+                  )}
                 >
-                  <span className="text-sm">{locale.flag}</span>
-                  {locale.label}
+                  <span className="text-[9px] text-slate-400 font-bold w-4">{LOCALE_COUNTRIES[loc]}</span>
+                  <span>{LOCALE_NAMES[loc]}</span>
                 </button>
               </li>
             ))}
@@ -100,150 +133,97 @@ const HeaderContent = () => {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
-  const currencyRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   const userCurrency = useUserCurrency();
-  const { setUserCurrency } = useSearchActions();
-  const { isInstallable, isIOS, isInstalled, triggerInstall } = usePWAInstall();
-  const showInstallButton = !isInstalled && (isInstallable || isIOS);
-
-  const currencyFlag = CURRENCY_FLAGS[userCurrency] || '🌐';
+  const { setUserCurrency, setUserCountry } = useSearchActions();
+  const { user } = useAuthStore();
+  const { triggerInstall } = usePWAInstall();
+  const t = useTranslations('nav');
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (currencyRef.current && !currencyRef.current.contains(e.target as Node)) {
-        setIsCurrencyOpen(false);
-      }
-    };
-    if (isCurrencyOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isCurrencyOpen]);
+    setMounted(true);
+  }, []);
 
-  const handleCurrencySelect = (currency: string) => {
-    setUserCurrency(currency);
-    setIsCurrencyOpen(false);
-    if (pathname.includes('/property/') || pathname.includes('/search')) {
-      const params = new URLSearchParams(searchParams?.toString() ?? '');
-      params.set('currency', currency);
+  const handleCurrencySelect = (currencyCode: string, countryCode: string) => {
+    setUserCurrency(currencyCode);
+    setUserCountry(countryCode);
+    if (pathname.includes('/property/') || pathname.includes('/flights')) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('currency', currencyCode);
       router.replace(`${pathname}?${params.toString()}`);
     }
   };
 
+  const { isInstallable, isIOS, isInstalled } = usePWAInstall();
+  const showInstallButton = !isInstalled && (isInstallable || isIOS);
+
   return (
-    <header className="fixed top-0 z-50 w-full px-4 pt-1.5 bg-transparent landscape-compact-header font-nunito">
-      <div className="w-full sm:w-[95%] mx-auto p-1 px-4 sm:px-6 h-11 md:h-16 flex items-center justify-between bg-slate/20 backdrop-blur rounded-full">
+    <>
+      <header suppressHydrationWarning className={cn(
+        "sticky top-0 z-60 w-full border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors duration-800 landscape-compact-header",
+      )}>
+        <div suppressHydrationWarning className="max-w-[1400px] mx-auto px-4 sm:px-6 h-11 md:h-14 flex items-center justify-between landscape-compact-header">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
+            <h1 className="text-base sm:text-lg md:text-xl text-slate-900 dark:text-white font-display font-bold tracking-tight truncate max-w-[120px] sm:max-w-none">
+              Cheapest<span className="text-alabaster-accent dark:text-obsidian-accent">Go</span>
+            </h1>
+          </Link>
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center hover:opacity-80 transition-opacity shrink-0">
-          <Image
-            src="/Web_Logo_Transparent.png"
-            alt="CheapestGo"
-            width={140}
-            height={36}
-            className="h-7 md:h-9 w-auto object-contain dark:brightness-[1.15]"
-            priority
-          />
-        </Link>
+          {/* Navigation Items*/}
+          <nav className="flex items-center gap-1 sm:gap-2">
+            {/* Open App */}
+            {showInstallButton && (
+              <button
+                onClick={triggerInstall}
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-blue-400 border border-blue-600/20 dark:border-blue-400/20 rounded-full hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shrink-0"
+              >
+                <Download size={12} />
+                <span className="hidden sm:inline">{t('openApp')}</span>
+              </button>
+            )}
 
-        {/* Navigation Items */}
-        <nav className="flex items-center gap-1 sm:gap-2">
-          {/* NavLinks */}
-          <div className="hidden xs:flex items-center gap-2">
-            <a
-              href="mailto:support@cheapestgo.com"
-              className="flex items-center gap-1.5 px-3 py-2 text-[10px] sm:text-xs text-blue-600 dark:text-white hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-            >
-              Support
+            {/* Language selector */}
+            <LocaleSelector />
+
+            {/* Currency selector */}
+            <CurrencySelector className="shrink-0" />
+
+            {/* Trips */}
+            <Link href="/trips" className="flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
+              {t('trips')}
+            </Link>
+
+            {/* Support */}
+            <a href="mailto:support@cheapestgo.com" className="hidden xs:flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
+              {t('support')}
             </a>
-          </div>
 
-          {/* Install / Open App Button */}
-          {showInstallButton && (
+            {/* Theme Toggle */}
             <button
-              onClick={triggerInstall}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-blue-400 border border-blue-600/20 dark:border-blue-400/20 rounded-full hover:bg-white/5 dark:hover:bg-blue-500/10 transition-colors shrink-0"
+              onClick={toggleTheme}
+              className="p-1 sm:p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0"
             >
-              <Download size={12} />
-              <span className="hidden sm:inline">Open app</span>
+              {mounted && (theme === 'dark' ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />)}
             </button>
-          )}
 
-          {/* Language selector */}
-          <LocaleSelector />
-
-          {/* Currency dropdown */}
-          <div className="relative shrink-0" ref={currencyRef}>
-            <button
-              onClick={() => setIsCurrencyOpen((o) => !o)}
-              className="flex items-center gap-1 px-1.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-slate-300 hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-              aria-expanded={isCurrencyOpen}
-              aria-haspopup="listbox"
-              aria-label="Select currency"
-            >
-              <span className="text-sm">{currencyFlag}</span>
-              <span className="hidden xs:inline">{userCurrency}</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${isCurrencyOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence>
-              {isCurrencyOpen && (
-                <motion.ul
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15 }}
-                  role="listbox"
-                  className="absolute right-0 top-full mt-1 min-w-[120px] py-1 rounded-lg dark:border-white/10 bg-white/20 backdrop-blur dark:bg-slate-900 shadow-lg z-50 cursor-pointer"
-                >
-                  {CURRENCIES.map((currency) => (
-                    <li key={currency} role="option" aria-selected={userCurrency === currency}>
-                      <button
-                        type="button"
-                        onClick={() => handleCurrencySelect(currency)}
-                        className={`flex items-center gap-2 w-full px-3 py-2 text-left text-xs font-normal transition-colors ${
-                          userCurrency === currency
-                            ? 'dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="text-sm">{CURRENCY_FLAGS[currency]}</span>
-                        {currency}
-                      </button>
-                    </li>
-                  ))}
-                </motion.ul>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-1 sm:p-1.5 rounded-lg hover:bg-white/5 dark:hover:bg-white/10 transition-colors shrink-0"
-          >
-            {theme === 'dark'
-              ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-              : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
-            }
-          </button>
-
-          {/* Sign in Dropdown (Desktop only) */}
-          <div className="hidden lg:block shrink-0">
-            <SignInDropdown />
-          </div>
-        </nav>
-      </div>
-    </header>
+            {/* Sign in */}
+            <div className="hidden lg:block shrink-0">
+              <SignInDropdown />
+            </div>
+          </nav>
+        </div>
+      </header>
+    </>
   );
 };
 
-export function Header() {
-  return (
-    <Suspense fallback={null}>
-      <HeaderContent />
-    </Suspense>
-  );
-}
+const Header = () => (
+  <Suspense fallback={null}>
+    <HeaderContent />
+  </Suspense>
+);
+
+export { Header };
+export default Header;

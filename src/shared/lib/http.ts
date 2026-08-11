@@ -4,8 +4,9 @@ type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const { body, ...rest } = options;
+    const cleanPath = path.startsWith('/api') ? path.slice(4) : path;
 
-    const res = await fetch(`${env.NEXT_PUBLIC_API_URL}${path}`, {
+    const res = await fetch(`${env.NEXT_PUBLIC_API_URL}${cleanPath}`, {
         ...rest,
         credentials: 'include',
         headers: {

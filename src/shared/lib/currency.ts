@@ -3,6 +3,9 @@
  * Static fallback rates; call refreshExchangeRates() on app mount to hydrate.
  */
 
+import { env } from './env';
+import { http } from './http';
+
 const STATIC_RATES: Record<string, number> = {
     USD: 1.0,
     PHP: 0.018,
@@ -31,11 +34,9 @@ let _lastRefresh = 0;
 export async function refreshExchangeRates(): Promise<boolean> {
     if (_lastRefresh && Date.now() - _lastRefresh < 60 * 60 * 1000) return false;
     try {
-        const res = await fetch('/api/v2/exchange-rates');
-        if (!res.ok) return false;
-        const json = await res.json();
-        if (!json.success || !json.rates) return false;
-        for (const [currency, rate] of Object.entries(json.rates as Record<string, number>)) {
+        const res = await http.get<{ success: boolean; rates: Record<string, number> }>('/exchange-rates');
+        if (!res.success || !res.rates) return false;
+        for (const [currency, rate] of Object.entries(res.rates)) {
             EXCHANGE_RATES[currency] = rate;
         }
         _lastRefresh = Date.now();

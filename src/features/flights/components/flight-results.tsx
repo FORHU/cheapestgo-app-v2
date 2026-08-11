@@ -1,250 +1,228 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Plane, SlidersHorizontal, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plane, Search } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/skeleton';
-import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/cn';
 import type { FlightOffer } from '@/shared/types';
 import { FlightCard } from './flight-card';
-import { FlightFilters, DEFAULT_FLIGHT_FILTERS } from './flight-filters';
-import type { FlightFilterState } from './flight-filters';
 
-// ─── Skeleton Cards ───────────────────────────────────────────────────────────
+const PAGE_SIZE = 15;
 
-function FlightCardSkeleton() {
+function FlightCardSkeleton({ index = 0 }: { index?: number }) {
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-white/10 p-4 flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-3">
-                    <Skeleton className="w-8 h-8 rounded-lg" />
-                    <div className="flex-1 space-y-1.5">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-3 w-16" />
+        <div
+            className="flex flex-col lg:flex-row bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 animate-pulse"
+            style={{ animationDelay: `${index * 150}ms` }}
+        >
+            {/* flight info */}
+            <div className="flex-1 px-2.5 pt-2.5 pb-2 lg:p-5">
+                {/* Airline header */}
+                <div className="flex items-center gap-1.5 lg:gap-3 mb-1.5 lg:mb-4">
+                    <div className="w-6 h-6 lg:w-10 lg:h-10 rounded-md bg-slate-200 dark:bg-white/10" />
+                    <div>
+                        <div className="h-3 w-24 lg:h-4 lg:w-[120px] rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
+                        <div className="h-2 w-16 lg:h-3 lg:w-20 rounded bg-slate-200 dark:bg-white/10" />
                     </div>
-                    <Skeleton className="h-4 w-32 hidden md:block" />
                 </div>
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-5 w-14" />
-                    <Skeleton className="h-px flex-1" />
-                    <Skeleton className="h-5 w-14" />
+
+                {/* Route timeline */}
+                <div className="flex items-center gap-1.5 lg:gap-3 mb-1.5 lg:mb-4">
+                    <div className="text-center">
+                        <div className="h-4 w-11 lg:h-6 lg:w-14 rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
+                        <div className="h-2 w-6 lg:h-3 lg:w-8 rounded bg-slate-200 dark:bg-white/10" />
+                    </div>
+                    <div className="flex-1 flex flex-col items-center gap-0.5">
+                        <div className="h-2 w-9 lg:h-3 lg:w-12 rounded bg-slate-200 dark:bg-white/10" />
+                        <div className="w-full h-[2px] rounded bg-slate-200 dark:bg-white/10" />
+                        <div className="h-2 w-10 lg:h-3 lg:w-[52px] rounded bg-slate-200 dark:bg-white/10" />
+                    </div>
+                    <div className="text-center">
+                        <div className="h-4 w-11 lg:h-6 lg:w-14 rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
+                        <div className="h-2 w-6 lg:h-3 lg:w-8 rounded bg-slate-200 dark:bg-white/10" />
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
+
+                {/* Tags */}
+                <div className="flex gap-0.5 lg:gap-2">
+                    <div className="h-3.5 w-[50px] lg:h-[22px] lg:w-20 rounded-full bg-slate-200 dark:bg-white/10" />
+                    <div className="h-3.5 w-11 lg:h-[22px] lg:w-[72px] rounded-full bg-slate-200 dark:bg-white/10" />
+                    <div className="h-3.5 w-[38px] lg:h-[22px] lg:w-16 rounded-full bg-slate-200 dark:bg-white/10" />
                 </div>
             </div>
-            <div className="flex flex-row lg:flex-col items-center justify-between lg:justify-center gap-3 lg:w-44 pt-2 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 shrink-0 lg:pl-4">
-                <div className="space-y-1">
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-3 w-16" />
+
+            {/* price */}
+            <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-1.5 lg:gap-2 lg:w-[180px] px-2.5 py-2 lg:p-5 lg:border-l border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+                <div>
+                    <div className="h-5 w-[70px] lg:h-7 lg:w-[100px] rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
+                    <div className="h-2.5 w-[50px] lg:h-3.5 lg:w-[72px] rounded bg-slate-200 dark:bg-white/10" />
                 </div>
-                <Skeleton className="h-9 w-20 rounded-xl" />
+                <div className="h-7 w-[76px] lg:h-[38px] lg:w-full rounded-full lg:rounded-lg bg-slate-200 dark:bg-white/10" />
             </div>
         </div>
     );
 }
 
-// ─── FlightResults ────────────────────────────────────────────────────────────
-
 interface FlightResultsProps {
     offers: FlightOffer[];
     loading: boolean;
-    adults?: number;
+    error?: string | null;
+    onSelect?: (offer: FlightOffer) => void;
+    onRetry?: () => void;
     skeletonCount?: number;
+    emptyMessage?: string;
     className?: string;
 }
 
 export function FlightResults({
     offers,
     loading,
-    adults = 1,
-    skeletonCount = 6,
+    error = null,
+    onSelect,
+    onRetry,
+    skeletonCount = 5,
+    emptyMessage,
     className,
 }: FlightResultsProps) {
-    const [filters, setFilters] = useState<FlightFilterState>(DEFAULT_FLIGHT_FILTERS);
-    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [isAutoLoading, setIsAutoLoading] = useState(false);
+    const sentinelRef = useRef<HTMLDivElement>(null);
 
-    const handleFilterChange = (partial: Partial<FlightFilterState>) => {
-        setFilters((prev) => ({ ...prev, ...partial }));
-    };
+    useEffect(() => { setVisibleCount(PAGE_SIZE); }, [offers]);
 
-    const highestPrice = useMemo(() => {
-        if (offers.length === 0) return 5000;
-        return Math.ceil(Math.max(...offers.map((o) => parseFloat(o.totalAmount))));
-    }, [offers]);
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && offers.length > visibleCount && !isAutoLoading) {
+                    setIsAutoLoading(true);
+                    setTimeout(() => {
+                        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, offers.length));
+                        setIsAutoLoading(false);
+                    }, 1200);
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
 
-    const filteredOffers = useMemo(() => {
-        let result = [...offers];
-
-        // Filter by max stops
-        if (filters.maxStops !== null) {
-            result = result.filter((o) => {
-                const outbound = o.slices[0];
-                if (!outbound) return true;
-                const stops = Math.max(0, outbound.segments.length - 1);
-                return stops <= filters.maxStops!;
-            });
+        if (sentinelRef.current) {
+            observer.observe(sentinelRef.current);
         }
 
-        // Filter by max price
-        if (filters.maxPrice < highestPrice) {
-            result = result.filter((o) => parseFloat(o.totalAmount) <= filters.maxPrice);
-        }
+        return () => observer.disconnect();
+    }, [offers.length, visibleCount, isAutoLoading]);
 
-        // Sort
-        if (filters.sortBy === 'price') {
-            result.sort((a, b) => parseFloat(a.totalAmount) - parseFloat(b.totalAmount));
-        } else if (filters.sortBy === 'duration') {
-            result.sort((a, b) => {
-                const durA = a.slices.reduce((sum, s) => sum + s.duration, 0);
-                const durB = b.slices.reduce((sum, s) => sum + s.duration, 0);
-                return durA - durB;
-            });
-        } else if (filters.sortBy === 'departure') {
-            result.sort((a, b) => {
-                const tA = new Date(a.slices[0]?.departureAt ?? 0).getTime();
-                const tB = new Date(b.slices[0]?.departureAt ?? 0).getTime();
-                return tA - tB;
-            });
-        }
+    const visibleOffers = offers.slice(0, visibleCount);
+    const hasMore = offers.length > visibleCount;
 
-        return result;
-    }, [offers, filters, highestPrice]);
-
-    const activeFilterCount =
-        (filters.maxStops !== null ? 1 : 0) +
-        (filters.maxPrice < highestPrice ? 1 : 0) +
-        (filters.sortBy !== 'price' ? 1 : 0);
-
-    // ─── Loading skeleton ──────────────────────────────────────────────────────
-
+    // Loading state
     if (loading) {
         return (
             <div className={cn('space-y-3', className)}>
+                {/* Animated header */}
+                <div className="flex items-center justify-center gap-2 lg:gap-3 py-2 lg:py-4">
+                    <div className="relative">
+                        <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                            <Plane className="w-4 h-4 lg:w-6 lg:h-6 text-indigo-500 animate-pulse" />
+                        </div>
+                        <div className="absolute inset-0 w-8 h-8 lg:w-12 lg:h-12 border-2 lg:border-[3px] border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] lg:text-sm font-medium text-slate-700 dark:text-slate-200">Finding the best fares&hellip;</p>
+                        <p className="text-[9px] lg:text-xs text-slate-400 dark:text-slate-500">Checking multiple providers</p>
+                    </div>
+                </div>
+
+                {/* Skeleton cards */}
                 {Array.from({ length: skeletonCount }).map((_, i) => (
-                    <FlightCardSkeleton key={i} />
+                    <FlightCardSkeleton key={i} index={i} />
                 ))}
             </div>
         );
     }
 
-    // ─── Empty state ───────────────────────────────────────────────────────────
+    // Error state
+    if (error) {
+        return (
+            <div className={cn('flex flex-col items-center justify-center py-8 lg:py-16 gap-2 lg:gap-4', className)}>
+                <div className="w-9 h-9 lg:w-14 lg:h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <svg className="w-4.5 h-4.5 lg:w-7 lg:h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                </div>
+                <div className="text-center">
+                    <h3 className="text-xs lg:text-lg font-semibold text-slate-800 dark:text-slate-200">Search Error</h3>
+                    <p className="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm">{error}</p>
+                </div>
+                {onRetry && (
+                    <button
+                        onClick={onRetry}
+                        className="mt-1 px-4 lg:px-6 py-1.5 lg:py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-[10px] lg:text-sm transition-colors"
+                    >
+                        Try Again
+                    </button>
+                )}
+            </div>
+        );
+    }
 
+    // Empty state
     if (offers.length === 0) {
         return (
-            <div className={cn(
-                'bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10',
-                'rounded-2xl p-12 text-center space-y-3',
-                className
-            )}>
-                <div className="w-14 h-14 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Plane className="text-blue-500" size={24} />
+            <div className={cn('flex flex-col items-center justify-center py-8 lg:py-16 gap-2 lg:gap-4', className)}>
+                <div className="w-9 h-9 lg:w-14 lg:h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Search className="w-4.5 h-4.5 lg:w-7 lg:h-7 text-slate-400 dark:text-slate-500" />
                 </div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white">No flights found</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-                    Try adjusting your search — different dates or nearby airports often have better fares.
-                </p>
+                <div className="text-center">
+                    <h3 className="text-xs lg:text-lg font-semibold text-slate-700 dark:text-slate-300">No flights found</h3>
+                    <p className="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm">{emptyMessage ?? 'Try adjusting your search dates or nearby airports.'}</p>
+                </div>
             </div>
         );
     }
 
+    // Results
     return (
-        <div className={cn('flex flex-col lg:flex-row gap-4 lg:items-start', className)}>
-            {/* Desktop sidebar filters */}
-            <aside className="hidden lg:block w-56 shrink-0 sticky top-20 self-start">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-white/10 p-4 shadow-sm">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
-                        <SlidersHorizontal size={13} />
-                        Filters
-                    </p>
-                    <FlightFilters
-                        filters={filters}
-                        onChange={handleFilterChange}
-                        highestPrice={highestPrice}
+        <div className={cn('space-y-3', className)}>
+            <AnimatePresence mode="popLayout">
+                {visibleOffers.map((offer, idx) => (
+                    <FlightCard
+                        key={`${offer.offerId}-${idx}`}
+                        offer={offer}
+                        index={idx}
+                        onSelect={onSelect}
                     />
-                </div>
-            </aside>
+                ))}
+            </AnimatePresence>
 
-            {/* Results column */}
-            <div className="flex-1 min-w-0 space-y-3">
-                {/* Mobile filter bar */}
-                <div className="flex items-center justify-between lg:hidden">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                        {filteredOffers.length} flight{filteredOffers.length !== 1 ? 's' : ''}
-                    </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFiltersOpen((v) => !v)}
-                        className="gap-1.5 text-xs"
-                    >
-                        <SlidersHorizontal size={12} />
-                        Filters
-                        {activeFilterCount > 0 && (
-                            <span className="ml-1 w-4 h-4 bg-blue-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                                {activeFilterCount}
-                            </span>
-                        )}
-                    </Button>
-                </div>
+            <div ref={sentinelRef} className="h-1 w-full pointer-events-none" />
 
-                {/* Mobile filter drawer */}
-                {filtersOpen && (
-                    <div className="lg:hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-white/10 p-4 shadow-sm space-y-1">
-                        <div className="flex items-center justify-between mb-3">
-                            <p className="text-xs font-bold text-slate-900 dark:text-white">Filters</p>
-                            <button
-                                onClick={() => setFiltersOpen(false)}
-                                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-                            >
-                                <X size={14} className="text-slate-500" />
-                            </button>
-                        </div>
-                        <FlightFilters
-                            filters={filters}
-                            onChange={handleFilterChange}
-                            highestPrice={highestPrice}
-                        />
-                        <div className="pt-3">
-                            <Button
-                                fullWidth
-                                size="sm"
-                                onClick={() => setFiltersOpen(false)}
-                            >
-                                Show {filteredOffers.length} flights
-                            </Button>
+
+            {(hasMore || isAutoLoading) && (
+                <div className="space-y-3 pb-8">
+                    <FlightCardSkeleton index={0} />
+                    <FlightCardSkeleton index={1} />
+                    <FlightCardSkeleton index={2} />
+                    <div className="flex flex-col items-center gap-2 py-4">
+                        <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 animate-pulse">
+                            <div className="w-1 h-1 rounded-full bg-indigo-500" />
+                            <p className="text-[10px] font-bold uppercase tracking-widest">
+                                Discovering more ({visibleOffers.length} / {offers.length})
+                            </p>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* Result count (desktop) */}
-                <div className="hidden lg:flex items-center justify-between">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {filteredOffers.length} of {offers.length} flight{offers.length !== 1 ? 's' : ''}
+            {!hasMore && !isAutoLoading && offers.length > 0 && (
+                <div className="pt-4 pb-12 text-center">
+                    <p className="text-[10px] font-normal text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-60">
+                        All {offers.length} flights shown
                     </p>
                 </div>
-
-                {/* No results after filtering */}
-                {filteredOffers.length === 0 && offers.length > 0 && (
-                    <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl p-8 text-center space-y-2">
-                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            No flights match your filters
-                        </p>
-                        <button
-                            onClick={() => setFilters(DEFAULT_FLIGHT_FILTERS)}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                            Clear filters
-                        </button>
-                    </div>
-                )}
-
-                {/* Flight cards */}
-                {filteredOffers.map((offer) => (
-                    <FlightCard key={offer.id} offer={offer} adults={adults} />
-                ))}
-            </div>
+            )}
         </div>
     );
 }
+
+export default FlightResults;

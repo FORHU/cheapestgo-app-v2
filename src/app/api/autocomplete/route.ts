@@ -81,6 +81,45 @@ function matchCountries(query: string) {
         }));
 }
 
+/**
+ * Calls the backend's Duffel-powered airport search.
+ * Used only when mode=flights so that IATA codes like "MNL" or "CRK"
+ * resolve to real airports instead of generic Mapbox city names.
+ *
+ * Returns results shaped as { type: 'airport', title, subtitle, code }
+ * where `code` is the IATA code that gets passed to /flights/search.
+ */
+async function fetchAirportsFromBackend(query: string) {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBase) return [];
+
+    try {
+        const res = await fetch(
+            `${apiBase}/airports/search?q=${encodeURIComponent(query)}&limit=8`,
+            { signal: AbortSignal.timeout(4000) },
+        );
+        if (!res.ok) return [];
+
+        const json = await res.json() as {
+            success: boolean;
+            data: { iata: string; name: string; city: string; country: string }[];
+        };
+        if (!json.success) return [];
+
+        return json.data.map(airport => ({
+            type: 'airport' as const,
+            // e.g. "Manila (MNL)" — the format DestinationInput displays
+            title: `${airport.city} (${airport.iata})`,
+            subtitle: `${airport.name} · ${airport.country}`,
+            // `code` is what the search-form uses as the IATA value
+            code: airport.iata,
+            countryCode: '',
+        }));
+    } catch {
+        return [];
+    }
+}
+
 async function fetchCitiesFromMapbox(query: string) {
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token) return [];
@@ -116,12 +155,22 @@ async function fetchCitiesFromMapbox(query: string) {
 
 export async function GET(req: NextRequest) {
     const query = req.nextUrl.searchParams.get('query') ?? '';
+    // DestinationInput passes mode=flights when inside the Flights tab.
+    // This switches the data source from Mapbox cities → backend airports.
+    const mode  = req.nextUrl.searchParams.get('mode') ?? 'hotels';
 
     if (!query || query.length < 2) {
         return Response.json({ success: true, data: [] });
     }
 
     try {
+        // ── Flight mode: airports from backend (Duffel Places API) ───────────
+        if (mode === 'flights') {
+            const airportResults = await fetchAirportsFromBackend(query);
+            return Response.json({ success: true, data: airportResults });
+        }
+
+        // ── Hotel / general mode: countries + Mapbox cities ───────────────────
         const countryResults = matchCountries(query);
         const q = query.toLowerCase().trim();
         const isExactCountryMatch = countryResults.some(
