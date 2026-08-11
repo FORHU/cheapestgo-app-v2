@@ -24,25 +24,17 @@ interface TrendingDest {
     name: string;
     country: string;
     tag: string;
-    mood: string;
     bgClass: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TRENDING: TrendingDest[] = [
-    { id: 'bali',      name: 'Bali',      country: 'Indonesia', tag: 'Island escape',  mood: 'rgba(45,190,175,0.35)', bgClass: 'bg-gradient-to-br from-teal-500 to-emerald-700' },
-    { id: 'santorini', name: 'Santorini', country: 'Greece',    tag: 'Coastal cliffs', mood: 'rgba(70,140,225,0.32)', bgClass: 'bg-gradient-to-br from-blue-400 to-sky-700' },
-    { id: 'kyoto',     name: 'Kyoto',     country: 'Japan',     tag: 'Culture & calm', mood: 'rgba(225,110,165,0.30)', bgClass: 'bg-gradient-to-br from-pink-400 to-rose-700' },
-    { id: 'marrakech', name: 'Marrakech', country: 'Morocco',   tag: 'Desert warmth',  mood: 'rgba(240,145,60,0.35)',  bgClass: 'bg-gradient-to-br from-amber-400 to-orange-700' },
+    { id: 'bali',      name: 'Bali',      country: 'Indonesia', tag: 'Island escape',  bgClass: 'bg-gradient-to-br from-teal-500 to-emerald-700' },
+    { id: 'santorini', name: 'Santorini', country: 'Greece',    tag: 'Coastal cliffs', bgClass: 'bg-gradient-to-br from-blue-400 to-sky-700' },
+    { id: 'kyoto',     name: 'Kyoto',     country: 'Japan',     tag: 'Culture & calm', bgClass: 'bg-gradient-to-br from-pink-400 to-rose-700' },
+    { id: 'marrakech', name: 'Marrakech', country: 'Morocco',   tag: 'Desert warmth',  bgClass: 'bg-gradient-to-br from-amber-400 to-orange-700' },
 ];
-
-const BACKDROP_BY_ID: Record<string, string> = {
-    bali:      'linear-gradient(160deg,#0d3d2e 0%,#1a5c40 45%,#0d2e1c 100%)',
-    santorini: 'linear-gradient(160deg,#0d2b4a 0%,#1a4a7a 45%,#0d1f38 100%)',
-    kyoto:     'linear-gradient(160deg,#3d0d2b 0%,#6b1a4a 45%,#2e0d1c 100%)',
-    marrakech: 'linear-gradient(160deg,#3d2000 0%,#6b3800 45%,#2e1800 100%)',
-};
 
 const FLEX_CHIPS = ['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
 
@@ -103,16 +95,18 @@ interface TokenProps {
     hint: boolean;
     onClick: (e: React.MouseEvent) => void;
     children: React.ReactNode;
+    /** Defaults to solid once filled, dashed while empty. */
+    underline?: 'solid' | 'dashed' | 'dotted';
 }
 
-function Token({ filled, hint, onClick, children }: TokenProps) {
+function Token({ filled, hint, onClick, children, underline }: TokenProps) {
     return (
         <span
             onClick={onClick}
             className="imm-token cursor-pointer font-bold pb-0.5 inline-flex items-baseline gap-0.5 transition-opacity duration-300"
             style={{
                 borderBottomWidth: '3px',
-                borderBottomStyle: filled ? 'solid' : 'dashed',
+                borderBottomStyle: underline ?? (filled ? 'solid' : 'dashed'),
                 borderBottomColor: ACCENT,
                 opacity: filled ? 1 : 0.92,
                 animation: (!filled && hint) ? 'immSbHint 1.6s ease-in-out infinite' : 'none',
@@ -134,13 +128,13 @@ function NotePanel({ children, width = 'min(360px,88vw)', extra = {} }: {
     extra?: React.CSSProperties;
 }) {
     return (
-        <div style={{
+        <div className="imm-note" style={{
             position: 'absolute',
             top: 'calc(100% + 18px)',
             left: '50%',
             transform: 'translateX(-50%) rotate(-0.6deg)',
             width,
-            background: 'rgba(18,14,28,0.97)',
+            background: 'rgba(26,26,26,0.98)',
             borderRadius: '20px',
             padding: '22px',
             boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)',
@@ -148,16 +142,16 @@ function NotePanel({ children, width = 'min(360px,88vw)', extra = {} }: {
             zIndex: 40,
             maxHeight: '380px',
             overflowY: 'auto',
-            fontFamily: 'var(--font-jakarta, sans-serif)',
+            fontFamily: 'var(--font-sans)',
             fontSize: '15px',
             lineHeight: '1.4',
-            color: '#F5EFE4',
+            color: '#f1f5f9',
             ...extra,
         }}>
             {/* Paper-fold tab */}
             <div style={{
                 position: 'absolute', top: '-10px', left: '28px',
-                width: '56px', height: '16px', background: 'rgba(255,183,94,0.65)',
+                width: '56px', height: '16px', background: 'rgba(255,255,255,0.14)',
                 borderRadius: '3px', transform: 'rotate(-5deg)', boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
             }} />
             {children}
@@ -195,14 +189,14 @@ function DestPanel({
         <>
             {/* Search input */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1.5px solid rgba(255,255,255,0.14)', paddingBottom: '10px', marginBottom: '18px' }}>
-                <span style={{ display: 'flex', color: 'rgba(245,239,228,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>
+                <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>
                 <input
                     type="text"
                     value={query}
                     onChange={e => onQueryChange(e.target.value)}
                     placeholder={placeholder}
                     autoFocus
-                    style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '15px', flex: 1, color: '#F5EFE4', fontFamily: 'var(--font-jakarta, sans-serif)' }}
+                    style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '15px', flex: 1, color: '#f1f5f9', fontFamily: 'var(--font-sans)' }}
                 />
                 {sugLoading && (
                     <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: 'immSbSpin .8s linear infinite', flexShrink: 0, opacity: 0.5 }}>
@@ -217,10 +211,10 @@ function DestPanel({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '18px' }}>
                     {suggestions.map((s, i) => (
                         <div key={i} className="imm-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', cursor: 'pointer' }} onClick={() => onPickSuggestion(s)}>
-                            <span style={{ display: 'flex', color: 'rgba(245,239,228,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>
+                            <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div>
-                                <div style={{ fontSize: '12px', color: 'rgba(245,239,228,0.6)', marginTop: '1px' }}>{s.subtitle}</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(241,245,249,0.6)', marginTop: '1px' }}>{s.subtitle}</div>
                             </div>
                         </div>
                     ))}
@@ -230,13 +224,13 @@ function DestPanel({
             {/* Recent searches */}
             {showRecent && (
                 <>
-                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(245,239,228,0.42)', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)', marginBottom: '10px' }}>
                         Pick up where you left off
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '20px' }}>
                         {recentTitles.slice(0, 3).map((title, i) => (
                             <div key={i} className="imm-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', cursor: 'pointer' }} onClick={() => onPickRecent!(title)}>
-                                <span style={{ display: 'flex', color: 'rgba(245,239,228,0.42)', flexShrink: 0 }}><ClockMiniIcon /></span>
+                                <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><ClockMiniIcon /></span>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
                                 </div>
@@ -249,7 +243,7 @@ function DestPanel({
             {/* Trending */}
             {showTrending && (
                 <>
-                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(245,239,228,0.42)', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)', marginBottom: '10px' }}>
                         {trendingLabel}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
@@ -257,7 +251,7 @@ function DestPanel({
                             <div key={dest.id} className="imm-dest-card" style={{ flex: '1 1 120px', cursor: 'pointer', transition: 'opacity .2s' }} onClick={() => onPickTrending(dest)}>
                                 <div className={dest.bgClass} style={{ width: '100%', height: '80px', marginBottom: '8px', borderRadius: '14px' }} />
                                 <div style={{ fontWeight: 700, fontSize: '14px' }}>{dest.name}</div>
-                                <div style={{ fontSize: '12px', color: 'rgba(245,239,228,0.6)' }}>{dest.country} · {dest.tag}</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(241,245,249,0.6)' }}>{dest.country} · {dest.tag}</div>
                             </div>
                         ))}
                     </div>
@@ -284,13 +278,13 @@ export function ImmersiveSearchBar() {
     const [originQuery, setOriginQuery] = useState('');
     const [originSugs, setOriginSugs] = useState<DestSuggestion[]>([]);
     const [originSugLoading, setOriginSugLoading] = useState(false);
-    const [pickedOrigin, setPickedOrigin] = useState<{ name: string; mood: string; trendingId?: string } | null>(null);
+    const [pickedOrigin, setPickedOrigin] = useState<{ name: string } | null>(null);
 
     // Destination
     const [destQuery, setDestQuery] = useState('');
     const [destSugs, setDestSugs] = useState<DestSuggestion[]>([]);
     const [destSugLoading, setDestSugLoading] = useState(false);
-    const [pickedDest, setPickedDest] = useState<{ name: string; mood: string; trendingId?: string; id?: string } | null>(null);
+    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string } | null>(null);
 
     // Dates
     const [checkIn, setCheckIn] = useState<Date | null>(null);
@@ -393,7 +387,7 @@ export function ImmersiveSearchBar() {
 
     const pickOriginTrending = useCallback((t: TrendingDest) => {
         clearTimeout(advanceT.current);
-        setPickedOrigin({ name: t.name, mood: t.mood, trendingId: t.id });
+        setPickedOrigin({ name: t.name });
         setOriginQuery('');
         setOriginSugs([]);
         setPanelOpen('destination');
@@ -401,7 +395,7 @@ export function ImmersiveSearchBar() {
 
     const pickOriginSuggestion = useCallback((s: DestSuggestion) => {
         clearTimeout(advanceT.current);
-        setPickedOrigin({ name: s.title, mood: 'rgba(255,255,255,0.15)' });
+        setPickedOrigin({ name: s.title });
         setOriginQuery('');
         setOriginSugs([]);
         setPanelOpen('destination');
@@ -411,7 +405,7 @@ export function ImmersiveSearchBar() {
 
     const pickDestTrending = useCallback((t: TrendingDest) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: t.name, mood: t.mood, trendingId: t.id });
+        setPickedDest({ name: t.name });
         setDestQuery('');
         setDestSugs([]);
         setPanelOpen('dates');
@@ -419,7 +413,7 @@ export function ImmersiveSearchBar() {
 
     const pickDestSuggestion = useCallback((s: DestSuggestion) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: s.title, mood: 'rgba(255,255,255,0.15)', id: s.id });
+        setPickedDest({ name: s.title, id: s.id });
         setDestQuery('');
         setDestSugs([]);
         setPanelOpen('dates');
@@ -427,7 +421,7 @@ export function ImmersiveSearchBar() {
 
     const pickDestRecent = useCallback((title: string) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: title, mood: 'rgba(255,255,255,0.15)' });
+        setPickedDest({ name: title });
         setDestQuery('');
         setPanelOpen('dates');
     }, []);
@@ -537,12 +531,6 @@ export function ImmersiveSearchBar() {
 
     // ── Derived ───────────────────────────────────────────────────────────────
 
-    const backdropKey = pickedDest?.trendingId ?? pickedOrigin?.trendingId;
-    const backdrop = backdropKey
-        ? (BACKDROP_BY_ID[backdropKey] ?? 'linear-gradient(160deg,#1a0533 0%,#2d1b4e 45%,#1c1030 100%)')
-        : 'linear-gradient(160deg,#1a0533 0%,#2d1b4e 45%,#1c1030 100%)';
-    const moodColor = pickedDest?.mood ?? pickedOrigin?.mood ?? 'rgba(255,255,255,0)';
-
     const originValue = pickedOrigin ? pickedOrigin.name : 'wherever you are';
     const destValue   = pickedDest   ? pickedDest.name   : 'somewhere amazing';
 
@@ -559,10 +547,6 @@ export function ImmersiveSearchBar() {
     const travelersValue = travelers === 1 ? 'just me' : `${travelers} of us`;
     const resultsLabel   = mode === 'stays' ? 'stays' : 'flights';
 
-    const eyebrow = mode === 'flights'
-        ? ((pickedOrigin && pickedDest) ? 'FLIGHT LOCKED IN' : 'PLAN YOUR FLIGHT')
-        : (pickedDest ? 'DESTINATION LOCKED IN' : 'PLAN YOUR NEXT TRIP');
-
     const datesHeading = mode === 'flights'
         ? (isOneway ? 'When are you flying?' : 'Pick your dates')
         : (flexible ? "How long's the trip?" : 'Pick your dates');
@@ -576,8 +560,13 @@ export function ImmersiveSearchBar() {
         ? TRENDING.filter(t => `${t.name}${t.country}`.toLowerCase().includes(destQuery.trim().toLowerCase()))
         : TRENDING;
 
-    const stampBg = ctaState === 'done' ? '#2FB67F' : ACCENT;
-    const stampTransform = ctaState === 'done' ? 'rotate(0deg) scale(1.05)' : 'rotate(-8deg)';
+    // White stamp on the dark card; the confirmation state keeps its green so a
+    // completed search still reads at a glance.
+    const stampDone = ctaState === 'done';
+    const stampBg = stampDone ? '#2FB67F' : '#ffffff';
+    const stampFg = stampDone ? '#ffffff' : '#121212';
+    const stampBorder = stampDone ? '3px dashed rgba(255,255,255,.65)' : '3px dashed rgba(18,18,18,.3)';
+    const stampTransform = stampDone ? 'rotate(0deg) scale(1.05)' : 'rotate(-8deg)';
     const stampAnimation = shake
         ? 'immSbShake 420ms ease'
         : ctaState === 'searching'
@@ -593,7 +582,7 @@ export function ImmersiveSearchBar() {
             <style>{`
                 @keyframes immSbSpin   { to { transform: rotate(360deg); } }
                 @keyframes immSbShake  { 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(3px)} 30%,50%,70%{transform:translateX(-5px)} 40%,60%{transform:translateX(5px)} }
-                @keyframes immSbPulse  { 0%,100%{box-shadow:0 16px 30px -10px rgba(20,10,35,.55),0 0 0 0 rgba(255,255,255,.5)} 50%{box-shadow:0 16px 30px -10px rgba(20,10,35,.55),0 0 0 10px rgba(255,255,255,0)} }
+                @keyframes immSbPulse  { 0%,100%{box-shadow:0 16px 30px -10px rgba(0,0,0,.6),0 0 0 0 rgba(255,255,255,.35)} 50%{box-shadow:0 16px 30px -10px rgba(0,0,0,.6),0 0 0 10px rgba(255,255,255,0)} }
                 @keyframes immSbHint   { 0%,100%{opacity:.92} 50%{opacity:.45} }
                 .imm-ribbon::-webkit-scrollbar { height:4px }
                 .imm-ribbon::-webkit-scrollbar-thumb { background:rgba(255,255,255,.18);border-radius:2px }
@@ -601,28 +590,33 @@ export function ImmersiveSearchBar() {
                 .imm-stamp:hover  { filter:brightness(0.88) }
                 .imm-dest-card:hover { opacity:.85 }
                 .imm-row:hover    { background:rgba(255,255,255,.07);border-radius:14px }
+                /* A panel centred on its token runs off the side of a phone screen,
+                   so below the card's breakpoint it docks to the bottom instead.
+                   !important because NotePanel positions itself with inline styles. */
+                @media (max-width:760px) {
+                  .imm-note {
+                    position:fixed !important; inset:auto 16px 16px 16px !important;
+                    width:auto !important; transform:none !important;
+                    max-height:62vh !important;
+                  }
+                }
             `}</style>
 
             <div ref={wrapRef} style={{ width: '100%', maxWidth: '900px', position: 'relative', margin: '0 auto' }}>
 
-                {/* ── Backdrop card ─────────────────────────────────────── */}
+                {/* ── Container ─────────────────────────────────────────── */}
+                {/* Transparent: the prose sits straight on the page canvas, with no
+                    surface, wash or border of its own. */}
                 <div style={{
+                    // Only enough floor to stop the block jumping as the headline
+                    // rewraps between modes — with the card gone there is nothing
+                    // left to fill, and a taller box just pushed the prose down.
                     position: 'relative', width: '100%',
-                    height: 'clamp(280px,42vw,480px)',
-                    boxShadow: '0 30px 70px -25px rgba(20,10,35,.5)',
-                    borderRadius: '32px', color: '#fff',
-                    overflow: 'hidden',
-                    background: backdrop,
-                    transition: 'background 1s ease',
+                    minHeight: 'clamp(220px,26vw,320px)',
+                    color: '#fff',
                 }}>
-                    {/* Mood wash */}
-                    <div style={{ position: 'absolute', inset: 0, borderRadius: '32px', background: moodColor, mixBlendMode: 'overlay', transition: 'background .8s ease', pointerEvents: 'none' }} />
-
-                    {/* Dark vignette */}
-                    <div style={{ position: 'absolute', inset: 0, borderRadius: '32px', background: 'linear-gradient(165deg,rgba(20,12,30,.15) 0%,rgba(15,8,20,.15) 45%,rgba(10,6,16,.68) 100%)', pointerEvents: 'none' }} />
-
                     {/* Content */}
-                    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(28px,4.5vw,48px)', gap: '18px', boxSizing: 'border-box' }}>
+                    <div style={{ position: 'relative', minHeight: 'inherit', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(28px,4.5vw,48px)', gap: '18px', boxSizing: 'border-box' }}>
 
                         {/* ── Mode tabs ── */}
                         <div style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.32)', backdropFilter: 'blur(8px)', borderRadius: '100px', padding: '4px', gap: '2px' }}>
@@ -633,9 +627,9 @@ export function ImmersiveSearchBar() {
                                     style={{
                                         padding: '7px 16px', borderRadius: '100px', border: 'none',
                                         fontSize: '12px', fontWeight: 700, letterSpacing: '.04em',
-                                        cursor: 'pointer', fontFamily: 'var(--font-jakarta, sans-serif)',
+                                        cursor: 'pointer', fontFamily: 'var(--font-sans)',
                                         background: mode === m ? '#fff' : 'transparent',
-                                        color:      mode === m ? '#241f2e' : 'rgba(255,255,255,.85)',
+                                        color:      mode === m ? '#121212' : 'rgba(255,255,255,.85)',
                                         transition: 'background .2s,color .2s',
                                         textTransform: 'capitalize',
                                     }}
@@ -643,13 +637,8 @@ export function ImmersiveSearchBar() {
                             ))}
                         </div>
 
-                        {/* ── Eyebrow badge ── */}
-                        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.32)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: '11px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', padding: '7px 14px', borderRadius: '100px', fontFamily: 'var(--font-jakarta, sans-serif)' }}>
-                            {eyebrow}
-                        </div>
-
                         {/* ── Prose headline ── */}
-                        <div style={{ fontFamily: 'var(--font-fredoka, sans-serif)', fontWeight: 600, fontSize: 'clamp(23px,3.4vw,42px)', lineHeight: 1.42, color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,.35)', maxWidth: '680px' }}>
+                        <div style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'clamp(23px,3.4vw,42px)', lineHeight: 1.42, color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,.35)', maxWidth: '680px' }}>
 
                             {/* FLIGHTS MODE */}
                             {mode === 'flights' && (
@@ -718,18 +707,18 @@ export function ImmersiveSearchBar() {
                                     <NotePanel width="min(400px,92vw)" extra={{ textAlign: 'left', maxHeight: 'none' }}>
                                         {/* Header */}
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
-                                            <div style={{ fontWeight: 700, fontSize: '16px', fontFamily: 'var(--font-fredoka, sans-serif)' }}>{datesHeading}</div>
+                                            <div style={{ fontWeight: 700, fontSize: '16px', fontFamily: 'var(--font-sans)' }}>{datesHeading}</div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 {checkIn && (
                                                     <button
-                                                        style={{ border: 'none', background: 'transparent', color: ACCENT, fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-jakarta, sans-serif)' }}
+                                                        style={{ border: 'none', background: 'transparent', color: ACCENT, fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
                                                         onClick={e => { e.stopPropagation(); setCheckIn(null); setCheckOut(null); setFlexOption(null); }}
                                                     >Clear</button>
                                                 )}
                                                 {/* Stays: flexible toggle */}
                                                 {mode === 'stays' && (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setFlexible(f => !f); setCheckIn(null); setCheckOut(null); setFlexOption(null); }}>
-                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(245,239,228,0.6)' }}>I&apos;m flexible</span>
+                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(241,245,249,0.6)' }}>I&apos;m flexible</span>
                                                         <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: flexible ? ACCENT : 'rgba(255,255,255,0.08)', position: 'relative', transition: 'background .25s', flexShrink: 0 }}>
                                                             <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: flexible ? '18px' : '2px', transition: 'left .25s', boxShadow: '0 1px 3px rgba(0,0,0,.3)' }} />
                                                         </div>
@@ -745,7 +734,7 @@ export function ImmersiveSearchBar() {
                                                                 <button
                                                                     key={tt}
                                                                     onClick={e => { e.stopPropagation(); setTripType(tt); setCheckIn(null); setCheckOut(null); }}
-                                                                    style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-jakarta, sans-serif)', border: active ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(255,255,255,0.18)', background: active ? ACCENT : 'transparent', color: active ? '#fff' : '#F5EFE4', transition: 'all .2s' }}
+                                                                    style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', border: active ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(255,255,255,0.18)', background: active ? ACCENT : 'transparent', color: active ? '#fff' : '#f1f5f9', transition: 'all .2s' }}
                                                                 >{label}</button>
                                                             );
                                                         })}
@@ -757,7 +746,7 @@ export function ImmersiveSearchBar() {
                                         {/* Date ribbon (exact mode) */}
                                         {(!flexible) && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <button onClick={e => { e.stopPropagation(); ribbonRef.current?.scrollBy({ left: -220, behavior: 'smooth' }); }} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: '#F5EFE4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                                <button onClick={e => { e.stopPropagation(); ribbonRef.current?.scrollBy({ left: -220, behavior: 'smooth' }); }} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                                                 </button>
 
@@ -776,14 +765,14 @@ export function ImmersiveSearchBar() {
                                                         return (
                                                             <div key={d.toISOString()} style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '44px', padding: '4px 3px', cursor: 'pointer', flexShrink: 0 }} onClick={selectDay(d)}>
                                                                 {(i === 0 || d.getDate() === 1) && (
-                                                                    <div style={{ position: 'absolute', top: '-14px', fontSize: '9px', fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'rgba(245,239,228,0.42)', whiteSpace: 'nowrap' }}>
+                                                                    <div style={{ position: 'absolute', top: '-14px', fontSize: '9px', fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)', whiteSpace: 'nowrap' }}>
                                                                         {d.toLocaleDateString('en-US', { month: 'short' })}
                                                                     </div>
                                                                 )}
-                                                                <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.03em', textTransform: 'uppercase', color: 'rgba(245,239,228,0.42)' }}>
+                                                                <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.03em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)' }}>
                                                                     {d.toLocaleDateString('en-US', { weekday: 'short' })}
                                                                 </div>
-                                                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', fontFamily: 'var(--font-jakarta, sans-serif)', transition: 'background .25s,color .25s', background: isEdge ? ACCENT : inRange ? 'rgba(255,255,255,0.10)' : 'transparent', color: isEdge ? '#fff8f2' : '#F5EFE4' }}>
+                                                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', fontFamily: 'var(--font-sans)', transition: 'background .25s,color .25s', background: isEdge ? ACCENT : inRange ? 'rgba(255,255,255,0.10)' : 'transparent', color: isEdge ? '#fff8f2' : '#f1f5f9' }}>
                                                                     {d.getDate()}
                                                                 </div>
                                                             </div>
@@ -791,7 +780,7 @@ export function ImmersiveSearchBar() {
                                                     })}
                                                 </div>
 
-                                                <button onClick={e => { e.stopPropagation(); ribbonRef.current?.scrollBy({ left: 220, behavior: 'smooth' }); }} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: '#F5EFE4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                                <button onClick={e => { e.stopPropagation(); ribbonRef.current?.scrollBy({ left: 220, behavior: 'smooth' }); }} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                                                 </button>
                                             </div>
@@ -799,7 +788,7 @@ export function ImmersiveSearchBar() {
 
                                         {/* Nights counter */}
                                         {!flexible && nights && (
-                                            <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 600, color: 'rgba(245,239,228,0.6)', textAlign: 'center' }}>
+                                            <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 600, color: 'rgba(241,245,249,0.6)', textAlign: 'center' }}>
                                                 {nights} night{nights === 1 ? '' : 's'}
                                             </div>
                                         )}
@@ -812,7 +801,7 @@ export function ImmersiveSearchBar() {
                                                     return (
                                                         <button
                                                             key={label}
-                                                            style={{ padding: '10px 16px', borderRadius: '14px', border: active ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(255,255,255,0.18)', background: active ? ACCENT : 'transparent', color: active ? '#fff' : '#F5EFE4', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-jakarta, sans-serif)', transition: 'opacity .2s' }}
+                                                            style={{ padding: '10px 16px', borderRadius: '14px', border: active ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(255,255,255,0.18)', background: active ? ACCENT : 'transparent', color: active ? '#fff' : '#f1f5f9', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'opacity .2s' }}
                                                             onClick={e => { e.stopPropagation(); pickFlex(label)(); }}
                                                         >{label}</button>
                                                     );
@@ -827,72 +816,75 @@ export function ImmersiveSearchBar() {
 
                             {/* Travelers token */}
                             <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
-                                <Token filled onClick={openPanel('travelers')} hint={false}>
+                                <Token filled underline="dotted" onClick={openPanel('travelers')} hint={false}>
                                     {travelersValue}
                                 </Token>
                                 {panelOpen === 'travelers' && (
                                     <NotePanel width="260px" extra={{ textAlign: 'center', maxHeight: 'none' }}>
-                                        <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-fredoka, sans-serif)', marginBottom: '16px' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '16px' }}>
                                             {mode === 'flights' ? 'How many flying?' : 'How many of you?'}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
-                                            <button onClick={e => { e.stopPropagation(); setTravelersCount(n => Math.max(1, n - 1)); }} disabled={travelers <= 1} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '20px', fontWeight: 600, color: '#F5EFE4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: travelers <= 1 ? 'not-allowed' : 'pointer', opacity: travelers <= 1 ? 0.35 : 1 }}>−</button>
-                                            <div style={{ fontSize: '26px', fontWeight: 800, minWidth: '40px', fontFamily: 'var(--font-jakarta, sans-serif)' }}>{travelers}</div>
-                                            <button onClick={e => { e.stopPropagation(); setTravelersCount(n => Math.min(16, n + 1)); }} disabled={travelers >= 16} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '20px', fontWeight: 600, color: '#F5EFE4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: travelers >= 16 ? 'not-allowed' : 'pointer', opacity: travelers >= 16 ? 0.35 : 1 }}>+</button>
+                                            <button onClick={e => { e.stopPropagation(); setTravelersCount(n => Math.max(1, n - 1)); }} disabled={travelers <= 1} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '20px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: travelers <= 1 ? 'not-allowed' : 'pointer', opacity: travelers <= 1 ? 0.35 : 1 }}>−</button>
+                                            <div style={{ fontSize: '26px', fontWeight: 800, minWidth: '40px', fontFamily: 'var(--font-sans)' }}>{travelers}</div>
+                                            <button onClick={e => { e.stopPropagation(); setTravelersCount(n => Math.min(16, n + 1)); }} disabled={travelers >= 16} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '20px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: travelers >= 16 ? 'not-allowed' : 'pointer', opacity: travelers >= 16 ? 0.35 : 1 }}>+</button>
                                         </div>
                                     </NotePanel>
                                 )}
                             </span>
                             {'.'}
                         </div>
+
+                        {/* ── Stamp CTA ─────────────────────────────────── */}
+                        {/* In the content column rather than pinned to the corner, so
+                            it stays with the prose — right-aligned, landing after the
+                            sentence: fill the tokens, then hit GO. */}
+                        <button
+                            className="imm-stamp"
+                            onClick={handleSearch}
+                            style={{
+                                alignSelf: 'flex-end', flexShrink: 0,
+                                width: '96px', height: '96px', borderRadius: '50%',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                                color: stampFg, fontFamily: 'var(--font-sans)', fontWeight: 700,
+                                cursor: 'pointer', zIndex: 20,
+                                border: stampBorder,
+                                boxShadow: '0 16px 30px -10px rgba(0,0,0,.6)',
+                                background: stampBg, transform: stampTransform,
+                                transition: 'background .3s,transform .3s',
+                                animation: stampAnimation,
+                            }}
+                        >
+                            {ctaState === 'idle' && (
+                                <>
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+                                        <path d="m21.854 2.147-10.94 10.939" />
+                                    </svg>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.06em' }}>GO</span>
+                                </>
+                            )}
+                            {ctaState === 'searching' && (
+                                <svg width="24" height="24" viewBox="0 0 24 24" style={{ animation: 'immSbSpin .8s linear infinite' }}>
+                                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="3" />
+                                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
+                                </svg>
+                            )}
+                            {ctaState === 'done' && (
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            )}
+                        </button>
                     </div>
 
                     {/* Results badge */}
                     {ctaState === 'done' && resultsCount && (
-                        <div style={{ position: 'absolute', bottom: '8px', right: '150px', background: 'rgba(18,14,28,0.97)', color: '#F5EFE4', padding: '10px 18px', borderRadius: '16px', fontWeight: 700, fontSize: '13px', boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', fontFamily: 'var(--font-jakarta, sans-serif)' }}>
+                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(26,26,26,0.98)', color: '#f1f5f9', padding: '10px 18px', borderRadius: '16px', fontWeight: 700, fontSize: '13px', boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)', border: '1px solid rgba(255,255,255,0.10)' }}>
                             {resultsCount.toLocaleString()} {resultsLabel} found
                         </div>
                     )}
                 </div>
-
-                {/* ── Stamp CTA ─────────────────────────────────────────── */}
-                <button
-                    className="imm-stamp"
-                    onClick={handleSearch}
-                    style={{
-                        position: 'absolute', bottom: '-26px', right: '32px',
-                        width: '96px', height: '96px', borderRadius: '50%',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-                        color: '#fff', fontFamily: 'var(--font-fredoka, sans-serif)', fontWeight: 700,
-                        cursor: 'pointer', zIndex: 20,
-                        border: '3px dashed rgba(255,255,255,.65)',
-                        boxShadow: '0 16px 30px -10px rgba(20,10,35,.55)',
-                        background: stampBg, transform: stampTransform,
-                        transition: 'background .3s,transform .3s',
-                        animation: stampAnimation,
-                    }}
-                >
-                    {ctaState === 'idle' && (
-                        <>
-                            {mode === 'stays'
-                                ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v9.5a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1V15a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4.5a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V10" /></svg>
-                                : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z" /></svg>
-                            }
-                            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.06em' }}>GO</span>
-                        </>
-                    )}
-                    {ctaState === 'searching' && (
-                        <svg width="24" height="24" viewBox="0 0 24 24" style={{ animation: 'immSbSpin .8s linear infinite' }}>
-                            <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="3" />
-                            <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
-                        </svg>
-                    )}
-                    {ctaState === 'done' && (
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 6 9 17l-5-5" />
-                        </svg>
-                    )}
-                </button>
             </div>
         </>
     );

@@ -1,23 +1,26 @@
 export const revalidate = 300;
 
-import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
-import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
 import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
-import { YourRecentSearches } from '@/shared/components/landing/YourRecentSearches';
-import RecentlyViewed from '@/shared/components/landing/RecentlyViewed';
-import PhilippinesCitiesSection from '@/shared/components/landing/PhilippinesCitiesSection';
-import AsiaPacificAttractionsSection from '@/shared/components/landing/AsiaPacificAttractionsSection';
-import { PopularDestinationsSection } from '@/shared/components/landing/PopularDestinationsSection';
-import { HowItWorksSection } from '@/shared/components/landing/HowItWorksSection';
-import AppBanner from '@/shared/components/landing/AppBanner';
-import { SectionSkeleton, DealsSectionStream } from './_sections';
+import { LandingHeader } from '@/features/landing/components/landing-header';
+import { LandingFooter } from '@/features/landing/components/landing-footer';
+import { LandingVideoBackdrop } from '@/features/landing/components/landing-video-backdrop';
+
+/**
+ * The landing page runs on its own dark canvas and its own type stack, so it
+ * overrides the two font vars `globals.css` binds to Plus Jakarta Sans on
+ * `<body>` rather than changing them app-wide.
+ */
+const CANVAS: CSSProperties = {
+    background: 'radial-gradient(120% 80% at 50% 0%,#1f1f1f 0%,#161616 45%,#121212 100%)',
+    '--font-sans': "var(--font-open-sans), 'Open Sans', sans-serif",
+    '--font-display': "var(--font-open-sans), 'Open Sans', sans-serif",
+} as CSSProperties;
 
 export default async function HomePage() {
     const t = await getTranslations('seo');
-    const { flightDeals, stays, bundles } = await getLandingData();
 
     const organizationJsonLd = {
         '@context': 'https://schema.org',
@@ -29,64 +32,32 @@ export default async function HomePage() {
         description: t('orgDescription'),
     };
 
-    // Mirrors exactly what <FaqSection /> renders — same translation keys.
-    const faqJsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [1, 2, 3, 4].map((i) => ({
-            '@type': 'Question',
-            name: t(`faq.q${i}`),
-            acceptedAnswer: { '@type': 'Answer', text: t(`faq.a${i}`) },
-        })),
-    };
-
-    const dates = defaultTripDates();
-
     return (
-        <main className="flex min-h-screen w-full flex-col">
+        // `-mb-24 pb-24` swaps the layout's mobile bottom-nav gutter for one this
+        // page paints itself; otherwise that strip shows the app background as a
+        // pale band under the dark footer.
+        <main
+            className="relative -mb-24 flex min-h-screen w-full flex-col pb-24 font-sans text-[#f8fafc] lg:mb-0 lg:pb-0"
+            style={CANVAS}
+        >
             <Script
                 id="organization-jsonld"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
             />
-            <Script
-                id="faq-jsonld"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-            />
 
-            <Header />
+            <LandingVideoBackdrop />
 
-            {/* Hero — Immersive search bar */}
-            <section className="relative w-full px-4 pt-24 pb-20">
+            <LandingHeader />
+
+            {/* Hero — the search bar owns the whole space between header and footer,
+                sitting high in it rather than centred. */}
+            <section className="relative z-[1] flex flex-1 justify-center px-4 pt-[clamp(16px,3vw,40px)] pb-[clamp(48px,8vw,96px)]">
                 <ImmersiveSearchBar />
             </section>
 
-            <FaqSection />
-
-            {/* ── Closing CTA ───────────────────────────────────────────────── */}
-            <section className="max-w-[1240px] mx-auto px-6 mt-[clamp(64px,8vw,104px)] w-full">
-                <div className="rounded-3xl bg-slate-900 dark:bg-white/5 dark:border dark:border-white/10 px-8 py-[clamp(48px,7vw,88px)] flex flex-col items-center gap-5 text-center">
-                    <h2 className="font-display font-semibold tracking-[-0.03em] leading-[1.1] text-[clamp(26px,3.6vw,38px)] text-white max-w-[520px]">
-                        Your next trip is cheaper than you think
-                    </h2>
-                    <Link
-                        href={flightSearchUrl({
-                            origin: HOME_AIRPORT,
-                            destination: 'NRT',
-                            depart: dates.depart,
-                            ret: dates.ret,
-                            adults: 1,
-                        })}
-                        className="mt-1 h-12 px-7 rounded-[14px] bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold inline-flex items-center transition-colors"
-                    >
-                        Start a search
-                    </Link>
-                </div>
-            </section>
-
-            <div className="mt-[clamp(56px,7vw,88px)] w-full">
-                <Footer />
+            <div className="relative z-[1]">
+                <LandingFooter />
             </div>
         </main>
     );

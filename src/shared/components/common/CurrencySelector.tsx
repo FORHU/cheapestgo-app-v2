@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { useUserCurrency, useUserCountry, useSearchActions } from '@/stores/searchStore';
+import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 export const CURRENCIES = [
@@ -16,12 +17,15 @@ export const CURRENCIES = [
 interface CurrencySelectorProps {
   className?: string;
   align?: 'left' | 'right';
+  variant?: SelectorVariant;
 }
 
-export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ 
-  className, 
-  align = 'right' 
+export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
+  className,
+  align = 'right',
+  variant = 'default'
 }) => {
+  const tone = SELECTOR_TONES[variant];
   const userCurrency = useUserCurrency();
   const userCountry = useUserCountry();
   const { setUserCurrency, setUserCountry } = useSearchActions();
@@ -57,7 +61,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
     <div className={cn("relative shrink-0", className)} ref={ref}>
       <button
         onClick={() => setIsOpen(o => !o)}
-        className="flex items-center gap-1 px-1 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors group cursor-pointer"
+        className={cn("flex items-center gap-1 px-1 py-1 text-xs font-medium rounded-lg transition-colors group cursor-pointer", tone.trigger)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label="Select currency"
@@ -75,7 +79,8 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
             transition={{ duration: 0.15 }}
             role="listbox"
             className={cn(
-              "absolute top-full mt-1 min-w-[120px] py-1 rounded-lg dark:border-white/10 bg-white/20 backdrop-blur dark:bg-slate-900 shadow-lg z-50 cursor-pointer",
+              "absolute top-full mt-1 min-w-[120px] py-1 z-50 cursor-pointer",
+              tone.menu,
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >
@@ -86,9 +91,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                   onClick={() => handleCurrencySelect(currency.code, currency.country)}
                   className={cn(
                     "flex items-center gap-2 w-full px-3 py-2 text-left text-xs font-normal transition-colors",
-                    userCurrency === currency.code
-                      ? 'dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5'
+                    tone.item(userCurrency === currency.code)
                   )}
                 >
                   <span className="text-sm">{currency.flag}</span>

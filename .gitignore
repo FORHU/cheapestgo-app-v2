@@ -12,3 +12,9 @@ dist/
 .npm
 .eslintcache
 coverage/
+
+# Raw video masters. The 590MB "Video Project 1.mp4" is the source for
+# public/videos/landing-hero.mp4 — keep the master out of the repo and out of
+# deploys; the encoded 5MB loop is what ships. See docs/landing-video.md.
+/public/*.mp4
+/public/*.mov
