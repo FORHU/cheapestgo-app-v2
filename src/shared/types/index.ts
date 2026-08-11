@@ -14,7 +14,7 @@ export type AuthStep = 'email' | 'password' | 'register' | 'verify-email' | 'for
 // ─── Search / Destinations ────────────────────────────────────────────────────
 
 export interface Destination {
-    type: 'city' | 'airport' | 'history' | 'country';
+    type: 'city' | 'airport' | 'history' | 'country' | 'hotel';
     title: string;
     subtitle: string;
     code?: string;
@@ -25,6 +25,8 @@ export interface Destination {
     lng?: number;
     lowestPrice?: number;
     priceCurrency?: string;
+    /** Thumbnail URL for hotel-type suggestions. */
+    image?: string | null;
 }
 
 export interface DateRange {

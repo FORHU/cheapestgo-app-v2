@@ -104,7 +104,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
         setCancelling(true);
         setCancelError(null);
         try {
-            await http.post(`/api/bookings/${booking.id}/cancel`);
+            await http.post('/hotels/cancel', { bookingRef: booking.booking_id });
             setCancelled(true);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Cancellation failed. Please contact support.';

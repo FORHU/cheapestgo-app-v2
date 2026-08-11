@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/shared/lib/cn';
 import { formatPrice } from '../lib/flight-utils';
 import { useAuthStore } from '@/shared/auth/store';
+import { http } from '@/shared/lib/http';
 
 export interface SavedFlight {
     id: string;
@@ -88,23 +89,14 @@ export function SaveButton({
         if (wasSaved) {
             if (user) {
                 try {
-                    const res = await fetch(`/api/saved-trips/${saved[existsIndex].id}`, { method: 'DELETE' });
-                    if (res.ok) {
-                        saved.splice(existsIndex, 1);
-                        setIsSaved(false);
-                        onSavedChange?.(false);
-                        saveFlights(saved);
-                        setIsLoading(false);
-                        return;
-                    }
-                } catch {
-                }
+                    await http.delete(`/saved-trips/${saved[existsIndex].id}`);
+                } catch { /* non-fatal — remove locally anyway */ }
             }
             saved.splice(existsIndex, 1);
             setIsSaved(false);
             onSavedChange?.(false);
         } else {
-            // Redirect login 
+            // Redirect login
             if (!user) {
                 router.push('/login');
                 setIsLoading(false);
@@ -125,26 +117,14 @@ export function SaveButton({
             };
 
             try {
-                const res = await fetch('/api/saved-trips', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...newItem, image_url: imageUrl, deep_link: deepLink }),
-                });
-
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.success && json.data?.id) {
-                        newItem.id = json.data.id;
-                    }
-                    saved.unshift(newItem);
-                    setIsSaved(true);
-                    onSavedChange?.(true);
-                    saveFlights(saved);
-                    setIsLoading(false);
-                    return;
+                const json = await http.post<{ success: boolean; data?: { id: string } }>(
+                    '/saved-trips',
+                    { ...newItem, image_url: imageUrl, deep_link: deepLink },
+                );
+                if (json.success && json.data?.id) {
+                    newItem.id = json.data.id;
                 }
-            } catch {
-            }
+            } catch { /* non-fatal — save locally anyway */ }
 
             saved.unshift(newItem);
             setIsSaved(true);

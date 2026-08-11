@@ -78,7 +78,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
 
             try {
                 // Stage 1: Google Places via V2 API proxy
-                const discoverUrl = `${apiBase}/api/hotels/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&category=${category}&radius=${radiusMeters}`;
+                const discoverUrl = `${apiBase}/hotels/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&category=${category}&radius=${radiusMeters}`;
                 const discoverRes  = await fetch(discoverUrl, { signal });
                 const discoverData = discoverRes.ok
                     ? await discoverRes.json() as { features?: any[] }
@@ -142,7 +142,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     if (placeId)  qs.set('placeId', placeId);
                     if (cat)      qs.set('category', cat);
                     if (photoRef) qs.set('photoRef', photoRef);
-                    const imageUrl = `${apiBase}/api/photos/poi?${qs.toString()}`;
+                    const imageUrl = `${apiBase}/photos/poi?${qs.toString()}`;
 
                     return {
                         id:          placeId || name,
@@ -176,7 +176,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                                     category: gem.category,
                                     full: 'true',
                                 });
-                                const r = await fetch(`${apiBase}/api/photos/poi?${qs.toString()}`, { signal });
+                                const r = await fetch(`${apiBase}/photos/poi?${qs.toString()}`, { signal });
                                 if (!r.ok || signal.aborted) return;
                                 const d = await r.json() as any;
 

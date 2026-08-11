@@ -1,86 +1,156 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Header } from '@/shared/components/header';
-import { Button } from '@/shared/components/ui/button';
+import { ArrowLeft, Check } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
-import { BookingSummary } from '@/features/checkout/components/booking-summary';
-import {
-    GuestForm,
-    type GuestInfo,
-    type PassengerInfo,
-} from '@/features/checkout/components/guest-form';
-import {
-    PaymentSection,
-    type CardInfo,
-} from '@/features/checkout/components/payment-section';
+import type { GuestInfo, PassengerInfo } from '@/features/checkout/components/guest-form';
+import type { CardInfo } from '@/features/checkout/components/payment-section';
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+
+const ACCENT = '#FF6B4B';
+const GREEN  = '#2FB67F';
+const TEXT   = '#F5EFE4';
+const BG     = 'linear-gradient(180deg,#15111E,#1B1526)';
+const CARD   = 'rgba(28,23,36,0.97)';
+const BORDER = 'rgba(255,255,255,0.1)';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
-function validateEmail(email: string): boolean {
+function validateEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function validateGuest(guest: GuestInfo): Partial<Record<keyof GuestInfo, string>> {
-    const errors: Partial<Record<keyof GuestInfo, string>> = {};
-    if (!guest.firstName.trim()) errors.firstName = 'Required';
-    if (!guest.lastName.trim()) errors.lastName = 'Required';
-    if (!guest.email.trim()) errors.email = 'Required';
-    else if (!validateEmail(guest.email)) errors.email = 'Invalid email';
-    if (!guest.phone.trim()) errors.phone = 'Required';
-    return errors;
+function validateGuest(g: GuestInfo): Partial<Record<keyof GuestInfo, string>> {
+    const e: Partial<Record<keyof GuestInfo, string>> = {};
+    if (!g.firstName.trim()) e.firstName = 'Required';
+    if (!g.lastName.trim())  e.lastName  = 'Required';
+    if (!g.email.trim())     e.email     = 'Required';
+    else if (!validateEmail(g.email)) e.email = 'Invalid email';
+    if (!g.phone.trim())     e.phone     = 'Required';
+    return e;
+}
+
+function validateCard(c: CardInfo): Partial<Record<keyof CardInfo, string>> {
+    const e: Partial<Record<keyof CardInfo, string>> = {};
+    if (!c.nameOnCard.trim()) e.nameOnCard = 'Required';
+    const digits = c.cardNumber.replace(/\s/g, '');
+    if (!digits) e.cardNumber = 'Required';
+    else if (digits.length < 13) e.cardNumber = 'Invalid card number';
+    if (!c.expiry.trim()) e.expiry = 'Required';
+    else if (!/^\d{2}\/\d{2}$/.test(c.expiry)) e.expiry = 'Format: MM/YY';
+    if (!c.cvv.trim()) e.cvv = 'Required';
+    else if (c.cvv.length < 3) e.cvv = 'Too short';
+    return e;
 }
 
 function validatePassengers(passengers: PassengerInfo[]): Record<string, string> {
     const errors: Record<string, string> = {};
     passengers.forEach((p, i) => {
-        if (!p.firstName.trim()) errors[`${i}.firstName`] = 'Required';
-        if (!p.lastName.trim()) errors[`${i}.lastName`] = 'Required';
-        if (!p.email.trim()) errors[`${i}.email`] = 'Required';
-        else if (!validateEmail(p.email)) errors[`${i}.email`] = 'Invalid email';
-        if (!p.phone.trim()) errors[`${i}.phone`] = 'Required';
-        if (!p.dateOfBirth) errors[`${i}.dateOfBirth`] = 'Required';
+        if (!p.firstName.trim())      errors[`${i}.firstName`]      = 'Required';
+        if (!p.lastName.trim())       errors[`${i}.lastName`]       = 'Required';
+        if (!p.email.trim())          errors[`${i}.email`]          = 'Required';
+        else if (!validateEmail(p.email)) errors[`${i}.email`]      = 'Invalid email';
+        if (!p.phone.trim())          errors[`${i}.phone`]          = 'Required';
+        if (!p.dateOfBirth)           errors[`${i}.dateOfBirth`]    = 'Required';
         if (!p.passportNumber.trim()) errors[`${i}.passportNumber`] = 'Required';
     });
     return errors;
 }
 
-function validateCard(card: CardInfo): Partial<Record<keyof CardInfo, string>> {
-    const errors: Partial<Record<keyof CardInfo, string>> = {};
-    if (!card.nameOnCard.trim()) errors.nameOnCard = 'Required';
-    const digits = card.cardNumber.replace(/\s/g, '');
-    if (!digits) errors.cardNumber = 'Required';
-    else if (digits.length < 13) errors.cardNumber = 'Invalid card number';
-    if (!card.expiry.trim()) errors.expiry = 'Required';
-    else if (!/^\d{2}\/\d{2}$/.test(card.expiry)) errors.expiry = 'Format: MM/YY';
-    if (!card.cvv.trim()) errors.cvv = 'Required';
-    else if (card.cvv.length < 3) errors.cvv = 'Too short';
-    return errors;
+// ─── Shared UI helpers ────────────────────────────────────────────────────────
+
+function mkInput(hasError = false): React.CSSProperties {
+    return {
+        width: '100%', padding: '13px 16px', borderRadius: 12,
+        border: `1.5px solid ${hasError ? '#E4685A' : 'rgba(255,255,255,0.14)'}`,
+        background: 'rgba(255,255,255,0.05)', color: '#fff',
+        fontSize: 14, fontFamily: "var(--font-jakarta)", outline: 'none', boxSizing: 'border-box',
+    };
 }
 
-// ─── Empty state factories ────────────────────────────────────────────────────
-
-function emptyGuest(): GuestInfo {
-    return { firstName: '', lastName: '', email: '', phone: '' };
+function ErrText({ msg }: { msg?: string }) {
+    if (!msg) return null;
+    return <div style={{ fontSize: 11, color: '#E4685A', marginTop: 5, fontWeight: 600 }}>{msg}</div>;
 }
 
-function emptyPassenger(): PassengerInfo {
-    return { firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', passportNumber: '' };
+function FieldRow({ children }: { children: React.ReactNode }) {
+    return <div style={{ marginBottom: 14 }}>{children}</div>;
 }
 
-function emptyCard(): CardInfo {
-    return { cardNumber: '', expiry: '', cvv: '', nameOnCard: '' };
+function Grid2({ children }: { children: React.ReactNode }) {
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            {children}
+        </div>
+    );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function Spinner() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="3" />
+            <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
+        </svg>
+    );
+}
 
-export default function CheckoutPage() {
-    const router = useRouter();
+function PrimaryBtn({ onClick, loading, children }: { onClick: () => void; loading: boolean; children: React.ReactNode }) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={loading}
+            style={{ width: '100%', padding: '15px 0', borderRadius: 100, border: 'none', background: loading ? 'rgba(255,107,75,.6)' : ACCENT, color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'default' : 'pointer', fontFamily: "var(--font-jakarta)", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
+            {loading ? <Spinner /> : children}
+        </button>
+    );
+}
+
+// ─── Step progress bar ────────────────────────────────────────────────────────
+
+const STEPS = [
+    { key: 'form',      label: 'Details',   num: 1 },
+    { key: 'payment',   label: 'Payment',   num: 2 },
+    { key: 'confirmed', label: 'Confirmed', num: 3 },
+] as const;
+
+type Step = 'form' | 'payment' | 'confirmed';
+
+function ProgressBar({ step }: { step: Step }) {
+    const idx = { form: 0, payment: 1, confirmed: 2 }[step];
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, marginBottom: 36, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
+            {STEPS.map((s, i) => {
+                const done   = i < idx || step === 'confirmed';
+                const active = i === idx;
+                return (
+                    <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, background: i <= idx ? ACCENT : 'rgba(255,255,255,.08)', color: i <= idx ? '#fff' : 'rgba(245,239,228,.4)', border: active && step !== 'confirmed' ? '2px solid #fff' : 'none' }}>
+                                {done && step !== 'confirmed' ? <Check size={13} strokeWidth={3} /> : s.num}
+                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: i <= idx ? TEXT : 'rgba(245,239,228,.4)' }}>{s.label}</div>
+                        </div>
+                        {i < STEPS.length - 1 && (
+                            <div style={{ flex: 1, height: 2, background: i < idx ? ACCENT : 'rgba(255,255,255,.12)', marginBottom: 18, marginLeft: 4, marginRight: 4 }} />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// ─── Checkout inner ───────────────────────────────────────────────────────────
+
+function CheckoutContent() {
     const searchParams = useSearchParams();
-    const { user } = useAuthStore();
+    const router       = useRouter();
+    const { user }     = useAuthStore();
 
     // ── Detect mode ──
     const offerId = searchParams.get('offerId');
@@ -88,362 +158,513 @@ export default function CheckoutPage() {
     const mode: 'hotel' | 'flight' = offerId && !hotelId ? 'flight' : 'hotel';
 
     // ── Hotel params ──
-    const checkIn = searchParams.get('checkIn') ?? '';
-    const checkOut = searchParams.get('checkOut') ?? '';
-    const adults = parseInt(searchParams.get('adults') ?? '1', 10);
+    const checkIn    = searchParams.get('checkIn')    ?? '';
+    const checkOut   = searchParams.get('checkOut')   ?? '';
+    const adults     = parseInt(searchParams.get('adults') ?? '1', 10);
     const totalPrice = parseFloat(searchParams.get('totalPrice') ?? '0');
-    const currency = searchParams.get('currency') ?? 'USD';
-    const roomId = searchParams.get('roomId') ?? '';
-    const rateKey = searchParams.get('rateKey') ?? '';
-    const roomName = searchParams.get('roomName') ?? undefined;
-    const hotelName = searchParams.get('hotelName') ?? 'Hotel';
+    const currency   = searchParams.get('currency')   ?? 'USD';
+    const roomId     = searchParams.get('roomId')     ?? '';
+    const rateKey    = searchParams.get('rateKey')    ?? '';
+    const roomName   = searchParams.get('roomName')   ?? undefined;
+    const hotelName  = searchParams.get('hotelName')  ?? 'Hotel';
 
     // ── Flight params ──
-    const totalAmount = parseFloat(searchParams.get('totalAmount') ?? '0');
+    const totalAmount    = parseFloat(searchParams.get('totalAmount') ?? '0');
     const flightCurrency = searchParams.get('currency') ?? 'USD';
-    const origin = searchParams.get('origin') ?? '';
-    const destination = searchParams.get('destination') ?? '';
-    const departureDate = searchParams.get('departureDate') ?? checkIn;
-    const cabin = searchParams.get('cabin') ?? undefined;
+    const origin         = searchParams.get('origin')         ?? '';
+    const destination    = searchParams.get('destination')    ?? '';
+    const departureDate  = searchParams.get('departureDate')  ?? checkIn;
+    const cabin          = searchParams.get('cabin')          ?? undefined;
+
+    // ── Date helpers ──
+    const nights = (checkIn && checkOut)
+        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
+        : null;
+    const fmtDate = (d: string) => d
+        ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : '';
+    const datesLabel = (checkIn && checkOut)
+        ? `${fmtDate(checkIn)} – ${fmtDate(checkOut)}`
+        : nights ? `${nights} nights` : '';
 
     // ── State ──
-    const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [step, setStep]         = useState<Step>('form');
+    const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [confirmCode, setConfirmCode] = useState<string | null>(null);
 
-    // Hotel state
-    const [guest, setGuest] = useState<GuestInfo>(emptyGuest());
+    // Hotel form
+    const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '', phone: '' });
     const [guestErrors, setGuestErrors] = useState<Partial<Record<keyof GuestInfo, string>>>({});
-    const [card, setCard] = useState<CardInfo>(emptyCard());
-    const [cardErrors, setCardErrors] = useState<Partial<Record<keyof CardInfo, string>>>({});
+    const [card, setCard]               = useState<CardInfo>({ cardNumber: '', expiry: '', cvv: '', nameOnCard: '' });
+    const [cardErrors, setCardErrors]   = useState<Partial<Record<keyof CardInfo, string>>>({});
 
-    // Flight state
-    const [passengers, setPassengers] = useState<PassengerInfo[]>(() =>
-        Array.from({ length: Math.max(1, adults) }, emptyPassenger)
+    // Flight form
+    const [passengers, setPassengers]         = useState<PassengerInfo[]>(() =>
+        Array.from({ length: Math.max(1, adults) }, () => ({
+            firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', passportNumber: '',
+        }))
     );
     const [passengerErrors, setPassengerErrors] = useState<Record<string, string>>({});
 
-    // Pre-fill email from logged-in user
+    // Pre-fill from logged-in user
     useEffect(() => {
-        if (user?.email) {
-            setGuest((g) => ({ ...g, email: g.email || user.email }));
-            if (user.first_name) setGuest((g) => ({ ...g, firstName: g.firstName || (user.first_name ?? '') }));
-            if (user.last_name) setGuest((g) => ({ ...g, lastName: g.lastName || (user.last_name ?? '') }));
-        }
+        if (user?.email)      setGuest(g => ({ ...g, email:     g.email     || user.email }));
+        if (user?.first_name) setGuest(g => ({ ...g, firstName: g.firstName || (user.first_name ?? '') }));
+        if (user?.last_name)  setGuest(g => ({ ...g, lastName:  g.lastName  || (user.last_name  ?? '') }));
     }, [user]);
 
     // ── Guest helpers ──
-    const handleGuestChange = useCallback((field: keyof GuestInfo, value: string) => {
-        setGuest((g) => ({ ...g, [field]: value }));
-        setGuestErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+    const onGuest = useCallback((field: keyof GuestInfo, value: string) => {
+        setGuest(g => ({ ...g, [field]: value }));
+        setGuestErrors(e => { const n = { ...e }; delete n[field]; return n; });
     }, []);
 
-    const handleCardChange = useCallback((field: keyof CardInfo, value: string) => {
-        setCard((c) => ({ ...c, [field]: value }));
-        setCardErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+    const onCard = useCallback((field: keyof CardInfo, value: string) => {
+        setCard(c => ({ ...c, [field]: value }));
+        setCardErrors(e => { const n = { ...e }; delete n[field]; return n; });
     }, []);
 
-    const handlePassengerChange = useCallback((index: number, field: keyof PassengerInfo, value: string) => {
-        setPassengers((ps) => ps.map((p, i) => i === index ? { ...p, [field]: value } : p));
-        setPassengerErrors((e) => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
+    const onPassenger = useCallback((index: number, field: keyof PassengerInfo, value: string) => {
+        setPassengers(ps => ps.map((p, i) => i === index ? { ...p, [field]: value } : p));
+        setPassengerErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
     }, []);
 
-    // ── Submit: hotel — create payment intent ──
+    // ── Hotel step 1: guest → payment ──
     const handleHotelSubmitForm = useCallback(async () => {
         const gErr = validateGuest(guest);
-        if (Object.keys(gErr).length > 0) {
-            setGuestErrors(gErr);
-            return;
-        }
+        if (Object.keys(gErr).length > 0) { setGuestErrors(gErr); return; }
 
         if (!user) {
             router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
 
-        setIsSubmitting(true);
-        setErrorMsg(null);
+        setSubmitting(true); setErrorMsg(null);
         try {
             const res = await http.post<{ clientSecret: string }>('/api/hotels/create-payment', {
-                hotelId,
-                roomId,
-                rateKey,
-                checkIn,
-                checkOut,
-                adults,
-                currency,
-                amount: totalPrice,
-                guestFirstName: guest.firstName,
-                guestLastName: guest.lastName,
-                guestEmail: guest.email,
-                guestPhone: guest.phone,
+                hotelId, roomId, rateKey, checkIn, checkOut, adults, currency, amount: totalPrice,
+                guestFirstName: guest.firstName, guestLastName: guest.lastName,
+                guestEmail: guest.email, guestPhone: guest.phone,
             });
             if (!res.clientSecret) throw new Error('No client secret returned');
-            // With a real Stripe integration we'd use the clientSecret here.
-            // For now advance to payment step where the card form is shown.
             setStep('payment');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
         } finally {
-            setIsSubmitting(false);
+            setSubmitting(false);
         }
     }, [guest, user, router, hotelId, roomId, rateKey, checkIn, checkOut, adults, currency, totalPrice]);
 
-    // ── Submit: hotel — confirm payment ──
+    // ── Hotel step 2: confirm payment ──
     const handleHotelConfirm = useCallback(async () => {
         const cErr = validateCard(card);
-        if (Object.keys(cErr).length > 0) {
-            setCardErrors(cErr);
-            return;
-        }
+        if (Object.keys(cErr).length > 0) { setCardErrors(cErr); return; }
 
-        setIsSubmitting(true);
-        setErrorMsg(null);
+        setSubmitting(true); setErrorMsg(null);
         try {
             await http.post('/hotels/confirm', {
-                hotelId,
-                roomId,
-                rateKey,
-                checkIn,
-                checkOut,
-                adults,
-                currency,
-                amount: totalPrice,
-                guestFirstName: guest.firstName,
-                guestLastName: guest.lastName,
-                guestEmail: guest.email,
-                guestPhone: guest.phone,
-                // In a real Stripe integration: paymentIntentId from the confirmed intent
+                hotelId, roomId, rateKey, checkIn, checkOut, adults, currency, amount: totalPrice,
+                guestFirstName: guest.firstName, guestLastName: guest.lastName,
+                guestEmail: guest.email, guestPhone: guest.phone,
             });
-            setStep('success');
+            const code = 'CG-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+            setConfirmCode(code);
+            setStep('confirmed');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Payment failed. Please try again.');
         } finally {
-            setIsSubmitting(false);
+            setSubmitting(false);
         }
-    }, [card, hotelId, roomId, rateKey, checkIn, checkOut, adults, currency, totalPrice, guest]);
+    }, [card, guest, hotelId, roomId, rateKey, checkIn, checkOut, adults, currency, totalPrice]);
 
-    // ── Submit: flight ──
+    // ── Flight submit ──
     const handleFlightSubmit = useCallback(async () => {
         const pErr = validatePassengers(passengers);
-        if (Object.keys(pErr).length > 0) {
-            setPassengerErrors(pErr);
-            return;
-        }
+        if (Object.keys(pErr).length > 0) { setPassengerErrors(pErr); return; }
 
         if (!user) {
             router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
 
-        setIsSubmitting(true);
-        setErrorMsg(null);
+        setSubmitting(true); setErrorMsg(null);
         try {
             await http.post('/flights/book', {
-                offerId,
-                currency: flightCurrency,
-                passengers: passengers.map((p) => ({
-                    firstName: p.firstName,
-                    lastName: p.lastName,
-                    email: p.email,
-                    phone: p.phone,
-                    dateOfBirth: p.dateOfBirth,
-                    passportNumber: p.passportNumber,
-                    type: 'adult',
+                offerId, currency: flightCurrency,
+                passengers: passengers.map(p => ({
+                    firstName: p.firstName, lastName: p.lastName, email: p.email,
+                    phone: p.phone, dateOfBirth: p.dateOfBirth, passportNumber: p.passportNumber, type: 'adult',
                 })),
             });
-            setStep('success');
+            const code = 'CG-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+            setConfirmCode(code);
+            setStep('confirmed');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {
-            setIsSubmitting(false);
+            setSubmitting(false);
         }
     }, [passengers, user, router, offerId, flightCurrency]);
 
-    // ── Success screen ──
-    if (step === 'success') {
+    // ── Nightly price (for hotel) ──
+    const nightlyPrice = nights && totalPrice ? totalPrice / nights : totalPrice;
+    const fee          = Math.round(totalPrice * 0.06);
+    const total        = totalPrice + fee;
+
+    // ── Back handler ──
+    function handleBack() {
+        if (step === 'payment') setStep('form');
+        else router.back();
+    }
+
+    const rootStyle: React.CSSProperties = {
+        minHeight: '100vh',
+        background: BG,
+        color: TEXT,
+        fontFamily: "var(--font-jakarta), 'Plus Jakarta Sans', sans-serif",
+    };
+
+    const formCardStyle: React.CSSProperties = {
+        background: 'rgba(255,255,255,.04)',
+        border: `1px solid ${BORDER}`,
+        borderRadius: 18,
+        padding: 22,
+        marginBottom: 16,
+    };
+
+    // ── Confirmed ─────────────────────────────────────────────────────────────
+    if (step === 'confirmed') {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-                <Header />
-                <main className="flex flex-col items-center justify-center px-4 py-24 text-center">
-                    <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center mb-6">
-                        <CheckCircle2 size={32} className="text-emerald-600 dark:text-emerald-400" />
+            <div style={rootStyle}>
+                <style>{`@keyframes fsStamp{0%{transform:scale(.4) rotate(-20deg);opacity:0}60%{transform:scale(1.12) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-6deg);opacity:1}}`}</style>
+                <div style={{ maxWidth: 980, margin: '0 auto', padding: 'clamp(20px,4vw,48px)', paddingBottom: 60 }}>
+                    <button
+                        onClick={() => router.push('/')}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'rgba(245,239,228,.6)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
+                    >
+                        <ArrowLeft size={15} /> Home
+                    </button>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '40px 0 20px' }}>
+                        {/* Booked stamp */}
+                        <div style={{ width: 110, height: 110, borderRadius: '50%', background: GREEN, border: '3px dashed rgba(255,255,255,.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', animation: 'fsStamp .6s ease', flexShrink: 0 }}>
+                            <Check size={26} strokeWidth={3} />
+                            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>BOOKED</div>
+                        </div>
+
+                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: '#fff', marginTop: 24 }}>
+                            You&rsquo;re all set
+                        </div>
+                        {confirmCode && (
+                            <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 13, letterSpacing: '.08em', color: 'rgba(245,239,228,.6)', marginTop: 8 }}>
+                                CONFIRMATION · {confirmCode}
+                            </div>
+                        )}
+
+                        {/* Recap card */}
+                        <div style={{ display: 'flex', gap: 14, alignItems: 'center', background: 'rgba(255,255,255,.05)', border: `1px solid ${BORDER}`, borderRadius: 18, padding: 16, marginTop: 28, width: '100%', maxWidth: 380, boxSizing: 'border-box', textAlign: 'left' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{hotelName}</div>
+                                <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginTop: 3 }}>
+                                    {datesLabel}{adults ? ` · ${adults} guest${adults !== 1 ? 's' : ''}` : ''}
+                                </div>
+                                {total > 0 && (
+                                    <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginTop: 6 }}>
+                                        {currency} {total.toLocaleString()} total
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 28, alignItems: 'center' }}>
+                            <button
+                                onClick={() => router.push('/')}
+                                style={{ padding: '12px 28px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
+                            >
+                                Plan another trip
+                            </button>
+                            <button
+                                onClick={() => router.push('/trips')}
+                                style={{ fontSize: 13, color: 'rgba(245,239,228,.55)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
+                            >
+                                View my trips
+                            </button>
+                        </div>
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                        Booking confirmed!
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm">
-                        {mode === 'hotel'
-                            ? `Your stay at ${hotelName} is confirmed. A confirmation has been sent to ${guest.email}.`
-                            : `Your flight from ${origin} to ${destination} is confirmed.`}
-                    </p>
-                    <Button onClick={() => router.push('/trips')}>View my trips</Button>
-                </main>
+                </div>
             </div>
         );
     }
 
-    // ── Booking summary data ──
-    const summaryData =
-        mode === 'hotel'
-            ? {
-                  mode: 'hotel' as const,
-                  hotelName,
-                  roomName,
-                  checkIn,
-                  checkOut,
-                  adults,
-                  totalPrice,
-                  currency,
-              }
-            : {
-                  mode: 'flight' as const,
-                  origin,
-                  destination,
-                  departureDate,
-                  cabin,
-                  totalAmount,
-                  currency: flightCurrency,
-                  passengers: adults,
-              };
-
-    return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-            <Header />
-
-            <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
-                {/* Back button */}
+    // ── Not logged in helper ──
+    function AuthBanner() {
+        if (user) return null;
+        return (
+            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(255,193,7,.3)', background: 'rgba(255,193,7,.08)', fontSize: 13, color: 'rgba(245,239,228,.85)' }}>
+                <strong style={{ color: '#FFC107' }}>Sign in</strong> to complete your booking.{' '}
                 <button
-                    onClick={() => (step === 'payment' ? setStep('form') : router.back())}
-                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 mb-6 transition-colors"
+                    onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                    style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: "var(--font-jakarta)" }}
                 >
-                    <ArrowLeft size={16} />
-                    {step === 'payment' ? 'Back to details' : 'Back'}
+                    Sign in →
                 </button>
+            </div>
+        );
+    }
 
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-8">
-                    {step === 'payment' ? 'Payment' : 'Complete your booking'}
-                </h1>
+    // ── Summary card (right sidebar) ──────────────────────────────────────────
+    function SummaryCard() {
+        return (
+            <div style={{ flex: '0 1 300px', minWidth: 260, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 20, position: 'sticky', top: 24 }}>
+                {/* Sticky tape effect */}
+                <div style={{ position: 'absolute', top: -9, left: 26, width: 52, height: 15, background: 'rgba(255,255,255,.14)', borderRadius: 3, transform: 'rotate(-5deg)' }} />
 
-                {/* Not logged in banner */}
-                {!user && (
-                    <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-4">
-                        <AlertCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Sign in to continue</p>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                                You&apos;ll need to be signed in to complete your booking.
+                {mode === 'hotel' ? (
+                    <>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 8 }}>{hotelName}</div>
+                        {roomName && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginTop: 2 }}>{roomName}</div>}
+
+                        <div style={{ height: 1, background: BORDER, margin: '14px 0' }} />
+
+                        {[
+                            datesLabel && { label: 'Dates', value: datesLabel },
+                            { label: 'Guests', value: `${adults} guest${adults !== 1 ? 's' : ''}` },
+                            roomName && { label: 'Room', value: roomName },
+                        ].filter(Boolean).map((row: any) => (
+                            <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
+                                <span>{row.label}</span><span>{row.value}</span>
+                            </div>
+                        ))}
+
+                        <div style={{ height: 1, background: BORDER, margin: '14px 0' }} />
+
+                        {nights && nightlyPrice > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
+                                <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
+                                <span>{currency} {totalPrice.toLocaleString()}</span>
+                            </div>
+                        )}
+                        {fee > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 10 }}>
+                                <span>Service fee</span><span>{currency} {fee.toLocaleString()}</span>
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff', paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
+                            <span>Total</span><span>{currency} {total.toLocaleString()}</span>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 8 }}>
+                            {origin} → {destination}
+                        </div>
+                        {departureDate && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginTop: 2 }}>{fmtDate(departureDate)}</div>}
+                        {cabin && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)' }}>{cabin}</div>}
+                        <div style={{ height: 1, background: BORDER, margin: '14px 0' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff' }}>
+                            <span>Total</span><span>{flightCurrency} {totalAmount.toLocaleString()}</span>
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    }
+
+    // ── Flight form (single step) ─────────────────────────────────────────────
+    if (mode === 'flight') {
+        return (
+            <div style={rootStyle}>
+                <div style={{ maxWidth: 980, margin: '0 auto', padding: 'clamp(20px,4vw,48px)', paddingBottom: 60 }}>
+                    <button
+                        onClick={handleBack}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'rgba(245,239,228,.6)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
+                    >
+                        <ArrowLeft size={15} /> Back
+                    </button>
+
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
+                        Complete your booking
+                    </div>
+
+                    {errorMsg && (
+                        <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(228,104,90,.3)', background: 'rgba(228,104,90,.08)', fontSize: 13, color: '#E4685A' }}>
+                            {errorMsg}
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        <div style={{ flex: '1 1 420px', minWidth: 280 }}>
+                            <AuthBanner />
+                            {passengers.map((p, i) => (
+                                <div key={i} style={formCardStyle}>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>
+                                        Passenger {passengers.length > 1 ? i + 1 : ''}
+                                    </div>
+                                    <Grid2>
+                                        <div>
+                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder="First name" style={mkInput(!!passengerErrors[`${i}.firstName`])} />
+                                            <ErrText msg={passengerErrors[`${i}.firstName`]} />
+                                        </div>
+                                        <div>
+                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder="Last name" style={mkInput(!!passengerErrors[`${i}.lastName`])} />
+                                            <ErrText msg={passengerErrors[`${i}.lastName`]} />
+                                        </div>
+                                    </Grid2>
+                                    <FieldRow>
+                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder="Email" style={mkInput(!!passengerErrors[`${i}.email`])} />
+                                        <ErrText msg={passengerErrors[`${i}.email`]} />
+                                    </FieldRow>
+                                    <FieldRow>
+                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder="Phone" style={mkInput(!!passengerErrors[`${i}.phone`])} />
+                                        <ErrText msg={passengerErrors[`${i}.phone`]} />
+                                    </FieldRow>
+                                    <Grid2>
+                                        <div>
+                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder="Date of birth" style={mkInput(!!passengerErrors[`${i}.dateOfBirth`])} />
+                                            <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
+                                        </div>
+                                        <div>
+                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder="Passport number" style={mkInput(!!passengerErrors[`${i}.passportNumber`])} />
+                                            <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
+                                        </div>
+                                    </Grid2>
+                                </div>
+                            ))}
+                            <PrimaryBtn onClick={handleFlightSubmit} loading={submitting}>
+                                Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </PrimaryBtn>
+                            <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
+                                By continuing you agree to our <a href="/terms" style={{ color: ACCENT }}>Terms</a> and <a href="/privacy" style={{ color: ACCENT }}>Privacy Policy</a>.
                             </p>
                         </div>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                                router.push(
-                                    `/login?redirect=${encodeURIComponent(
-                                        window.location.pathname + window.location.search
-                                    )}`
-                                )
-                            }
-                        >
-                            Sign in
-                        </Button>
+                        <SummaryCard />
                     </div>
-                )}
+                </div>
+            </div>
+        );
+    }
 
-                {/* Error banner */}
+    // ── Hotel checkout ────────────────────────────────────────────────────────
+    const backLabel = step === 'payment' ? 'Back to details' : 'Back to property';
+
+    return (
+        <div style={rootStyle}>
+            <div style={{ maxWidth: 980, margin: '0 auto', padding: 'clamp(20px,4vw,48px)', paddingBottom: 60 }}>
+                {/* Back */}
+                <button
+                    onClick={handleBack}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'rgba(245,239,228,.6)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
+                >
+                    <ArrowLeft size={15} /> {backLabel}
+                </button>
+
+                <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
+                    Complete your booking
+                </div>
+
+                <ProgressBar step={step} />
+
                 {errorMsg && (
-                    <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 dark:border-rose-700/60 bg-rose-50 dark:bg-rose-900/20 p-4">
-                        <AlertCircle size={18} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                        <p className="text-sm text-rose-700 dark:text-rose-300">{errorMsg}</p>
+                    <div style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(228,104,90,.3)', background: 'rgba(228,104,90,.08)', fontSize: 13, color: '#E4685A' }}>
+                        {errorMsg}
                     </div>
                 )}
 
-                {/* 2-column layout: form on left, summary on right */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start">
-                    {/* Left column — form */}
-                    <div className="space-y-5">
-                        {mode === 'hotel' ? (
-                            <>
-                                {/* Step 1: Guest info */}
-                                {step === 'form' && (
-                                    <>
-                                        <GuestForm
-                                            mode="hotel"
-                                            guest={guest}
-                                            errors={guestErrors}
-                                            onChange={handleGuestChange}
-                                        />
-                                        <Button
-                                            fullWidth
-                                            size="lg"
-                                            isLoading={isSubmitting}
-                                            onClick={handleHotelSubmitForm}
-                                        >
-                                            Continue to payment
-                                        </Button>
-                                    </>
-                                )}
+                <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    {/* ── Left: form ── */}
+                    <div style={{ flex: '1 1 420px', minWidth: 280 }}>
+                        <AuthBanner />
 
-                                {/* Step 2: Payment */}
-                                {step === 'payment' && (
-                                    <>
-                                        <PaymentSection
-                                            card={card}
-                                            errors={cardErrors}
-                                            onChange={handleCardChange}
-                                        />
-                                        <Button
-                                            fullWidth
-                                            size="lg"
-                                            isLoading={isSubmitting}
-                                            onClick={handleHotelConfirm}
-                                        >
-                                            Pay {currency} {totalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                        </Button>
-                                    </>
-                                )}
-                            </>
-                        ) : (
-                            /* Flight: single-step form */
+                        {/* Step 1: Guest details */}
+                        {step === 'form' && (
                             <>
-                                <GuestForm
-                                    mode="flight"
-                                    passengers={passengers}
-                                    errors={passengerErrors}
-                                    onChange={handlePassengerChange}
-                                />
-                                <Button
-                                    fullWidth
-                                    size="lg"
-                                    isLoading={isSubmitting}
-                                    onClick={handleFlightSubmit}
-                                >
-                                    Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                </Button>
+                                <div style={formCardStyle}>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>Who&rsquo;s checking in?</div>
+                                    <Grid2>
+                                        <div>
+                                            <input type="text" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="First name" style={mkInput(!!guestErrors.firstName)} />
+                                            <ErrText msg={guestErrors.firstName} />
+                                        </div>
+                                        <div>
+                                            <input type="text" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Last name" style={mkInput(!!guestErrors.lastName)} />
+                                            <ErrText msg={guestErrors.lastName} />
+                                        </div>
+                                    </Grid2>
+                                    <FieldRow>
+                                        <input type="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="Email address" style={mkInput(!!guestErrors.email)} />
+                                        <ErrText msg={guestErrors.email} />
+                                    </FieldRow>
+                                    <FieldRow>
+                                        <input type="tel" value={guest.phone} onChange={e => onGuest('phone', e.target.value)} placeholder="Phone number" style={mkInput(!!guestErrors.phone)} />
+                                        <ErrText msg={guestErrors.phone} />
+                                    </FieldRow>
+                                </div>
+                                <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting}>
+                                    Continue to payment
+                                </PrimaryBtn>
                             </>
                         )}
 
-                        {/* Fine print */}
-                        <p className="text-[10px] text-slate-400 text-center px-2">
-                            By continuing you agree to our{' '}
-                            <a href="/terms" className="underline hover:text-slate-600 dark:hover:text-slate-300">
-                                Terms of Service
-                            </a>{' '}
-                            and{' '}
-                            <a href="/privacy" className="underline hover:text-slate-600 dark:hover:text-slate-300">
-                                Privacy Policy
-                            </a>
-                            .
+                        {/* Step 2: Payment */}
+                        {step === 'payment' && (
+                            <>
+                                <div style={formCardStyle}>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>Payment details</div>
+                                    <FieldRow>
+                                        <input type="text" value={card.nameOnCard} onChange={e => onCard('nameOnCard', e.target.value)} placeholder="Name on card" style={mkInput(!!cardErrors.nameOnCard)} />
+                                        <ErrText msg={cardErrors.nameOnCard} />
+                                    </FieldRow>
+                                    <FieldRow>
+                                        <input type="text" value={card.cardNumber} onChange={e => onCard('cardNumber', e.target.value)} placeholder="Card number" style={mkInput(!!cardErrors.cardNumber)} />
+                                        <ErrText msg={cardErrors.cardNumber} />
+                                    </FieldRow>
+                                    <Grid2>
+                                        <div>
+                                            <input type="text" value={card.expiry} onChange={e => onCard('expiry', e.target.value)} placeholder="MM/YY" style={mkInput(!!cardErrors.expiry)} />
+                                            <ErrText msg={cardErrors.expiry} />
+                                        </div>
+                                        <div>
+                                            <input type="text" value={card.cvv} onChange={e => onCard('cvv', e.target.value)} placeholder="CVV" style={mkInput(!!cardErrors.cvv)} />
+                                            <ErrText msg={cardErrors.cvv} />
+                                        </div>
+                                    </Grid2>
+                                </div>
+                                <PrimaryBtn onClick={handleHotelConfirm} loading={submitting}>
+                                    Pay {currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                </PrimaryBtn>
+                            </>
+                        )}
+
+                        <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
+                            By continuing you agree to our <a href="/terms" style={{ color: ACCENT }}>Terms</a> and <a href="/privacy" style={{ color: ACCENT }}>Privacy Policy</a>.
                         </p>
                     </div>
 
-                    {/* Right column — summary (sticky) */}
-                    <div className="lg:sticky lg:top-24">
-                        <BookingSummary data={summaryData} />
-                    </div>
+                    {/* ── Right: summary ── */}
+                    <SummaryCard />
                 </div>
-            </main>
+            </div>
         </div>
+    );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function CheckoutPage() {
+    return (
+        <Suspense
+            fallback={
+                <div style={{ minHeight: '100vh', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
+                        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="3" />
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="#FF6B4B" strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
+                    </svg>
+                </div>
+            }
+        >
+            <CheckoutContent />
+        </Suspense>
     );
 }

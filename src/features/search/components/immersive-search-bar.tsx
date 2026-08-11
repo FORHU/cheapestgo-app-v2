@@ -17,6 +17,9 @@ interface DestSuggestion {
     subtitle: string;
     countryCode: string;
     id?: string;
+    lat?: number;
+    lng?: number;
+    code?: string;
 }
 
 interface TrendingDest {
@@ -50,14 +53,110 @@ function sameDay(a: Date, b: Date): boolean {
     return a.toDateString() === b.toDateString();
 }
 
-function buildDays(count = 60): Date[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Array.from({ length: count }, (_, i) => {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        return d;
-    });
+function startOfDay(d: Date): Date {
+    const r = new Date(d); r.setHours(0, 0, 0, 0); return r;
+}
+
+// ─── Month-grid calendar ──────────────────────────────────────────────────────
+
+interface CalendarGridProps {
+    checkIn:   Date | null;
+    checkOut:  Date | null;
+    onSelect:  (d: Date) => void;
+    accent:    string;
+}
+
+function CalendarGrid({ checkIn, checkOut, onSelect, accent }: CalendarGridProps) {
+    const today = startOfDay(new Date());
+    const [viewYear,  setViewYear]  = useState(today.getFullYear());
+    const [viewMonth, setViewMonth] = useState(today.getMonth());
+
+    const prevMonth = () => {
+        if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+        else setViewMonth(m => m - 1);
+    };
+    const nextMonth = () => {
+        if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+        else setViewMonth(m => m + 1);
+    };
+
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const monthLabel = new Date(viewYear, viewMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const cells: (Date | null)[] = [
+        ...Array(firstDay).fill(null),
+        ...Array.from({ length: daysInMonth }, (_, i) => new Date(viewYear, viewMonth, i + 1)),
+    ];
+    // pad to full weeks
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+    return (
+        <div style={{ userSelect: 'none' }}>
+            {/* Month nav */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                </button>
+                <span style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{monthLabel}</span>
+                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+                </button>
+            </div>
+
+            {/* Day-of-week headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
+                {DAY_LABELS.map(l => (
+                    <div key={l} style={{ textAlign: 'center', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em', color: 'rgba(241,245,249,0.4)', padding: '2px 0' }}>{l}</div>
+                ))}
+            </div>
+
+            {/* Date grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                {cells.map((d, i) => {
+                    if (!d) return <div key={i} />;
+                    const isPast    = d < today;
+                    const isStart   = checkIn  && sameDay(d, checkIn);
+                    const isEnd     = checkOut && sameDay(d, checkOut);
+                    const inRange   = checkIn && checkOut && d > checkIn && d < checkOut;
+                    const isToday   = sameDay(d, today);
+
+                    const bg = (isStart || isEnd)
+                        ? accent
+                        : inRange
+                            ? 'rgba(255,107,75,0.18)'
+                            : 'transparent';
+                    const fg = (isStart || isEnd)
+                        ? '#fff'
+                        : isPast
+                            ? 'rgba(241,245,249,0.2)'
+                            : '#f1f5f9';
+
+                    return (
+                        <div
+                            key={i}
+                            onClick={isPast ? undefined : e => { e.stopPropagation(); onSelect(d); }}
+                            style={{
+                                textAlign: 'center', padding: '5px 0', borderRadius: '8px',
+                                fontSize: '13px', fontWeight: isToday ? 700 : 500,
+                                background: bg, color: fg,
+                                cursor: isPast ? 'default' : 'pointer',
+                                outline: isToday && !isStart && !isEnd ? `1.5px solid rgba(241,245,249,0.3)` : 'none',
+                                outlineOffset: '-1px',
+                                transition: 'background .15s',
+                            }}
+                            onMouseEnter={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)'; }}
+                            onMouseLeave={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = inRange ? 'rgba(255,107,75,0.18)' : 'transparent'; }}
+                        >
+                            {d.getDate()}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }
 
 // ─── Shared SVGs ─────────────────────────────────────────────────────────────
@@ -284,7 +383,7 @@ export function ImmersiveSearchBar() {
     const [destQuery, setDestQuery] = useState('');
     const [destSugs, setDestSugs] = useState<DestSuggestion[]>([]);
     const [destSugLoading, setDestSugLoading] = useState(false);
-    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string } | null>(null);
+    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string; lat?: number; lng?: number; code?: string } | null>(null);
 
     // Dates
     const [checkIn, setCheckIn] = useState<Date | null>(null);
@@ -293,7 +392,8 @@ export function ImmersiveSearchBar() {
     const [flexOption, setFlexOption] = useState<string | null>(null);
 
     // Travelers
-    const [travelers, setTravelersCount] = useState(2);
+    const [adults,   setAdults]   = useState(2);
+    const [children, setChildren] = useState(0);
 
     // UX
     const [ctaState, setCtaState] = useState<CtaState>('idle');
@@ -303,7 +403,6 @@ export function ImmersiveSearchBar() {
 
     // Refs
     const wrapRef  = useRef<HTMLDivElement>(null);
-    const ribbonRef = useRef<HTMLDivElement>(null);
     const shakeT   = useRef<ReturnType<typeof setTimeout>>();
     const ctaT1    = useRef<ReturnType<typeof setTimeout>>();
     const ctaT2    = useRef<ReturnType<typeof setTimeout>>();
@@ -312,7 +411,6 @@ export function ImmersiveSearchBar() {
     const origSugT = useRef<ReturnType<typeof setTimeout>>();
     const destSugT = useRef<ReturnType<typeof setTimeout>>();
 
-    const days = useRef<Date[]>(buildDays(60));
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -337,30 +435,32 @@ export function ImmersiveSearchBar() {
         const q = originQuery.trim();
         if (q.length < 2) { setOriginSugs([]); return; }
         setOriginSugLoading(true);
+        const acMode = mode === 'flights' ? 'flights' : 'hotels';
         origSugT.current = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/autocomplete?query=${encodeURIComponent(q)}`);
+                const res = await fetch(`/api/autocomplete?query=${encodeURIComponent(q)}&mode=${acMode}`);
                 const json = await res.json();
                 setOriginSugs(json.success ? json.data.slice(0, 6) : []);
             } catch { setOriginSugs([]); }
             finally { setOriginSugLoading(false); }
         }, 280);
-    }, [originQuery]);
+    }, [originQuery, mode]);
 
     useEffect(() => {
         clearTimeout(destSugT.current);
         const q = destQuery.trim();
         if (q.length < 2) { setDestSugs([]); return; }
         setDestSugLoading(true);
+        const acMode = mode === 'flights' ? 'flights' : 'hotels';
         destSugT.current = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/autocomplete?query=${encodeURIComponent(q)}`);
+                const res = await fetch(`/api/autocomplete?query=${encodeURIComponent(q)}&mode=${acMode}`);
                 const json = await res.json();
                 setDestSugs(json.success ? json.data.slice(0, 6) : []);
             } catch { setDestSugs([]); }
             finally { setDestSugLoading(false); }
         }, 280);
-    }, [destQuery]);
+    }, [destQuery, mode]);
 
     // ── Mode switch ──────────────────────────────────────────────────────────
 
@@ -413,7 +513,7 @@ export function ImmersiveSearchBar() {
 
     const pickDestSuggestion = useCallback((s: DestSuggestion) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: s.title, id: s.id });
+        setPickedDest({ name: s.title, id: s.id, lat: s.lat, lng: s.lng, code: s.code });
         setDestQuery('');
         setDestSugs([]);
         setPanelOpen('dates');
@@ -491,15 +591,19 @@ export function ImmersiveSearchBar() {
             if (mode === 'stays') {
                 setDestination({ title: pickedDest.name, subtitle: '', type: 'city', countryCode: '', id: pickedDest.id });
                 if (checkIn) setDates({ checkIn, checkOut: checkOut ?? undefined });
-                setTravelers({ adults: travelers });
+                setTravelers({ adults, children });
                 addRecentSearch({ title: pickedDest.name, subtitle: '', type: 'city', countryCode: '', id: pickedDest.id });
                 setSearchMode('hotels');
 
                 const params = new URLSearchParams({
-                    destination: pickedDest.name, code: '', type: 'city', lat: '', lng: '',
+                    destination: pickedDest.name,
+                    code: pickedDest.code ?? '',
+                    type: 'city',
+                    lat: pickedDest.lat != null ? String(pickedDest.lat) : '',
+                    lng: pickedDest.lng != null ? String(pickedDest.lng) : '',
                     checkIn:  checkIn  ? checkIn.toISOString().slice(0, 10)  : '',
                     checkOut: checkOut ? checkOut.toISOString().slice(0, 10) : '',
-                    adults: String(travelers), children: '0', rooms: '1',
+                    adults: String(adults), children: String(children), rooms: '1',
                 });
                 clearTimeout(ctaT2.current);
                 ctaT2.current = setTimeout(() => router.push(`/search?${params}`), 800);
@@ -518,8 +622,8 @@ export function ImmersiveSearchBar() {
                     depart:      checkIn ? checkIn.toISOString().slice(0, 10) : '',
                     tripType:    tripType === 'roundtrip' ? 'round-trip' : 'one-way',
                     cabin:       'economy',
-                    adults:      String(travelers),
-                    children:    '0',
+                    adults:      String(adults),
+                    children:    String(children),
                     infants:     '0',
                 });
                 if (tripType === 'roundtrip' && checkOut) params.set('return', checkOut.toISOString().slice(0, 10));
@@ -527,7 +631,7 @@ export function ImmersiveSearchBar() {
                 ctaT2.current = setTimeout(() => router.push(`/flights/search?${params}`), 800);
             }
         }, 1200);
-    }, [mode, tripType, pickedOrigin, pickedDest, checkIn, checkOut, travelers, router, setDestination, setDates, setTravelers, setIsSearching, addRecentSearch, setSearchMode, setFlightSegment]);
+    }, [mode, tripType, pickedOrigin, pickedDest, checkIn, checkOut, adults, children, router, setDestination, setDates, setTravelers, setIsSearching, addRecentSearch, setSearchMode, setFlightSegment]);
 
     // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -544,17 +648,15 @@ export function ImmersiveSearchBar() {
             ? (flexOption ?? 'a flexible trip')
             : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : 'sometime soon'));
 
-    const travelersValue = travelers === 1 ? 'just me' : `${travelers} of us`;
+    const totalTravelers = adults + children;
+    const travelersValue = totalTravelers === 1 ? 'just me' : `${totalTravelers} of us`;
     const resultsLabel   = mode === 'stays' ? 'stays' : 'flights';
 
     const datesHeading = mode === 'flights'
         ? (isOneway ? 'When are you flying?' : 'Pick your dates')
         : (flexible ? "How long's the trip?" : 'Pick your dates');
 
-    const startIdx = checkIn  ? days.current.findIndex(d => sameDay(d, checkIn))  : -1;
-    const endIdx   = checkOut ? days.current.findIndex(d => sameDay(d, checkOut)) : -1;
-    const hasRange = startIdx > -1 && endIdx > -1;
-    const nights   = hasRange ? Math.round((checkOut!.getTime() - checkIn!.getTime()) / 86400000) : null;
+    const nights = (checkIn && checkOut) ? Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000) : null;
 
     const filteredTrending = destQuery.trim()
         ? TRENDING.filter(t => `${t.name}${t.country}`.toLowerCase().includes(destQuery.trim().toLowerCase()))
@@ -743,47 +845,14 @@ export function ImmersiveSearchBar() {
                                             </div>
                                         </div>
 
-                                        {/* Date ribbon (exact mode) */}
+                                        {/* Month-grid calendar (exact mode) */}
                                         {(!flexible) && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <button onClick={e => { e.stopPropagation(); ribbonRef.current?.scrollBy({ left: -220, behavior: 'smooth' }); }} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-                                                </button>
-
-                                                <div
-                                                    ref={ribbonRef}
-                                                    className="imm-ribbon"
-                                                    style={{ flex: 1, display: 'flex', overflowX: 'auto', position: 'relative', padding: '16px 2px 8px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,.18) transparent' }}
-                                                    onWheel={e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) ribbonRef.current!.scrollLeft += e.deltaY; }}
-                                                >
-                                                    {hasRange && (
-                                                        <div style={{ position: 'absolute', top: '18px', left: `${startIdx * 50 + 7}px`, width: `${(endIdx - startIdx) * 50 + 36}px`, height: '36px', borderRadius: '18px', background: 'rgba(255,255,255,0.10)', zIndex: 0, pointerEvents: 'none' }} />
-                                                    )}
-                                                    {days.current.map((d, i) => {
-                                                        const isEdge = i === startIdx || i === endIdx;
-                                                        const inRange = hasRange && i > startIdx && i < endIdx;
-                                                        return (
-                                                            <div key={d.toISOString()} style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '44px', padding: '4px 3px', cursor: 'pointer', flexShrink: 0 }} onClick={selectDay(d)}>
-                                                                {(i === 0 || d.getDate() === 1) && (
-                                                                    <div style={{ position: 'absolute', top: '-14px', fontSize: '9px', fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)', whiteSpace: 'nowrap' }}>
-                                                                        {d.toLocaleDateString('en-US', { month: 'short' })}
-                                                                    </div>
-                                                                )}
-                                                                <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.03em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)' }}>
-                                                                    {d.toLocaleDateString('en-US', { weekday: 'short' })}
-                                                                </div>
-                                                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', fontFamily: 'var(--font-sans)', transition: 'background .25s,color .25s', background: isEdge ? ACCENT : inRange ? 'rgba(255,255,255,0.10)' : 'transparent', color: isEdge ? '#fff8f2' : '#f1f5f9' }}>
-                                                                    {d.getDate()}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-
-                                                <button onClick={e => { e.stopPropagation(); ribbonRef.current?.scrollBy({ left: 220, behavior: 'smooth' }); }} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-                                                </button>
-                                            </div>
+                                            <CalendarGrid
+                                                checkIn={checkIn}
+                                                checkOut={checkOut}
+                                                onSelect={d => selectDay(d)()}
+                                                accent={ACCENT}
+                                            />
                                         )}
 
                                         {/* Nights counter */}
@@ -820,15 +889,26 @@ export function ImmersiveSearchBar() {
                                     {travelersValue}
                                 </Token>
                                 {panelOpen === 'travelers' && (
-                                    <NotePanel width="260px" extra={{ textAlign: 'center', maxHeight: 'none' }}>
-                                        <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '16px' }}>
-                                            {mode === 'flights' ? 'How many flying?' : 'How many of you?'}
+                                    <NotePanel width="280px" extra={{ maxHeight: 'none' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '18px' }}>
+                                            {mode === 'flights' ? 'Who\'s flying?' : 'Who\'s coming?'}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
-                                            <button onClick={e => { e.stopPropagation(); setTravelersCount(n => Math.max(1, n - 1)); }} disabled={travelers <= 1} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '20px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: travelers <= 1 ? 'not-allowed' : 'pointer', opacity: travelers <= 1 ? 0.35 : 1 }}>−</button>
-                                            <div style={{ fontSize: '26px', fontWeight: 800, minWidth: '40px', fontFamily: 'var(--font-sans)' }}>{travelers}</div>
-                                            <button onClick={e => { e.stopPropagation(); setTravelersCount(n => Math.min(16, n + 1)); }} disabled={travelers >= 16} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '20px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: travelers >= 16 ? 'not-allowed' : 'pointer', opacity: travelers >= 16 ? 0.35 : 1 }}>+</button>
-                                        </div>
+                                        {[
+                                            { label: 'Adults',   sub: '18+',      val: adults,   set: setAdults,   min: 1,  max: 16 },
+                                            { label: 'Children', sub: '0–17',     val: children, set: setChildren, min: 0,  max: 8  },
+                                        ].map(({ label, sub, val, set, min, max }) => (
+                                            <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, fontSize: '13px', color: '#f1f5f9' }}>{label}</div>
+                                                    <div style={{ fontSize: '11px', color: 'rgba(241,245,249,0.45)' }}>{sub}</div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.max(min, n - 1)); }} disabled={val <= min} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '18px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val <= min ? 'not-allowed' : 'pointer', opacity: val <= min ? 0.3 : 1 }}>−</button>
+                                                    <div style={{ fontSize: '18px', fontWeight: 800, minWidth: '20px', textAlign: 'center', fontFamily: 'var(--font-sans)', color: '#f1f5f9' }}>{val}</div>
+                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.min(max, n + 1)); }} disabled={val >= max} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '18px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val >= max ? 'not-allowed' : 'pointer', opacity: val >= max ? 0.3 : 1 }}>+</button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </NotePanel>
                                 )}
                             </span>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, History, Plane, Building2, Globe, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MapPin, History, Plane, Building2, Globe, X, Hotel } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
@@ -33,11 +34,13 @@ function getIcon(type: Destination['type']) {
         case 'history':  return <History size={16} />;
         case 'airport':  return <Plane size={16} />;
         case 'country':  return <Globe size={16} />;
+        case 'hotel':    return <Hotel size={16} />;
         default:         return <Building2 size={16} />;
     }
 }
 
 export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: DestinationInputProps) {
+    const router = useRouter();
     const ref = useRef<HTMLDivElement>(null);
     const [localQuery, setLocalQuery] = useState('');
 
@@ -84,6 +87,11 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     }, [isOpen, forceOpen, setActiveDropdown]);
 
     const handleSelect = (d: Destination) => {
+        if (d.type === 'hotel' && d.id) {
+            router.push(`/property/${d.id}`);
+            if (!forceOpen) setActiveDropdown(null);
+            return;
+        }
         if (isFlightField) {
             setFlightSegment(segmentIndex!, { [field!]: d });
             setLocalQuery('');
@@ -194,8 +202,10 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                         )}
                         {activeQuery && suggestions.length > 0 && (() => {
                             const countries = suggestions.filter((s) => s.type === 'country');
-                            const cities = suggestions.filter((s) => s.type !== 'country');
-                            const renderItem = (item: Destination, i: number) => (
+                            const cities    = suggestions.filter((s) => s.type === 'city');
+                            const hotels    = suggestions.filter((s) => s.type === 'hotel');
+
+                            const renderDestItem = (item: Destination, i: number) => (
                                 <div
                                     key={i}
                                     onClick={() => handleSelect(item)}
@@ -224,18 +234,53 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                                     </div>
                                 </div>
                             );
+
+                            const renderHotelItem = (item: Destination, i: number) => (
+                                <div
+                                    key={i}
+                                    onClick={() => handleSelect(item)}
+                                    className="px-6 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-start gap-3 cursor-pointer group"
+                                >
+                                    {item.image ? (
+                                        <img
+                                            src={item.image}
+                                            alt=""
+                                            className="mt-0.5 w-8 h-8 rounded object-cover shrink-0 opacity-80 group-hover:opacity-100"
+                                        />
+                                    ) : (
+                                        <span className="mt-0.5 text-slate-400 group-hover:text-amber-500 transition-colors">
+                                            <Hotel size={16} />
+                                        </span>
+                                    )}
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-bold text-slate-900 dark:text-white group-hover:text-amber-500">
+                                            {item.title}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 truncate max-w-[300px]">
+                                            {item.subtitle}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+
                             return (
                                 <>
                                     {countries.length > 0 && (
                                         <>
                                             <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">Countries</div>
-                                            {countries.map(renderItem)}
+                                            {countries.map(renderDestItem)}
                                         </>
                                     )}
                                     {cities.length > 0 && (
                                         <>
                                             <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', countries.length > 0 && 'mt-1')}>Cities</div>
-                                            {cities.map(renderItem)}
+                                            {cities.map(renderDestItem)}
+                                        </>
+                                    )}
+                                    {hotels.length > 0 && (
+                                        <>
+                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', (countries.length > 0 || cities.length > 0) && 'mt-1')}>Hotels</div>
+                                            {hotels.map(renderHotelItem)}
                                         </>
                                     )}
                                 </>

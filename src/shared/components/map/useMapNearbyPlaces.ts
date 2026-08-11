@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { env } from '@/shared/lib/env';
 
 export interface NearbyPlace {
     name: string;
@@ -42,7 +43,7 @@ export function useMapNearbyPlaces({
             setPlaces([]);
             try {
                 const res = await fetch(
-                    `/api/places/discover?lat=${coordinates.lat}&lng=${coordinates.lng}&category=${category}&radius=${radiusMeters}`,
+                    `${env.NEXT_PUBLIC_API_URL}/hotels/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&category=${category}&radius=${radiusMeters}`,
                     { signal }
                 );
                 if (!res.ok || signal.aborted) return;

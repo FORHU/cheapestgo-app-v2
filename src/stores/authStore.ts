@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             registerSchema.parse(data);
             set({ email: data.email });
             return withLoading(async () => {
-                const { user } = await http.post<{ user: User }>('/auth/signup', {
+                const { user } = await http.post<{ user: User }>('/auth/register', {
                     email: data.email,
                     password: data.password,
                     firstName: data.firstName,
@@ -118,7 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         resetPassword: (email) => {
             emailSchema.parse({ email });
             return withLoading(async () => {
-                await http.post('/auth/reset-password', { email });
+                await http.post('/auth/request-reset', { email });
             });
         },
 
@@ -132,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         updateProfile: (data) => {
             profileSchema.parse(data);
             return withLoading(async () => {
-                await http.put('/preferences', {
+                await http.patch('/users/preferences', {
                     firstName: data.firstName,
                     lastName: data.lastName,
                 });

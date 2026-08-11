@@ -1,32 +1,18 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
-import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
-import { PropertyGallery } from '@/features/hotels/components/property-gallery';
-import { PropertyInfo } from '@/features/hotels/components/property-info';
-import { RoomList, RoomListSkeleton, type RoomOption } from '@/features/hotels/components/room-list';
-import { ReviewsSection } from '@/features/hotels/components/reviews-section';
-import { type HotelReview } from '@/features/hotels/lib/reviewsUtils';
-import { Skeleton } from '@/shared/components/ui/skeleton';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Heart } from 'lucide-react';
 import { http } from '@/shared/lib/http';
+import type { RoomOption } from '@/features/hotels/components/room-list';
 import dynamic from 'next/dynamic';
 
-// Both Mapbox + POI fetch require browser — lazy-load with ssr: false
 const PoiDiscovery = dynamic(
     () => import('@/features/hotels/components/poi-discovery').then(m => m.PoiDiscovery),
     { ssr: false }
 );
 
-const PropertyMapSidebar = dynamic(
-    () => import('@/shared/components/map/PropertyMapSidebar').then(m => m.PropertyMapSidebar),
-    { ssr: false, loading: () => <div className="w-full h-[200px] rounded-xl bg-slate-200 dark:bg-white/5 animate-pulse" /> }
-);
-
-// ─── API response shape ───────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface HotelContent {
     hotel_id: string;
@@ -42,52 +28,52 @@ interface HotelContent {
     lng: number | null;
 }
 
-interface HotelReviewSummary {
-    rating: number | string | null;
-    reviews_count: number;
-}
-
-interface HotelReviewItem {
-    reviewer_name: string | null;
-    review_date: string | null;
-    score: number | string | null;
-    pros: string | null;
-    cons: string | null;
-    traveler_type: string | null;
-    language: string | null;
-    headline: string | null;
-    country: string | null;
-}
-
 interface PropertyApiResponse {
     content?: HotelContent;
-    reviews?: HotelReviewSummary | null;
-    reviewItems?: HotelReviewItem[];
+    reviews?: { rating: number | string | null; reviews_count: number } | null;
+    reviewItems?: Array<{
+        reviewer_name: string | null;
+        score: number | string | null;
+        pros: string | null;
+        cons: string | null;
+        headline: string | null;
+        country: string | null;
+    }>;
     rooms?: RoomOption[];
     error?: string;
 }
 
-// ─── Property info skeleton ───────────────────────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
-function PropertyInfoSkeleton() {
+const ACCENT = '#FF6B4B';
+const GREEN = '#2FB67F';
+const TEXT = '#F5EFE4';
+const BG = 'linear-gradient(180deg,#15111E,#1B1526)';
+
+function ratingInfo(score: number): { label: string; color: string } {
+    if (score >= 9) return { label: 'Exceptional', color: GREEN };
+    if (score >= 8) return { label: 'Excellent', color: '#4FA8E0' };
+    return { label: 'Good', color: '#E0A23C' };
+}
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+
+function Spinner({ size = 32 }: { size?: number }) {
     return (
-        <div className="space-y-3 animate-pulse">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-48" />
-            <div className="flex gap-2 pt-2">
-                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-7 w-20 rounded-lg" />)}
-            </div>
-        </div>
+        <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="3" />
+            <circle cx="12" cy="12" r="9" fill="none" stroke={ACCENT} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
+        </svg>
     );
 }
 
-// ─── Inner page content (uses useParams / useSearchParams) ────────────────────
+// ─── Inner page content ───────────────────────────────────────────────────────
 
 function PropertyContent() {
-    const params       = useParams();
+    const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     const hotelId  = params.id as string;
     const checkIn  = searchParams.get('checkIn')  ?? '';
@@ -95,231 +81,324 @@ function PropertyContent() {
     const adults   = Number(searchParams.get('adults')   ?? 2);
     const children = Number(searchParams.get('children') ?? 0);
 
-    // For the "Back to results" link
-    const destination = searchParams.get('destination') ?? '';
-    const backHref    = destination
-        ? `/hotels/search?${searchParams.toString()}`
-        : '/hotels/search';
-
-    const [data, setData]     = useState<PropertyApiResponse | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError]   = useState<string | null>(null);
+    const [data, setData]           = useState<PropertyApiResponse | null>(null);
+    const [loading, setLoading]     = useState(true);
+    const [error, setError]         = useState<string | null>(null);
+    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+    const [saved, setSaved]         = useState(false);
 
     useEffect(() => {
         if (!hotelId) return;
-
         let cancelled = false;
         setLoading(true);
         setError(null);
 
         const qs = new URLSearchParams();
-        if (checkIn)  qs.set('checkIn', checkIn);
-        if (checkOut) qs.set('checkOut', checkOut);
-        if (adults)   qs.set('adults', String(adults));
-        if (children) qs.set('children', String(children));
+        if (checkIn)   qs.set('checkIn', checkIn);
+        if (checkOut)  qs.set('checkOut', checkOut);
+        if (adults)    qs.set('adults', String(adults));
+        if (children)  qs.set('children', String(children));
 
-        http
-            .get<PropertyApiResponse>(`/api/hotels/property/${hotelId}?${qs.toString()}`)
-            .then((res) => { if (!cancelled) setData(res); })
-            .catch((err: Error) => { if (!cancelled) setError(err.message ?? 'Failed to load property'); })
-            .finally(() => { if (!cancelled) setLoading(false); });
+        http.get<PropertyApiResponse>(`/api/hotels/property/${hotelId}?${qs.toString()}`)
+            .then(res  => { if (!cancelled) setData(res); })
+            .catch(err => { if (!cancelled) setError(err.message ?? 'Failed to load property'); })
+            .finally(()=> { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
     }, [hotelId, checkIn, checkOut, adults, children]);
 
-    const content  = data?.content;
-    const rooms    = data?.rooms ?? [];
+    const content      = data?.content;
+    const rooms        = data?.rooms ?? [];
+    const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
+    const reviewScore  = Number(data?.reviews?.rating ?? 0);
+    const reviewCount  = data?.reviews?.reviews_count ?? 0;
+    const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
+    const heroImage    = content?.images?.[0] ?? null;
+    const amenities    = (content?.amenities ?? []).slice(0, 5);
+    const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map(r => r.price)) : null;
+    const coordinates  = (content?.lat && content?.lng)
+        ? { lat: content.lat, lng: content.lng }
+        : undefined;
 
-    // Map snake_case API fields to camelCase for components
-    const property = content ? {
-        id:           content.hotel_id,
-        name:         content.name ?? '',
-        address:      content.address ?? undefined,
-        city:         content.city ?? undefined,
-        country:      content.country ?? undefined,
-        starRating:   content.star_rating ?? undefined,
-        reviewScore:  data?.reviews?.rating ?? undefined,
-        reviewCount:  data?.reviews?.reviews_count ?? undefined,
-        description:  content.description ?? undefined,
-        images:       content.images,
-        amenities:    content.amenities ?? undefined,
-        coordinates:  (content.lat && content.lng) ? { lat: content.lat, lng: content.lng } : undefined,
-    } : null;
+    const nights = (checkIn && checkOut)
+        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
+        : null;
 
-    const reviewItems: HotelReview[] = (data?.reviewItems ?? []).map(r => ({
-        averageScore: Number(r.score ?? 0),
-        name:         r.reviewer_name ?? 'Anonymous',
-        date:         r.review_date ?? '',
-        headline:     r.headline ?? undefined,
-        pros:         r.pros ?? undefined,
-        cons:         r.cons ?? undefined,
-        country:      r.country ?? undefined,
-        type:         r.traveler_type ?? undefined,
-        language:     r.language ?? undefined,
-    }));
+    function goCheckout() {
+        if (!selectedRoom) return;
+        const p = new URLSearchParams({
+            hotelId,
+            roomId:     selectedRoom.id,
+            offerId:    selectedRoom.offerId ?? selectedRoom.id,
+            rateKey:    selectedRoom.offerId ?? selectedRoom.id,
+            currency:   selectedRoom.currency,
+            totalPrice: String(nights ? selectedRoom.price * nights : selectedRoom.price),
+            roomName:   selectedRoom.name,
+            hotelName:  content?.name ?? 'Hotel',
+        });
+        if (checkIn)   p.set('checkIn', checkIn);
+        if (checkOut)  p.set('checkOut', checkOut);
+        if (adults)    p.set('adults', String(adults));
+        if (children)  p.set('children', String(children));
+        router.push(`/checkout?${p.toString()}`);
+    }
 
-    // ── Error ──────────────────────────────────────────────────────────────────
-    if (!loading && (error || !content)) {
+    const rootStyle: React.CSSProperties = {
+        minHeight: '100vh',
+        background: BG,
+        color: TEXT,
+        fontFamily: "var(--font-jakarta), 'Plus Jakarta Sans', sans-serif",
+    };
+
+    // ── Loading ───────────────────────────────────────────────────────────────
+    if (loading) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 py-24">
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                    {error ?? 'Property not found.'}
-                </p>
-                <Link href="/hotels/search" className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
-                    Back to search
-                </Link>
+            <div style={{ ...rootStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Spinner />
             </div>
         );
     }
 
+    // ── Error ─────────────────────────────────────────────────────────────────
+    if (error || !content) {
+        return (
+            <div style={{ ...rootStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
+                <p style={{ color: 'rgba(245,239,228,.6)', textAlign: 'center' }}>{error ?? 'Property not found.'}</p>
+                <button
+                    onClick={() => router.back()}
+                    style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
+                >
+                    Go back
+                </button>
+            </div>
+        );
+    }
+
+    const rinfo = ratingInfo(reviewScore);
+
     return (
-        <div className="flex-1 max-w-[1200px] mx-auto w-full px-4 py-6 space-y-6">
-            {/* Back nav */}
-            <Link
-                href={backHref}
-                className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-            >
-                <ArrowLeft size={13} />
-                Back to results
-            </Link>
+        <div style={rootStyle}>
 
-            {/* Gallery */}
-            {loading ? (
-                <Skeleton className="w-full h-[230px] md:h-[400px] rounded-xl" />
-            ) : (
-                <PropertyGallery images={property?.images ?? []} name={property?.name ?? ''} />
-            )}
+            {/* ── Hero ──────────────────────────────────────────────────────── */}
+            <div style={{ position: 'relative', height: '58vh', minHeight: 320 }}>
+                {heroImage ? (
+                    <img
+                        src={heroImage}
+                        alt={content.name ?? ''}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                ) : (
+                    <div style={{ position: 'absolute', inset: 0, background: '#22383A' }} />
+                )}
+                {/* Gradient overlay */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.15) 0%,rgba(10,8,14,.25) 45%,rgba(10,8,14,.85) 100%)' }} />
 
-            {/* Body: info + rooms */}
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Left: info */}
-                <div className="flex-1 min-w-0 space-y-8">
-                    {loading ? (
-                        <PropertyInfoSkeleton />
-                    ) : property ? (
-                        <>
-                            <PropertyInfo
-                                name={property.name}
-                                address={property.address}
-                                city={property.city}
-                                country={property.country}
-                                starRating={property.starRating}
-                                reviewScore={Number(property.reviewScore ?? 0) || undefined}
-                                reviewCount={property.reviewCount}
-                                description={property.description}
-                                amenities={property.amenities}
-                            />
+                {/* Back button */}
+                <button
+                    onClick={() => router.back()}
+                    aria-label="Back"
+                    style={{ position: 'absolute', top: 20, left: 20, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.25)', background: 'rgba(255,255,255,.14)', backdropFilter: 'blur(8px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                    <ArrowLeft size={16} />
+                </button>
 
-                            <hr className="border-slate-200 dark:border-white/10" />
+                {/* Heart */}
+                <button
+                    onClick={() => setSaved(s => !s)}
+                    aria-label={saved ? 'Unsave' : 'Save'}
+                    style={{ position: 'absolute', top: 20, right: reviewScore > 0 ? 90 : 20, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.25)', background: 'rgba(255,255,255,.14)', backdropFilter: 'blur(8px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                    <Heart size={18} fill={saved ? ACCENT : 'none'} stroke={saved ? ACCENT : '#fff'} />
+                </button>
 
-                            {/* Date / stay summary */}
-                            {(checkIn || checkOut) && (
-                                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40">
-                                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">Your stay</p>
-                                    <div className="flex flex-wrap gap-4 text-xs text-blue-600 dark:text-blue-400">
-                                        {checkIn  && <span>Check-in: <strong>{checkIn}</strong></span>}
-                                        {checkOut && <span>Check-out: <strong>{checkOut}</strong></span>}
-                                        <span>{adults} adult{adults !== 1 ? 's' : ''}{children > 0 ? `, ${children} child${children !== 1 ? 'ren' : ''}` : ''}</span>
-                                    </div>
+                {/* Rating stamp */}
+                {reviewScore > 0 && (
+                    <div style={{ position: 'absolute', top: 20, right: 20, width: 58, height: 58, borderRadius: '50%', background: rinfo.color, color: '#fff', border: '2px dashed rgba(255,255,255,.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1 }}>{reviewScore.toFixed(1)}</div>
+                        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', marginTop: 1 }}>{rinfo.label}</div>
+                    </div>
+                )}
+
+                {/* Property name at bottom of hero */}
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 'clamp(20px,4vw,40px)' }}>
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 'clamp(26px,4vw,44px)', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
+                        {content.name}
+                    </div>
+                    <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginTop: 6 }}>
+                        {[content.city, content.country].filter(Boolean).join(' · ')}
+                        {reviewCount > 0 ? ` · ${reviewCount.toLocaleString()} reviews` : ''}
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Body ──────────────────────────────────────────────────────── */}
+            <div style={{ maxWidth: 760, margin: '0 auto', padding: 'clamp(20px,4vw,40px)', paddingBottom: 140 }}>
+
+                {/* Price + amenity chips */}
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderBottom: '1px solid rgba(255,255,255,.1)', paddingBottom: 20, marginBottom: 24 }}>
+                    {lowestPrice !== null && (
+                        <div>
+                            <span style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>
+                                {rooms[0]?.currency} {lowestPrice.toLocaleString()}
+                            </span>
+                            <span style={{ fontSize: 13, color: 'rgba(245,239,228,.5)' }}> /night</span>
+                        </div>
+                    )}
+                    {amenities.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {amenities.map(am => (
+                                <div key={am} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.06)', borderRadius: 100, padding: '6px 12px', fontSize: 12, fontWeight: 600, color: TEXT }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT, display: 'inline-block', flexShrink: 0 }} />
+                                    {am}
                                 </div>
-                            )}
-
-                            {/* Rooms */}
-                            {loading ? (
-                                <RoomListSkeleton />
-                            ) : (
-                                <RoomList
-                                    hotelId={hotelId}
-                                    rooms={rooms}
-                                    checkIn={checkIn}
-                                    checkOut={checkOut}
-                                    adults={adults}
-                                    children={children}
-                                />
-                            )}
-
-                            {/* Guest reviews */}
-                            {!loading && reviewItems.length > 0 && (
-                                <>
-                                    <hr className="border-slate-200 dark:border-white/10" />
-                                    <ReviewsSection
-                                        reviews={reviewItems}
-                                        averageRating={Number(data?.reviews?.rating ?? 0)}
-                                        totalCount={data?.reviews?.reviews_count ?? 0}
-                                    />
-                                </>
-                            )}
-
-                            {/* Nearby POI discovery */}
-                            {!loading && property.coordinates && (
-                                <>
-                                    <hr className="border-slate-200 dark:border-white/10" />
-                                    <PoiDiscovery coordinates={property.coordinates} />
-                                </>
-                            )}
-                        </>
-                    ) : null}
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {/* Right: sticky summary on desktop */}
-                {property && (
-                    <aside className="hidden lg:block w-72 shrink-0">
-                        <div className="sticky top-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-white/10 p-5 space-y-4">
-                            <h3 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-2">
-                                {property.name}
-                            </h3>
-                            {(checkIn || checkOut) && (
-                                <dl className="space-y-1.5 text-xs">
-                                    {checkIn && (
-                                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                                            <dt className="text-slate-400">Check-in</dt>
-                                            <dd className="font-medium">{checkIn}</dd>
-                                        </div>
-                                    )}
-                                    {checkOut && (
-                                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                                            <dt className="text-slate-400">Check-out</dt>
-                                            <dd className="font-medium">{checkOut}</dd>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                                        <dt className="text-slate-400">Guests</dt>
-                                        <dd className="font-medium">{adults} adult{adults !== 1 ? 's' : ''}{children > 0 ? `, ${children} child${children !== 1 ? 'ren' : ''}` : ''}</dd>
-                                    </div>
-                                </dl>
-                            )}
-                            {rooms.length > 0 && (
-                                <div className="pt-2 border-t border-slate-100 dark:border-white/5">
-                                    <p className="text-xs text-slate-400 mb-1">From</p>
-                                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                        {rooms[0].currency} {Math.min(...rooms.map((r) => r.price)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400">/night</p>
-                                </div>
-                            )}
-                            <a
-                                href="#rooms"
-                                className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
-                            >
-                                See available rooms
-                            </a>
+                {/* Description */}
+                {content.description && (
+                    <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(245,239,228,.82)', margin: '0 0 32px' }}>
+                        {content.description}
+                    </p>
+                )}
 
-                            {/* Map — only shown when coordinates are available */}
-                            {property.coordinates && (
-                                <div className="pt-2 border-t border-slate-100 dark:border-white/5">
-                                    <p className="text-xs text-slate-400 mb-2">Location</p>
-                                    <PropertyMapSidebar
-                                        property={{
-                                            id: property.id,
-                                            name: property.name,
-                                            coordinates: property.coordinates,
-                                        }}
-                                        className="w-full h-[200px] rounded-xl overflow-hidden border border-slate-200 dark:border-white/10"
-                                    />
-                                </div>
-                            )}
+                {/* ── Room selection ─────────────────────────────────────────── */}
+                {rooms.length > 0 && (
+                    <div id="rooms-section" style={{ margin: '0 0 36px' }}>
+                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
+                            Choose your room
                         </div>
-                    </aside>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            {rooms.map(room => {
+                                const selected     = room.id === selectedRoomId;
+                                const isRefundable = room.refundableTag === 'RFN';
+                                const hasBreakfast = ['BB', 'HB', 'FB', 'AI'].includes(room.boardType ?? '');
+                                const bedLabel     = [room.bedType, room.size ? `${room.size}m²` : null].filter(Boolean).join(' · ');
+
+                                return (
+                                    <div
+                                        key={room.id}
+                                        onClick={() => setSelectedRoomId(selected ? null : room.id)}
+                                        style={{ display: 'flex', background: 'rgba(255,255,255,.04)', borderRadius: 16, border: selected ? `2px solid ${ACCENT}` : '1px solid rgba(255,255,255,.1)', cursor: 'pointer', overflow: 'hidden', transition: 'border-color .2s' }}
+                                    >
+                                        {/* Info column */}
+                                        <div style={{ flex: 1, minWidth: 0, padding: '16px 18px' }}>
+                                            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{room.name}</div>
+                                            {bedLabel && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginTop: 3 }}>{bedLabel}</div>}
+                                            {(hasBreakfast || isRefundable) && (
+                                                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                                                    {hasBreakfast && (
+                                                        <span style={{ fontSize: 11, fontWeight: 600, color: TEXT, background: 'rgba(255,255,255,.08)', padding: '3px 9px', borderRadius: 8 }}>
+                                                            Breakfast included
+                                                        </span>
+                                                    )}
+                                                    {isRefundable && (
+                                                        <span style={{ fontSize: 11, fontWeight: 600, color: GREEN, background: 'rgba(47,182,127,.15)', padding: '3px 9px', borderRadius: 8 }}>
+                                                            Free cancellation
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Dashed perforation */}
+                                        <div style={{ width: 1, flexShrink: 0, background: 'repeating-linear-gradient(to bottom,rgba(255,255,255,.2) 0 6px,transparent 6px 12px)' }} />
+
+                                        {/* Price + select */}
+                                        <div style={{ width: 140, flexShrink: 0, padding: '16px 18px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 8 }}>
+                                            <div style={{ fontWeight: 800, fontSize: 18, color: '#fff' }}>
+                                                {room.currency} {room.price.toLocaleString()}
+                                            </div>
+                                            <button
+                                                onClick={e => { e.stopPropagation(); setSelectedRoomId(selected ? null : room.id); }}
+                                                style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: selected ? GREEN : ACCENT, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
+                                            >
+                                                {selected ? 'Selected' : 'Select'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Guest reviews ──────────────────────────────────────────── */}
+                {reviewItems.length > 0 && (
+                    <div style={{ margin: '36px 0' }}>
+                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
+                            What guests say
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                            {reviewItems.map((rev, i) => {
+                                const score = Number(rev.score ?? 0);
+                                const ri    = ratingInfo(score);
+                                const blurb = rev.pros || rev.headline || 'Great stay';
+                                return (
+                                    <div key={i} style={{ flex: '1 1 260px', background: 'rgba(255,255,255,.04)', borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: '1px solid rgba(255,255,255,.08)' }}>
+                                        {score > 0 && (
+                                            <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 12, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
+                                                {score.toFixed(1)}
+                                            </div>
+                                        )}
+                                        <p style={{ fontSize: 14, lineHeight: 1.55, color: 'rgba(245,239,228,.85)', margin: '0 0 12px' }}>
+                                            &ldquo;{blurb}&rdquo;
+                                        </p>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{rev.reviewer_name ?? 'Guest'}</div>
+                                        {rev.country && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)' }}>{rev.country}</div>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Nearby ────────────────────────────────────────────────── */}
+                {coordinates && (
+                    <div style={{ margin: '36px 0 0' }}>
+                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
+                            Nearby
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,.03)', borderRadius: 18, border: '1px solid rgba(255,255,255,.08)', overflow: 'hidden', padding: 4 }}>
+                            <PoiDiscovery coordinates={coordinates} />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Fixed bottom bar ──────────────────────────────────────────── */}
+            <div
+                className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-30"
+                style={{ background: 'rgba(21,17,30,.96)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,.1)', padding: '14px clamp(16px,4vw,40px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+            >
+                <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
+                        {selectedRoom ? 'Selected room' : 'Starting from'}
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {selectedRoom
+                            ? `${selectedRoom.name} · ${selectedRoom.currency} ${selectedRoom.price.toLocaleString()}/night`
+                            : lowestPrice !== null
+                                ? `${rooms[0]?.currency ?? ''} ${lowestPrice.toLocaleString()}/night`
+                                : '—'}
+                    </div>
+                </div>
+
+                {selectedRoom ? (
+                    <button
+                        onClick={goCheckout}
+                        style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "var(--font-jakarta)", flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
+                        Continue to checkout
+                    </button>
+                ) : (
+                    <a
+                        href="#rooms-section"
+                        style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
+                    >
+                        Check rooms ↓
+                    </a>
                 )}
             </div>
         </div>
@@ -330,18 +409,14 @@ function PropertyContent() {
 
 export default function HotelPropertyPage() {
     return (
-        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-            <Header />
-            <Suspense
-                fallback={
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
-                    </div>
-                }
-            >
-                <PropertyContent />
-            </Suspense>
-            <Footer />
-        </div>
+        <Suspense
+            fallback={
+                <div style={{ minHeight: '100vh', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Spinner />
+                </div>
+            }
+        >
+            <PropertyContent />
+        </Suspense>
     );
 }
