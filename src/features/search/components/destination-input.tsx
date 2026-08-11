@@ -58,11 +58,13 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     }, [activeQuery]);
 
     const { data: suggestions = [], isFetching } = useQuery<Destination[]>({
-        queryKey: ['autocomplete', 'destinations', debouncedQuery],
-        queryFn: () =>
-            fetch(`/api/autocomplete?query=${encodeURIComponent(debouncedQuery)}`)
+        queryKey: ['autocomplete', isFlightField ? 'flights' : 'destinations', debouncedQuery],
+        queryFn: () => {
+            const mode = isFlightField ? 'flights' : 'hotels';
+            return fetch(`/api/autocomplete?query=${encodeURIComponent(debouncedQuery)}&mode=${mode}`)
                 .then(r => r.json())
-                .then((res: { success: boolean; data: Destination[] }) => res.success ? res.data : []),
+                .then((res: { success: boolean; data: Destination[] }) => res.success ? res.data : []);
+        },
         enabled: debouncedQuery.length >= 2,
         staleTime: 5 * 60 * 1000,
         placeholderData: (prev) => prev,
@@ -185,12 +187,12 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                         )}
 
                         {/* Autocomplete results */}
-                        {query && suggestions.length === 0 && !isFetching && (
+                        {activeQuery && suggestions.length === 0 && !isFetching && (
                             <div className="px-6 py-4 text-center text-slate-400 text-sm">
                                 No results found
                             </div>
                         )}
-                        {query && suggestions.length > 0 && (() => {
+                        {activeQuery && suggestions.length > 0 && (() => {
                             const countries = suggestions.filter((s) => s.type === 'country');
                             const cities = suggestions.filter((s) => s.type !== 'country');
                             const renderItem = (item: Destination, i: number) => (

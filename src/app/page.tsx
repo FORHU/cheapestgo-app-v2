@@ -5,35 +5,15 @@ import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
-import { LandingHero } from '@/features/landing/components/hero';
-import { BundlesRow, FlightDealsRow, StaysRow } from '@/features/landing/components/card-rows';
-import { FaqSection } from '@/features/landing/components/faq';
-import { getLandingData } from '@/features/landing/lib/landing-data';
-import { flightSearchUrl, defaultTripDates } from '@/features/landing/lib/links';
-import { HOME_AIRPORT } from '@/features/landing/data/catalog';
-
-const STATS = [
-    {
-        figure: '0',
-        title: 'Booking fees',
-        body: "You pay the supplier's price. We earn from them, not from you.",
-    },
-    {
-        figure: '900+',
-        title: 'Suppliers, one search',
-        body: 'Every major airline and over a million hotels, ranked by real total price.',
-    },
-    {
-        figure: '100%',
-        title: 'Of the price, up front',
-        body: 'Taxes and mandatory fees are in the number before you click.',
-    },
-    {
-        figure: '1:47',
-        title: 'Search to confirmed',
-        body: 'One checkout for flights and hotels, with the policy shown first.',
-    },
-];
+import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
+import { YourRecentSearches } from '@/shared/components/landing/YourRecentSearches';
+import RecentlyViewed from '@/shared/components/landing/RecentlyViewed';
+import PhilippinesCitiesSection from '@/shared/components/landing/PhilippinesCitiesSection';
+import AsiaPacificAttractionsSection from '@/shared/components/landing/AsiaPacificAttractionsSection';
+import { PopularDestinationsSection } from '@/shared/components/landing/PopularDestinationsSection';
+import { HowItWorksSection } from '@/shared/components/landing/HowItWorksSection';
+import AppBanner from '@/shared/components/landing/AppBanner';
+import { SectionSkeleton, DealsSectionStream } from './_sections';
 
 export default async function HomePage() {
     const t = await getTranslations('seo');
@@ -77,37 +57,9 @@ export default async function HomePage() {
 
             <Header />
 
-            <div className="w-full pt-14 md:pt-20">
-                <LandingHero />
-            </div>
-
-            <div className="pt-[clamp(48px,6vw,72px)]">
-                <FlightDealsRow deals={flightDeals} dates={dates} />
-            </div>
-            <div className="pt-[clamp(40px,5vw,60px)]">
-                <StaysRow stays={stays} dates={dates} />
-            </div>
-            <div className="pt-[clamp(40px,5vw,60px)]">
-                <BundlesRow bundles={bundles} dates={dates} />
-            </div>
-
-            {/* ── Why it is cheaper ─────────────────────────────────────────── */}
-            <section className="max-w-[1240px] mx-auto px-6 pt-[clamp(64px,8vw,104px)] w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-                    {STATS.map((s) => (
-                        <div key={s.title}>
-                            <div className="font-mono font-bold text-[32px] tracking-[-0.03em] mb-2.5 text-slate-900 dark:text-white">
-                                {s.figure}
-                            </div>
-                            <div className="font-semibold text-[15px] mb-1.5 text-slate-900 dark:text-white">
-                                {s.title}
-                            </div>
-                            <div className="text-[13px] leading-relaxed text-slate-600 dark:text-slate-400">
-                                {s.body}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            {/* Hero — Immersive search bar */}
+            <section className="relative w-full px-4 pt-24 pb-20">
+                <ImmersiveSearchBar />
             </section>
 
             <FaqSection />

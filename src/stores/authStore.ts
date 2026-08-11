@@ -1,25 +1,7 @@
 import { create } from "zustand";
 import type { User, AuthStep } from "@/types/auth";
-import {
-    loginSchema,
-    registerSchema,
-    emailSchema,
-    profileSchema,
-    updatePasswordSchema,
-    type RegisterInput,
-    type ProfileInput,
-} from "@/lib/schemas/auth";
-
-async function apiFetch(path: string, body: unknown, method = 'POST') {
-    const res = await fetch(path, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'X-Requested-By': 'cheapestgo-client' },
-        body: JSON.stringify(body),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
-    return json;
-}
+import { loginSchema, registerSchema, emailSchema, profileSchema, updatePasswordSchema, type RegisterInput, type ProfileInput } from "@/lib/schemas/auth";
+import { http } from "@/shared/lib/http";
 
 interface AuthState {
     user: User | null;
@@ -71,15 +53,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         initSession: async () => {
             try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { 'X-Requested-By': 'cheapestgo-client' },
-                });
-                if (res.ok) {
-                    const { user } = await res.json();
-                    set({ user: user ?? null, isLoading: false });
-                } else {
-                    set({ user: null, isLoading: false });
-                }
+                const res = await http.get<{ user: User }>('/auth/me');
+                set({ user: res.user ?? null, isLoading: false });
             } catch {
                 set({ user: null, isLoading: false });
             }
@@ -89,14 +64,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
             loginSchema.parse({ email, password });
             set({ email });
             return withLoading(async () => {
-                const { user } = await apiFetch('/api/auth/login', { email, password });
+                const { user } = await http.post<{ user: User }>('/auth/login', { email, password });
                 set({
                     user: {
                         id: user.id,
                         email: user.email,
                         firstName: user.firstName ?? '',
                         lastName: user.lastName ?? '',
-                        avatar: user.avatarUrl,
+                        avatar: user.avatar,
                         role: user.role ?? 'user',
                     },
                 });
@@ -107,7 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             registerSchema.parse(data);
             set({ email: data.email });
             return withLoading(async () => {
-                const { user } = await apiFetch('/api/auth/signup', {
+                const { user } = await http.post<{ user: User }>('/auth/signup', {
                     email: data.email,
                     password: data.password,
                     firstName: data.firstName,
@@ -128,7 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         logout: () =>
             withLoading(async () => {
-                await apiFetch('/api/auth/logout', {});
+                await http.post<void>('/auth/logout', {});
                 set({ user: null });
             }),
 
@@ -143,7 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         resetPassword: (email) => {
             emailSchema.parse({ email });
             return withLoading(async () => {
-                await apiFetch('/api/auth/reset-password', { email });
+                await http.post('/auth/reset-password', { email });
             });
         },
 
@@ -157,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         updateProfile: (data) => {
             profileSchema.parse(data);
             return withLoading(async () => {
-                await apiFetch('/api/preferences', {
+                await http.put('/preferences', {
                     firstName: data.firstName,
                     lastName: data.lastName,
                 });
@@ -179,8 +154,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
             return withLoading(async () => {
                 const { user } = get();
                 if (!user?.email) throw new Error("No user logged in");
-                await apiFetch('/api/auth/login', { email: user.email, password: currentPassword });
-                await apiFetch('/api/auth/reset-password', { token: '__current__', password: newPassword }, 'PUT');
+                await http.post('/auth/login', { email: user.email, password: currentPassword });
+                await http.put('/auth/reset-password', { token: '__current__', password: newPassword });
             });
         },
 
@@ -191,17 +166,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         fetchAndSyncRole: async () => {
             try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { 'X-Requested-By': 'cheapestgo-client' },
-                });
-                if (res.ok) {
-                    const { user } = await res.json();
-                    if (user?.role) {
-                        set({ user: { ...get().user!, role: user.role } });
-                    }
+                const res = await http.get<{ user: User }>('/auth/me');
+                if (res.user?.role) {
+                    set({ user: { ...get().user!, role: res.user.role } });
                 }
-            } catch (err) {
-                console.error('[authStore] Failed to sync role:', err);
+            } catch (err: unknown) {
+                const status = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : 0;
+                if (status !== 401) {
+                    console.error('[authStore] Failed to sync role:', err);
+                }
             }
         },
     };
