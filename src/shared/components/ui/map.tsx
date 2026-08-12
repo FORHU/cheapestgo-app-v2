@@ -118,7 +118,7 @@ const Map = React.memo(
                 setIsStyleLoaded(false);
 
                 const setup = () => {
-                    if (!map || !map.getStyle()) return;
+                    if (!map) return;
 
                     try {
                         const style = map.getStyle();
@@ -168,10 +168,8 @@ const Map = React.memo(
                         }
 
                         setTimeout(() => {
-                            if (map.getStyle()) {
-                                setIsStyleLoaded(true);
-                                onStyleReady?.(map);
-                            }
+                            setIsStyleLoaded(true);
+                            onStyleReady?.(map);
                         }, 0);
                     } catch (err) {
                         console.warn('Map setup failed, retrying...', err);
@@ -206,6 +204,7 @@ const Map = React.memo(
             const handleLoad = React.useCallback(
                 (e: mapboxgl.MapboxEvent) => {
                     setMapReady(true);
+                    setIsStyleLoaded(true);
                     onLoad?.(e);
                 },
                 [onLoad]

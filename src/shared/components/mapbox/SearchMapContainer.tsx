@@ -325,8 +325,12 @@ export const SearchMapContainer = React.memo(({
         lightPreset: 'day' as const,
     }), [standardConfig, isMobile]);
 
+    const prevMapStyleRef = React.useRef<string | undefined>();
     React.useEffect(() => {
-        handleMapStyleChange();
+        if (prevMapStyleRef.current !== undefined && prevMapStyleRef.current !== mapStyleUrl) {
+            handleMapStyleChange();
+        }
+        prevMapStyleRef.current = mapStyleUrl;
     }, [mapStyleUrl, handleMapStyleChange]);
 
     return (

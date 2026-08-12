@@ -172,7 +172,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
                 }
             } catch (err: unknown) {
                 const status = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : 0;
-                if (status !== 401) {
+                // silently ignore 401 (not logged in) and network errors (API unreachable)
+                if (status !== 0 && status !== 401) {
                     console.error('[authStore] Failed to sync role:', err);
                 }
             }
