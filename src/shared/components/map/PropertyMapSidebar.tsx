@@ -15,6 +15,8 @@ interface PropertyMapSidebarProps {
         coordinates: { lat: number; lng: number };
         price?: number;
         currency?: string;
+        /** Shown as the marker thumbnail; falls back to an icon without it. */
+        image?: string;
     };
     className?: string;
 }
@@ -38,6 +40,7 @@ export function PropertyMapSidebar({ property, className }: PropertyMapSidebarPr
         price: property.price ?? 0,
         currency: property.currency ?? 'USD',
         coordinates: property.coordinates,
+        image: property.image,
     };
 
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;

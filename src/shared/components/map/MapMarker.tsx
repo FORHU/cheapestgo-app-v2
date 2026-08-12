@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import Image from 'next/image';
 import { Marker } from 'react-map-gl/mapbox';
 import { Bed } from 'lucide-react';
 import { formatCurrency } from '@/shared/lib/format';
@@ -16,6 +17,9 @@ interface MapMarkerProps {
     index?: number;
 }
 
+/** Thumbnail edge, in px. Small enough that `sizes` pulls a tiny variant. */
+const THUMB = 26;
+
 const MapMarker = React.memo(function MapMarker({
     property,
     displayPrice,
@@ -28,10 +32,17 @@ const MapMarker = React.memo(function MapMarker({
 }: MapMarkerProps) {
     const isActive = isSelected || isHovered;
 
+    // A supplier image that 404s would otherwise leave a grey hole in the pill.
+    const [imageFailed, setImageFailed] = useState(false);
+    const thumbnail = property.image ?? property.images?.[0];
+    const showThumbnail = Boolean(thumbnail) && !imageFailed;
+
     return (
         <Marker
             latitude={property.coordinates.lat}
             longitude={property.coordinates.lng}
+            // Still bottom-anchored even though the pill no longer has a tail,
+            // so the popup offsets in MapPopup keep working unchanged.
             anchor="bottom"
             onClick={(e) => {
                 e.originalEvent.stopPropagation();
@@ -46,46 +57,54 @@ const MapMarker = React.memo(function MapMarker({
                 onMouseEnter={() => onHover(property.id)}
                 onMouseLeave={() => onHover(null)}
                 className={cn(
-                    'flex flex-col items-center group cursor-pointer',
-                    isSelected ? 'scale-110 -translate-y-1' : 'scale-100'
+                    'flex cursor-pointer items-center gap-1.5 rounded-[10px] bg-white p-1 pr-2 ring-1 transition-transform dark:bg-slate-900',
+                    isActive ? 'shadow-lg ring-blue-500/60' : 'shadow-md ring-black/[0.08] dark:ring-white/10',
+                    isSelected ? '-translate-y-1 scale-110' : 'scale-100'
                 )}
             >
-                {/* Marker Container (Pill) */}
-                <div className={cn(
-                    'flex items-center gap-2 px-1.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-md ring-1 ring-black/5 dark:ring-white/10',
-                    isActive ? 'ring-blue-500/50 shadow-lg' : ''
-                )}>
-                    {/* Icon Circle / Number Badge */}
-                    <div className={cn(
-                        'w-7 h-7 rounded-full flex items-center justify-center',
-                        isSelected ? 'bg-blue-700' : 'bg-blue-500'
-                    )}>
-                        {index !== undefined ? (
-                            <span className={cn(
-                                'text-white font-bold leading-none',
-                                index > 99 ? 'text-[9px]' : index > 9 ? 'text-[11px]' : 'text-[13px]'
-                            )}>
-                                {index}
-                            </span>
-                        ) : (
-                            <Bed className="w-3.5 h-3.5 text-white" />
-                        )}
-                    </div>
+                {/* Thumbnail */}
+                <div
+                    className="relative shrink-0 overflow-hidden rounded-[7px] bg-slate-100 dark:bg-slate-800"
+                    style={{ width: THUMB, height: THUMB }}
+                >
+                    {showThumbnail ? (
+                        <Image
+                            src={thumbnail as string}
+                            alt=""
+                            fill
+                            sizes={`${THUMB}px`}
+                            className="object-cover"
+                            onError={() => setImageFailed(true)}
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                            <Bed className="h-3.5 w-3.5 text-slate-400" />
+                        </div>
+                    )}
 
-                    {/* Price Label */}
-                    <div className="pr-2 text-[11px] font-bold text-slate-800 dark:text-white whitespace-nowrap tracking-tight">
-                        {property.priceLoading
-                            ? <span className="text-slate-400 tracking-widest">···</span>
-                            : formatCurrency(displayPrice ?? property.price, displayCurrency ?? property.currency)
-                        }
-                    </div>
+                    {/* Keeps the marker tied to its numbered row in the results list. */}
+                    {index !== undefined && (
+                        <span
+                            className={cn(
+                                'absolute left-0 top-0 flex items-center justify-center rounded-br-[6px] px-[3px] font-bold leading-none text-white',
+                                isSelected ? 'bg-blue-700' : 'bg-blue-600',
+                                index > 99 ? 'text-[6px]' : 'text-[8px]'
+                            )}
+                            style={{ minWidth: 13, height: 13 }}
+                        >
+                            {index}
+                        </span>
+                    )}
                 </div>
 
-                {/* Triangle Tail */}
-                <div className={cn(
-                    'w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] -mt-[1px]',
-                    isSelected ? 'border-t-blue-700' : 'border-t-white dark:border-t-slate-900'
-                )} />
+                {/* Price */}
+                <span className="whitespace-nowrap text-[12px] font-bold tracking-tight text-slate-900 dark:text-white">
+                    {property.priceLoading ? (
+                        <span className="tracking-widest text-slate-400">···</span>
+                    ) : (
+                        formatCurrency(displayPrice ?? property.price, displayCurrency ?? property.currency)
+                    )}
+                </span>
             </div>
         </Marker>
     );
