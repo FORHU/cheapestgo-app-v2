@@ -62,6 +62,7 @@ export function getCurrencySymbol(currency: string): string {
         PHP: '₱',
         KRW: '₩',
         JPY: '¥',
+        CNY: '¥',
         EUR: '€',
         GBP: '£',
         AUD: 'A$',
