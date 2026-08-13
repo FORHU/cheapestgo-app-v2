@@ -1,8 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Marker } from 'react-map-gl/mapbox';
-import { Bed } from 'lucide-react';
 import { formatCurrency } from '@/shared/lib/format';
-import { cn } from '@/shared/lib/cn';
 import type { MappableProperty } from './types';
 
 interface MapMarkerProps {
@@ -24,9 +24,20 @@ const MapMarker = React.memo(function MapMarker({
     isHovered,
     onClick,
     onHover,
-    index,
 }: MapMarkerProps) {
     const isActive = isSelected || isHovered;
+    const image = property.image ?? property.images?.[0];
+    const borderColor = isSelected ? '#3b82f6' : isHovered ? '#93c5fd' : 'white';
+    const shadow = isActive ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(0,0,0,0.25)';
+
+    let priceLabel: string;
+    try {
+        priceLabel = property.priceLoading
+            ? ''
+            : formatCurrency(displayPrice ?? property.price, displayCurrency ?? property.currency ?? 'USD');
+    } catch {
+        priceLabel = '';
+    }
 
     return (
         <Marker
@@ -45,47 +56,56 @@ const MapMarker = React.memo(function MapMarker({
             <div
                 onMouseEnter={() => onHover(property.id)}
                 onMouseLeave={() => onHover(null)}
-                className={cn(
-                    'flex flex-col items-center group cursor-pointer',
-                    isSelected ? 'scale-110 -translate-y-1' : 'scale-100'
-                )}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'transform 150ms ease',
+                }}
             >
-                {/* Marker Container (Pill) */}
-                <div className={cn(
-                    'flex items-center gap-2 px-1.5 py-1 rounded-full bg-white dark:bg-slate-900 shadow-md ring-1 ring-black/5 dark:ring-white/10',
-                    isActive ? 'ring-blue-500/50 shadow-lg' : ''
-                )}>
-                    {/* Icon Circle / Number Badge */}
-                    <div className={cn(
-                        'w-7 h-7 rounded-full flex items-center justify-center',
-                        isSelected ? 'bg-blue-700' : 'bg-blue-500'
-                    )}>
-                        {index !== undefined ? (
-                            <span className={cn(
-                                'text-white font-bold leading-none',
-                                index > 99 ? 'text-[9px]' : index > 9 ? 'text-[11px]' : 'text-[13px]'
-                            )}>
-                                {index}
-                            </span>
-                        ) : (
-                            <Bed className="w-3.5 h-3.5 text-white" />
-                        )}
-                    </div>
-
-                    {/* Price Label */}
-                    <div className="pr-2 text-[11px] font-bold text-slate-800 dark:text-white whitespace-nowrap tracking-tight">
-                        {property.priceLoading
-                            ? <span className="text-slate-400 tracking-widest">···</span>
-                            : formatCurrency(displayPrice ?? property.price, displayCurrency ?? property.currency)
-                        }
-                    </div>
+                {/* Circular hotel image */}
+                <div style={{
+                    width: 48,
+                    height: 48,
+                    minWidth: 48,
+                    minHeight: 48,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: `2.5px solid ${borderColor}`,
+                    boxShadow: shadow,
+                    flexShrink: 0,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                }}>
+                    {image && (
+                        <img
+                            src={image}
+                            alt=""
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                    )}
                 </div>
 
-                {/* Triangle Tail */}
-                <div className={cn(
-                    'w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] -mt-[1px]',
-                    isSelected ? 'border-t-blue-700' : 'border-t-white dark:border-t-slate-900'
-                )} />
+                {/* Price / loading label */}
+                <div style={{
+                    marginTop: 3,
+                    background: isSelected ? '#3b82f6' : 'white',
+                    color: isSelected ? 'white' : '#111',
+                    borderRadius: 10,
+                    padding: '2px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 5px rgba(0,0,0,0.18)',
+                    lineHeight: '1.5',
+                    minWidth: 32,
+                    textAlign: 'center',
+                }}>
+                    {property.priceLoading || !priceLabel ? (
+                        <span style={{ letterSpacing: '0.2em', color: '#999' }}>···</span>
+                    ) : priceLabel}
+                </div>
             </div>
         </Marker>
     );

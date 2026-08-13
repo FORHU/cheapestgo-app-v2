@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,8 @@ import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
 import { ArrowLeft, List, Building2, ChevronDown } from 'lucide-react';
 
+
+const DISTRICT_MARKER_THRESHOLD = 11;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const ACCENT        = '#FF6B4B';
@@ -248,26 +250,38 @@ function HotelSearchContent() {
     const searchParams = useSearchParams();
     const router       = useRouter();
 
-    const destination = searchParams.get('destination') ?? '';
-    const checkIn     = searchParams.get('checkIn')     ?? '';
-    const checkOut    = searchParams.get('checkOut')    ?? '';
-    const adults      = searchParams.get('adults')      ?? '2';
-    const children    = searchParams.get('children')    ?? '0';
-    const rooms       = searchParams.get('rooms')       ?? '1';
-    const lat         = searchParams.get('lat')         ?? '';
-    const lng         = searchParams.get('lng')         ?? '';
-    const countryCode = searchParams.get('countryCode') ?? '';
+    const destination  = searchParams.get('destination')  ?? '';
+    const checkIn      = searchParams.get('checkIn')      ?? '';
+    const checkOut     = searchParams.get('checkOut')     ?? '';
+    const adults       = searchParams.get('adults')       ?? '2';
+    const children     = searchParams.get('children')     ?? '0';
+    const rooms        = searchParams.get('rooms')        ?? '1';
+    const lat          = searchParams.get('lat')          ?? '';
+    const lng          = searchParams.get('lng')          ?? '';
+    const countryCode  = searchParams.get('countryCode')  ?? '';
+    const bboxParam    = searchParams.get('bbox')         ?? '';
+    const districtName = searchParams.get('districtName') ?? '';
+    const canonicalCity = searchParams.get('canonicalCity') ?? '';
     const searchQs    = searchParams.toString();
 
-    const [hotels, setHotels]         = useState<MappableProperty[]>([]);
-    const [status, setStatus]         = useState<StreamStatus>('idle');
-    const [viewMode, setViewMode]     = useState<ViewMode>('map');
-    const [sortBy, setSortBy]         = useState<SortValue>('recommended');
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [hoveredId, setHoveredId]   = useState<string | null>(null);
-    const [mapCenter, setMapCenter]   = useState<{ lat: number; lng: number } | undefined>(
+    const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
+    const [status, setStatus]                   = useState<StreamStatus>('idle');
+    const [viewMode, setViewMode]               = useState<ViewMode>('map');
+    const [sortBy, setSortBy]                   = useState<SortValue>('recommended');
+    const [selectedId, setSelectedId]           = useState<string | null>(null);
+    const [hoveredId, setHoveredId]             = useState<string | null>(null);
+    const [mapZoom, setMapZoom]                 = useState(11);
+    const [showAllCityOverride, setShowAllCityOverride] = useState(false);
+    const [mapCenter, setMapCenter]             = useState<{ lat: number; lng: number } | undefined>(
         lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined
     );
+
+    const districtBbox = useMemo<[number, number, number, number] | undefined>(() => {
+        if (!bboxParam) return undefined;
+        const parts = bboxParam.split(',').map(Number);
+        if (parts.length !== 4 || parts.some(isNaN)) return undefined;
+        return parts as [number, number, number, number];
+    }, [bboxParam]);
 
     const currency   = useUserCurrency();
     const searchKey  = `${destination}|${checkIn}|${checkOut}|${adults}|${children}|${rooms}|${lat}|${lng}`;
@@ -350,13 +364,36 @@ function HotelSearchContent() {
     }, [hotels, mapCenter]);
 
     const sorted  = useMemo(() => sortHotels(hotels, sortBy), [hotels, sortBy]);
-    const count   = hotels.length;
+    const railSorted = useMemo(() => {
+        if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return sorted;
+        const [minLng, minLat, maxLng, maxLat] = districtBbox;
+        return sorted.filter(p =>
+            p.coordinates.lng >= minLng && p.coordinates.lng <= maxLng &&
+            p.coordinates.lat >= minLat && p.coordinates.lat <= maxLat
+        );
+    }, [sorted, districtBbox, showAllCityOverride, mapZoom]);
+    const count   = railSorted.length;
     const isLoading    = status === 'loading';
     const isStreaming  = status === 'streaming';
     const pillText     = fmtPill(destination, checkIn, checkOut, adults, children);
 
     const handleViewDetails = useCallback((id: string) => router.push(`/property/${id}?${searchQs}`), [router, searchQs]);
     const handleSelect      = useCallback((id: string) => setSelectedId(prev => prev === id ? null : id), []);
+
+    // Horizontal scroll on mouse wheel — intercepts vertical-only events (deltaX===0)
+    // and converts them to horizontal scroll; lets trackpad (deltaX!==0) pass through.
+    const railRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = railRef.current;
+        if (!el) return;
+        const onWheel = (e: WheelEvent) => {
+            if (e.deltaX !== 0) return;
+            e.preventDefault();
+            el.scrollLeft += e.deltaY;
+        };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, []);
 
     // ── List view ─────────────────────────────────────────────────────────────
     if (viewMode === 'list') {
@@ -392,8 +429,8 @@ function HotelSearchContent() {
     return (
         <div className="dark relative w-full overflow-hidden" style={{ height: '100dvh', background: BG }}>
 
-            {/* Map fills entire screen */}
-            <div className="absolute inset-0">
+            {/* Map with horizontal indentation so it doesn't bleed edge-to-edge */}
+            <div className="absolute inset-y-0 left-16 right-16 rounded-2xl overflow-hidden">
                 <SearchMapContainer
                     properties={sorted}
                     selectedId={selectedId}
@@ -403,6 +440,12 @@ function HotelSearchContent() {
                     onViewDetails={handleViewDetails}
                     defaultCenter={mapCenter}
                     searchOverlayClassName="hidden"
+                    isSearching={isLoading || isStreaming}
+                    districtBbox={districtBbox}
+                    districtName={districtName}
+                    cityName={canonicalCity || destination}
+                    onZoomChange={setMapZoom}
+                    showAllProperties={showAllCityOverride}
                 />
             </div>
 
@@ -424,10 +467,17 @@ function HotelSearchContent() {
                     </span>
                 </div>
 
-                {/* Count badge */}
+                {/* Count badge — shows spinner while streaming */}
                 {count > 0 && (
-                    <div className="flex items-center px-3 rounded-full shrink-0"
+                    <div className="flex items-center gap-2 px-3 rounded-full shrink-0"
                         style={{ height: 40, background: OVERLAY_BG, border: `1px solid ${OVERLAY_BDR}`, backdropFilter: 'blur(10px)' }}>
+                        {isStreaming && (
+                            <div className="animate-spin flex-shrink-0" style={{
+                                width: 11, height: 11, borderRadius: '50%',
+                                border: '1.5px solid rgba(180,150,255,0.35)',
+                                borderTopColor: '#a78bfa',
+                            }} />
+                        )}
                         <span className="font-semibold whitespace-nowrap" style={{ fontSize: 13, color: TEXT }}>
                             {isStreaming ? `${count}+` : count} stays
                         </span>
@@ -515,9 +565,38 @@ function HotelSearchContent() {
                     >
                         {/* List view toggle + count */}
                         <div className="flex items-center justify-between px-4 mb-2">
-                            <span style={{ fontSize: 11, color: 'rgba(245,239,228,0.5)' }}>
-                                {isStreaming ? `Searching · ${count} found…` : `${count} properties`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                {isStreaming && (
+                                    <div className="animate-spin shrink-0" style={{
+                                        width: 10, height: 10, borderRadius: '50%',
+                                        border: '1.5px solid rgba(180,150,255,0.3)',
+                                        borderTopColor: '#a78bfa',
+                                    }} />
+                                )}
+                                <span style={{ fontSize: 11, color: isStreaming ? 'rgba(245,239,228,0.7)' : 'rgba(245,239,228,0.5)' }}>
+                                    {isStreaming ? `Searching · ${count} found…` : `${count} properties`}
+                                </span>
+                            </div>
+
+                            {/* District filter pill — shown when cards are scoped to a neighbourhood */}
+                            {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
+                                <button
+                                    onClick={() => setShowAllCityOverride(true)}
+                                    style={{
+                                        background: 'rgba(255,107,75,0.15)',
+                                        border: '1px solid rgba(255,107,75,0.4)',
+                                        borderRadius: 100,
+                                        padding: '4px 12px',
+                                        fontSize: 11, fontWeight: 700,
+                                        color: ACCENT, cursor: 'pointer',
+                                        backdropFilter: 'blur(8px)',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {districtName} · See all in {canonicalCity || destination}
+                                </button>
+                            )}
+
                             <button onClick={() => setViewMode('list')}
                                 className="flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
                                 style={{
@@ -531,12 +610,13 @@ function HotelSearchContent() {
                             </button>
                         </div>
 
-                        {/* Horizontal scroll cards */}
+                        {/* Horizontal scroll cards — wheel handler converts vertical scroll to horizontal */}
                         <div style={{ paddingBottom: 28, paddingLeft: 24 }}>
                             <div
+                                ref={railRef}
                                 className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
                             >
-                                {sorted.slice(0, 50).map(property => (
+                                {railSorted.slice(0, 50).map(property => (
                                     <RailCard
                                         key={property.id}
                                         property={property}

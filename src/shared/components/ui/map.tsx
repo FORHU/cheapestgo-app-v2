@@ -110,12 +110,23 @@ const Map = React.memo(
             const [mapReady, setMapReady] = React.useState(false);
             const [firstSymbolId, setFirstSymbolId] = React.useState<string>();
             const cursorPatchedRef = React.useRef(false);
+            // Track previous mapStyle so we only reset isStyleLoaded on real style *changes*,
+            // not on the initial load where handleLoad already set it to true.
+            const prevMapStyleRef = React.useRef<string | null>(null);
 
             React.useEffect(() => {
                 const map = mapRef.current?.getMap();
                 if (!map || !mapReady) return;
 
-                setIsStyleLoaded(false);
+                // Only reset isStyleLoaded when the user actively switches map style.
+                // On initial load prevMapStyleRef is null, so we skip the reset and
+                // keep the true value set by handleLoad — preventing the race where
+                // map.isStyleLoaded() briefly returns false for the Standard style.
+                const isStyleChange = prevMapStyleRef.current !== null && prevMapStyleRef.current !== mapStyle;
+                prevMapStyleRef.current = mapStyle as string;
+                if (isStyleChange) {
+                    setIsStyleLoaded(false);
+                }
 
                 const setup = () => {
                     if (!map) return;
@@ -285,27 +296,23 @@ const Map = React.memo(
                         antialias={antialias}
                         {...props}
                     >
-                        {isStyleLoaded && (
-                            <>
-                                {!isStandard && enable3DTerrain && (
-                                    <Source
-                                        id="mapbox-dem"
-                                        type="raster-dem"
-                                        url="mapbox://mapbox.mapbox-terrain-dem-v1"
-                                        tileSize={512}
-                                        maxzoom={14}
-                                    />
-                                )}
-                                {!isStandard && enable3DBuildings && (
-                                    <Buildings3DLayer
-                                        color={buildingColor}
-                                        opacity={buildingOpacity}
-                                        beforeId={firstSymbolId}
-                                    />
-                                )}
-                                {children}
-                            </>
+                        {isStyleLoaded && !isStandard && enable3DTerrain && (
+                            <Source
+                                id="mapbox-dem"
+                                type="raster-dem"
+                                url="mapbox://mapbox.mapbox-terrain-dem-v1"
+                                tileSize={512}
+                                maxzoom={14}
+                            />
                         )}
+                        {isStyleLoaded && !isStandard && enable3DBuildings && (
+                            <Buildings3DLayer
+                                color={buildingColor}
+                                opacity={buildingOpacity}
+                                beforeId={firstSymbolId}
+                            />
+                        )}
+                        {isStyleLoaded && children}
                     </MapboxMap>
                 </div>
             );

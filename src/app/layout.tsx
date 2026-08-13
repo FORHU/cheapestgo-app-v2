@@ -6,6 +6,7 @@ import { JetBrains_Mono, Fredoka, Open_Sans, Plus_Jakarta_Sans } from 'next/font
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import './globals.css';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Providers } from '@/shared/components/providers';
 import { AuthListener } from '@/shared/auth/AuthListener';
 import { ExchangeRateListener } from '@/shared/components/ExchangeRateListener';
