@@ -7,11 +7,13 @@ import { useMapDetails } from '../hooks/useMapDetails';
 interface MapContainerProps {
     mapRef: React.RefObject<MapRef | null>;
     initialViewState: {
-        longitude: number;
-        latitude: number;
-        zoom: number;
+        longitude?: number;
+        latitude?: number;
+        zoom?: number;
         pitch?: number;
         bearing?: number;
+        bounds?: [number, number, number, number] | [[number, number], [number, number]];
+        fitBoundsOptions?: { padding?: number; maxZoom?: number; duration?: number };
     };
     onLoad: (e: any) => void;
     onClick: (e: any) => void;
@@ -20,10 +22,6 @@ interface MapContainerProps {
     onMoveEnd?: (e: any) => void;
     onDragStart?: (e: any) => void;
     children?: React.ReactNode;
-    /**
-     * When true the Layers button and MapDetailsPanel are NOT rendered.
-     * Pass this when the parent already owns the panel (e.g. SearchMapContainer).
-     */
     hideLayersButton?: boolean;
     mapStyle?: string;
     standardConfig?: StandardStyleConfig;
@@ -31,6 +29,8 @@ interface MapContainerProps {
     antialias?: boolean;
     maxPitch?: number;
     onStyleReady?: (map: mapboxgl.Map) => void;
+    /** Lock the map to top-down zoom-only (no pitch, no rotation) */
+    topViewOnly?: boolean;
 }
 
 export const MapContainer = ({
@@ -50,6 +50,7 @@ export const MapContainer = ({
     antialias: propAntialias,
     maxPitch: propMaxPitch,
     onStyleReady,
+    topViewOnly = false,
 }: MapContainerProps) => {
     const internal = useMapDetails();
 
@@ -65,11 +66,13 @@ export const MapContainer = ({
             enable3DTerrain={finalTerrainEnabled}
             terrainExaggeration={1.5}
             initialViewState={{
-                pitch: 20,
-                bearing: -10,
+                pitch: topViewOnly ? 0 : 20,
+                bearing: topViewOnly ? 0 : -10,
                 ...initialViewState,
             }}
-            maxPitch={propMaxPitch ?? 85}
+            maxPitch={topViewOnly ? 0 : (propMaxPitch ?? 85)}
+            dragRotate={!topViewOnly}
+            touchPitch={!topViewOnly}
             onClick={onClick}
             onMouseMove={onMouseMove}
             onMove={onMove}
@@ -82,7 +85,7 @@ export const MapContainer = ({
             attributionControl={false}
             className="rounded-md min-h-0 w-full h-full"
         >
-            <NavigationControl position="top-right" showCompass visualizePitch />
+            <NavigationControl position="top-right" showCompass={!topViewOnly} visualizePitch={!topViewOnly} />
             <AttributionControl position="top-right" compact />
             {children}
 

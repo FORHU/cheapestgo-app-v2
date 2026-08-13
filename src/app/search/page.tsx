@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +13,9 @@ import { useUserCurrency } from '@/stores/searchStore';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
 import { ArrowLeft, List, Building2, ChevronDown } from 'lucide-react';
-import { cn } from '@/shared/lib/cn';
+
+
+const DISTRICT_MARKER_THRESHOLD = 11;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const ACCENT        = '#FF6B4B';
@@ -248,23 +250,38 @@ function HotelSearchContent() {
     const searchParams = useSearchParams();
     const router       = useRouter();
 
-    const destination = searchParams.get('destination') ?? '';
-    const checkIn     = searchParams.get('checkIn')     ?? '';
-    const checkOut    = searchParams.get('checkOut')    ?? '';
-    const adults      = searchParams.get('adults')      ?? '2';
-    const children    = searchParams.get('children')    ?? '0';
-    const rooms       = searchParams.get('rooms')       ?? '1';
-    const lat         = searchParams.get('lat')         ?? '';
-    const lng         = searchParams.get('lng')         ?? '';
-    const countryCode = searchParams.get('countryCode') ?? '';
+    const destination  = searchParams.get('destination')  ?? '';
+    const checkIn      = searchParams.get('checkIn')      ?? '';
+    const checkOut     = searchParams.get('checkOut')     ?? '';
+    const adults       = searchParams.get('adults')       ?? '2';
+    const children     = searchParams.get('children')     ?? '0';
+    const rooms        = searchParams.get('rooms')        ?? '1';
+    const lat          = searchParams.get('lat')          ?? '';
+    const lng          = searchParams.get('lng')          ?? '';
+    const countryCode  = searchParams.get('countryCode')  ?? '';
+    const bboxParam    = searchParams.get('bbox')         ?? '';
+    const districtName = searchParams.get('districtName') ?? '';
+    const canonicalCity = searchParams.get('canonicalCity') ?? '';
     const searchQs    = searchParams.toString();
 
-    const [hotels, setHotels]         = useState<MappableProperty[]>([]);
-    const [status, setStatus]         = useState<StreamStatus>('idle');
-    const [viewMode, setViewMode]     = useState<ViewMode>('map');
-    const [sortBy, setSortBy]         = useState<SortValue>('recommended');
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [hoveredId, setHoveredId]   = useState<string | null>(null);
+    const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
+    const [status, setStatus]                   = useState<StreamStatus>('idle');
+    const [viewMode, setViewMode]               = useState<ViewMode>('map');
+    const [sortBy, setSortBy]                   = useState<SortValue>('recommended');
+    const [selectedId, setSelectedId]           = useState<string | null>(null);
+    const [hoveredId, setHoveredId]             = useState<string | null>(null);
+    const [mapZoom, setMapZoom]                 = useState(11);
+    const [showAllCityOverride, setShowAllCityOverride] = useState(false);
+    const [mapCenter, setMapCenter]             = useState<{ lat: number; lng: number } | undefined>(
+        lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined
+    );
+
+    const districtBbox = useMemo<[number, number, number, number] | undefined>(() => {
+        if (!bboxParam) return undefined;
+        const parts = bboxParam.split(',').map(Number);
+        if (parts.length !== 4 || parts.some(isNaN)) return undefined;
+        return parts as [number, number, number, number];
+    }, [bboxParam]);
 
     const currency   = useUserCurrency();
     const searchKey  = `${destination}|${checkIn}|${checkOut}|${adults}|${children}|${rooms}|${lat}|${lng}`;
@@ -277,6 +294,7 @@ function HotelSearchContent() {
         setStatus('loading');
         setHotels([]);
         setSelectedId(null);
+        setMapCenter(lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined);
 
         const run = async () => {
             const body: Record<string, any> = {
@@ -319,13 +337,13 @@ function HotelSearchContent() {
                             const mapped = list.map(toMappable).filter(Boolean) as MappableProperty[];
                             if (!cancelled) { setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); }); setStatus('streaming'); }
                         } else if (chunk.type === 'prices' && Array.isArray(chunk.data)) {
-                            const pm = new Map(chunk.data.map((p: any) => [p.hotelId, p]));
-                            if (!cancelled) setHotels(prev => prev.map(h => { const p = pm.get(h.id); return p ? { ...h, price: p.price ?? h.price, currency: p.currency ?? h.currency } : h; }));
+                            const pm = new Map<string, any>(chunk.data.map((p: any) => [p.hotelId, p]));
+                            if (!cancelled) setHotels(prev => prev.map(h => { const p = pm.get(h.id); return p ? { ...h, price: p.price ?? h.price, currency: p.currency ?? h.currency, priceLoading: false } : h; }));
                         } else if (chunk.type === 'remove' && Array.isArray(chunk.ids)) {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
                         } else if (chunk.type === 'done' || chunk.type === 'error') {
-                            if (!cancelled) setStatus(accumulated > 0 ? 'done' : 'error'); return;
+                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setStatus(accumulated > 0 ? 'done' : 'error'); } return;
                         }
                     } catch { /* skip */ }
                 }
@@ -338,15 +356,44 @@ function HotelSearchContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchKey]);
 
-    const sorted       = useMemo(() => sortHotels(hotels, sortBy), [hotels, sortBy]);
-    const defaultCenter = lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined;
-    const count        = hotels.length;
+    // Auto-center on first hotel batch when no lat/lng were in the URL
+    useEffect(() => {
+        if (mapCenter) return;
+        const first = hotels.find(h => h.coordinates);
+        if (first?.coordinates) setMapCenter(first.coordinates);
+    }, [hotels, mapCenter]);
+
+    const sorted  = useMemo(() => sortHotels(hotels, sortBy), [hotels, sortBy]);
+    const railSorted = useMemo(() => {
+        if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return sorted;
+        const [minLng, minLat, maxLng, maxLat] = districtBbox;
+        return sorted.filter(p =>
+            p.coordinates.lng >= minLng && p.coordinates.lng <= maxLng &&
+            p.coordinates.lat >= minLat && p.coordinates.lat <= maxLat
+        );
+    }, [sorted, districtBbox, showAllCityOverride, mapZoom]);
+    const count   = railSorted.length;
     const isLoading    = status === 'loading';
     const isStreaming  = status === 'streaming';
     const pillText     = fmtPill(destination, checkIn, checkOut, adults, children);
 
     const handleViewDetails = useCallback((id: string) => router.push(`/property/${id}?${searchQs}`), [router, searchQs]);
     const handleSelect      = useCallback((id: string) => setSelectedId(prev => prev === id ? null : id), []);
+
+    // Horizontal scroll on mouse wheel — intercepts vertical-only events (deltaX===0)
+    // and converts them to horizontal scroll; lets trackpad (deltaX!==0) pass through.
+    const railRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = railRef.current;
+        if (!el) return;
+        const onWheel = (e: WheelEvent) => {
+            if (e.deltaX !== 0) return;
+            e.preventDefault();
+            el.scrollLeft += e.deltaY;
+        };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, []);
 
     // ── List view ─────────────────────────────────────────────────────────────
     if (viewMode === 'list') {
@@ -382,8 +429,8 @@ function HotelSearchContent() {
     return (
         <div className="dark relative w-full overflow-hidden" style={{ height: '100dvh', background: BG }}>
 
-            {/* Map fills entire screen */}
-            <div className="absolute inset-0">
+            {/* Map with horizontal indentation so it doesn't bleed edge-to-edge */}
+            <div className="absolute inset-y-0 left-16 right-16 rounded-2xl overflow-hidden">
                 <SearchMapContainer
                     properties={sorted}
                     selectedId={selectedId}
@@ -391,8 +438,14 @@ function HotelSearchContent() {
                     hoveredId={hoveredId}
                     onHoverId={setHoveredId}
                     onViewDetails={handleViewDetails}
-                    defaultCenter={defaultCenter}
+                    defaultCenter={mapCenter}
                     searchOverlayClassName="hidden"
+                    isSearching={isLoading || isStreaming}
+                    districtBbox={districtBbox}
+                    districtName={districtName}
+                    cityName={canonicalCity || destination}
+                    onZoomChange={setMapZoom}
+                    showAllProperties={showAllCityOverride}
                 />
             </div>
 
@@ -414,10 +467,17 @@ function HotelSearchContent() {
                     </span>
                 </div>
 
-                {/* Count badge */}
+                {/* Count badge — shows spinner while streaming */}
                 {count > 0 && (
-                    <div className="flex items-center px-3 rounded-full shrink-0"
+                    <div className="flex items-center gap-2 px-3 rounded-full shrink-0"
                         style={{ height: 40, background: OVERLAY_BG, border: `1px solid ${OVERLAY_BDR}`, backdropFilter: 'blur(10px)' }}>
+                        {isStreaming && (
+                            <div className="animate-spin flex-shrink-0" style={{
+                                width: 11, height: 11, borderRadius: '50%',
+                                border: '1.5px solid rgba(180,150,255,0.35)',
+                                borderTopColor: '#a78bfa',
+                            }} />
+                        )}
                         <span className="font-semibold whitespace-nowrap" style={{ fontSize: 13, color: TEXT }}>
                             {isStreaming ? `${count}+` : count} stays
                         </span>
@@ -428,14 +488,68 @@ function HotelSearchContent() {
                 <SortPill value={sortBy} onChange={setSortBy} />
             </div>
 
-            {/* Loading spinner */}
+            {/* Full-screen loading overlay — z-40 sits above Mapbox canvas */}
             {isLoading && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 pointer-events-none">
-                    <div className="rounded-full border-2 border-t-transparent animate-spin"
-                        style={{ width: 36, height: 36, borderColor: ACCENT, borderTopColor: 'transparent' }} />
-                    <span className="font-medium" style={{ fontSize: 13, color: TEXT }}>
-                        Finding stays{destination ? ` in ${destination}` : ''}…
-                    </span>
+                <div className="absolute inset-0 z-40 flex flex-col" style={{ background: 'rgba(21,17,30,0.93)', backdropFilter: 'blur(4px)' }}>
+                    {/* Centred spinner + label */}
+                    <div className="flex-1 flex flex-col items-center justify-center gap-5">
+                        <div className="relative flex items-center justify-center" style={{ width: 64, height: 64 }}>
+                            <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ background: ACCENT, animationDuration: '1.6s' }} />
+                            <div className="absolute animate-spin rounded-full" style={{ inset: 8, border: `2.5px solid ${ACCENT}`, borderTopColor: 'transparent' }} />
+                            <Building2 size={18} style={{ color: ACCENT }} />
+                        </div>
+                        <div className="text-center">
+                            <p className="font-semibold" style={{ fontSize: 16, color: TEXT }}>
+                                Finding stays{destination ? ` in ${destination}` : ''}…
+                            </p>
+                            <p style={{ fontSize: 12, color: DIM, marginTop: 4 }}>Checking availability &amp; prices</p>
+                        </div>
+                    </div>
+
+                    {/* Skeleton rail cards — preview the bottom card layout */}
+                    <div style={{ paddingLeft: 24, paddingBottom: 32, paddingRight: 24 }}>
+                        <div className="flex gap-3 overflow-hidden">
+                            {[0, 1, 2, 3].map(i => (
+                                <div key={i} className="shrink-0 animate-pulse"
+                                    style={{ width: 190, borderRadius: 18, background: SURFACE, border: `1.5px solid ${BORDER}`, opacity: 1 - i * 0.18 }}>
+                                    <div style={{ height: 108, borderRadius: '16px 16px 0 0', background: 'rgba(255,255,255,0.05)' }} />
+                                    <div style={{ padding: '20px 14px 14px' }}>
+                                        <div style={{ height: 14, borderRadius: 6, background: 'rgba(255,255,255,0.08)', marginBottom: 7 }} />
+                                        <div style={{ height: 10, borderRadius: 6, background: 'rgba(255,255,255,0.05)', width: '65%' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                                            <div style={{ height: 22, width: 36, borderRadius: 100, background: 'rgba(255,255,255,0.06)' }} />
+                                            <div style={{ height: 18, width: 52, borderRadius: 6, background: 'rgba(255,107,75,0.15)' }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* No-results / error overlay */}
+            {status === 'error' && (
+                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-5"
+                    style={{ background: 'rgba(21,17,30,0.93)', backdropFilter: 'blur(4px)' }}>
+                    <span style={{ fontSize: 44 }}>🏨</span>
+                    <div className="text-center">
+                        <p className="font-semibold" style={{ fontSize: 17, color: TEXT }}>No stays found</p>
+                        <p style={{ fontSize: 13, color: DIM, marginTop: 6 }}>
+                            {destination ? `We couldn't find hotels in ${destination}.` : 'Try a different destination.'}
+                        </p>
+                        <p style={{ fontSize: 12, color: DIM, marginTop: 2 }}>Try adjusting your dates or destination.</p>
+                    </div>
+                    <button
+                        onClick={() => router.back()}
+                        style={{
+                            background: ACCENT, color: '#fff', border: 'none',
+                            borderRadius: 100, padding: '11px 24px',
+                            fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                            boxShadow: '0 4px 18px rgba(255,107,75,0.4)',
+                        }}>
+                        Change search
+                    </button>
                 </div>
             )}
 
@@ -451,9 +565,38 @@ function HotelSearchContent() {
                     >
                         {/* List view toggle + count */}
                         <div className="flex items-center justify-between px-4 mb-2">
-                            <span style={{ fontSize: 11, color: 'rgba(245,239,228,0.5)' }}>
-                                {isStreaming ? `Searching · ${count} found…` : `${count} properties`}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                {isStreaming && (
+                                    <div className="animate-spin shrink-0" style={{
+                                        width: 10, height: 10, borderRadius: '50%',
+                                        border: '1.5px solid rgba(180,150,255,0.3)',
+                                        borderTopColor: '#a78bfa',
+                                    }} />
+                                )}
+                                <span style={{ fontSize: 11, color: isStreaming ? 'rgba(245,239,228,0.7)' : 'rgba(245,239,228,0.5)' }}>
+                                    {isStreaming ? `Searching · ${count} found…` : `${count} properties`}
+                                </span>
+                            </div>
+
+                            {/* District filter pill — shown when cards are scoped to a neighbourhood */}
+                            {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
+                                <button
+                                    onClick={() => setShowAllCityOverride(true)}
+                                    style={{
+                                        background: 'rgba(255,107,75,0.15)',
+                                        border: '1px solid rgba(255,107,75,0.4)',
+                                        borderRadius: 100,
+                                        padding: '4px 12px',
+                                        fontSize: 11, fontWeight: 700,
+                                        color: ACCENT, cursor: 'pointer',
+                                        backdropFilter: 'blur(8px)',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {districtName} · See all in {canonicalCity || destination}
+                                </button>
+                            )}
+
                             <button onClick={() => setViewMode('list')}
                                 className="flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
                                 style={{
@@ -467,25 +610,24 @@ function HotelSearchContent() {
                             </button>
                         </div>
 
-                        {/* Horizontal scroll cards */}
-                        <div
-                            className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
-                            style={{ paddingBottom: 28 }}
-                        >
-                            {/* left spacer — padding-left is swallowed by overflow-x containers */}
-                            <div style={{ width: 24, flexShrink: 0 }} />
-                            {sorted.slice(0, 50).map(property => (
-                                <RailCard
-                                    key={property.id}
-                                    property={property}
-                                    isSelected={selectedId === property.id}
-                                    onSelect={handleSelect}
-                                    onViewDetails={handleViewDetails}
-                                    currency={currency}
-                                />
-                            ))}
-                            {/* right spacer */}
-                            <div style={{ width: 24, flexShrink: 0 }} />
+                        {/* Horizontal scroll cards — wheel handler converts vertical scroll to horizontal */}
+                        <div style={{ paddingBottom: 28, paddingLeft: 24 }}>
+                            <div
+                                ref={railRef}
+                                className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
+                            >
+                                {railSorted.slice(0, 50).map(property => (
+                                    <RailCard
+                                        key={property.id}
+                                        property={property}
+                                        isSelected={selectedId === property.id}
+                                        onSelect={handleSelect}
+                                        onViewDetails={handleViewDetails}
+                                        currency={currency}
+                                    />
+                                ))}
+                                <div style={{ minWidth: 24, flexShrink: 0 }} />
+                            </div>
                         </div>
                     </motion.div>
                 )}

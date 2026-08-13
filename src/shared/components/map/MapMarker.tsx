@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import Image from 'next/image';
+'use client';
+
+import React from 'react';
 import { Marker } from 'react-map-gl/mapbox';
-import { Bed } from 'lucide-react';
 import { formatCurrency } from '@/shared/lib/format';
-import { cn } from '@/shared/lib/cn';
 import type { MappableProperty } from './types';
 
 interface MapMarkerProps {
@@ -28,14 +27,20 @@ const MapMarker = React.memo(function MapMarker({
     isHovered,
     onClick,
     onHover,
-    index,
 }: MapMarkerProps) {
     const isActive = isSelected || isHovered;
+    const image = property.image ?? property.images?.[0];
+    const borderColor = isSelected ? '#3b82f6' : isHovered ? '#93c5fd' : 'white';
+    const shadow = isActive ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(0,0,0,0.25)';
 
-    // A supplier image that 404s would otherwise leave a grey hole in the pill.
-    const [imageFailed, setImageFailed] = useState(false);
-    const thumbnail = property.image ?? property.images?.[0];
-    const showThumbnail = Boolean(thumbnail) && !imageFailed;
+    let priceLabel: string;
+    try {
+        priceLabel = property.priceLoading
+            ? ''
+            : formatCurrency(displayPrice ?? property.price, displayCurrency ?? property.currency ?? 'USD');
+    } catch {
+        priceLabel = '';
+    }
 
     return (
         <Marker
@@ -56,55 +61,56 @@ const MapMarker = React.memo(function MapMarker({
             <div
                 onMouseEnter={() => onHover(property.id)}
                 onMouseLeave={() => onHover(null)}
-                className={cn(
-                    'flex cursor-pointer items-center gap-1.5 rounded-[10px] bg-white p-1 pr-2 ring-1 transition-transform dark:bg-slate-900',
-                    isActive ? 'shadow-lg ring-blue-500/60' : 'shadow-md ring-black/[0.08] dark:ring-white/10',
-                    isSelected ? '-translate-y-1 scale-110' : 'scale-100'
-                )}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'transform 150ms ease',
+                }}
             >
-                {/* Thumbnail */}
-                <div
-                    className="relative shrink-0 overflow-hidden rounded-[7px] bg-slate-100 dark:bg-slate-800"
-                    style={{ width: THUMB, height: THUMB }}
-                >
-                    {showThumbnail ? (
-                        <Image
-                            src={thumbnail as string}
+                {/* Circular hotel image */}
+                <div style={{
+                    width: 48,
+                    height: 48,
+                    minWidth: 48,
+                    minHeight: 48,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: `2.5px solid ${borderColor}`,
+                    boxShadow: shadow,
+                    flexShrink: 0,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                }}>
+                    {image && (
+                        <img
+                            src={image}
                             alt=""
-                            fill
-                            sizes={`${THUMB}px`}
-                            className="object-cover"
-                            onError={() => setImageFailed(true)}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                            <Bed className="h-3.5 w-3.5 text-slate-400" />
-                        </div>
-                    )}
-
-                    {/* Keeps the marker tied to its numbered row in the results list. */}
-                    {index !== undefined && (
-                        <span
-                            className={cn(
-                                'absolute left-0 top-0 flex items-center justify-center rounded-br-[6px] px-[3px] font-bold leading-none text-white',
-                                isSelected ? 'bg-blue-700' : 'bg-blue-600',
-                                index > 99 ? 'text-[6px]' : 'text-[8px]'
-                            )}
-                            style={{ minWidth: 13, height: 13 }}
-                        >
-                            {index}
-                        </span>
                     )}
                 </div>
 
-                {/* Price */}
-                <span className="whitespace-nowrap text-[12px] font-bold tracking-tight text-slate-900 dark:text-white">
-                    {property.priceLoading ? (
-                        <span className="tracking-widest text-slate-400">···</span>
-                    ) : (
-                        formatCurrency(displayPrice ?? property.price, displayCurrency ?? property.currency)
-                    )}
-                </span>
+                {/* Price / loading label */}
+                <div style={{
+                    marginTop: 3,
+                    background: isSelected ? '#3b82f6' : 'white',
+                    color: isSelected ? 'white' : '#111',
+                    borderRadius: 10,
+                    padding: '2px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 5px rgba(0,0,0,0.18)',
+                    lineHeight: '1.5',
+                    minWidth: 32,
+                    textAlign: 'center',
+                }}>
+                    {property.priceLoading || !priceLabel ? (
+                        <span style={{ letterSpacing: '0.2em', color: '#999' }}>···</span>
+                    ) : priceLabel}
+                </div>
             </div>
         </Marker>
     );
