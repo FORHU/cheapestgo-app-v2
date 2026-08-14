@@ -1,5 +1,5 @@
 import { Map, type StandardStyleConfig } from '@/shared/components/ui/map';
-import { NavigationControl, AttributionControl, MapRef } from 'react-map-gl/mapbox';
+import { AttributionControl, MapRef } from 'react-map-gl/mapbox';
 import { Layers } from 'lucide-react';
 import { MapDetailsPanel } from './MapDetailsPanel';
 import { useMapDetails } from '../hooks/useMapDetails';
@@ -85,7 +85,8 @@ export const MapContainer = ({
             attributionControl={false}
             className="rounded-md min-h-0 w-full h-full"
         >
-            <NavigationControl position="top-right" showCompass={!topViewOnly} visualizePitch={!topViewOnly} />
+            {/* No NavigationControl — the search map has no zoom buttons; wheel,
+                pinch and double-tap still zoom. */}
             <AttributionControl position="top-right" compact />
             {children}
 

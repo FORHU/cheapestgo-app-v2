@@ -4,14 +4,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
-import { useUserCurrency, useUserCountry, useSearchActions } from '@/stores/searchStore';
+import { useUserCurrency, useSearchActions } from '@/stores/searchStore';
 import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
+import { getCurrencySymbol } from '@/shared/lib/currency';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
+/** Menu order follows the design: code on the left, symbol on the right. */
 export const CURRENCIES = [
-  { code: 'KRW', country: 'KR', flag: '🇰🇷' },
-  { code: 'USD', country: 'US', flag: '🇺🇸' },
-  { code: 'PHP', country: 'PH', flag: '🇵🇭' },
+  { code: 'USD', country: 'US', symbol: '$' },
+  { code: 'KRW', country: 'KR', symbol: '₩' },
+  { code: 'PHP', country: 'PH', symbol: '₱' },
+  { code: 'JPY', country: 'JP', symbol: '¥' },
+  { code: 'CNY', country: 'CN', symbol: '¥' },
 ] as const;
 
 interface CurrencySelectorProps {
@@ -27,7 +31,6 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 }) => {
   const tone = SELECTOR_TONES[variant];
   const userCurrency = useUserCurrency();
-  const userCountry = useUserCountry();
   const { setUserCurrency, setUserCountry } = useSearchActions();
   const router = useRouter();
   const pathname = usePathname();
@@ -55,7 +58,10 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
     }
   };
 
-  const currentCurrency = CURRENCIES.find(c => c.code === userCurrency) || CURRENCIES[0];
+  // Account preferences can set a currency this menu does not list, so fall
+  // back to showing that code rather than mislabelling the trigger.
+  const currentSymbol =
+    CURRENCIES.find(c => c.code === userCurrency)?.symbol ?? getCurrencySymbol(userCurrency);
 
   return (
     <div className={cn("relative shrink-0", className)} ref={ref}>
@@ -66,8 +72,8 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         aria-haspopup="listbox"
         aria-label="Select currency"
       >
-        <span className="text-sm">{currentCurrency.flag}</span>
-        <span className="hidden xs:inline">{userCurrency}</span>
+        <span className="text-sm leading-none">{currentSymbol}</span>
+        <span className="hidden sm:inline">{userCurrency}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
@@ -78,27 +84,34 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
             role="listbox"
+            aria-label="Currency"
             className={cn(
-              "absolute top-full mt-1 min-w-[120px] py-1 z-50 cursor-pointer",
+              "absolute top-full mt-1.5 min-w-[124px] overflow-hidden z-[1001]",
               tone.menu,
+              tone.divider,
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >
-            {CURRENCIES.map((currency) => (
-              <li key={currency.code} role="option" aria-selected={userCurrency === currency.code}>
-                <button
-                  type="button"
-                  onClick={() => handleCurrencySelect(currency.code, currency.country)}
-                  className={cn(
-                    "flex items-center gap-2 w-full px-3 py-2 text-left text-xs font-normal transition-colors",
-                    tone.item(userCurrency === currency.code)
-                  )}
-                >
-                  <span className="text-sm">{currency.flag}</span>
-                  {currency.code}
-                </button>
-              </li>
-            ))}
+            {CURRENCIES.map((currency) => {
+              const selected = userCurrency === currency.code;
+              return (
+                <li key={currency.code} role="option" aria-selected={selected}>
+                  <button
+                    type="button"
+                    onClick={() => handleCurrencySelect(currency.code, currency.country)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide transition-colors cursor-pointer",
+                      tone.item(selected)
+                    )}
+                  >
+                    <span>{currency.code}</span>
+                    <span className={cn("text-[13px] leading-none", tone.glyph(selected))}>
+                      {currency.symbol}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </motion.ul>
         )}
       </AnimatePresence>

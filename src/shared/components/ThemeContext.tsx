@@ -26,7 +26,19 @@ export const ThemeProvider: React.FC<BaseProps> = ({ children }) => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  /**
+   * Cross-fades colours on the way between themes.
+   *
+   * The class is only on the document for the length of the fade: a standing
+   * `transition` on every element would also animate hovers, menu opens, and
+   * anything else that happens to change a colour.
+   */
+  const toggleTheme = () => {
+    const root = window.document.documentElement;
+    root.classList.add('theme-transition');
+    window.setTimeout(() => root.classList.remove('theme-transition'), 220);
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

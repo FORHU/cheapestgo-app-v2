@@ -1,8 +1,9 @@
-import { Search, Utensils, Landmark, ShoppingBasket, Pill, Bus } from 'lucide-react';
+import { Search, Utensils, Coffee, Landmark, ShoppingBasket, Pill, Bus } from 'lucide-react';
 
 export const POI_FILTERS = [
     { id: 'all',        icon: Search        },
     { id: 'restaurant', icon: Utensils      },
+    { id: 'cafe',       icon: Coffee        },
     { id: 'attraction', icon: Landmark      },
     { id: 'grocery',    icon: ShoppingBasket },
     { id: 'medical',    icon: Pill          },

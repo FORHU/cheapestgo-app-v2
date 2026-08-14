@@ -3,20 +3,22 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Aerial night footage, encoded for the web from `Video Project 1.mp4`:
- * a 20s 1080p30 loop, no audio, crossfaded end-to-start so `loop` has no
- * visible cut. See the encode recipe in docs/landing-video.md.
+ * Daylight coastline shot from a plane window, encoded for the web from
+ * `Ocean Background.mp4`: a 10s 1080p24 loop, no audio, crossfaded end-to-start
+ * so `loop` has no visible cut. See the encode recipe in docs/landing-video.md.
  */
-export const LANDING_VIDEO = '/videos/landing-hero.mp4';
-export const LANDING_POSTER = '/videos/landing-hero-poster.jpg';
+export const LANDING_VIDEO = '/videos/landing-ocean.mp4';
+export const LANDING_POSTER = '/videos/landing-ocean-poster.jpg';
 
 /**
- * The scrim is deliberately light. The footage is near-black with small point
- * lights, so anything heavier crushes it to a flat black rectangle — it only
- * needs to lift the footer links off the brighter city detail at the bottom.
+ * The scrim is heavy, and has to be. This is a midday shot whose wing, sand and
+ * sunlit water are all close to white, while the page's chrome is thin slate
+ * sitting straight on the footage — `#94a3b8` footer links, a `#64748b` legal
+ * line, `bg-white/[0.06]` header controls. These stops keep that text at ≥4.5:1
+ * even against the wing, which is the brightest thing in frame.
  */
 const SCRIM =
-    'bg-[linear-gradient(180deg,rgba(18,18,18,0.45)_0%,rgba(14,14,14,0.35)_45%,rgba(10,10,10,0.72)_100%)]';
+    'bg-[linear-gradient(180deg,rgba(9,13,20,0.62)_0%,rgba(9,13,20,0.55)_45%,rgba(7,10,15,0.82)_100%)]';
 
 /**
  * Full-bleed muted video behind the landing page.
