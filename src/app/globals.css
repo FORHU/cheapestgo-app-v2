@@ -194,20 +194,89 @@
  */
 /* Inverted against the theme, like the rest of the map's UI: the basemap
    follows the theme, so markers take the opposite tone to stay legible.
-   POI discs are kept separate from the hotel pill so the two can diverge. */
+   POI discs are kept separate from the hotel pill so the two can diverge.
+
+   The POI disc and the preview it opens share one pair: they are the same
+   object at two sizes, and a disc in pure black beside a card in near-black
+   read as two different marks rather than one. The hotel preview draws from
+   the same pair — one surface for everything the map opens over itself. */
 :root {
   --pin-bg: #1C1C1C;
   --pin-fg: #FFFFFF;
   --pin-line: rgba(255, 255, 255, 0.16);
-  --poi-bg: #000000;
-  --poi-fg: #FFFFFF;
+  --map-card-bg: #1C1C1E;
+  --map-card-fg: #FFFFFF;
+  --map-card-muted: rgba(255, 255, 255, 0.55);
+  --map-card-well: rgba(255, 255, 255, 0.08);
 }
 :root.dark {
   --pin-bg: #FFFFFF;
   --pin-fg: #111111;
   --pin-line: rgba(0, 0, 0, 0.08);
-  --poi-bg: #FFFFFF;
-  --poi-fg: #000000;
+  --map-card-bg: #FFFFFF;
+  --map-card-fg: #111111;
+  --map-card-muted: rgba(17, 17, 17, 0.55);
+  --map-card-well: rgba(0, 0, 0, 0.06);
+}
+
+/*
+ * Preview cards the map opens over itself — a place of interest, a hotel.
+ *
+ * Mapbox's own popup chrome is stripped rather than restyled: the cards paint
+ * their own ground, radius and shadow, and the designs have no tip. Left in
+ * place, the default white content box showed as a frame around the dark card
+ * and the tip as a white spur under it.
+ *
+ * Over every marker, too. Markers set their own z-index in the same overlay
+ * container — 35 for the district banner, 25 for a selected POI disc, 20 for a
+ * selected hotel pin — and a popup with no z-index of its own loses to all of
+ * them, so the card opened underneath the very pin that opened it.
+ */
+.map-poi-popup,
+.map-hotel-popup {
+  z-index: 60;
+}
+
+.map-poi-popup .mapboxgl-popup-content,
+.map-hotel-popup .mapboxgl-popup-content {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.map-poi-popup .mapboxgl-popup-tip,
+.map-hotel-popup .mapboxgl-popup-tip {
+  display: none;
+}
+
+/*
+ * Gallery arrows: a slow rock outward, so the card advertises that there are
+ * more rooms behind the one on screen without needing a caption.
+ *
+ * The animation rides the chevron inside the button, never the button itself —
+ * the button is centred with `translateY(-50%)`, and animating its transform
+ * would throw that away on the first frame.
+ */
+@keyframes map-gallery-nudge-left {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-2.5px); }
+}
+
+@keyframes map-gallery-nudge-right {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(2.5px); }
+}
+
+.map-gallery-arrow-left  { animation: map-gallery-nudge-left  1.6s ease-in-out infinite; }
+.map-gallery-arrow-right { animation: map-gallery-nudge-right 1.6s ease-in-out infinite; }
+
+/* An idle hint is exactly the sort of motion this setting is asking to stop. */
+@media (prefers-reduced-motion: reduce) {
+  .map-gallery-arrow-left,
+  .map-gallery-arrow-right {
+    animation: none;
+  }
 }
 
 /*

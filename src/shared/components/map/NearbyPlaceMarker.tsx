@@ -14,7 +14,11 @@ const ICON = 17;
 
 /**
  * The six categories the design draws, plus a fallback for anything that
- * matches none of them. Cafés split out of food so the cup gets used.
+ * matches none of them. Cafés split out of food so the cup gets used, and
+ * attractions fold into the trees rather than falling through to the pin.
+ *
+ * Order matters: the narrower tests run first, so `cafe` claims a coffee shop
+ * before `food` can, and `market` doesn't swallow `supermarket`.
  */
 export function getCategoryIcon(category: string): PoiGlyph {
     const cat = category.toLowerCase();
@@ -22,7 +26,14 @@ export function getCategoryIcon(category: string): PoiGlyph {
         return CafeGlyph;
     if (cat.includes('restaurant') || cat.includes('food') || cat.includes('bar') || cat.includes('dining'))
         return FoodGlyph;
-    if (cat.includes('park') || cat.includes('garden') || cat.includes('nature') || cat.includes('forest'))
+    // Attractions share the trees. Sightseeing has no mark of its own in the
+    // set, and the pin fallback it used to get is the "uncategorised" glyph —
+    // the one shape on the map that says nothing about the place. Green space
+    // is the closest thing the design draws to a day out.
+    if (cat.includes('park') || cat.includes('garden') || cat.includes('nature') || cat.includes('forest') ||
+        cat.includes('attraction') || cat.includes('tourist') || cat.includes('sightseeing') ||
+        cat.includes('landmark') || cat.includes('monument') || cat.includes('museum') ||
+        cat.includes('gallery') || cat.includes('zoo') || cat.includes('temple') || cat.includes('shrine'))
         return ParkGlyph;
     if (cat.includes('supermarket') || cat.includes('grocery') || cat.includes('convenience') ||
         cat.includes('store') || cat.includes('shop') || cat.includes('mall') || cat.includes('market'))
@@ -46,7 +57,8 @@ interface NearbyPlaceMarkerProps {
  * A place of interest: a solid disc carrying a contrasting glyph, on a short
  * pointer that marks the coordinate.
  *
- * Colours come from `--poi-bg` / `--poi-fg` (globals.css), which invert against
+ * Colours come from `--map-card-*` (globals.css) — the same pair the preview
+ * card uses, so the disc and the card it opens are one mark — and invert against
  * the app theme so the disc always contrasts the basemap: black-on-light in
  * light mode, white-on-dark in dark mode. Variables rather than a prop, so a
  * theme switch is a repaint rather than a re-render of every marker.
@@ -90,8 +102,8 @@ const NearbyPlaceMarker = React.memo(function NearbyPlaceMarker({
                         width: SIZE,
                         height: SIZE,
                         borderRadius: '50%',
-                        background: 'var(--poi-bg)',
-                        color: 'var(--poi-fg)',
+                        background: 'var(--map-card-bg)',
+                        color: 'var(--map-card-fg)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -114,7 +126,7 @@ const NearbyPlaceMarker = React.memo(function NearbyPlaceMarker({
                 >
                     <polygon
                         points="1.5,0 12.5,0 7,6.5"
-                        style={{ fill: 'var(--poi-bg)', stroke: 'var(--poi-bg)' }}
+                        style={{ fill: 'var(--map-card-bg)', stroke: 'var(--map-card-bg)' }}
                         strokeWidth="2"
                         strokeLinejoin="round"
                     />

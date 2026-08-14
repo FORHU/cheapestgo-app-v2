@@ -14,7 +14,6 @@ import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
 import { ArrowLeft, List, Building2, ChevronDown, ChevronUp, Sun, Moon, Search, MapPin } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
-import { cn } from '@/shared/lib/cn';
 import { useMapboxSearch } from '@/shared/components/mapbox/hooks/useMapboxSearch';
 
 
@@ -101,11 +100,12 @@ function fmtPill(destination: string, checkIn: string, checkOut: string, adults:
 // image/panel seam and runs a few px past the right edge, where the card's
 // `overflow: hidden` crops it.
 //
-// The width is what it is because the price sits on ONE line inside the
-// circle — at a narrower card the circle shrinks and the label has to wrap or
-// shrink out of legibility.
+// The price sits on ONE line inside the circle, and the circle scales with the
+// card — so the width used to be pinned here, because below it the label ran
+// out of circle. `priceFontFor` now sizes the label from the room actually
+// available instead, which is what lets this be tuned freely.
 
-const CARD_W = 220;
+const CARD_W = 196;
 const CARD_REF_W = 320;
 const SCALE = CARD_W / CARD_REF_W;
 /** Geometry: whole pixels. */
@@ -120,11 +120,11 @@ const px = (n: number) => Math.round(n * SCALE);
 const TYPE_SCALE = Math.max(SCALE, 0.9);
 const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
 
-const CARD_IMG_H   = px(180);
+const CARD_IMG_H   = px(160);
 const PRICE_CIRCLE = px(97);
 const PANEL_PAD_X  = px(17);
 /** A floor, not a fixed height — the panel grows if the type needs the room. */
-const PANEL_HEIGHT = px(148);
+const PANEL_HEIGHT = px(124);
 /** Roughly the card's finished height. */
 const CARD_H = CARD_IMG_H + PANEL_HEIGHT;
 /** How much a selected card grows. */
@@ -135,6 +135,28 @@ const SELECT_SCALE = 1.15;
 const SELECT_GUTTER = Math.round((CARD_W * (SELECT_SCALE - 1)) / 2);
 /** Vertical growth the rail must leave clear above the cards. */
 const SELECT_HEADROOM = Math.ceil(CARD_H * (SELECT_SCALE - 1));
+
+/**
+ * Largest size at which `label` still fits on one line inside the price circle.
+ *
+ * The ramp this replaces stepped on character count alone — 10.5 up to 14
+ * characters, then down — which held only at the width the design was drawn
+ * at. The circle scales with the card, so the same 14-character label that fit
+ * at 220 overflowed at 196. Sizing from the room available keeps the design's
+ * type at full size whenever it fits and steps down only when it genuinely
+ * has to, at any card width.
+ *
+ * `AVG_CHAR_EM` is a rough advance width for the UI face — close enough for a
+ * label of digits and a short word, and erring small.
+ */
+const AVG_CHAR_EM = 0.54;
+const PRICE_PAD   = 8;
+function priceFontFor(label: string): number {
+    const room = PRICE_CIRCLE - PRICE_PAD;
+    const fitted = room / Math.max(1, label.length * AVG_CHAR_EM);
+    // Never above the design's size, never below legibility.
+    return Math.max(6.5, Math.min(fpx(10.5), Math.round(fitted * 10) / 10));
+}
 
 /** How far the circle runs past the right edge before the crop. */
 const CIRCLE_BLEED = -18;
@@ -157,6 +179,8 @@ function railCardPalette(theme: 'light' | 'dark') {
         // The price circle and the View Stay button invert the panel.
         chipBg:   dark ? '#FFFFFF' : '#1A1A1A',
         chipText: dark ? '#111111' : '#FFFFFF',
+        /** `chipText` at low alpha — the unlit part of a ring drawn on a chip. */
+        chipTrack: dark ? 'rgba(17,17,17,0.20)' : 'rgba(255,255,255,0.20)',
     };
 }
 
@@ -180,11 +204,7 @@ function RailCard({
     // One line, as designed. KRW and JPY run long enough to overrun the circle,
     // so the label steps down a size rather than wrapping.
     const priceLine = `${priceStr}/ night`;
-    const priceFont = fpx(
-        priceLine.length > 20 ? 7.5 :
-        priceLine.length > 17 ? 8.5 :
-        priceLine.length > 14 ? 9.5 : 10.5
-    );
+    const priceFont = priceFontFor(priceLine);
 
     return (
         <div
@@ -537,6 +557,101 @@ function SortPill({ value, onChange, theme }: { value: SortValue; onChange: (v: 
                     </motion.div>
                 )}
             </AnimatePresence>
+        </div>
+    );
+}
+
+// ─── Full-screen status ───────────────────────────────────────────────────────
+/**
+ * The two states the search page can be in besides "showing results": looking,
+ * and having found nothing.
+ *
+ * The designs are the same screen — flat ground, a near-black badge, a title,
+ * muted lines beneath it — differing only in copy and whether an action
+ * follows. So they are one component rather than two overlays that have to be
+ * kept in step by hand; the pair drifted apart last time precisely because
+ * they were maintained separately.
+ *
+ * Opaque, not a tinted scrim over the map: the design is a page of its own,
+ * and letting the basemap through put a moving, multi-coloured field behind
+ * type that is deliberately low-contrast.
+ */
+function StatusScreen({
+    busy, title, lines, action, theme,
+}: {
+    /** Work is in flight: the badge carries a spinner. Omitted, it sits still. */
+    busy?: boolean;
+    title: string;
+    lines: string[];
+    action?: { label: string; onClick: () => void };
+    theme: 'light' | 'dark';
+}) {
+    // The same palette the rail cards use, so the status ground is the card
+    // surface rather than a colour of its own. The badge and the button then
+    // take the chip pair — the inversion the cards already apply to the price
+    // circle and View Stay — which keeps the mark legible whichever way the
+    // surface goes, instead of a fixed near-black that vanishes on a dark one.
+    const c = railCardPalette(theme);
+
+    return (
+        <div
+            className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center"
+            style={{ background: c.surface }}
+        >
+            {/* The disc is the design's static mark, so the activity goes inside
+                it — a ring orbiting the glyph — rather than around it, which
+                would blur the badge's own edge. The failed state gets the bare
+                badge.
+
+                The faint track is doing work: without it the bright head reads
+                as a lone arc drifting on the disc rather than as travel around
+                a circle. */}
+            <div
+                className="relative flex items-center justify-center rounded-full"
+                style={{ width: 64, height: 64, background: c.chipBg }}
+            >
+                {busy && (
+                    <span
+                        aria-hidden="true"
+                        className="absolute animate-spin rounded-full"
+                        style={{
+                            inset: 5,
+                            border: `2px solid ${c.chipTrack}`,
+                            borderTopColor: c.chipText,
+                            animationDuration: '0.9s',
+                        }}
+                    />
+                )}
+                <Building2 size={24} style={{ color: c.chipText }} />
+            </div>
+
+            <p style={{ fontSize: 19, fontWeight: 500, color: c.title, marginTop: 20 }}>
+                {title}
+            </p>
+
+            {lines.map((line, i) => (
+                <p key={line} style={{
+                    fontSize: 13, color: c.muted,
+                    lineHeight: 1.4, marginTop: i === 0 ? 10 : 6,
+                }}>
+                    {line}
+                </p>
+            ))}
+
+            {action && (
+                <button
+                    type="button"
+                    onClick={action.onClick}
+                    className="inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-85"
+                    style={{
+                        marginTop: 32, height: 62, padding: '0 52px',
+                        background: c.chipBg, color: c.chipText, border: 'none',
+                        borderRadius: 100, fontSize: 17, fontWeight: 500,
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.28)',
+                    }}>
+                    {action.label}
+                </button>
+            )}
         </div>
     );
 }
@@ -973,78 +1088,29 @@ function HotelSearchContent() {
                 </div>
             </div>
 
-            {/* Full-screen loading overlay — z-40 sits above Mapbox canvas */}
+            {/* Looking. The skeleton rail that used to sit along the bottom is
+                gone: it promised a card layout the results may not fill, and it
+                competed with the badge for the eye. */}
             {isLoading && (
-                <div className="absolute inset-0 z-40 flex flex-col" style={{ background: 'rgba(21,17,30,0.93)', backdropFilter: 'blur(4px)' }}>
-                    {/* Centred spinner + label */}
-                    <div className="flex-1 flex flex-col items-center justify-center gap-5">
-                        <div className="relative flex items-center justify-center" style={{ width: 64, height: 64 }}>
-                            <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ background: ACCENT, animationDuration: '1.6s' }} />
-                            <div className="absolute animate-spin rounded-full" style={{ inset: 8, border: `2.5px solid ${ACCENT}`, borderTopColor: 'transparent' }} />
-                            <Building2 size={18} style={{ color: ACCENT }} />
-                        </div>
-                        <div className="text-center">
-                            <p className="font-semibold" style={{ fontSize: 16, color: TEXT }}>
-                                Finding stays{destination ? ` in ${destination}` : ''}…
-                            </p>
-                            <p style={{ fontSize: 12, color: DIM, marginTop: 4 }}>Checking availability &amp; prices</p>
-                        </div>
-                    </div>
-
-                    {/* Skeleton rail cards — preview the bottom card layout */}
-                    <div style={{ paddingLeft: 24, paddingBottom: 32, paddingRight: 24 }}>
-                        <div className="flex gap-3 overflow-hidden">
-                            {[0, 1, 2, 3].map(i => {
-                                const c = railCardPalette(uiTone);
-                                const bar = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-                                const barDim = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.045)';
-                                return (
-                                    <div key={i} className="shrink-0 animate-pulse"
-                                        style={{ position: 'relative', width: CARD_W, borderRadius: px(16), overflow: 'hidden', background: c.surface, border: `1px solid ${c.hairline}`, opacity: 1 - i * 0.18 }}>
-                                        <div style={{ height: CARD_IMG_H, background: c.imageBg }} />
-                                        <div style={{
-                                            position: 'absolute', width: PRICE_CIRCLE, height: PRICE_CIRCLE, borderRadius: '50%',
-                                            top: CARD_IMG_H - PRICE_CIRCLE / 2, right: -CIRCLE_BLEED, background: barDim,
-                                        }} />
-                                        <div style={{ minHeight: PANEL_HEIGHT, display: 'flex', flexDirection: 'column', padding: `${px(30)}px ${PANEL_PAD_X}px ${px(18)}px` }}>
-                                            <div style={{ height: fpx(15), borderRadius: 6, background: bar, width: '55%' }} />
-                                            <div style={{ height: fpx(11), borderRadius: 6, background: barDim, width: '85%', marginTop: px(8) }} />
-                                            <div style={{ height: fpx(11), borderRadius: 6, background: barDim, width: '32%', marginTop: px(10) }} />
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
-                                                <div style={{ height: fpx(34), width: fpx(88), borderRadius: 100, background: bar }} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
+                <StatusScreen
+                    busy
+                    theme={uiTone}
+                    title={`Finding Stays${destination ? ` In ${destination}` : ''}...`}
+                    lines={['Searching for Availability and Prices']}
+                />
             )}
 
-            {/* No-results / error overlay */}
+            {/* Found nothing. */}
             {status === 'error' && (
-                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-5"
-                    style={{ background: 'rgba(21,17,30,0.93)', backdropFilter: 'blur(4px)' }}>
-                    <span style={{ fontSize: 44 }}>🏨</span>
-                    <div className="text-center">
-                        <p className="font-semibold" style={{ fontSize: 17, color: TEXT }}>No stays found</p>
-                        <p style={{ fontSize: 13, color: DIM, marginTop: 6 }}>
-                            {destination ? `We couldn't find hotels in ${destination}.` : 'Try a different destination.'}
-                        </p>
-                        <p style={{ fontSize: 12, color: DIM, marginTop: 2 }}>Try adjusting your dates or destination.</p>
-                    </div>
-                    <button
-                        onClick={() => router.back()}
-                        style={{
-                            background: ACCENT, color: '#fff', border: 'none',
-                            borderRadius: 100, padding: '11px 24px',
-                            fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                            boxShadow: '0 4px 18px rgba(255,107,75,0.4)',
-                        }}>
-                        Change search
-                    </button>
-                </div>
+                <StatusScreen
+                    theme={uiTone}
+                    title="No accommodations found"
+                    lines={[
+                        destination ? `We couldn’t find hotels in ${destination}` : 'We couldn’t find any hotels',
+                        'Try adjusting your dates or destination',
+                    ]}
+                    action={{ label: 'Search Again', onClick: () => router.back() }}
+                />
             )}
 
             {/* ── Bottom card rail ──────────────────────────────── */}
@@ -1059,7 +1125,7 @@ function HotelSearchContent() {
                         style={{ pointerEvents: 'none' }}
                     >
                         {/* List view toggle + count */}
-                        <div className="flex items-center justify-between px-4 mb-2">
+                        <div className="flex items-center justify-between px-4 mb-0.5">
                             <div className="flex items-center gap-2">
                                 {isStreaming && (
                                     <div className="animate-spin shrink-0" style={{
@@ -1073,26 +1139,47 @@ function HotelSearchContent() {
                                 </span>
                             </div>
 
-                            {/* District filter pill — shown when cards are scoped to a neighbourhood */}
-                            {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
-                                <button
-                                    onClick={() => setShowAllCityOverride(true)}
-                                    style={{
-                                        background: 'rgba(255,107,75,0.15)',
-                                        border: '1px solid rgba(255,107,75,0.4)',
-                                        borderRadius: 100,
-                                        padding: '4px 12px',
-                                        fontSize: 11, fontWeight: 700,
-                                        color: ACCENT, cursor: 'pointer',
-                                        backdropFilter: 'blur(8px)',
-                                        whiteSpace: 'nowrap',
-                                        pointerEvents: 'auto',
-                                    }}
-                                >
-                                    {districtName} · See all in {canonicalCity || destination}
-                                </button>
-                            )}
+                            {/* Right cluster */}
+                            <div className="flex items-center gap-2">
+                                {/* District filter pill — shown when cards are scoped to a neighbourhood */}
+                                {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
+                                    <button
+                                        onClick={() => setShowAllCityOverride(true)}
+                                        style={{
+                                            background: 'rgba(255,107,75,0.15)',
+                                            border: '1px solid rgba(255,107,75,0.4)',
+                                            borderRadius: 100,
+                                            padding: '4px 12px',
+                                            fontSize: 11, fontWeight: 700,
+                                            color: ACCENT, cursor: 'pointer',
+                                            backdropFilter: 'blur(8px)',
+                                            whiteSpace: 'nowrap',
+                                            pointerEvents: 'auto',
+                                        }}
+                                    >
+                                        {districtName} · See all in {canonicalCity || destination}
+                                    </button>
+                                )}
 
+                                {/* Hide the rail. In this row rather than floating over
+                                    the strip below: anywhere inside the scroller it
+                                    covered a card, and no z-index fixes that — the cards
+                                    still have to pass underneath it. Here it has the
+                                    line to itself. */}
+                                <button
+                                    onClick={() => setRailHidden(true)}
+                                    aria-label="Hide stay cards"
+                                    title="Hide cards"
+                                    className="flex items-center justify-center rounded-full shrink-0 cursor-pointer transition-opacity hover:opacity-80"
+                                    style={{
+                                        width: 40, height: 40,
+                                        background: chrome.surface, border: `1px solid ${chrome.border}`,
+                                        boxShadow: chrome.shadow,
+                                        pointerEvents: 'auto',
+                                    }}>
+                                    <ChevronDown size={18} style={{ color: chrome.text }} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Horizontal scroll cards — wheel handler converts vertical scroll to horizontal */}
@@ -1122,27 +1209,10 @@ function HotelSearchContent() {
                                         theme={uiTone}
                                     />
                                 ))}
-                                {/* Clears the hide button so the last card can scroll past it */}
-                                <div style={{ minWidth: 72, flexShrink: 0 }} />
+                                {/* Mirrors the strip's left inset so the last card
+                                    doesn't butt against the window edge */}
+                                <div style={{ minWidth: 24, flexShrink: 0 }} />
                             </div>
-
-                            {/* Hide the rail */}
-                            <button
-                                onClick={() => setRailHidden(true)}
-                                aria-label="Hide stay cards"
-                                title="Hide cards"
-                                className="absolute flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80"
-                                style={{
-                                    // Measured from the bottom, not 50% — the rail's
-                                    // scale headroom sits above the cards.
-                                    right: 16, bottom: 28 + CARD_H / 2 - 20,
-                                    width: 40, height: 40,
-                                    background: chrome.surface, border: `1px solid ${chrome.border}`,
-                                    boxShadow: chrome.shadow,
-                                    pointerEvents: 'auto',
-                                }}>
-                                <ChevronDown size={18} style={{ color: chrome.text }} />
-                            </button>
                         </div>
                     </motion.div>
                 )}

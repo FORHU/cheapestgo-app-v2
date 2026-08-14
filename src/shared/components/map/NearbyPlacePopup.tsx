@@ -2,8 +2,10 @@
 
 import React from 'react';
 import { Popup } from 'react-map-gl/mapbox';
-import { X, Navigation, ExternalLink } from 'lucide-react';
+import { Star, MapPin, X } from 'lucide-react';
+import { env } from '@/shared/lib/env';
 import type { NearbyPlace } from './useMapNearbyPlaces';
+import { getCategoryIcon } from './NearbyPlaceMarker';
 
 interface NearbyPlacePopupProps {
     place: NearbyPlace;
@@ -11,110 +13,209 @@ interface NearbyPlacePopupProps {
     onClose: () => void;
 }
 
+/** Card geometry, from the design's 243px artboard. */
+const CARD_W = 243;
+const IMG_W  = 88;
+/**
+ * A floor, not a fixed height. The photo column stretches to whatever the text
+ * beside it needs, so a name that wraps grows the card rather than overflowing
+ * a fixed box — but at the design's proportions the text is shorter than this,
+ * and without the floor the card would sit squatter than drawn.
+ */
+const CARD_MIN_H = 103;
+
+/**
+ * How far above the coordinate the card floats.
+ *
+ * The marker anchors its own bottom to the same point and stands 40px tall —
+ * a 34px disc over a 9px pointer, overlapping by 3 — which becomes 48px under
+ * the 1.2× it wears while selected, and selected is the only state that opens
+ * this card. So the clearance is measured from that, not from the resting
+ * height, plus a little air.
+ */
+const MARKER_CLEARANCE = 54;
+
+/** `bus_station` → `Bus Station`. */
 function formatCategory(raw: string): string {
     return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Metres below a kilometre, kilometres above it — spelled as the design writes them. */
 function formatDistance(km: number): string {
     return km < 1
-        ? `${Math.round(km * 1000)} m from hotel`
-        : `${km.toFixed(2)} km from hotel`;
+        ? `${Math.round(km * 1000)}m from the hotel`
+        : `${km.toFixed(1)}km from the hotel`;
 }
 
-function getRatingLabel(rating: number): string {
-    if (rating >= 4.5) return 'Exceptional';
-    if (rating >= 4.0) return 'Excellent';
-    if (rating >= 3.5) return 'Very Good';
-    if (rating >= 3.0) return 'Good';
-    return 'Pleasant';
+/**
+ * The API's photo proxy — the same query the gems list builds, so a place the
+ * list has already shown is served from a warm cache here.
+ */
+function poiImageUrl(place: NearbyPlace): string | null {
+    const base = env.NEXT_PUBLIC_API_URL;
+    if (!base) return null;
+    const qs = new URLSearchParams({
+        name: place.name,
+        lat:  String(place.lat),
+        lng:  String(place.lng),
+    });
+    if (place.placeId)  qs.set('placeId', place.placeId);
+    if (place.category) qs.set('category', place.category);
+    return `${base}/photos/poi?${qs.toString()}`;
 }
 
-function getRatingColor(rating: number): string {
-    if (rating >= 4.5) return 'bg-emerald-600';
-    if (rating >= 4.0) return 'bg-blue-600';
-    if (rating >= 3.5) return 'bg-blue-500';
-    if (rating >= 3.0) return 'bg-amber-500';
-    return 'bg-orange-500';
-}
-
+/**
+ * The preview that opens on a place of interest: a photo, what the place is,
+ * and the two facts that decide whether it is worth the walk.
+ *
+ * Colours come from `--map-card-*` (globals.css), which invert against the app
+ * theme like the markers do, so the card always contrasts the basemap. The
+ * Mapbox popup chrome around it is stripped in the same stylesheet.
+ */
 const NearbyPlacePopup = React.memo(function NearbyPlacePopup({
     place,
     distanceKm,
     onClose,
 }: NearbyPlacePopupProps) {
-    const mapsUrl = place.placeId
-        ? `https://www.google.com/maps/place/?q=place_id:${place.placeId}`
-        : `https://maps.google.com/?q=${place.lat},${place.lng}`;
+    // The proxy 404s for places Google has no photo of, which is common for
+    // transit stops. The category glyph stands in rather than an empty well.
+    const [imageFailed, setImageFailed] = React.useState(false);
+    React.useEffect(() => setImageFailed(false), [place.placeId, place.name]);
+
+    const src = poiImageUrl(place);
+    const Glyph = getCategoryIcon(place.category);
+
+    const rows: { key: string; icon: React.ReactNode; text: string }[] = [];
+    if (place.rating !== undefined) {
+        rows.push({
+            key: 'rating',
+            icon: <Star size={11} fill="currentColor" strokeWidth={0} />,
+            text: `${place.rating.toFixed(1)} Ratings`,
+        });
+    }
+    if (distanceKm !== null) {
+        rows.push({
+            key: 'distance',
+            // `currentColor`, like the star: the row already carries the card's
+            // foreground, which is white on the dark card the design draws and
+            // flips to near-black when the card does. A literal white would
+            // disappear in that other tone.
+            icon: <MapPin size={11} fill="currentColor" strokeWidth={0} />,
+            text: formatDistance(distanceKm),
+        });
+    }
 
     return (
         <Popup
             latitude={place.lat}
             longitude={place.lng}
             anchor="bottom"
-            offset={24}
+            offset={MARKER_CLEARANCE}
             closeOnClick={false}
             closeButton={false}
             onClose={onClose}
             className="map-poi-popup"
-            maxWidth="250px"
+            maxWidth={`${CARD_W}px`}
         >
-            <div className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-xl border border-slate-100 dark:border-slate-800 min-w-[200px]">
-                <div className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                            <h3 className="font-bold text-[11px] text-slate-900 dark:text-white leading-tight">
-                                {place.name}
-                            </h3>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                {formatCategory(place.category)}
+            <div style={{
+                position: 'relative',
+                display: 'flex', width: CARD_W, minHeight: CARD_MIN_H,
+                borderRadius: 15,
+                // The photo runs to the card's edges and is clipped to its
+                // corners here, rather than carrying a radius of its own — that
+                // way the two curves cannot drift apart, and the photo's square
+                // right edge needs no special-casing.
+                overflow: 'hidden',
+                background: 'var(--map-card-bg)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.32)',
+            }}>
+                {/* Mapbox's own close button is off (`closeButton={false}`) — it
+                    paints outside the card's rounded corner and takes the popup
+                    ground with it. This one sits on the card, in the design's
+                    tones. */}
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={`Close ${place.name} preview`}
+                    className="flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-70"
+                    style={{
+                        position: 'absolute', top: 6, right: 6, zIndex: 1,
+                        width: 22, height: 22,
+                        background: 'var(--map-card-well)',
+                        color: 'var(--map-card-muted)',
+                        border: 'none', padding: 0,
+                    }}
+                >
+                    <X size={13} strokeWidth={2.5} />
+                </button>
+
+                {/* `position: relative` with the photo laid absolutely inside it:
+                    a stretched flex item has no height for a percentage to
+                    resolve against, so `height: 100%` on the image alone
+                    collapsed it to its intrinsic size. */}
+                <div style={{
+                    position: 'relative',
+                    width: IMG_W, flexShrink: 0, alignSelf: 'stretch',
+                    background: 'var(--map-card-well)',
+                    color: 'var(--map-card-muted)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    {src && !imageFailed ? (
+                        // A plain <img>: next/image only permits https remotes here,
+                        // and the API is reached over http in development.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={src}
+                            alt={place.name}
+                            onError={() => setImageFailed(true)}
+                            style={{
+                                position: 'absolute', inset: 0,
+                                width: '100%', height: '100%',
+                                objectFit: 'cover', display: 'block',
+                            }}
+                        />
+                    ) : (
+                        <Glyph size={22} />
+                    )}
+                </div>
+
+                {/* The card's padding lives here now that the photo is flush to
+                    its edges. Only these two lines sit under the close button,
+                    so only they are inset for it — indenting the whole column
+                    would have narrowed the rows below for nothing. */}
+                <div style={{
+                    minWidth: 0, flex: 1,
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                    padding: '11px 12px',
+                }}>
+                    <h3 style={{
+                        fontSize: 12.5, fontWeight: 600, color: 'var(--map-card-fg)', lineHeight: 1.25,
+                        paddingRight: 20,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                        {place.name}
+                    </h3>
+                    <p style={{
+                        fontSize: 10, color: 'var(--map-card-muted)', marginTop: 3, lineHeight: 1.3,
+                        paddingRight: 20,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                        {formatCategory(place.category)}
+                    </p>
+
+                    {rows.map((row, i) => (
+                        <div key={row.key} style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            marginTop: i === 0 ? 8 : 6,
+                            fontSize: 10.5, fontWeight: 500,
+                            color: 'var(--map-card-fg)', lineHeight: 1.2,
+                        }}>
+                            <span style={{ flexShrink: 0, display: 'flex' }}>{row.icon}</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {row.text}
                             </span>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0 cursor-pointer mt-0.5"
-                        >
-                            <X className="w-3 h-3 text-slate-500" />
-                        </button>
-                    </div>
-
-                    {place.rating !== undefined && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                            <span className={`text-[9px] font-bold text-white px-1 py-px rounded ${getRatingColor(place.rating)}`}>
-                                {place.rating.toFixed(1)}
-                            </span>
-                            <span className="text-[9px] font-medium text-slate-700 dark:text-slate-300">
-                                {getRatingLabel(place.rating)}
-                            </span>
-                            {place.userRatingsTotal !== undefined && (
-                                <span className="text-[9px] text-slate-400">
-                                    ({place.userRatingsTotal.toLocaleString()})
-                                </span>
-                            )}
-                        </div>
-                    )}
-
-                    {place.vicinity && (
-                        <p className="text-[10px] text-slate-400 mt-1 leading-tight line-clamp-2">
-                            {place.vicinity}
-                        </p>
-                    )}
-
-                    {distanceKm !== null && (
-                        <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-                            <Navigation className="w-3 h-3 flex-shrink-0" />
-                            <span>{formatDistance(distanceKm)}</span>
-                        </div>
-                    )}
-
-                    <a
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 flex items-center gap-1.5 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                        View on Google Maps
-                    </a>
+                    ))}
                 </div>
             </div>
         </Popup>
