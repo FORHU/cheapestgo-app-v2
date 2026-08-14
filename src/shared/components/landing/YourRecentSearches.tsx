@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { SectionHeader } from '@/components/ui';
-import { type RecentSearch } from '@/types';
+import { SectionHeader } from '@/shared/components/ui/SectionHeader';
+import { type RecentSearch } from '@/shared/types';
 
 export const YourRecentSearches: React.FC<{ searches?: RecentSearch[] }> = ({ searches }) => {
   const displaySearches = searches || [];

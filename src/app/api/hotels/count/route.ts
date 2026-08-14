@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSql } from '@/lib/db/postgres';
+import { getSql } from '@/server/db/postgres';
 
 export async function GET(req: NextRequest) {
     const city = req.nextUrl.searchParams.get('city')?.trim();

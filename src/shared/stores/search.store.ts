@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import type {
     Destination,
     DateRange,
@@ -313,3 +314,23 @@ export const useIsSearching = () => useSearchStore((s) => s.isSearching);
 export const useSearchMode = () => useSearchStore((s) => s.searchMode);
 export const useFlightState = () => useSearchStore((s) => s.flightState);
 export const useSearchFilters = () => useSearchStore((s) => s.filters);
+
+export const useSearchActions = () =>
+    useSearchStore(
+        useShallow((state) => ({
+            setDestination: state.setDestination,
+            setDestinationQuery: state.setDestinationQuery,
+            setDates: state.setDates,
+            setTravelers: state.setTravelers,
+            setUserCurrency: state.setUserCurrency,
+            setUserCountry: state.setUserCountry,
+            setActiveDropdown: state.setActiveDropdown,
+            setFilters: state.setFilters,
+            setIsMobileFiltersOpen: state.setIsMobileFiltersOpen,
+            resetFilters: state.resetFilters,
+            addRecentSearch: state.addRecentSearch,
+            removeRecentSearch: state.removeRecentSearch,
+            clearRecentSearches: state.clearRecentSearches,
+            reset: state.reset,
+        }))
+    );

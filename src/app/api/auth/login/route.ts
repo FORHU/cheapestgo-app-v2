@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyPassword, createUserSession } from '@/lib/auth/session';
-import { rateLimit } from '@/lib/server/rate-limit';
+import { verifyPassword, createUserSession } from '@/server/auth/session';
+import { rateLimit } from '@/server/rate-limit';
 
 export const dynamic = 'force-dynamic';
 

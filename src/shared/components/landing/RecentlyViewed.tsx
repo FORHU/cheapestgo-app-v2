@@ -4,13 +4,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { History, Clock, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { SectionHeader, Badge } from '@/components/ui';
-import { useRecentSearches, useSearchStore } from '@/stores';
-import { type RecentItem } from '@/types';
-import { convertCurrency } from '@/lib/currency';
-import { formatCurrency } from '@/lib/utils';
-import { useUserCurrency, type Destination } from '@/stores/searchStore';
-import { IATA_TO_SLUG, findLocalDestinationImage } from '@/lib/destination-images';
+import { SectionHeader } from '@/shared/components/ui/SectionHeader';
+import { Badge } from '@/shared/components/ui/badge';
+import { useRecentSearches, useSearchStore } from '@/shared/stores/search.store';
+import { type RecentItem } from '@/shared/types';
+import { convertCurrency } from '@/shared/lib/currency';
+import { formatCurrency } from '@/shared/lib/format';
+import { useUserCurrency, type Destination } from '@/shared/stores/search.store';
+import { IATA_TO_SLUG, findLocalDestinationImage } from '@/shared/lib/destination-images';
 import { useTranslations } from 'next-intl';
 
 interface RecentCardProps {

@@ -3,7 +3,7 @@ import { Popup } from 'react-map-gl/mapbox';
 import { X, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MapMarker } from '@/shared/components/map/MapMarker';
 import type { MappableProperty } from '@/shared/components/map/types';
-import { useUserCurrency } from '@/stores/searchStore';
+import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { http } from '@/shared/lib/http';

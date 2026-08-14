@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/shared/stores/auth.store';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { LogoWordmark } from './logo-wordmark';

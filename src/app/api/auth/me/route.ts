@@ -5,7 +5,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth/session';
+import { getSession } from '@/server/auth/session';
 
 export const dynamic = 'force-dynamic';
 

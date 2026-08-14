@@ -6,9 +6,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Moon, Sun, Download } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
-import { useUserCurrency, useSearchActions } from '@/stores/searchStore';
-import { useAuthStore } from '@/shared/auth/store';
-import { usePWAInstall } from '@/contexts/PWAInstallContext';
+import { useUserCurrency, useSearchActions } from '@/shared/stores/search.store';
+import { usePWAInstall } from '@/shared/contexts/PWAInstallContext';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { cn } from '@/shared/lib/cn';
@@ -22,7 +21,6 @@ const HeaderContent = () => {
 
   const userCurrency = useUserCurrency();
   const { setUserCurrency, setUserCountry } = useSearchActions();
-  const { user } = useAuthStore();
   const { triggerInstall } = usePWAInstall();
   const t = useTranslations('nav');
 

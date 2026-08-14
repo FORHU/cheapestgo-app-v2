@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Smartphone, Star, Download, ChevronRight } from 'lucide-react';
-import { usePWAInstall } from '@/contexts/PWAInstallContext';
+import { usePWAInstall } from '@/shared/contexts/PWAInstallContext';
 import { useTranslations } from 'next-intl';
 
 const AppBanner = () => {

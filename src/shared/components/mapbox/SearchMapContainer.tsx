@@ -12,7 +12,7 @@ import { Source, Layer, Marker } from 'react-map-gl/mapbox';
 import { PoiPopup } from './components/PoiPopup';
 import { MapSearchOverlay } from './components/MapSearchOverlay';
 import { useRouter } from 'next/navigation';
-import { useUserCurrency } from '@/stores/searchStore';
+import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertCurrency } from '@/shared/lib/currency';
 import { useMapDetails } from './hooks/useMapDetails';
 import { MapDetailsPanel } from './components/MapDetailsPanel';

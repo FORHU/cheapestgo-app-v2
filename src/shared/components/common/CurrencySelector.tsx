@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
-import { useUserCurrency, useSearchActions } from '@/stores/searchStore';
+import { useUserCurrency, useSearchActions } from '@/shared/stores/search.store';
 import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
 import { getCurrencySymbol } from '@/shared/lib/currency';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
