@@ -1,5 +1,4 @@
 import React from 'react';
-import { MapPopup } from '@/shared/components/map/MapPopup';
 import { MapMarker } from '@/shared/components/map/MapMarker';
 import type { MappableProperty } from '@/shared/components/map/types';
 import { useUserCurrency } from '@/stores/searchStore';
@@ -24,24 +23,17 @@ export const SelectedPropertyPopup = React.memo(({
 
     if (!selectedProperty) return null;
 
+    // The preview card that used to sit above the pin is gone: the bottom rail
+    // already shows the selected property, and enlarges its card on selection.
     return (
-        <>
-            <MapMarker
-                property={selectedProperty}
-                displayPrice={convertCurrency(selectedProperty.price, selectedProperty.currency || 'USD', targetCurrency)}
-                displayCurrency={targetCurrency}
-                isSelected={true}
-                isHovered={false}
-                onClick={() => onSelect(selectedProperty.id)}
-                onHover={() => {}}
-            />
-            {!isMobile && (
-                <MapPopup
-                    property={selectedProperty}
-                    onClose={onClose}
-                    onViewDetails={onViewDetails}
-                />
-            )}
-        </>
+        <MapMarker
+            property={selectedProperty}
+            displayPrice={convertCurrency(selectedProperty.price, selectedProperty.currency || 'USD', targetCurrency)}
+            displayCurrency={targetCurrency}
+            isSelected={true}
+            isHovered={false}
+            onClick={() => onSelect(selectedProperty.id)}
+            onHover={() => {}}
+        />
     );
 });

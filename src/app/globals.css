@@ -163,6 +163,95 @@
 /* Enable class-based dark mode */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Pulls the dark basemap off black and onto a mid grey. Applied to the canvas
+ * only, so DOM overlays — markers, popups, controls, attribution — keep their
+ * own contrast.
+ *
+ * Contrast, not brightness, does the work: reducing it compresses the range
+ * toward mid grey, lifting dark-v11's near-black land to roughly #424242 while
+ * only easing labels from white to a still-legible light grey. Brightness alone
+ * would wash the whole image out instead of greying it.
+ *
+ * A filter rather than layer paint overrides: recolouring the style would mean
+ * hardcoding Mapbox's internal layer ids, which silently no-op when the style
+ * version moves. Lower the contrast value for a lighter grey.
+ */
+.map-gray .mapboxgl-canvas {
+  filter: contrast(0.62) saturate(1.05) brightness(1.04);
+}
+
+/*
+ * Hotel pin colours.
+ *
+ * Scoped to `:root.dark` rather than `.dark` on purpose: the search page puts a
+ * hardcoded `dark` class on its own root, and a plain `.dark` rule would let
+ * that inner element redefine these for everything inside it.
+ *
+ * Living in CSS rather than in props means a theme switch repaints the pins
+ * instead of re-rendering fifty React roots — which is what made the switch
+ * feel like it lagged.
+ */
+/* Inverted against the theme, like the rest of the map's UI: the basemap
+   follows the theme, so markers take the opposite tone to stay legible.
+   POI discs are kept separate from the hotel pill so the two can diverge. */
+:root {
+  --pin-bg: #1C1C1C;
+  --pin-fg: #FFFFFF;
+  --pin-line: rgba(255, 255, 255, 0.16);
+  --poi-bg: #000000;
+  --poi-fg: #FFFFFF;
+}
+:root.dark {
+  --pin-bg: #FFFFFF;
+  --pin-fg: #111111;
+  --pin-line: rgba(0, 0, 0, 0.08);
+  --poi-bg: #FFFFFF;
+  --poi-fg: #000000;
+}
+
+/*
+ * Map pin price placeholder. Defined here rather than inline because the pins
+ * render into detached roots via createRoot and cannot carry a <style> of
+ * their own.
+ */
+@keyframes pin-dot {
+  0%, 70%, 100% { opacity: 0.25; transform: translateY(0); }
+  35%           { opacity: 1;    transform: translateY(-2px); }
+}
+
+/*
+ * Theme cross-fade. ThemeContext adds `.theme-transition` to <html> for the
+ * length of the switch and takes it off again, so this never sits on the page
+ * animating ordinary hovers and menus.
+ *
+ * Only colour properties — transitioning `all` here would animate layout on
+ * every element mid-switch. `!important` is needed to beat the inline styles
+ * the map chrome and cards set.
+ */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease,
+    stroke 200ms ease !important;
+  transition-delay: 0ms !important;
+}
+
+/* Respect a reduced-motion preference: switch instantly instead. */
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: none !important;
+  }
+}
+
 /* Enable landscape orientation variant — mobile only */
 @custom-variant landscape (@media (orientation: landscape) and (max-width: 1024px));
 

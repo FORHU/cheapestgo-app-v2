@@ -2,27 +2,38 @@
 
 import React from 'react';
 import { Marker } from 'react-map-gl/mapbox';
-import { Utensils, Trees, Landmark, ShoppingBasket, Pill, Bus } from 'lucide-react';
 import type { NearbyPlace } from './useMapNearbyPlaces';
+import {
+    FoodGlyph, ParkGlyph, StoreGlyph, CafeGlyph, MedicalGlyph, TransitGlyph, PlaceGlyph,
+    type PoiGlyph,
+} from './poi-icons';
 
-function getCategoryConfig(category: string) {
+/** Circle diameter and the glyph inside it, in px. */
+const SIZE = 34;
+const ICON = 17;
+
+/**
+ * The six categories the design draws, plus a fallback for anything that
+ * matches none of them. Cafés split out of food so the cup gets used.
+ */
+export function getCategoryIcon(category: string): PoiGlyph {
     const cat = category.toLowerCase();
-    if (cat.includes('restaurant') || cat.includes('cafe') || cat.includes('food') ||
-        cat.includes('bar') || cat.includes('bakery')) return { Icon: Utensils };
-    if (cat.includes('park') || cat.includes('garden') || cat.includes('nature'))
-        return { Icon: Trees };
-    if (cat.includes('museum') || cat.includes('tourist') || cat.includes('attraction') ||
-        cat.includes('art') || cat.includes('zoo') || cat.includes('amusement') || cat.includes('aquarium'))
-        return { Icon: Landmark };
-    if (cat.includes('supermarket') || cat.includes('grocery') || cat.includes('convenience'))
-        return { Icon: ShoppingBasket };
+    if (cat.includes('cafe') || cat.includes('coffee') || cat.includes('bakery') || cat.includes('tea'))
+        return CafeGlyph;
+    if (cat.includes('restaurant') || cat.includes('food') || cat.includes('bar') || cat.includes('dining'))
+        return FoodGlyph;
+    if (cat.includes('park') || cat.includes('garden') || cat.includes('nature') || cat.includes('forest'))
+        return ParkGlyph;
+    if (cat.includes('supermarket') || cat.includes('grocery') || cat.includes('convenience') ||
+        cat.includes('store') || cat.includes('shop') || cat.includes('mall') || cat.includes('market'))
+        return StoreGlyph;
     if (cat.includes('hospital') || cat.includes('pharmacy') || cat.includes('medical') ||
-        cat.includes('doctor') || cat.includes('dentist'))
-        return { Icon: Pill };
+        cat.includes('doctor') || cat.includes('dentist') || cat.includes('clinic'))
+        return MedicalGlyph;
     if (cat.includes('bus') || cat.includes('train') || cat.includes('station') ||
         cat.includes('transit') || cat.includes('subway') || cat.includes('airport'))
-        return { Icon: Bus };
-    return { Icon: Landmark };
+        return TransitGlyph;
+    return PlaceGlyph;
 }
 
 interface NearbyPlaceMarkerProps {
@@ -31,18 +42,31 @@ interface NearbyPlaceMarkerProps {
     onClick: (place: NearbyPlace) => void;
 }
 
+/**
+ * A place of interest: a solid disc carrying a contrasting glyph, on a short
+ * pointer that marks the coordinate.
+ *
+ * Colours come from `--poi-bg` / `--poi-fg` (globals.css), which invert against
+ * the app theme so the disc always contrasts the basemap: black-on-light in
+ * light mode, white-on-dark in dark mode. Variables rather than a prop, so a
+ * theme switch is a repaint rather than a re-render of every marker.
+ *
+ * The pointer overlaps the disc rather than butting against it — the disc's
+ * edge is a curve, so a triangle sitting on the tangent would leave a hairline
+ * of background either side of the join.
+ */
 const NearbyPlaceMarker = React.memo(function NearbyPlaceMarker({
     place,
     isSelected,
     onClick,
 }: NearbyPlaceMarkerProps) {
-    const { Icon } = getCategoryConfig(place.category);
+    const Icon = getCategoryIcon(place.category);
 
     return (
         <Marker
             latitude={place.lat}
             longitude={place.lng}
-            anchor="center"
+            anchor="bottom"
             onClick={(e) => {
                 e.originalEvent.stopPropagation();
                 onClick(place);
@@ -50,11 +74,51 @@ const NearbyPlaceMarker = React.memo(function NearbyPlaceMarker({
             style={{ zIndex: isSelected ? 25 : 5, cursor: 'pointer' }}
         >
             <div
-                className={`flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 shadow-md border-2 border-white transition-transform ${
-                    isSelected ? 'scale-125' : 'hover:scale-110'
-                }`}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    transform: isSelected ? 'scale(1.2)' : 'scale(1)',
+                    transformOrigin: 'center bottom',
+                    transition: 'transform 180ms cubic-bezier(0.34, 1.3, 0.64, 1)',
+                }}
             >
-                <Icon className="w-2.5 h-2.5 text-white" />
+                <div
+                    style={{
+                        position: 'relative',
+                        zIndex: 1,
+                        width: SIZE,
+                        height: SIZE,
+                        borderRadius: '50%',
+                        background: 'var(--poi-bg)',
+                        color: 'var(--poi-fg)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
+                    }}
+                >
+                    {/* Glyphs fill with currentColor, inherited from the disc. */}
+                    <Icon size={ICON} />
+                </div>
+
+                {/* Pointer — above the disc in stacking order so the disc's own
+                    shadow can't smudge across it; same colour, so the overlap
+                    is invisible. */}
+                <svg
+                    width="14"
+                    height="9"
+                    viewBox="0 0 14 9"
+                    style={{ position: 'relative', display: 'block', marginTop: -3, zIndex: 2 }}
+                    aria-hidden="true"
+                >
+                    <polygon
+                        points="1.5,0 12.5,0 7,6.5"
+                        style={{ fill: 'var(--poi-bg)', stroke: 'var(--poi-bg)' }}
+                        strokeWidth="2"
+                        strokeLinejoin="round"
+                    />
+                </svg>
             </div>
         </Marker>
     );

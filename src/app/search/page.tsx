@@ -12,7 +12,10 @@ import { env } from '@/shared/lib/env';
 import { useUserCurrency } from '@/stores/searchStore';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
-import { ArrowLeft, List, Building2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, List, Building2, ChevronDown, ChevronUp, Sun, Moon, Search, MapPin } from 'lucide-react';
+import { useTheme } from '@/shared/components/ThemeContext';
+import { cn } from '@/shared/lib/cn';
+import { useMapboxSearch } from '@/shared/components/mapbox/hooks/useMapboxSearch';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
@@ -21,7 +24,6 @@ const DISTRICT_MARKER_THRESHOLD = 11;
 const ACCENT        = '#FF6B4B';
 const TEXT          = '#F5EFE4';
 const BG            = '#15111E';
-const SURFACE       = 'rgba(28,23,36,0.97)';
 const BORDER        = 'rgba(255,255,255,0.08)';
 const DIM           = 'rgba(245,239,228,0.45)';
 const OVERLAY_BG    = 'rgba(28,23,36,0.82)';
@@ -90,54 +92,138 @@ function fmtPill(destination: string, checkIn: string, checkOut: string, adults:
     }
     const guests = (Number(adults) || 2) + (Number(children) || 0);
     parts.push(`${guests} guest${guests !== 1 ? 's' : ''}`);
-    return parts.join(' · ');
+    return parts.join(' | ');
 }
 
-function ratingColor(r: number) {
-    if (r >= 9) return '#2FB67F';
-    if (r >= 8) return '#22c55e';
-    if (r >= 7) return '#4FA8E0';
-    if (r >= 5) return '#f97316';
-    return '#ef4444';
+// ─── Bottom rail card ─────────────────────────────────────────────────────────
+// Geometry is the design's own, scaled from its 345px artboard: image 0.58 of
+// the width, price circle 0.30, panel the remainder. The circle straddles the
+// image/panel seam and runs a few px past the right edge, where the card's
+// `overflow: hidden` crops it.
+//
+// The width is what it is because the price sits on ONE line inside the
+// circle — at a narrower card the circle shrinks and the label has to wrap or
+// shrink out of legibility.
+
+const CARD_W = 220;
+const CARD_REF_W = 320;
+const SCALE = CARD_W / CARD_REF_W;
+/** Geometry: whole pixels. */
+const px = (n: number) => Math.round(n * SCALE);
+/**
+ * Type does not follow the geometry all the way down. Scaled linearly, a 190px
+ * card puts the title at 8px and the price at 6px — proportionally right and
+ * unreadable. The floor keeps text legible while the card is free to shrink;
+ * above roughly CARD_W 290 the floor stops binding and type is proportional
+ * again.
+ */
+const TYPE_SCALE = Math.max(SCALE, 0.9);
+const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
+
+const CARD_IMG_H   = px(180);
+const PRICE_CIRCLE = px(97);
+const PANEL_PAD_X  = px(17);
+/** A floor, not a fixed height — the panel grows if the type needs the room. */
+const PANEL_HEIGHT = px(148);
+/** Roughly the card's finished height. */
+const CARD_H = CARD_IMG_H + PANEL_HEIGHT;
+/** How much a selected card grows. */
+const SELECT_SCALE = 1.15;
+/** Half the horizontal growth — applied as margin either side of the selected
+ *  card so its neighbours slide out of the way instead of being covered.
+ *  `transform` alone paints over them without moving them. */
+const SELECT_GUTTER = Math.round((CARD_W * (SELECT_SCALE - 1)) / 2);
+/** Vertical growth the rail must leave clear above the cards. */
+const SELECT_HEADROOM = Math.ceil(CARD_H * (SELECT_SCALE - 1));
+
+/** How far the circle runs past the right edge before the crop. */
+const CIRCLE_BLEED = -18;
+/** The name shares a line with the circle's lower arc, so it stops short of it. */
+const NAME_PAD_R   = PRICE_CIRCLE - CIRCLE_BLEED + px(8) - PANEL_PAD_X;
+
+/**
+ * The card takes its palette from the app theme rather than from the page's
+ * `dark` class: the search page hardcodes that class on its root, so a `dark:`
+ * variant would never resolve to the light design.
+ */
+function railCardPalette(theme: 'light' | 'dark') {
+    const dark = theme === 'dark';
+    return {
+        surface: dark ? '#1A1A1A' : '#FFFFFF',
+        title:   dark ? '#FFFFFF' : '#111111',
+        muted:   dark ? 'rgba(255,255,255,0.60)' : '#6B7280',
+        hairline: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+        imageBg: dark ? 'rgba(255,255,255,0.05)' : '#F1F1F1',
+        // The price circle and the View Stay button invert the panel.
+        chipBg:   dark ? '#FFFFFF' : '#1A1A1A',
+        chipText: dark ? '#111111' : '#FFFFFF',
+    };
 }
 
-// ─── Bottom rail card (matches design exactly) ────────────────────────────────
 function RailCard({
-    property, isSelected, onSelect, onViewDetails, currency,
+    property, isSelected, isHovered, shiftLeft, shiftRight,
+    onSelect, onHover, onViewDetails, currency, theme,
 }: {
-    property: MappableProperty; isSelected: boolean;
-    onSelect: (id: string) => void; onViewDetails: (id: string) => void; currency: string;
+    property: MappableProperty; isSelected: boolean; isHovered: boolean;
+    /** Room a grown neighbour needs on this card's left / right. */
+    shiftLeft: number; shiftRight: number;
+    onSelect: (id: string) => void; onHover: (id: string | null) => void;
+    onViewDetails: (id: string) => void;
+    currency: string; theme: 'light' | 'dark';
 }) {
+    const c = railCardPalette(theme);
     const price = convertCurrency(property.price, property.currency || 'USD', currency);
     const priceStr = formatCurrency(price, currency);
     const rating = property.rating ?? 0;
+    const enlarged = isSelected || isHovered;
+
+    // One line, as designed. KRW and JPY run long enough to overrun the circle,
+    // so the label steps down a size rather than wrapping.
+    const priceLine = `${priceStr}/ night`;
+    const priceFont = fpx(
+        priceLine.length > 20 ? 7.5 :
+        priceLine.length > 17 ? 8.5 :
+        priceLine.length > 14 ? 9.5 : 10.5
+    );
 
     return (
         <div
             onClick={() => onSelect(property.id)}
+            onMouseEnter={() => onHover(property.id)}
+            onMouseLeave={() => onHover(null)}
             className="shrink-0 cursor-pointer"
             style={{
-                width: 190, borderRadius: 18,
-                background: SURFACE,
-                border: `1.5px solid ${isSelected ? ACCENT : BORDER}`,
-                overflow: 'visible',
-                boxShadow: isSelected
-                    ? `0 0 0 2px ${ACCENT}, 0 8px 32px rgba(255,107,75,0.25)`
-                    : '0 4px 28px rgba(0,0,0,0.55)',
-                transition: 'border-color .2s, box-shadow .2s',
                 position: 'relative',
+                width: CARD_W, borderRadius: px(16), overflow: 'hidden',
+                background: c.surface,
+                border: '',
+                boxShadow: 'none',
+                // Selection and hover both read as scale, not an outline. Anchored
+                // bottom-centre so the card grows up into the map.
+                transform: enlarged ? `scale(${SELECT_SCALE})` : 'scale(1)',
+                transformOrigin: 'center bottom',
+                // The margins sit on the NEIGHBOURS of a grown card, never on the
+                // card itself. Margin on the grown card would shift it sideways,
+                // sliding it out from under the cursor — which un-hovers it,
+                // shrinks it back under the cursor, and flickers forever.
+                marginLeft: shiftLeft,
+                marginRight: shiftRight,
+                zIndex: isSelected ? 5 : isHovered ? 4 : 1,
+                transition: 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1), margin 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+                // The rail is pointer-transparent so its scale headroom doesn't
+                // block the map; the cards themselves opt back in.
+                pointerEvents: 'auto',
             }}
         >
             {/* Image */}
-            <div style={{ height: 108, borderRadius: '16px 16px 0 0', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.04)' }}>
+            <div style={{ height: CARD_IMG_H, position: 'relative', background: c.imageBg }}>
                 {property.image ? (
-                    <Image src={property.image} alt={property.name} fill className="object-cover" sizes="190px" />
+                    <Image src={property.image} alt={property.name} fill className="object-cover" sizes="320px" />
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                        <Building2 size={22} style={{ color: DIM }} />
+                    <div className="w-full h-full flex items-center justify-center">
+                        <Building2 size={26} style={{ color: c.muted }} />
                     </div>
                 )}
-                {/* Free cancel tag */}
                 {property.refundableTag === 'RFN' && (
                     <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: '#2FB67F', zIndex: 2 }}>
                         Free cancel
@@ -145,51 +231,61 @@ function RailCard({
                 )}
             </div>
 
-            {/* Price circle — overlaps image/body boundary */}
+            {/* Price circle*/}
             <div className="absolute flex items-center justify-center" style={{
-                width: 50, height: 50, borderRadius: '50%',
-                background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
-                bottom: 82, right: 10, zIndex: 10,
+                width: PRICE_CIRCLE, height: PRICE_CIRCLE, borderRadius: '50%',
+                top: CARD_IMG_H - PRICE_CIRCLE / 2, right: -CIRCLE_BLEED, zIndex: 10,
+                background: c.chipBg,
+                boxShadow: '0 2px 12px rgba(0,0,0,0.28)',
             }}>
                 {property.priceLoading ? (
-                    <div className="animate-pulse rounded-full" style={{ width: 30, height: 12, background: 'rgba(0,0,0,0.1)' }} />
+                    <div className="animate-pulse rounded-full" style={{ width: px(42), height: px(11), background: 'rgba(128,128,128,0.35)' }} />
                 ) : (
-                    <span style={{ fontSize: 9.5, fontWeight: 900, color: '#15111E', lineHeight: 1.1, textAlign: 'center', padding: '0 4px' }}>
-                        {priceStr}
+                    <span style={{
+                        fontSize: priceFont, fontWeight: 700, color: c.chipText,
+                        whiteSpace: 'nowrap', lineHeight: 1.2,
+                        // Only when the circle is cropped: shifts the label left of
+                        // true centre so it sits centred in the visible part.
+                        paddingRight: Math.max(0, CIRCLE_BLEED * 2),
+                    }}>
+                        {priceLine}
                     </span>
                 )}
             </div>
 
-            {/* Card body */}
-            <div style={{ padding: '20px 14px 12px', borderRadius: '0 0 16px 16px', background: SURFACE }}>
+            {/* Panel */}
+            <div style={{ minHeight: PANEL_HEIGHT, display: 'flex', flexDirection:'column', padding: `${px(30)}px ${PANEL_PAD_X}px ${px(18)}px`, background: c.surface }}>
                 <h3 style={{
-                    fontSize: 14, fontWeight: 700, color: TEXT, lineHeight: 1.2,
+                    fontSize: fpx(14), fontWeight: 700, color: c.title, lineHeight: 1.3,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontFamily: '"Fredoka One", "Fredoka", system-ui, sans-serif',
+                    paddingRight: NAME_PAD_R,
                 }}>
                     {property.name}
                 </h3>
-                {(property.location || property.city) && (
-                    <p style={{ fontSize: 11, color: DIM, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {property.location ?? property.city}
-                    </p>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-                    {rating > 0 ? (
-                        <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 3,
-                            background: ratingColor(rating), color: '#fff',
-                            borderRadius: 100, padding: '3px 8px',
-                            fontSize: 11, fontWeight: 800,
-                        }}>
-                            {rating.toFixed(1)}
-                        </span>
-                    ) : <span />}
+                {/* Both rows always render, falling back to a non-breaking space.
+                    Rendered conditionally they collapsed, so a hotel with no
+                    rating produced a shorter card than its neighbours and the
+                    rail's baseline went ragged. */}
+                <p style={{
+                    fontSize: fpx(11), color: c.muted, marginTop: px(4), lineHeight: 1.35,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                    {property.location ?? property.city ?? ' '}
+                </p>
+                <p style={{ fontSize: fpx(11), color: c.muted, marginTop: px(8), lineHeight: 1.35 }}>
+                    {rating > 0 ? `${rating.toFixed(1)} rating` : ' '}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onViewDetails(property.id); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: ACCENT, padding: 0 }}>
-                        View stay →
+                        style={{
+                            background: c.chipBg, color: c.chipText, border: 'none',
+                            borderRadius: 100, padding: `${px(10)}px ${px(21)}px`,
+                            fontSize: fpx(12), fontWeight: 600, cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                        }}>
+                        View Stay
                     </button>
                 </div>
             </div>
@@ -197,23 +293,216 @@ function RailCard({
     );
 }
 
+// ─── Search bar ───────────────────────────────────────────────────────────────
+/**
+ * Four states, per the design:
+ *
+ *   inactive  — 'Where to next? Try "Phuket Town"...'   nothing searched yet
+ *   selected  — empty field, caret, suggestions          focused
+ *   searching — "Searching..."                           a search is in flight
+ *   searched  — "Gangnam District | …"                   the current search
+ *
+ * Every state but `selected` renders muted text, so those three drive the
+ * placeholder and leave the value empty. Focus deliberately clears the summary
+ * rather than seeding the field with it: the design's selected state is an
+ * empty bar, and typing over a long summary is worse anyway.
+ *
+ * Suggestions come from the same debounced Mapbox geocoder the map overlay
+ * uses, so picking one carries real coordinates through to the search rather
+ * than a bare string the API has to re-resolve.
+ */
+function SearchBar({
+    summary, searching, theme, proximity, onSubmit,
+}: {
+    summary: string; searching: boolean; theme: 'light' | 'dark';
+    proximity?: { lat: number; lng: number };
+    onSubmit: (name: string, coords?: { lat: number; lng: number }) => void;
+}) {
+    const [focused, setFocused] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(-1);
+    const wrapRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const dark = theme === 'dark';
+    const p = sortPalette(theme);
+    const muted = dark ? 'rgba(245,245,245,0.55)' : 'rgba(17,17,17,0.45)';
+
+    const {
+        originQuery, originResults, showOriginResults, setShowOriginResults,
+        isSearching: suggesting, handleOriginSearch, clearSearch,
+    } = useMapboxSearch({ proximity });
+
+    const state = focused ? 'selected' : searching ? 'searching' : summary ? 'searched' : 'inactive';
+    const placeholder =
+        state === 'searching' ? 'Searching...' :
+        state === 'searched'  ? summary :
+        state === 'inactive'  ? 'Where to next? Try "Phuket Town"...' : '';
+
+    const suggestions = focused && showOriginResults ? originResults : [];
+
+    const close = useCallback(() => {
+        setFocused(false);
+        setActiveIndex(-1);
+        clearSearch();
+    }, [clearSearch]);
+
+    // Click-away closes the panel. Focus alone is not enough: picking a
+    // suggestion uses mousedown, which fires before blur.
+    useEffect(() => {
+        if (!focused) return;
+        const onDown = (e: MouseEvent) => {
+            if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) close();
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [focused, close]);
+
+    const submit = (name: string, coords?: { lat: number; lng: number }) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        inputRef.current?.blur();
+        close();
+        onSubmit(trimmed, coords);
+    };
+
+    const onKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') { inputRef.current?.blur(); close(); return; }
+        if (!suggestions.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveIndex(i => (i + 1) % suggestions.length);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveIndex(i => (i <= 0 ? suggestions.length : i) - 1);
+        }
+    };
+
+    return (
+        // Grows into the toolbar's free space but stops short of hogging it —
+        // the design keeps the controls that follow close to the field.
+        <div ref={wrapRef} className="relative min-w-0" style={{ flex: '1 1 auto', maxWidth: 470 }}>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    const picked = activeIndex >= 0 ? suggestions[activeIndex] : undefined;
+                    if (picked) submit(picked.name, { lat: picked.lat, lng: picked.lng });
+                    else submit(originQuery);
+                }}
+                className="flex items-center gap-3 rounded-full"
+                style={{
+                    height: 40, padding: '0 18px',
+                    background: p.field,
+                    border: `1px solid ${p.border}`,
+                    boxShadow: focused
+                        ? `0 0 0 2px ${dark ? 'rgba(255,255,255,0.18)' : 'rgba(17,17,17,0.14)'}`
+                        : 'none',
+                    transition: 'box-shadow .15s',
+                }}
+            >
+                <Search size={16} style={{ color: muted, flexShrink: 0 }} />
+                <input
+                    ref={inputRef}
+                    value={focused ? originQuery : ''}
+                    onChange={(e) => { handleOriginSearch(e.target.value); setActiveIndex(-1); }}
+                    onFocus={() => setFocused(true)}
+                    onKeyDown={onKeyDown}
+                    placeholder={placeholder}
+                    aria-label="Search for hotels"
+                    aria-expanded={suggestions.length > 0}
+                    aria-autocomplete="list"
+                    role="combobox"
+                    className="flex-1 min-w-0 bg-transparent outline-none"
+                    style={{ fontSize: 14, color: p.text, caretColor: p.text }}
+                />
+                {focused && suggesting && (
+                    <span className="animate-spin shrink-0" style={{
+                        width: 13, height: 13, borderRadius: '50%',
+                        border: `1.5px solid ${p.border}`, borderTopColor: p.text,
+                    }} />
+                )}
+            </form>
+
+            <AnimatePresence>
+                {suggestions.length > 0 && (
+                    <motion.ul
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.12 }}
+                        role="listbox"
+                        className="absolute left-0 right-0 z-50 overflow-hidden"
+                        style={{
+                            top: '100%', marginTop: 8, borderRadius: 18,
+                            background: p.menu, border: `1px solid ${p.border}`,
+                            boxShadow: p.shadow,
+                        }}
+                    >
+                        {suggestions.map((r, i) => (
+                            <li key={r.id} role="option" aria-selected={i === activeIndex}>
+                                <button
+                                    type="button"
+                                    // mousedown, not click: the input's blur would
+                                    // otherwise tear the list down first.
+                                    onMouseDown={(e) => { e.preventDefault(); submit(r.name, { lat: r.lat, lng: r.lng }); }}
+                                    onMouseEnter={() => setActiveIndex(i)}
+                                    className="flex w-full items-center gap-3 text-left"
+                                    style={{
+                                        padding: '11px 18px', fontSize: 13,
+                                        color: p.text,
+                                        opacity: i === activeIndex ? 1 : 0.75,
+                                        background: i === activeIndex ? p.hover : 'transparent',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <MapPin size={14} style={{ color: muted, flexShrink: 0 }} />
+                                    <span className="truncate">{r.name}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </motion.ul>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
 // ─── Sort dropdown ────────────────────────────────────────────────────────────
-function SortPill({ value, onChange }: { value: SortValue; onChange: (v: SortValue) => void }) {
+/**
+ * The map's chrome, as three tones rather than one: the toolbar `bar` is the
+ * ground, the controls sitting on it are a step lighter (`surface`), and the
+ * search `field` is a step darker still, which is what makes it read as an
+ * input rather than another button.
+ */
+function sortPalette(theme: 'light' | 'dark') {
+    const dark = theme === 'dark';
+    return {
+        bar:     dark ? '#16171A' : '#ECECEF',
+        surface: dark ? '#232428' : '#FFFFFF',
+        field:   dark ? '#000000' : '#FFFFFF',
+        text:    dark ? '#FFFFFF' : '#111111',
+        border:  dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+        menu:    dark ? '#1B1C20' : '#FFFFFF',
+        hover:   dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)',
+        shadow:  dark ? '0 8px 28px rgba(0,0,0,0.55)' : '0 8px 24px rgba(15,23,42,0.16)',
+    };
+}
+
+function SortPill({ value, onChange, theme }: { value: SortValue; onChange: (v: SortValue) => void; theme: 'light' | 'dark' }) {
     const [open, setOpen] = useState(false);
+    const p = sortPalette(theme);
     const label = SORT_OPTIONS.find(o => o.value === value)?.label ?? 'Recommended';
 
     return (
         <div style={{ position: 'relative' }}>
+            {/* No shadow: this sits on the toolbar, not over the map. */}
             <button onClick={() => setOpen(v => !v)} style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: ACCENT, border: 'none',
-                borderRadius: 100, padding: '0 14px', height: 40,
-                color: '#fff', fontSize: 13, fontWeight: 700,
-                boxShadow: '0 2px 14px rgba(255,107,75,0.4)',
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: p.surface, border: `1px solid ${p.border}`,
+                borderRadius: 100, padding: '0 16px', height: 40,
+                color: p.text, fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', whiteSpace: 'nowrap',
             }}>
                 {label}
-                <ChevronDown size={13} style={{ transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }} />
+                <ChevronDown size={14} style={{ opacity: 0.75, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }} />
             </button>
             <AnimatePresence>
                 {open && (
@@ -223,18 +512,25 @@ function SortPill({ value, onChange }: { value: SortValue; onChange: (v: SortVal
                         exit={{ opacity: 0, y: -8, scale: 0.95 }}
                         transition={{ duration: 0.12 }}
                         style={{
-                            position: 'absolute', right: 0, top: '100%', marginTop: 6,
-                            zIndex: 100, minWidth: 170, borderRadius: 12, overflow: 'hidden',
-                            background: 'rgba(22,17,32,0.98)', border: `1px solid ${BORDER}`,
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                            position: 'absolute', right: 0, top: '100%', marginTop: 8,
+                            zIndex: 100, minWidth: 186, borderRadius: 16, overflow: 'hidden',
+                            background: p.menu, border: `1px solid ${p.border}`,
+                            boxShadow: p.shadow,
                         }}>
                         {SORT_OPTIONS.map(opt => (
-                            <button key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }} style={{
-                                display: 'block', width: '100%', textAlign: 'left',
-                                padding: '10px 16px', fontSize: 12, fontWeight: 600,
-                                color: value === opt.value ? ACCENT : TEXT,
-                                background: 'none', border: 'none', cursor: 'pointer',
-                            }}>
+                            <button
+                                key={opt.value}
+                                onClick={() => { onChange(opt.value); setOpen(false); }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = p.hover; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                style={{
+                                    display: 'block', width: '100%', textAlign: 'left',
+                                    padding: '11px 16px', fontSize: 12.5,
+                                    fontWeight: value === opt.value ? 700 : 500,
+                                    color: p.text, opacity: value === opt.value ? 1 : 0.72,
+                                    background: 'transparent', border: 'none', cursor: 'pointer',
+                                    transition: 'background .12s',
+                                }}>
                                 {opt.label}
                             </button>
                         ))}
@@ -272,6 +568,7 @@ function HotelSearchContent() {
     const [hoveredId, setHoveredId]             = useState<string | null>(null);
     const [mapZoom, setMapZoom]                 = useState(11);
     const [showAllCityOverride, setShowAllCityOverride] = useState(false);
+    const [railHidden, setRailHidden]           = useState(false);
     const [mapCenter, setMapCenter]             = useState<{ lat: number; lng: number } | undefined>(
         lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined
     );
@@ -284,6 +581,15 @@ function HotelSearchContent() {
     }, [bboxParam]);
 
     const currency   = useUserCurrency();
+    const { theme, toggleTheme } = useTheme();
+    /**
+     * The UI runs opposite the app theme, so it always contrasts the basemap:
+     * light mode gets a light map under dark chrome and dark cards, dark mode
+     * the reverse. Everything on top of the map takes `uiTone`, never `theme`.
+     */
+    const uiTone     = theme === 'dark' ? 'light' : 'dark';
+    /** One surface for every control floating over the map. */
+    const chrome     = sortPalette(uiTone);
     const searchKey  = `${destination}|${checkIn}|${checkOut}|${adults}|${children}|${rooms}|${lat}|${lng}`;
 
     useEffect(() => {
@@ -373,26 +679,106 @@ function HotelSearchContent() {
         );
     }, [sorted, districtBbox, showAllCityOverride, mapZoom]);
     const count   = railSorted.length;
+
+    /**
+     * A grown card — selected or hovered — spreads half its extra width to each
+     * side. That room is taken by its neighbours rather than by the card itself,
+     * so the grown card never moves under the cursor.
+     */
+    const railCards = useMemo(() => {
+        const shown = railSorted.slice(0, 50);
+        const grown = new Set<number>();
+        shown.forEach((p, i) => {
+            if (p.id === selectedId || p.id === hoveredId) grown.add(i);
+        });
+        return shown.map((property, i) => ({
+            property,
+            isSelected: property.id === selectedId,
+            isHovered:  property.id === hoveredId,
+            shiftLeft:  grown.has(i - 1) ? SELECT_GUTTER : 0,
+            shiftRight: grown.has(i + 1) ? SELECT_GUTTER : 0,
+        }));
+    }, [railSorted, selectedId, hoveredId]);
     const isLoading    = status === 'loading';
     const isStreaming  = status === 'streaming';
     const pillText     = fmtPill(destination, checkIn, checkOut, adults, children);
 
     const handleViewDetails = useCallback((id: string) => router.push(`/property/${id}?${searchQs}`), [router, searchQs]);
+
+    // A new destination invalidates the coordinates and the district scoping the
+    // old one came with, so those params are dropped. Coordinates are then put
+    // back only when the query came from a geocoded suggestion.
+    const handleSearchSubmit = useCallback((name: string, coords?: { lat: number; lng: number }) => {
+        const params = new URLSearchParams(searchParams?.toString() ?? '');
+        params.set('destination', name);
+        for (const stale of ['lat', 'lng', 'countryCode', 'bbox', 'districtName', 'canonicalCity']) {
+            params.delete(stale);
+        }
+        if (coords) {
+            params.set('lat', String(coords.lat));
+            params.set('lng', String(coords.lng));
+        }
+        router.push(`/search?${params.toString()}`);
+    }, [router, searchParams]);
     const handleSelect      = useCallback((id: string) => setSelectedId(prev => prev === id ? null : id), []);
 
-    // Horizontal scroll on mouse wheel — intercepts vertical-only events (deltaX===0)
-    // and converts them to horizontal scroll; lets trackpad (deltaX!==0) pass through.
-    const railRef = useRef<HTMLDivElement>(null);
+    // Wheel over the rail scrolls the cards horizontally and never reaches the
+    // map's zoom.
+    //
+    // Listening on the window in the CAPTURE phase, gated on the pointer being
+    // inside the rail's box — not on the rail element itself. The rail is
+    // `pointer-events: none` so its scale headroom doesn't block the map, which
+    // means wheel events over the gaps between cards were never dispatched to it
+    // at all: they fell through to the map canvas and zoomed. Capturing at the
+    // window runs before Mapbox's own handler, so stopping propagation there
+    // covers the whole strip, cards and gaps alike.
+    const railScrollRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
-        const el = railRef.current;
-        if (!el) return;
-        const onWheel = (e: WheelEvent) => {
-            if (e.deltaX !== 0) return;
-            e.preventDefault();
-            el.scrollLeft += e.deltaY;
+        let target: number | null = null;
+        let raf = 0;
+
+        const step = () => {
+            const el = railScrollRef.current;
+            if (!el || target === null) { raf = 0; return; }
+            const distance = target - el.scrollLeft;
+            if (Math.abs(distance) < 0.5) {
+                el.scrollLeft = target;
+                raf = 0;
+                return;
+            }
+            // Wheel ticks accumulate into a target the rail eases toward, so a
+            // burst of notches reads as one glide rather than a stack of jumps.
+            el.scrollLeft += distance * 0.18;
+            raf = requestAnimationFrame(step);
         };
-        el.addEventListener('wheel', onWheel, { passive: false });
-        return () => el.removeEventListener('wheel', onWheel);
+
+        const onWheel = (e: WheelEvent) => {
+            const el = railScrollRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const inside =
+                e.clientX >= r.left && e.clientX <= r.right &&
+                e.clientY >= r.top  && e.clientY <= r.bottom;
+            if (!inside) return;
+
+            // Claim the event before the map sees it, whatever its axis — a
+            // trackpad swipe over the rail should not zoom either.
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (e.deltaX !== 0) { target = null; return; }   // real horizontal intent: let the browser scroll
+            if (target === null || !raf) target = el.scrollLeft;
+            const max = el.scrollWidth - el.clientWidth;
+            // Wheel up advances to the following cards.
+            target = Math.max(0, Math.min(max, target - e.deltaY));
+            if (!raf) raf = requestAnimationFrame(step);
+        };
+
+        window.addEventListener('wheel', onWheel, { capture: true, passive: false });
+        return () => {
+            if (raf) cancelAnimationFrame(raf);
+            window.removeEventListener('wheel', onWheel, { capture: true });
+        };
     }, []);
 
     // ── List view ─────────────────────────────────────────────────────────────
@@ -410,7 +796,7 @@ function HotelSearchContent() {
                         {destination || 'Search results'}
                     </span>
                     {count > 0 && <span className="text-xs" style={{ color: DIM }}>{count} properties</span>}
-                    <SortPill value={sortBy} onChange={setSortBy} />
+                    <SortPill value={sortBy} onChange={setSortBy} theme={uiTone} />
                 </div>
                 <div className="max-w-350 mx-auto px-4 sm:px-6 py-6 w-full">
                     <HotelResults
@@ -429,8 +815,13 @@ function HotelSearchContent() {
     return (
         <div className="dark relative w-full overflow-hidden" style={{ height: '100dvh', background: BG }}>
 
-            {/* Map with horizontal indentation so it doesn't bleed edge-to-edge */}
-            <div className="absolute inset-y-0 left-16 right-16 rounded-2xl overflow-hidden">
+            {/* Full-bleed: the side gutters were page background showing through,
+                which read as a dark frame behind the card rail.
+
+                The `map-gray` canvas filter is gone: it existed to lift
+                `dark-v11` off near-black, and Standard's night preset is
+                already a mid-tone. Re-add it here if dark still reads too deep. */}
+            <div className="absolute inset-0 overflow-hidden">
                 <SearchMapContainer
                     properties={sorted}
                     selectedId={selectedId}
@@ -450,42 +841,77 @@ function HotelSearchContent() {
             </div>
 
             {/* ── Floating top bar ─────────────────────────────── */}
-            <div className="absolute left-4 right-4 z-30 flex items-center gap-2" style={{ top: 16 }}>
+            {/* One continuous toolbar rather than a row of loose pills: the bar is
+                the ground, every control sits on it in the lighter tone. */}
+            <div
+                className="absolute left-4 right-4 z-30 flex items-center gap-2"
+                style={{
+                    top: 16, height: 60, padding: '0 10px', borderRadius: 20,
+                    background: chrome.bar,
+                    border: `1px solid ${chrome.border}`,
+                    boxShadow: chrome.shadow,
+                }}
+            >
                 {/* Back */}
                 <button
                     onClick={() => router.back()}
                     className="flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80"
-                    style={{ width: 40, height: 40, flexShrink: 0, background: OVERLAY_BG, border: `1px solid ${OVERLAY_BDR}`, backdropFilter: 'blur(10px)' }}>
-                    <ArrowLeft size={18} style={{ color: TEXT }} />
+                    style={{ width: 40, height: 40, flexShrink: 0, background: chrome.surface, border: `1px solid ${chrome.border}` }}>
+                    <ArrowLeft size={18} style={{ color: chrome.text }} />
                 </button>
 
-                {/* Destination pill */}
-                <div className="flex-1 min-w-0 flex items-center px-4 rounded-full"
-                    style={{ height: 40, background: 'rgba(28,23,36,0.72)', border: `1px solid ${OVERLAY_BDR}`, backdropFilter: 'blur(10px)' }}>
-                    <span className="truncate font-medium" style={{ fontSize: 13, color: TEXT }}>
-                        {pillText}
-                    </span>
+                {/* Search */}
+                <SearchBar
+                    summary={pillText}
+                    searching={isLoading || isStreaming}
+                    theme={uiTone}
+                    proximity={mapCenter}
+                    onSubmit={handleSearchSubmit}
+                />
+
+                {/* Theme */}
+                <button
+                    onClick={toggleTheme}
+                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                    className="flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80"
+                    style={{ width: 40, height: 40, flexShrink: 0, background: chrome.surface, border: `1px solid ${chrome.border}` }}>
+                    {theme === 'dark'
+                        ? <Sun size={17} style={{ color: chrome.text }} />
+                        : <Moon size={17} style={{ color: chrome.text }} />}
+                </button>
+
+                {/* List view */}
+                <button
+                    onClick={() => setViewMode('list')}
+                    className="flex items-center gap-2 rounded-full shrink-0 cursor-pointer transition-opacity hover:opacity-80"
+                    style={{ height: 40, padding: '0 16px', background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text, fontSize: 13, fontWeight: 600 }}>
+                    <List size={15} />
+                    List View
+                </button>
+
+                {/* Right cluster — pinned to the toolbar's far end */}
+                <div className="ml-auto flex items-center gap-2">
+                    {/* Count badge — shows spinner while streaming */}
+                    {count > 0 && (
+                        <div className="flex items-center gap-2 px-4 rounded-full shrink-0"
+                            style={{ height: 40, background: chrome.surface, border: `1px solid ${chrome.border}` }}>
+                            {isStreaming && (
+                                <div className="animate-spin flex-shrink-0" style={{
+                                    width: 11, height: 11, borderRadius: '50%',
+                                    border: `1.5px solid ${chrome.border}`,
+                                    borderTopColor: chrome.text,
+                                }} />
+                            )}
+                            <span className="font-semibold whitespace-nowrap" style={{ fontSize: 13, color: chrome.text }}>
+                                {isStreaming ? `${count}+` : count} stays
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Sort */}
+                    <SortPill value={sortBy} onChange={setSortBy} theme={uiTone} />
                 </div>
-
-                {/* Count badge — shows spinner while streaming */}
-                {count > 0 && (
-                    <div className="flex items-center gap-2 px-3 rounded-full shrink-0"
-                        style={{ height: 40, background: OVERLAY_BG, border: `1px solid ${OVERLAY_BDR}`, backdropFilter: 'blur(10px)' }}>
-                        {isStreaming && (
-                            <div className="animate-spin flex-shrink-0" style={{
-                                width: 11, height: 11, borderRadius: '50%',
-                                border: '1.5px solid rgba(180,150,255,0.35)',
-                                borderTopColor: '#a78bfa',
-                            }} />
-                        )}
-                        <span className="font-semibold whitespace-nowrap" style={{ fontSize: 13, color: TEXT }}>
-                            {isStreaming ? `${count}+` : count} stays
-                        </span>
-                    </div>
-                )}
-
-                {/* Sort */}
-                <SortPill value={sortBy} onChange={setSortBy} />
             </div>
 
             {/* Full-screen loading overlay — z-40 sits above Mapbox canvas */}
@@ -509,20 +935,29 @@ function HotelSearchContent() {
                     {/* Skeleton rail cards — preview the bottom card layout */}
                     <div style={{ paddingLeft: 24, paddingBottom: 32, paddingRight: 24 }}>
                         <div className="flex gap-3 overflow-hidden">
-                            {[0, 1, 2, 3].map(i => (
-                                <div key={i} className="shrink-0 animate-pulse"
-                                    style={{ width: 190, borderRadius: 18, background: SURFACE, border: `1.5px solid ${BORDER}`, opacity: 1 - i * 0.18 }}>
-                                    <div style={{ height: 108, borderRadius: '16px 16px 0 0', background: 'rgba(255,255,255,0.05)' }} />
-                                    <div style={{ padding: '20px 14px 14px' }}>
-                                        <div style={{ height: 14, borderRadius: 6, background: 'rgba(255,255,255,0.08)', marginBottom: 7 }} />
-                                        <div style={{ height: 10, borderRadius: 6, background: 'rgba(255,255,255,0.05)', width: '65%' }} />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                                            <div style={{ height: 22, width: 36, borderRadius: 100, background: 'rgba(255,255,255,0.06)' }} />
-                                            <div style={{ height: 18, width: 52, borderRadius: 6, background: 'rgba(255,107,75,0.15)' }} />
+                            {[0, 1, 2, 3].map(i => {
+                                const c = railCardPalette(uiTone);
+                                const bar = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+                                const barDim = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.045)';
+                                return (
+                                    <div key={i} className="shrink-0 animate-pulse"
+                                        style={{ position: 'relative', width: CARD_W, borderRadius: px(16), overflow: 'hidden', background: c.surface, border: `1px solid ${c.hairline}`, opacity: 1 - i * 0.18 }}>
+                                        <div style={{ height: CARD_IMG_H, background: c.imageBg }} />
+                                        <div style={{
+                                            position: 'absolute', width: PRICE_CIRCLE, height: PRICE_CIRCLE, borderRadius: '50%',
+                                            top: CARD_IMG_H - PRICE_CIRCLE / 2, right: -CIRCLE_BLEED, background: barDim,
+                                        }} />
+                                        <div style={{ minHeight: PANEL_HEIGHT, display: 'flex', flexDirection: 'column', padding: `${px(30)}px ${PANEL_PAD_X}px ${px(18)}px` }}>
+                                            <div style={{ height: fpx(15), borderRadius: 6, background: bar, width: '55%' }} />
+                                            <div style={{ height: fpx(11), borderRadius: 6, background: barDim, width: '85%', marginTop: px(8) }} />
+                                            <div style={{ height: fpx(11), borderRadius: 6, background: barDim, width: '32%', marginTop: px(10) }} />
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
+                                                <div style={{ height: fpx(34), width: fpx(88), borderRadius: 100, background: bar }} />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -555,13 +990,14 @@ function HotelSearchContent() {
 
             {/* ── Bottom card rail ──────────────────────────────── */}
             <AnimatePresence>
-                {sorted.length > 0 && (
+                {sorted.length > 0 && !railHidden && (
                     <motion.div
                         initial={{ y: 160, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 160, opacity: 0 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 170, delay: 0.05 }}
                         className="absolute left-0 right-0 bottom-0 z-20"
+                        style={{ pointerEvents: 'none' }}
                     >
                         {/* List view toggle + count */}
                         <div className="flex items-center justify-between px-4 mb-2">
@@ -591,45 +1027,88 @@ function HotelSearchContent() {
                                         color: ACCENT, cursor: 'pointer',
                                         backdropFilter: 'blur(8px)',
                                         whiteSpace: 'nowrap',
+                                        pointerEvents: 'auto',
                                     }}
                                 >
                                     {districtName} · See all in {canonicalCity || destination}
                                 </button>
                             )}
 
-                            <button onClick={() => setViewMode('list')}
-                                className="flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
-                                style={{
-                                    background: OVERLAY_BG, border: `1px solid ${OVERLAY_BDR}`,
-                                    borderRadius: 8, padding: '6px 12px',
-                                    fontSize: 11, fontWeight: 700, color: TEXT,
-                                    backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                                }}>
-                                <List size={12} />
-                                List view
-                            </button>
                         </div>
 
                         {/* Horizontal scroll cards — wheel handler converts vertical scroll to horizontal */}
-                        <div style={{ paddingBottom: 28, paddingLeft: 24 }}>
+                        <div className="relative" style={{ paddingBottom: 28, paddingLeft: 24 }}>
                             <div
-                                ref={railRef}
-                                className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
+                                ref={railScrollRef}
+                                className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
+                                // `overflow-x: auto` forces overflow-y to auto too, so a
+                                // selected card scaling up would be clipped. The headroom
+                                // gives it somewhere to grow; the whole rail is
+                                // pointer-transparent so that headroom doesn't swallow
+                                // clicks meant for the map.
+                                style={{ overscrollBehaviorX: 'contain', paddingTop: SELECT_HEADROOM }}
                             >
-                                {railSorted.slice(0, 50).map(property => (
+                                {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
                                     <RailCard
                                         key={property.id}
                                         property={property}
-                                        isSelected={selectedId === property.id}
+                                        isSelected={isSelected}
+                                        isHovered={isHovered}
+                                        shiftLeft={shiftLeft}
+                                        shiftRight={shiftRight}
                                         onSelect={handleSelect}
+                                        onHover={setHoveredId}
                                         onViewDetails={handleViewDetails}
                                         currency={currency}
+                                        theme={uiTone}
                                     />
                                 ))}
-                                <div style={{ minWidth: 24, flexShrink: 0 }} />
+                                {/* Clears the hide button so the last card can scroll past it */}
+                                <div style={{ minWidth: 72, flexShrink: 0 }} />
                             </div>
+
+                            {/* Hide the rail */}
+                            <button
+                                onClick={() => setRailHidden(true)}
+                                aria-label="Hide stay cards"
+                                title="Hide cards"
+                                className="absolute flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80"
+                                style={{
+                                    // Measured from the bottom, not 50% — the rail's
+                                    // scale headroom sits above the cards.
+                                    right: 16, bottom: 28 + CARD_H / 2 - 20,
+                                    width: 40, height: 40,
+                                    background: chrome.surface, border: `1px solid ${chrome.border}`,
+                                    boxShadow: chrome.shadow,
+                                    pointerEvents: 'auto',
+                                }}>
+                                <ChevronDown size={18} style={{ color: chrome.text }} />
+                            </button>
                         </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Bring the rail back */}
+            <AnimatePresence>
+                {sorted.length > 0 && railHidden && (
+                    <motion.button
+                        initial={{ y: 60, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 60, opacity: 0 }}
+                        transition={{ type: 'spring', damping: 26, stiffness: 200 }}
+                        onClick={() => setRailHidden(false)}
+                        className="absolute z-20 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
+                        style={{
+                            right: 16, bottom: 28,
+                            background: chrome.surface, border: `1px solid ${chrome.border}`,
+                            borderRadius: 100, padding: '9px 15px',
+                            fontSize: 12, fontWeight: 700, color: chrome.text,
+                            boxShadow: chrome.shadow,
+                        }}>
+                        <ChevronUp size={14} />
+                        Show {count} stays
+                    </motion.button>
                 )}
             </AnimatePresence>
         </div>

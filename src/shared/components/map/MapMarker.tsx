@@ -3,6 +3,7 @@
 import React from 'react';
 import { Marker } from 'react-map-gl/mapbox';
 import { formatCurrency } from '@/shared/lib/format';
+import { HotelPin } from './HotelPin';
 import type { MappableProperty } from './types';
 
 interface MapMarkerProps {
@@ -16,9 +17,6 @@ interface MapMarkerProps {
     index?: number;
 }
 
-/** Thumbnail edge, in px. Small enough that `sizes` pulls a tiny variant. */
-const THUMB = 26;
-
 const MapMarker = React.memo(function MapMarker({
     property,
     displayPrice,
@@ -28,10 +26,7 @@ const MapMarker = React.memo(function MapMarker({
     onClick,
     onHover,
 }: MapMarkerProps) {
-    const isActive = isSelected || isHovered;
     const image = property.image ?? property.images?.[0];
-    const borderColor = isSelected ? '#3b82f6' : isHovered ? '#93c5fd' : 'white';
-    const shadow = isActive ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(0,0,0,0.25)';
 
     let priceLabel: string;
     try {
@@ -46,8 +41,8 @@ const MapMarker = React.memo(function MapMarker({
         <Marker
             latitude={property.coordinates.lat}
             longitude={property.coordinates.lng}
-            // Still bottom-anchored even though the pill no longer has a tail,
-            // so the popup offsets in MapPopup keep working unchanged.
+            // Bottom-anchored so the pin's tail lands on the coordinate. The
+            // popup offsets in MapPopup are measured from this same edge.
             anchor="bottom"
             onClick={(e) => {
                 e.originalEvent.stopPropagation();
@@ -61,56 +56,13 @@ const MapMarker = React.memo(function MapMarker({
             <div
                 onMouseEnter={() => onHover(property.id)}
                 onMouseLeave={() => onHover(null)}
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    transform: isSelected ? 'scale(1.1)' : 'scale(1)',
-                    transition: 'transform 150ms ease',
-                }}
             >
-                {/* Circular hotel image */}
-                <div style={{
-                    width: 48,
-                    height: 48,
-                    minWidth: 48,
-                    minHeight: 48,
-                    borderRadius: '50%',
-                    overflow: 'hidden',
-                    border: `2.5px solid ${borderColor}`,
-                    boxShadow: shadow,
-                    flexShrink: 0,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                }}>
-                    {image && (
-                        <img
-                            src={image}
-                            alt=""
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                    )}
-                </div>
-
-                {/* Price / loading label */}
-                <div style={{
-                    marginTop: 3,
-                    background: isSelected ? '#3b82f6' : 'white',
-                    color: isSelected ? 'white' : '#111',
-                    borderRadius: 10,
-                    padding: '2px 8px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 1px 5px rgba(0,0,0,0.18)',
-                    lineHeight: '1.5',
-                    minWidth: 32,
-                    textAlign: 'center',
-                }}>
-                    {property.priceLoading || !priceLabel ? (
-                        <span style={{ letterSpacing: '0.2em', color: '#999' }}>···</span>
-                    ) : priceLabel}
-                </div>
+                <HotelPin
+                    image={image}
+                    priceLabel={priceLabel}
+                    active={isHovered}
+                    selected={isSelected}
+                />
             </div>
         </Marker>
     );

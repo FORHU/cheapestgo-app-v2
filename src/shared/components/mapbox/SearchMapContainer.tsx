@@ -10,7 +10,6 @@ import { MapContainer } from './components/MapContainer';
 import { SelectedPropertyPopup } from './components/SelectedPropertyPopup';
 import { Source, Layer, Marker } from 'react-map-gl/mapbox';
 import { PoiPopup } from './components/PoiPopup';
-import { MapPopup } from '@/shared/components/map/MapPopup';
 import { MapSearchOverlay } from './components/MapSearchOverlay';
 import { useRouter } from 'next/navigation';
 import { useUserCurrency } from '@/stores/searchStore';
@@ -18,12 +17,12 @@ import { convertCurrency } from '@/shared/lib/currency';
 import { useMapDetails } from './hooks/useMapDetails';
 import { MapDetailsPanel } from './components/MapDetailsPanel';
 import { env } from '@/shared/lib/env';
-import { Layers } from 'lucide-react';
 import { useIsMobile } from '@/shared/hooks/useMediaQuery';
 import { cn, } from '@/shared/lib/cn';
 import { formatCurrency } from '@/shared/lib/format';
-import { MapGemsPanel } from '@/shared/components/map/MapGemsPanel';
 import { NearbyPlaceMarker } from '@/shared/components/map/NearbyPlaceMarker';
+import { HotelPin } from '@/shared/components/map/HotelPin';
+import { useTheme } from '@/shared/components/ThemeContext';
 import { NearbyPlacePopup } from '@/shared/components/map/NearbyPlacePopup';
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
 import type { NearbyPlace } from '@/shared/components/map/useMapNearbyPlaces';
@@ -66,6 +65,13 @@ function createCircleGeoJSON(center: [number, number], radiusMeters: number): an
 }
 
 const DISTRICT_MARKER_THRESHOLD = 11;
+
+/**
+ * Zoom the map settles on when a hotel is picked — close enough to read the
+ * surrounding streets and see which block the hotel sits on, without losing
+ * the neighbouring pins entirely.
+ */
+const SELECT_ZOOM = 15.5;
 
 // Fixed offsets (in degrees) for loading placeholder pins around the city centre
 const LOADING_PIN_OFFSETS = [
@@ -113,6 +119,7 @@ export const SearchMapContainer = React.memo(({
     const isMobile = useIsMobile();
     const router = useRouter();
     const targetCurrency = useUserCurrency();
+    const { theme } = useTheme();
 
     const mappableProperties = useMemo(() =>
         properties.filter(p =>
@@ -200,6 +207,26 @@ export const SearchMapContainer = React.memo(({
         return cleanup;
     }, [isMapLoaded, attachMouseLeave]);
 
+    // Track movement so pins can ignore the mouseenter events a moving map
+    // generates. Any hover already showing is dropped when the map starts to move.
+    React.useEffect(() => {
+        if (!isMapLoaded || !mapRef.current) return;
+        const map = mapRef.current.getMap();
+        if (!map) return;
+        const start = () => { mapMovingRef.current = true; onHoverIdRef.current(null); };
+        const end   = () => { mapMovingRef.current = false; };
+        map.on('movestart', start);
+        map.on('zoomstart', start);
+        map.on('moveend', end);
+        map.on('zoomend', end);
+        return () => {
+            map.off('movestart', start);
+            map.off('zoomstart', start);
+            map.off('moveend', end);
+            map.off('zoomend', end);
+        };
+    }, [isMapLoaded]);
+
     useMapViewport({ mapRef, isMapLoaded, properties: mappableProperties, center: defaultCenter, selectedId, disableFlyToSelected: true, skipInitialFit: !!districtBbox });
 
 
@@ -222,6 +249,9 @@ export const SearchMapContainer = React.memo(({
         }).catch(() => { /* ignore */ });
     }, []);
 
+    // True while the map is panning or zooming — see the marker mouseenter below.
+    const mapMovingRef = React.useRef(false);
+
     // Stable refs for callbacks — avoids recreating markers when parent re-renders
     const onSelectIdRef = React.useRef(onSelectId);
     const onHoverIdRef  = React.useRef(onHoverId);
@@ -237,48 +267,19 @@ export const SearchMapContainer = React.memo(({
         if (!MapboxMarker) return;
 
         const renderPin = (root: Root, p: MappableProperty, isHov: boolean) => {
-            const image = p.image ?? p.images?.[0];
-            const borderColor = isHov ? '#93c5fd' : 'white';
-            const shadow = isHov ? '0 4px 14px rgba(0,0,0,0.35)' : '0 2px 8px rgba(0,0,0,0.25)';
             const price = markerPrices[p.id] ?? 0;
             let priceLabel = '';
             try { priceLabel = price > 0 ? formatCurrency(price, targetCurrency) : ''; } catch { /* noop */ }
             root.render(
-                <div style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    transform: isHov ? 'scale(1.05)' : 'scale(1)',
-                    transformOrigin: 'center 48px',
-                    transition: 'transform 150ms ease',
-                    pointerEvents: 'none',
-                }}>
-                    {/* Spacer matches price-label height so element center = circle center */}
-                    <div style={{ height: 24, flexShrink: 0 }} />
-                    <div style={{
-                        width: 48, height: 48, minWidth: 48, minHeight: 48,
-                        borderRadius: '50%', overflow: 'hidden',
-                        border: `2.5px solid ${borderColor}`,
-                        boxShadow: shadow,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        flexShrink: 0,
-                    }}>
-                        {image && (
-                            <img src={image} alt=""
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
-                        )}
-                    </div>
-                    <div style={{
-                        marginTop: 3, background: 'white', color: '#111',
-                        borderRadius: 10, padding: '2px 8px', fontSize: 11,
-                        fontWeight: 700, whiteSpace: 'nowrap',
-                        boxShadow: '0 1px 5px rgba(0,0,0,0.18)', lineHeight: '1.5',
-                        minWidth: 32, textAlign: 'center',
-                    }}>
-                        {priceLabel
-                            ? priceLabel
-                            : <span style={{ letterSpacing: '0.2em', color: '#999' }}>···</span>}
-                    </div>
+                // `pointerEvents: none` keeps clicks and hovers on the marker
+                // element that owns the listeners. The pin's own colours come
+                // from CSS variables, so nothing here depends on the theme.
+                <div style={{ pointerEvents: 'none' }}>
+                    <HotelPin
+                        image={p.image ?? p.images?.[0]}
+                        priceLabel={priceLabel}
+                        active={isHov}
+                    />
                 </div>
             );
         };
@@ -315,13 +316,22 @@ export const SearchMapContainer = React.memo(({
                     e.stopPropagation();
                     onSelectIdRef.current(p.id);
                 });
-                el.addEventListener('mouseenter', () => onHoverIdRef.current(p.id));
+                // Ignored while the map is moving: zooming and panning slide the
+                // pins under a stationary cursor, and the resulting mouseenter
+                // made pins pop to their hover size for no reason the user could
+                // see. Real hovers land on a settled map.
+                el.addEventListener('mouseenter', () => {
+                    if (mapMovingRef.current) return;
+                    onHoverIdRef.current(p.id);
+                });
                 el.addEventListener('mouseleave', () => onHoverIdRef.current(null));
 
                 const root = createRoot(el);
                 renderPin(root, p, isHov);
 
-                const marker = new MapboxMarker({ element: el, anchor: 'center' })
+                // Bottom-anchored so the pin's tail sits on the coordinate —
+                // matches MapMarker, which draws the selected pin.
+                const marker = new MapboxMarker({ element: el, anchor: 'bottom' })
                     .setLngLat([p.coordinates.lng, p.coordinates.lat]);
 
                 if (!isSelected) marker.addTo(mapInstance);
@@ -360,12 +370,22 @@ export const SearchMapContainer = React.memo(({
         if (!selectedId || !isMapLoaded) return;
         const prop = mappableProperties.find(p => p.id === selectedId);
         if (!prop) return;
-        // Pan only — no zoom change. Keeps tiles already loaded at fitBounds level,
-        // avoiding the dark-background flash from loading new tiles at a higher zoom.
+        // Close in on the selection, but never pull back: `max` of the current
+        // zoom, so picking a hotel from an already-close view holds that view
+        // instead of jumping out to a fixed level.
+        const map = mapRef.current?.getMap?.();
+        const zoom = Math.max(map?.getZoom?.() ?? SELECT_ZOOM, SELECT_ZOOM);
+
+        // Long and gently eased: at 500ms the move outran tile loading, arriving
+        // over blank canvas that only filled in afterwards. The slower glide gives
+        // tiles time to arrive during the move, and the ease-out means the last
+        // stretch — where the destination is on screen — is the slowest part.
         mapRef.current?.easeTo({
             center: [prop.coordinates.lng, prop.coordinates.lat],
+            zoom,
             offset: isMobile ? [0, 0] : [0, 60],
-            duration: 500,
+            duration: 1100,
+            easing: (t) => 1 - Math.pow(1 - t, 3),
             essential: true,
         });
     }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -412,9 +432,9 @@ export const SearchMapContainer = React.memo(({
         [previewProperty, activePoi]
     );
 
-    // ── Nearby Gems (stubbed — POI task handles real fetching) ────────────────
-    const [nearbyCategory, setNearbyCategory] = React.useState('all');
-    const [nearbyRadius, setNearbyRadius] = React.useState(1000);
+    // ── Nearby places ────────────────────────────────────────────────────────
+    // Radius is fixed since the panel that carried the control was removed.
+    const nearbyRadius = 1000;
     const [activeGemName, setActiveGemName] = React.useState<string | null>(null);
     const [selectedNearbyPlace, setSelectedNearbyPlace] = React.useState<NearbyPlace | null>(null);
 
@@ -427,13 +447,26 @@ export const SearchMapContainer = React.memo(({
         return () => { if (gemsTimerRef.current) clearTimeout(gemsTimerRef.current); };
     }, [selectedProperty?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const { gems: nearbyGems, loading: isFetchingGems } = useNearbyGems({
-        coordinates: (isMapLoaded && selectedProperty && gemsEnabled)
-            ? { lat: selectedProperty.coordinates.lat, lng: selectedProperty.coordinates.lng }
-            : undefined,
-        category: nearbyCategory as any,
-        radiusMeters: nearbyRadius,
-    });
+    // Three categories, three calls: the endpoint takes one category per
+    // request, and the hook count has to stay fixed across renders.
+    const gemCoords = (isMapLoaded && selectedProperty && gemsEnabled)
+        ? { lat: selectedProperty.coordinates.lat, lng: selectedProperty.coordinates.lng }
+        : undefined;
+
+    const { gems: cafeGems,    loading: cafeLoading }    = useNearbyGems({ coordinates: gemCoords, category: 'cafe',    radiusMeters: nearbyRadius });
+    const { gems: medicalGems, loading: medicalLoading } = useNearbyGems({ coordinates: gemCoords, category: 'medical', radiusMeters: nearbyRadius });
+    const { gems: transitGems, loading: transitLoading } = useNearbyGems({ coordinates: gemCoords, category: 'transit', radiusMeters: nearbyRadius });
+
+    const isFetchingGems = cafeLoading || medicalLoading || transitLoading;
+
+    // Google and the Mapbox fallback can each return the same place, so merge on id.
+    const nearbyGems = useMemo(() => {
+        const byId = new Map<string, typeof cafeGems[number]>();
+        for (const gem of [...cafeGems, ...medicalGems, ...transitGems]) {
+            if (!byId.has(gem.id)) byId.set(gem.id, gem);
+        }
+        return Array.from(byId.values());
+    }, [cafeGems, medicalGems, transitGems]);
 
     const filteredGems = useMemo(
         () => (selectedProperty ? nearbyGems : []),
@@ -546,23 +579,48 @@ export const SearchMapContainer = React.memo(({
         terrainEnabled, mapStyleUrl, standardConfig,
     } = useMapDetails('default');
 
+    /**
+     * Light and dark come from Standard's `lightPreset`, not from swapping
+     * style URLs.
+     *
+     * That is the whole point of using Standard here: a preset change is a
+     * config write the running style applies in place, where a URL change tears
+     * the style down, refetches it, and hides every pin until the map goes idle
+     * again — which is what made the theme toggle stutter.
+     *
+     * Buildings and road labels are on: the flat `dark-v11`/`light-v11` basemaps
+     * gave streets and structures almost no presence at city zooms.
+     */
     const searchStandardConfig = React.useMemo(() => ({
         ...standardConfig,
-        show3dObjects: false,
-        show3dBuildings: false,
+        lightPreset: (theme === 'dark' ? 'night' : 'day') as 'night' | 'day',
+        show3dObjects: true,
+        show3dBuildings: true,
+        show3dLandmarks: true,
         show3dFacades: false,
         show3dTrees: false,
-        show3dLandmarks: false,
-        lightPreset: 'day' as const,
-    }), [standardConfig]);
+        showRoadLabels: true,
+        showPlaceLabels: true,
+        // Our own POI discs cover this ground; Mapbox's labels would double up.
+        showPointOfInterestLabels: false,
+    }), [standardConfig, theme]);
+
+    /**
+     * Standard for the default view. Satellite and the 3D type keep their own
+     * style URLs.
+     */
+    const themedMapStyle = React.useMemo(
+        () => (mapType === 'default' ? 'standard' : mapStyleUrl),
+        [mapType, mapStyleUrl]
+    );
 
     const prevMapStyleRef = React.useRef<string | undefined>();
     React.useEffect(() => {
-        if (prevMapStyleRef.current !== undefined && prevMapStyleRef.current !== mapStyleUrl) {
+        if (prevMapStyleRef.current !== undefined && prevMapStyleRef.current !== themedMapStyle) {
             handleMapStyleChange();
         }
-        prevMapStyleRef.current = mapStyleUrl;
-    }, [mapStyleUrl, handleMapStyleChange]);
+        prevMapStyleRef.current = themedMapStyle;
+    }, [themedMapStyle, handleMapStyleChange]);
 
     const initialViewState = useMemo(() => {
         if (districtBbox) {
@@ -588,8 +646,8 @@ export const SearchMapContainer = React.memo(({
         <div className="relative h-full w-full">
             <MapContainer
                 mapRef={mapRef}
-                mapStyle={mapStyleUrl}
-                standardConfig={mapType === 'default-3d' ? searchStandardConfig : undefined}
+                mapStyle={themedMapStyle}
+                standardConfig={themedMapStyle === 'standard' ? searchStandardConfig : undefined}
                 enable3DTerrain={terrainEnabled}
                 antialias={!isMobile}
                 maxPitch={85}
@@ -730,45 +788,6 @@ export const SearchMapContainer = React.memo(({
                 </div>
             )}
 
-            {/* Mobile centered property preview */}
-            {isMobile && selectedProperty && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[min(200px,calc(100vw-48px))] pointer-events-auto">
-                    <div className="relative">
-                        <MapPopup
-                            property={selectedProperty}
-                            onClose={() => {
-                                onSelectId(null);
-                                setSelectedPoi(null);
-                                setActiveGemName(null);
-                                setSelectedNearbyPlace(null);
-                            }}
-                            onViewDetails={onViewDetails}
-                            isCentered={true}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Nearby Gems Panel */}
-            {selectedProperty && (
-                <div className="absolute bottom-2 left-2 right-2 z-10">
-                    <MapGemsPanel
-                        gems={filteredGems}
-                        isLoading={isFetchingGems}
-                        selectedCategory={nearbyCategory}
-                        onCategoryChange={(cat) => {
-                            setNearbyCategory(cat);
-                            setActiveGemName(null);
-                            setSelectedNearbyPlace(null);
-                        }}
-                        radiusMeters={nearbyRadius}
-                        onRadiusChange={setNearbyRadius}
-                        activeGemName={activeGemName}
-                        onGemClick={handleGemClick}
-                    />
-                </div>
-            )}
-
             {/* Map Search Overlay */}
             <MapSearchOverlay
                 className={searchOverlayClassName || 'absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[60%] sm:w-[320px] md:w-[400px]'}
@@ -782,24 +801,8 @@ export const SearchMapContainer = React.memo(({
                 }}
             />
 
-            {/* Layers button */}
-            {!showDetailsPanel && (
-                <button
-                    onClick={(e) => { e.stopPropagation(); setShowDetailsPanel(true); }}
-                    className={cn(
-                        'absolute left-4 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-md shadow-lg border border-slate-200 dark:border-slate-700 px-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 group h-[30px] shrink-0',
-                        'top-[58px] lg:top-4'
-                    )}
-                >
-                    <Layers className="w-4 h-4 text-slate-700 dark:text-slate-300 group-hover:text-blue-500 transition-colors" strokeWidth={2} />
-                    <div className="w-px h-3 bg-slate-200 dark:bg-slate-700" />
-                    <svg className="w-2.5 h-2.5 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-            )}
-
-            {/* Map Details Panel */}
+            {/* Map Details Panel — no longer reachable from this map: the Layers
+                button that opened it collided with the page's back button. */}
             <MapDetailsPanel
                 isOpen={showDetailsPanel}
                 onClose={() => setShowDetailsPanel(false)}

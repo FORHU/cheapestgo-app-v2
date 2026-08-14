@@ -90,6 +90,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     const mbCats: Record<string, string[]> = {
                         all:        ['tourism', 'restaurant', 'park'],
                         restaurant: ['restaurant', 'cafe'],
+                        cafe:       ['coffee', 'cafe'],
                         attraction: ['park', 'museum'],
                         grocery:    ['grocery_store', 'supermarket'],
                         medical:    ['hospital', 'pharmacy'],
