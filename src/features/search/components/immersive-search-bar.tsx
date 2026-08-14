@@ -268,8 +268,8 @@ interface DestPanelProps {
     onPickSuggestion: (s: DestSuggestion) => void;
     trending: TrendingDest[];
     onPickTrending: (t: TrendingDest) => void;
-    recentTitles?: string[];
-    onPickRecent?: (title: string) => void;
+    recentDestinations?: Array<{ title: string; lat?: number; lng?: number }>;
+    onPickRecent?: (title: string, lat?: number, lng?: number) => void;
     placeholder?: string;
     trendingLabel?: string;
 }
@@ -277,12 +277,12 @@ interface DestPanelProps {
 function DestPanel({
     query, onQueryChange, suggestions, sugLoading,
     onPickSuggestion, trending, onPickTrending,
-    recentTitles = [], onPickRecent,
+    recentDestinations = [], onPickRecent,
     placeholder = 'Search cities, countries, anywhere…',
     trendingLabel = 'Trending right now',
 }: DestPanelProps) {
     const showSuggestions = query.trim().length >= 2 && suggestions.length > 0;
-    const showRecent = !query.trim() && recentTitles.length > 0 && onPickRecent;
+    const showRecent = !query.trim() && recentDestinations.length > 0 && onPickRecent;
     const showTrending = trending.length > 0;
     return (
         <>
@@ -327,11 +327,11 @@ function DestPanel({
                         Pick up where you left off
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '20px' }}>
-                        {recentTitles.slice(0, 3).map((title, i) => (
-                            <div key={i} className="imm-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', cursor: 'pointer' }} onClick={() => onPickRecent!(title)}>
+                        {recentDestinations.slice(0, 3).map((dest, i) => (
+                            <div key={i} className="imm-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', cursor: 'pointer' }} onClick={() => onPickRecent!(dest.title, dest.lat, dest.lng)}>
                                 <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><ClockMiniIcon /></span>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+                                    <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dest.title}</div>
                                 </div>
                             </div>
                         ))}
@@ -519,9 +519,9 @@ export function ImmersiveSearchBar() {
         setPanelOpen('dates');
     }, []);
 
-    const pickDestRecent = useCallback((title: string) => {
+    const pickDestRecent = useCallback((title: string, lat?: number, lng?: number) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: title });
+        setPickedDest({ name: title, lat, lng });
         setDestQuery('');
         setPanelOpen('dates');
     }, []);
@@ -592,19 +592,21 @@ export function ImmersiveSearchBar() {
                 setDestination({ title: pickedDest.name, subtitle: '', type: 'city', countryCode: '', id: pickedDest.id });
                 if (checkIn) setDates({ checkIn, checkOut: checkOut ?? undefined });
                 setTravelers({ adults, children });
-                addRecentSearch({ title: pickedDest.name, subtitle: '', type: 'city', countryCode: '', id: pickedDest.id });
+                addRecentSearch({ title: pickedDest.name, subtitle: '', type: 'city', countryCode: '', id: pickedDest.id, lat: pickedDest.lat, lng: pickedDest.lng });
                 setSearchMode('hotels');
 
                 const params = new URLSearchParams({
                     destination: pickedDest.name,
                     code: pickedDest.code ?? '',
                     type: 'city',
-                    lat: pickedDest.lat != null ? String(pickedDest.lat) : '',
-                    lng: pickedDest.lng != null ? String(pickedDest.lng) : '',
                     checkIn:  checkIn  ? checkIn.toISOString().slice(0, 10)  : '',
                     checkOut: checkOut ? checkOut.toISOString().slice(0, 10) : '',
                     adults: String(adults), children: String(children), rooms: '1',
                 });
+                if (pickedDest.lat != null && pickedDest.lng != null) {
+                    params.set('lat', String(pickedDest.lat));
+                    params.set('lng', String(pickedDest.lng));
+                }
                 clearTimeout(ctaT2.current);
                 ctaT2.current = setTimeout(() => router.push(`/search?${params}`), 800);
             } else {
@@ -791,7 +793,7 @@ export function ImmersiveSearchBar() {
                                             onPickSuggestion={pickDestSuggestion}
                                             trending={filteredTrending}
                                             onPickTrending={pickDestTrending}
-                                            recentTitles={recentSearches.map(r => r.title)}
+                                            recentDestinations={recentSearches}
                                             onPickRecent={pickDestRecent}
                                         />
                                     </NotePanel>

@@ -137,8 +137,8 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
                     </div>
 
                     {/* Star rating */}
-                    {hotel.starRating && hotel.starRating > 0 && (
-                        <StarRating stars={hotel.starRating} />
+                    {(hotel.starRating ?? 0) > 0 && (
+                        <StarRating stars={hotel.starRating!} />
                     )}
 
                     {/* Location */}
@@ -168,9 +168,9 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
                             <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                                 {getRatingLabel(hotel.reviewScore)}
                             </span>
-                            {hotel.reviewCount && (
+                            {(hotel.reviewCount ?? 0) > 0 && (
                                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                    ({hotel.reviewCount.toLocaleString()})
+                                    ({hotel.reviewCount!.toLocaleString()})
                                 </span>
                             )}
                         </div>

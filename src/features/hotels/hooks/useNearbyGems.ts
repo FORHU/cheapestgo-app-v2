@@ -141,7 +141,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     const qs = new URLSearchParams({ name, lat: String(lat), lng: String(lng) });
                     if (placeId)  qs.set('placeId', placeId);
                     if (cat)      qs.set('category', cat);
-                    if (photoRef) qs.set('photoRef', photoRef);
+                    if (photoRef) qs.set('photo_reference', photoRef);
                     const imageUrl = `${apiBase}/photos/poi?${qs.toString()}`;
 
                     return {
