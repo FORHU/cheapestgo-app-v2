@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, Star, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react';
 import { POI_FILTERS, type PoiCategory } from '@/shared/config/map-discovery';
 import { useNearbyGems, categoryToBg } from '@/features/hotels/hooks/useNearbyGems';
 
@@ -34,9 +34,6 @@ export function PoiDiscovery({ coordinates }: PoiDiscoveryProps) {
 
     return (
         <section className="py-4 lg:py-6">
-            <h2 className="text-[14px] lg:text-xl font-bold text-slate-900 dark:text-white mb-3 lg:mb-4">
-                Nearby places
-            </h2>
 
             {/* Controls */}
             <div className="flex items-center gap-2 flex-wrap mb-3">

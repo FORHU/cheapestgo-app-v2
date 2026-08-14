@@ -58,11 +58,11 @@ function toMappable(h: any): MappableProperty | null {
         price: typeof h.price === 'number' ? h.price : parseFloat(h.price ?? '0'),
         currency: h.currency ?? 'USD',
         coordinates: { lat: Number(lat), lng: Number(lng) },
-        images: h.images ?? (h.thumbnailUrl ? [h.thumbnailUrl] : []),
-        image: h.images?.[0] ?? h.thumbnailUrl ?? h.image,
-        rating: h.reviewScore ?? h.rating,
-        reviewScore: h.reviewScore,
-        reviewCount: h.reviewCount,
+        images: h.images?.length ? h.images : h.thumbnailUrl ? [h.thumbnailUrl] : [],
+        image: h.images?.[0] ?? h.thumbnailUrl ?? (h.image || undefined),
+        rating: h.reviewScore ?? h.reviewRating ?? h.rating,
+        reviewScore: h.reviewScore ?? h.reviewRating,
+        reviewCount: h.reviewCount ?? h.reviews,
         refundableTag: h.refundableTag,
         starRating: h.starRating,
         location: h.location,
@@ -572,6 +572,7 @@ function HotelSearchContent() {
     const [mapCenter, setMapCenter]             = useState<{ lat: number; lng: number } | undefined>(
         lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined
     );
+    const [geocodedCoords, setGeocodedCoords]   = useState<{ lat: number; lng: number } | null>(null);
 
     const districtBbox = useMemo<[number, number, number, number] | undefined>(() => {
         if (!bboxParam) return undefined;
@@ -601,6 +602,18 @@ function HotelSearchContent() {
         setHotels([]);
         setSelectedId(null);
         setMapCenter(lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined);
+
+        const searchLat = lat ? Number(lat) : null;
+        const searchLng = lng ? Number(lng) : null;
+        // Drop hotels that are clearly outside the searched area (> 150 km away).
+        // This prevents worldwide TGX portfolio results from appearing on a city search
+        // and keeps the map correctly centred on the destination.
+        const isNearby = (h: MappableProperty) => {
+            if (!searchLat || !searchLng) return true;
+            const dlat = h.coordinates.lat - searchLat;
+            const dlng = h.coordinates.lng - searchLng;
+            return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
+        };
 
         const run = async () => {
             const body: Record<string, any> = {
@@ -640,7 +653,7 @@ function HotelSearchContent() {
                         const list: any[] = Array.isArray(chunk.data) ? chunk.data : Array.isArray(chunk.hotels) ? chunk.hotels : [];
                         if ((chunk.type === 'instant' || chunk.type === 'hotels') && list.length > 0) {
                             accumulated += list.length;
-                            const mapped = list.map(toMappable).filter(Boolean) as MappableProperty[];
+                            const mapped = list.map(toMappable).filter((h): h is MappableProperty => !!h && isNearby(h));
                             if (!cancelled) { setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); }); setStatus('streaming'); }
                         } else if (chunk.type === 'prices' && Array.isArray(chunk.data)) {
                             const pm = new Map<string, any>(chunk.data.map((p: any) => [p.hotelId, p]));
@@ -662,14 +675,60 @@ function HotelSearchContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchKey]);
 
-    // Auto-center on first hotel batch when no lat/lng were in the URL
+    // Resolve destination → coordinates when URL has no lat/lng.
+    // Uses /hotels/suggest which hits Mapbox and is proven to return city coords.
+    useEffect(() => {
+        setGeocodedCoords(null);
+        if (lat && lng) return;
+        if (!destination) return;
+        const apiBase = env.NEXT_PUBLIC_API_URL;
+        if (!apiBase) return;
+        let cancelled = false;
+        fetch(`${apiBase}/hotels/suggest?q=${encodeURIComponent(destination)}`)
+            .then(r => r.json())
+            .then((data: any) => {
+                if (cancelled) return;
+                const city = (data?.destinations ?? []).find(
+                    (d: any) => d.type === 'city' && typeof d.lat === 'number' && typeof d.lng === 'number'
+                );
+                if (city) setGeocodedCoords({ lat: city.lat, lng: city.lng });
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [destination, lat, lng]);
+
+    // Auto-center on geocoded coords or first hotel when no lat/lng were in the URL
     useEffect(() => {
         if (mapCenter) return;
+        if (geocodedCoords) { setMapCenter(geocodedCoords); return; }
         const first = hotels.find(h => h.coordinates);
         if (first?.coordinates) setMapCenter(first.coordinates);
-    }, [hotels, mapCenter]);
+    }, [hotels, mapCenter, geocodedCoords]);
 
-    const sorted  = useMemo(() => sortHotels(hotels, sortBy), [hotels, sortBy]);
+    const effectiveLat = lat ? Number(lat) : geocodedCoords?.lat ?? null;
+    const effectiveLng = lng ? Number(lng) : geocodedCoords?.lng ?? null;
+
+    const sorted = useMemo(() => {
+        let base = hotels;
+        if (effectiveLat && effectiveLng) {
+            base = hotels.filter(h => {
+                const dlat = h.coordinates.lat - effectiveLat;
+                const dlng = h.coordinates.lng - effectiveLng;
+                return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
+            });
+        }
+        return sortHotels(base, sortBy);
+    }, [hotels, sortBy, effectiveLat, effectiveLng]);
+
+    // Pre-convert prices to the user's preferred currency for the list view
+    // so HotelCard renders the same currency as the map rail cards.
+    const listHotels = useMemo(() =>
+        sorted.map(h => ({
+            ...h,
+            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency)),
+            currency,
+        })),
+    [sorted, currency]);
     const railSorted = useMemo(() => {
         if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return sorted;
         const [minLng, minLat, maxLng, maxLat] = districtBbox;
@@ -800,7 +859,7 @@ function HotelSearchContent() {
                 </div>
                 <div className="max-w-350 mx-auto px-4 sm:px-6 py-6 w-full">
                     <HotelResults
-                        hotels={sorted as unknown as HotelResult[]}
+                        hotels={listHotels as unknown as HotelResult[]}
                         loading={isLoading}
                         error={status === 'error' ? 'Search failed. Please try again.' : null}
                         destination={destination}
