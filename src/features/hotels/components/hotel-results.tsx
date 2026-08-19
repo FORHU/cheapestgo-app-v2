@@ -2,17 +2,37 @@
 
 import React, { useMemo, useState } from 'react';
 import { HotelCard, HotelCardSkeleton, type HotelResult } from './hotel-card';
-import { HotelFilters, SortPills, type HotelFiltersState, type SortOption } from './hotel-filters';
+import { HotelFilters, type HotelFiltersState } from './hotel-filters';
 import { SlidersHorizontal, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/shared/components/ui/button';
-import { cn } from '@/shared/lib/cn';
 
 const PAGE_SIZE = 20;
 
+/** The panel's width, and the width of the column once it is only the handle. */
+const PANEL_W  = 280;
+const HANDLE_W = 42;
+/**
+ * The slide the column and the results share.
+ *
+ * One transition for both because they are one movement: the results take their
+ * width from the column, so animating the column is what carries them across
+ * instead of letting them jump.
+ */
+const FILTER_SLIDE = { type: 'spring' as const, damping: 30, stiffness: 260, mass: 0.7 };
+/** The panel's own fade, short enough to be gone before the column has finished
+ *  closing under it. */
+const PANEL_FADE = { duration: 0.18 };
+
+/**
+ * `±Infinity` means "not set": the price bounds are only known once results have
+ * streamed in, and a concrete 0 would read as a deliberate filter the moment the
+ * cheapest stay costs more than nothing.
+ */
 const DEFAULT_FILTERS: HotelFiltersState = {
     sortBy: 'recommended',
     starRatings: [],
-    minPrice: 0,
+    minPrice: -Infinity,
     maxPrice: Infinity,
 };
 
@@ -22,79 +42,116 @@ interface HotelResultsProps {
     error: string | null;
     destination: string;
     searchQs: string;
+    /**
+     * The filters, driven from outside.
+     *
+     * Passing `onFiltersChange` hands them over: the caller owns the values and
+     * draws its own panel, so the mobile drawer and the trigger that opens it
+     * both go — the search page hangs a dropdown off its toolbar instead, the
+     * way the map view does. The desktop sidebar stays either way, reading
+     * whichever state is in charge.
+     *
+     * Left off, the filters are this component's own and the drawer comes back
+     * with them, which is how the destinations page still gets both.
+     */
+    filters?: HotelFiltersState;
+    onFiltersChange?: (next: Partial<HotelFiltersState>) => void;
+    onFiltersReset?: () => void;
 }
 
-export function HotelResults({ hotels, loading, error, destination, searchQs }: HotelResultsProps) {
-    const [filters, setFilters] = useState<HotelFiltersState>(DEFAULT_FILTERS);
+export function HotelResults({
+    hotels, loading, error, destination, searchQs,
+    filters: controlledFilters, onFiltersChange, onFiltersReset,
+}: HotelResultsProps) {
+    const [ownFilters, setOwnFilters] = useState<HotelFiltersState>(DEFAULT_FILTERS);
     const [page, setPage] = useState(1);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+
+    const controlled = onFiltersChange !== undefined;
+    const filters = controlled ? controlledFilters ?? DEFAULT_FILTERS : ownFilters;
 
     const updateFilters = (next: Partial<HotelFiltersState>) => {
-        setFilters((f) => ({ ...f, ...next }));
+        if (onFiltersChange) onFiltersChange(next);
+        else setOwnFilters((f) => ({ ...f, ...next }));
         setPage(1);
     };
 
     const resetFilters = () => {
-        setFilters(DEFAULT_FILTERS);
+        if (onFiltersReset) onFiltersReset();
+        else setOwnFilters(DEFAULT_FILTERS);
         setPage(1);
     };
 
     // Price range derived from results
     const priceRange = useMemo(() => {
-        if (hotels.length === 0) return { min: 0, max: 10000 };
         const prices = hotels.map((h) => h.price).filter((p) => p > 0);
-        return {
-            min: Math.floor(Math.min(...prices)),
-            max: Math.ceil(Math.max(...prices)),
-        };
+        if (prices.length === 0) return { min: 0, max: 1000 };
+        const min = Math.floor(Math.min(...prices));
+        const max = Math.ceil(Math.max(...prices));
+        // A single price point would give the slider a zero-width track.
+        return { min, max: max > min ? max : min + 1 };
     }, [hotels]);
 
-    // Clamp maxPrice to priceRange when hotels first load
-    const effectiveMaxPrice =
-        filters.maxPrice === Infinity ? priceRange.max : filters.maxPrice;
+    // Unset bounds fall back to the range; set ones are clamped to it, since the
+    // range keeps widening while results stream.
+    const minPrice = Number.isFinite(filters.minPrice)
+        ? Math.max(filters.minPrice, priceRange.min)
+        : priceRange.min;
+    const maxPrice = Number.isFinite(filters.maxPrice)
+        ? Math.min(filters.maxPrice, priceRange.max)
+        : priceRange.max;
+
+    const priceFiltered = minPrice > priceRange.min || maxPrice < priceRange.max;
+    const currency = hotels[0]?.currency ?? 'USD';
 
     // Apply filters + sort
     const filtered = useMemo(() => {
         let list = [...hotels];
 
-        // Star rating
         if (filters.starRatings.length > 0) {
-            list = list.filter((h) =>
-                h.starRating !== undefined && filters.starRatings.includes(Math.round(h.starRating))
+            list = list.filter(
+                (h) => h.starRating !== undefined && filters.starRatings.includes(Math.round(h.starRating)),
             );
         }
 
-        // Price
-        list = list.filter((h) => h.price >= filters.minPrice && h.price <= effectiveMaxPrice);
+        list = list.filter((h) => h.price >= minPrice && h.price <= maxPrice);
 
-        // Sort
-        if (filters.sortBy === 'price-low') list.sort((a, b) => a.price - b.price);
-        else if (filters.sortBy === 'price-high') list.sort((a, b) => b.price - a.price);
-        else if (filters.sortBy === 'rating') list.sort((a, b) => (b.reviewScore ?? 0) - (a.reviewScore ?? 0));
+        // "Cheapest First" and "Low to Highest" are the same ordering under two
+        // of the design's labels.
+        if (filters.sortBy === 'cheapest' || filters.sortBy === 'price-low') {
+            list.sort((a, b) => a.price - b.price);
+        } else if (filters.sortBy === 'price-high') {
+            list.sort((a, b) => b.price - a.price);
+        } else if (filters.sortBy === 'top-rated') {
+            list.sort((a, b) => (b.reviewScore ?? 0) - (a.reviewScore ?? 0));
+        }
 
         return list;
-    }, [hotels, filters, effectiveMaxPrice]);
+    }, [hotels, filters.starRatings, filters.sortBy, minPrice, maxPrice]);
 
     const visible = filtered.slice(0, page * PAGE_SIZE);
     const hasMore = visible.length < filtered.length;
 
+    const panelProps = {
+        filters: { ...filters, minPrice, maxPrice },
+        onChange: updateFilters,
+        onReset: resetFilters,
+        priceRange,
+        currency,
+    };
+
     // ── Loading skeleton ──────────────────────────────────────────────────────
     if (loading && hotels.length === 0) {
         return (
-            <div className="flex flex-col lg:flex-row gap-6">
-                {/* Sidebar skeleton */}
-                <div className="hidden lg:block w-56 shrink-0 space-y-4 animate-pulse">
-                    <div className="h-5 w-20 rounded bg-slate-200 dark:bg-white/10" />
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-8 rounded-lg bg-slate-200 dark:bg-white/10" />
-                    ))}
+            <div className="flex flex-col gap-6 lg:flex-row">
+                <div className="hidden w-[280px] shrink-0 animate-pulse lg:block">
+                    <div className="h-[520px] rounded-[20px] bg-slate-200 dark:bg-[#1A1A1A]" />
                 </div>
                 <div className="flex-1 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                            <div className="h-6 w-48 rounded bg-slate-200 dark:bg-white/10" />
-                            <div className="h-4 w-32 rounded bg-slate-200 dark:bg-white/10" />
-                        </div>
+                    <div className="space-y-2">
+                        <div className="h-6 w-48 rounded bg-slate-200 dark:bg-white/10" />
+                        <div className="h-4 w-32 rounded bg-slate-200 dark:bg-white/10" />
                     </div>
                     {Array.from({ length: 6 }).map((_, i) => (
                         <HotelCardSkeleton key={i} />
@@ -107,81 +164,143 @@ export function HotelResults({ hotels, loading, error, destination, searchQs }: 
     // ── Error ─────────────────────────────────────────────────────────────────
     if (error && hotels.length === 0) {
         return (
-            <div className="text-center py-20 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4">
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Search failed.</p>
-                <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">{error}</p>
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-20 text-center dark:border-white/10 dark:bg-[#1A1A1A]">
+                <p className="text-sm font-medium text-slate-500 dark:text-white/70">Search failed.</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-white/40">{error}</p>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6">
-            {/* ── Desktop Sidebar Filters ──────────────────────────────────────── */}
-            <div className="hidden lg:block w-56 shrink-0">
-                <div className="sticky top-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-white/10 p-4">
-                    <HotelFilters
-                        filters={{ ...filters, maxPrice: effectiveMaxPrice }}
-                        onChange={updateFilters}
-                        onReset={resetFilters}
-                        priceRange={priceRange}
-                    />
-                </div>
-            </div>
+        <div className="flex flex-col gap-6 lg:flex-row">
+            {/* ── Desktop sidebar ──────────────────────────────────────────────── */}
+            {/* One column that animates between the two widths, rather than two
+                columns that swap. The results are `flex-1` off this, so the
+                column's width is what slides them across.
 
-            {/* ── Mobile Filter Drawer ─────────────────────────────────────────── */}
-            {mobileFiltersOpen && (
-                <div className="fixed inset-0 z-50 flex lg:hidden">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileFiltersOpen(false)} />
-                    <div className="relative ml-auto w-72 max-w-full h-full bg-white dark:bg-slate-950 p-5 overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-bold text-slate-900 dark:text-white">Filters</h2>
-                            <button onClick={() => setMobileFiltersOpen(false)}>
-                                <X size={18} className="text-slate-500" />
-                            </button>
-                        </div>
-                        <HotelFilters
-                            filters={{ ...filters, maxPrice: effectiveMaxPrice }}
-                            onChange={(next) => { updateFilters(next); }}
-                            onReset={resetFilters}
-                            priceRange={priceRange}
-                        />
-                        <Button fullWidth className="mt-6" onClick={() => setMobileFiltersOpen(false)}>
-                            Show {filtered.length} results
-                        </Button>
-                    </div>
+                Deliberately not clipped to that width: the panel's collapse
+                handle straddles its right edge, and `overflow: hidden` here
+                would cut the handle in half. The panel instead fades as it
+                slides, and since the results come after it in the DOM they paint
+                over whatever briefly overhangs — so it reads as the panel
+                sliding out behind them. */}
+            <motion.div
+                className="relative hidden shrink-0 lg:block"
+                initial={false}
+                animate={{ width: filtersCollapsed ? HANDLE_W : PANEL_W }}
+                transition={FILTER_SLIDE}
+            >
+                <div className="sticky top-24">
+                    {/* `mode="wait"` so the handle arrives into an empty column
+                        instead of crossing the panel on its way out. */}
+                    <AnimatePresence initial={false} mode="wait">
+                        {filtersCollapsed ? (
+                            <motion.button
+                                key="show-filters"
+                                type="button"
+                                onClick={() => setFiltersCollapsed(false)}
+                                aria-label="Show filters"
+                                title="Show filters"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={PANEL_FADE}
+                                className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-slate-300/90 text-slate-800 transition-opacity hover:opacity-85 dark:bg-white/25 dark:text-white"
+                            >
+                                <SlidersHorizontal size={19} strokeWidth={1.75} />
+                            </motion.button>
+                        ) : (
+                            <motion.div
+                                key="filters"
+                                initial={{ opacity: 0, x: -14 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -14 }}
+                                transition={PANEL_FADE}
+                                // Held at its own width: the column shrinks out
+                                // from under it, and a percentage width would
+                                // shrink the panel's contents with it.
+                                style={{ width: PANEL_W }}
+                            >
+                                <HotelFilters {...panelProps} onCollapse={() => setFiltersCollapsed(true)} />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-            )}
+            </motion.div>
+
+            {/* ── Mobile filter drawer ─────────────────────────────────────────── */}
+            {/* The same control at the other breakpoint, so it hides the same
+                way: the scrim fades and the sheet slides back off the right edge
+                it came in from. The scrim carries the fade on the outer element
+                because that is AnimatePresence's own child — the sheet's slide
+                is a nested motion component and rides the same exit.
+
+                Gone once a caller controls the filters: it draws the small-screen
+                surface itself, and a drawer nothing can open is dead weight. */}
+            <AnimatePresence>
+                {!controlled && mobileFiltersOpen && (
+                    <motion.div
+                        key="filter-drawer"
+                        className="fixed inset-0 z-50 flex lg:hidden"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            onClick={() => setMobileFiltersOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={FILTER_SLIDE}
+                            className="no-scrollbar relative ml-auto h-full w-[320px] max-w-full overflow-y-auto bg-slate-50 p-4 dark:bg-[#141414]"
+                        >
+                            <div className="mb-3 flex items-center justify-end">
+                                <button onClick={() => setMobileFiltersOpen(false)} aria-label="Close filters">
+                                    <X size={18} className="text-slate-500 dark:text-white/60" />
+                                </button>
+                            </div>
+                            <HotelFilters {...panelProps} />
+                            <Button fullWidth className="mt-6" onClick={() => setMobileFiltersOpen(false)}>
+                                Show {filtered.length} results
+                            </Button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ── Results ──────────────────────────────────────────────────────── */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
                     <div>
-                        <h1 className="text-lg md:text-2xl font-bold text-slate-900 dark:text-white">
+                        <h1 className="text-lg font-bold text-slate-900 md:text-2xl dark:text-white">
                             {destination ? `Stays in ${destination}` : 'All properties'}
                         </h1>
-                        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p className="mt-0.5 text-xs text-slate-500 md:text-sm dark:text-white/55">
                             {loading ? 'Searching…' : `${filtered.length} properties found`}
                         </p>
                     </div>
-                    {/* Mobile filters button */}
-                    <button
-                        onClick={() => setMobileFiltersOpen(true)}
-                        className="lg:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-600 dark:text-slate-300 hover:border-blue-400 transition-colors self-start"
-                    >
-                        <SlidersHorizontal size={13} />
-                        Filters
-                    </button>
+                    {/* The drawer's own trigger, for as long as the drawer is
+                        its own. A controlling caller draws the button itself —
+                        the search page puts it in the toolbar — and two of them
+                        on the same screen would be one too many. */}
+                    {!controlled && (
+                        <button
+                            onClick={() => setMobileFiltersOpen(true)}
+                            className="flex items-center gap-2 self-start rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-slate-400 lg:hidden dark:border-white/15 dark:text-white/80 dark:hover:border-white/35"
+                        >
+                            <SlidersHorizontal size={13} />
+                            Filters
+                        </button>
+                    )}
                 </div>
 
-                {/* Sort pills */}
-                <div className="mb-4">
-                    <SortPills value={filters.sortBy} onChange={(v: SortOption) => updateFilters({ sortBy: v })} />
-                </div>
-
-                {/* Loading shimmer on top of existing results */}
                 {loading && hotels.length > 0 && (
-                    <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    <div className="mb-4 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600 dark:bg-white/8 dark:text-white/70">
                         Loading prices…
                     </div>
                 )}
@@ -194,17 +313,17 @@ export function HotelResults({ hotels, loading, error, destination, searchQs }: 
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-16 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4">
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-16 text-center dark:border-white/10 dark:bg-[#1A1A1A]">
                         <h3 className="font-medium text-slate-900 dark:text-white">
                             {destination ? `No hotels found in ${destination}` : 'No properties found'}
                         </h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
+                        <p className="mt-1 text-sm text-slate-400 dark:text-white/50">
                             Try adjusting your filters, dates, or searching a nearby city.
                         </p>
-                        {(filters.starRatings.length > 0 || filters.maxPrice < priceRange.max) && (
+                        {(filters.starRatings.length > 0 || priceFiltered) && (
                             <button
                                 onClick={resetFilters}
-                                className="mt-3 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                className="mt-3 text-xs text-slate-600 underline-offset-2 hover:underline dark:text-white/70"
                             >
                                 Clear filters
                             </button>
@@ -214,16 +333,16 @@ export function HotelResults({ hotels, loading, error, destination, searchQs }: 
 
                 {/* Load more / done */}
                 {filtered.length > 0 && (
-                    <div className="mt-6 flex justify-center">
+                    <div className="mt-8 flex justify-center">
                         {hasMore ? (
                             <button
                                 onClick={() => setPage((p) => p + 1)}
-                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-full transition-all active:scale-95 shadow-md shadow-blue-600/20"
+                                className="rounded-full bg-[#1A1A1A] px-6 py-2.5 text-xs font-bold text-white transition-transform active:scale-95 dark:bg-white dark:text-[#111111]"
                             >
                                 Show more ({filtered.length - visible.length} remaining)
                             </button>
                         ) : (
-                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                            <span className="text-xs text-slate-400 dark:text-white/40">
                                 All {filtered.length} results shown
                             </span>
                         )}

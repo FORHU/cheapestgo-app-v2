@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { User, Plane } from 'lucide-react';
-import { Input } from '@/shared/components/ui/input';
 import { cn } from '@/shared/lib/cn';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

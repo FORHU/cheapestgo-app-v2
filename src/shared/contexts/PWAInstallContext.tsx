@@ -52,13 +52,13 @@ export function PWAInstallProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as any).standalone === true;
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
     if (standalone) { setIsInstalled(true); return; }
 
     const dismissedUntil = localStorage.getItem(DISMISSED_KEY);
     if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) return;
 
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
     setIsIOS(ios);
 
     const t = setTimeout(() => setShowBanner(true), BANNER_DELAY_MS);

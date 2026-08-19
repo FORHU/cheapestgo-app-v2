@@ -28,8 +28,8 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Acceptance of Terms</h2>
                             <p className="text-sm leading-relaxed">
-                                By accessing or using the CheapestGo website and services (the "Platform"), you agree to
-                                be bound by these Terms of Service ("Terms") and all applicable laws and regulations. If
+                                By accessing or using the CheapestGo website and services (the &quot;Platform&quot;), you agree to
+                                be bound by these Terms of Service (&quot;Terms&quot;) and all applicable laws and regulations. If
                                 you do not agree to these Terms, you may not use the Platform. CheapestGo is operated by
                                 JTP Partners, 30 Wall Street, 8th Floor, New York, NY 10005, United States. These Terms
                                 constitute a legally binding agreement between you and CheapestGo.
@@ -105,7 +105,7 @@ export default function TermsPage() {
                                 </li>
                                 <li>
                                     <strong>Payment processing:</strong> All payments are processed securely by Stripe,
-                                    Inc. By making a payment, you also agree to Stripe's terms of service. CheapestGo
+                                    Inc. By making a payment, you also agree to Stripe&apos;s terms of service. CheapestGo
                                     does not store your card details.
                                 </li>
                                 <li>
@@ -161,7 +161,7 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Disclaimers</h2>
                             <p className="text-sm mb-2">
-                                CheapestGo provides its services on an "as is" and "as available" basis. We do not
+                                CheapestGo provides its services on an &quot;as is&quot; and &quot;as available&quot; basis. We do not
                                 guarantee that:
                             </p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -218,7 +218,7 @@ export default function TermsPage() {
                             <p className="text-sm leading-relaxed">
                                 CheapestGo reserves the right to modify these Terms at any time. We will notify registered
                                 users of material changes via email and by posting an updated version on the Platform with
-                                a revised "Last Updated" date. Your continued use of the Platform after changes take effect
+                                a revised &quot;Last Updated&quot; date. Your continued use of the Platform after changes take effect
                                 constitutes your acceptance of the revised Terms.
                             </p>
                         </section>

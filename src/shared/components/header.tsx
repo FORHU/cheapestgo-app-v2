@@ -6,8 +6,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Moon, Sun, Download } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
-import { useUserCurrency, useSearchActions } from '@/shared/stores/search.store';
-import { usePWAInstall } from '@/shared/contexts/PWAInstallContext';
+import { useUserCurrency, useSearchActions } from '@/stores/searchStore';
+import { useAuthStore } from '@/shared/auth/store';
+import { usePWAInstall } from '@/contexts/PWAInstallContext';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { cn } from '@/shared/lib/cn';
@@ -19,8 +20,9 @@ const HeaderContent = () => {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
 
-  const userCurrency = useUserCurrency();
+  const _userCurrency = useUserCurrency();
   const { setUserCurrency, setUserCountry } = useSearchActions();
+  const { user: _user } = useAuthStore();
   const { triggerInstall } = usePWAInstall();
   const t = useTranslations('nav');
 
@@ -28,7 +30,7 @@ const HeaderContent = () => {
     setMounted(true);
   }, []);
 
-  const handleCurrencySelect = (currencyCode: string, countryCode: string) => {
+  const _handleCurrencySelect = (currencyCode: string, countryCode: string) => {
     setUserCurrency(currencyCode);
     setUserCountry(countryCode);
     if (pathname.includes('/property/') || pathname.includes('/flights')) {
@@ -44,7 +46,7 @@ const HeaderContent = () => {
   return (
     <>
       <header suppressHydrationWarning className={cn(
-        "sticky top-0 z-60 w-full border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors duration-800 landscape-compact-header",
+        "sticky top-0 z-60 w-full border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors landscape-compact-header",
       )}>
         <div suppressHydrationWarning className="max-w-[1400px] mx-auto px-4 sm:px-6 h-11 md:h-14 flex items-center justify-between landscape-compact-header">
           {/* Logo */}

@@ -297,7 +297,7 @@ export function AiChatClient() {
                     {empty ? (
                         <div className="flex flex-col items-center justify-center h-full gap-8 px-4 text-center">
                             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-                                What's on the agenda today?
+                                What&apos;s on the agenda today?
                             </h1>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">

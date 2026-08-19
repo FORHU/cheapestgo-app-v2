@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
-import type { MapRef } from 'react-map-gl/mapbox';
+import type { MapRef, MapMouseEvent, MapGeoJSONFeature } from 'react-map-gl/mapbox';
+import type { Map as MapboxMap, GeoJSONSource } from 'mapbox-gl';
 
 export interface PoiData {
     name: string;
@@ -14,8 +15,8 @@ interface UseMapInteractionsOptions {
     onHoverPoi: (poi: PoiData | null) => void;
 }
 
-const findPoiFeature = (features: any[]): any | undefined =>
-    features.find((f: any) => {
+const findPoiFeature = (features: MapGeoJSONFeature[]): MapGeoJSONFeature | undefined =>
+    features.find((f) => {
         const name = f.properties?.name || f.properties?.name_en || f.properties?.text;
         const layerId: string = f.layer?.id || '';
         const isPoiLayer =
@@ -27,12 +28,15 @@ const findPoiFeature = (features: any[]): any | undefined =>
         const isPoiSource =
             f.sourceLayer === 'poi' ||
             f.sourceLayer === 'transit' ||
-            f.source?.id === 'discovery-source';
+            // `source` is the source *id* string, not an object. This read
+            // `f.source?.id` while it was `any`, which was always undefined —
+            // so this arm never once matched. Fixed with the type.
+            f.source === 'discovery-source';
         return name && (isPoiLayer || isPoiSource);
     });
 
 const extractPoiCoords = (
-    feature: any,
+    feature: MapGeoJSONFeature,
     fallback: { lng: number; lat: number }
 ): { lng: number; lat: number } => {
     if (feature.geometry?.type === 'Point') {
@@ -41,7 +45,7 @@ const extractPoiCoords = (
     return fallback;
 };
 
-const buildPoiData = (feature: any, fallback: { lng: number; lat: number }): PoiData => {
+const buildPoiData = (feature: MapGeoJSONFeature, fallback: { lng: number; lat: number }): PoiData => {
     const name = feature.properties?.name || feature.properties?.name_en || feature.properties?.text;
     const category = feature.properties?.class || feature.properties?.category || feature.properties?.type || 'Point of Interest';
     const coordinates = extractPoiCoords(feature, fallback);
@@ -58,13 +62,13 @@ const INTERACTIVE_LAYERS = [
 const POI_QUERY_RADIUS = 4;
 
 export const useMapInteractions = ({
-    mapRef,
+    mapRef: _mapRef,
     onSelectId,
     onSelectPoi,
     onHoverPoi,
 }: UseMapInteractionsOptions) => {
 
-    const handleMapClick = useCallback((e: any) => {
+    const handleMapClick = useCallback((e: MapMouseEvent) => {
         const map = e.target;
         if (!map || !e.point) return;
 
@@ -75,29 +79,34 @@ export const useMapInteractions = ({
                 }),
             });
 
-            const propertyFeature = interactiveHits.find((f: any) =>
+            const propertyFeature = interactiveHits.find((f) =>
                 f.layer?.id === 'unclustered-point' ||
                 f.layer?.id === 'unclustered-point-text' ||
                 f.layer?.id === 'clusters'
             );
 
             if (propertyFeature) {
-                if (propertyFeature.layer.id === 'clusters') {
+                if (propertyFeature.layer?.id === 'clusters') {
                     onSelectPoi(null);
-                    const clusterId = propertyFeature.properties.cluster_id;
-                    const mapboxSource = map.getSource('properties') as any;
-                    mapboxSource.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
-                        if (err) return;
-                        map.easeTo({ center: propertyFeature.geometry.coordinates, zoom });
+                    const clusterId = propertyFeature.properties?.cluster_id;
+                    const mapboxSource = map.getSource('properties') as GeoJSONSource;
+                    mapboxSource.getClusterExpansionZoom(clusterId, (err, zoom) => {
+                        // `zoom` is optional in the callback's type as well as
+                        // `err` — a cluster that has fully expanded reports no
+                        // zoom rather than an error, and `easeTo` needs a number.
+                        if (err || zoom == null) return;
+                        const geom = propertyFeature.geometry;
+                        if (geom.type !== 'Point') return;
+                        map.easeTo({ center: [geom.coordinates[0], geom.coordinates[1]], zoom });
                     });
                 } else {
-                    onSelectId(propertyFeature.properties.id);
+                    onSelectId(propertyFeature.properties?.id ?? null);
                     onSelectPoi(null);
                 }
                 return;
             }
 
-            const discoveryHit = interactiveHits.find((f: any) => f.layer?.id === 'discovery-poi-layer');
+            const discoveryHit = interactiveHits.find((f) => f.layer?.id === 'discovery-poi-layer');
             if (discoveryHit) {
                 onSelectPoi(buildPoiData(discoveryHit, { lng: e.lngLat.lng, lat: e.lngLat.lat }));
                 return;
@@ -124,7 +133,7 @@ export const useMapInteractions = ({
     const lastMoveTime = useRef<number>(0);
     const lastPoiName = useRef<string | null>(null);
 
-    const onMouseMove = useCallback((e: any) => {
+    const onMouseMove = useCallback((e: MapMouseEvent) => {
         const now = Date.now();
         if (now - lastMoveTime.current < 150) return;
         lastMoveTime.current = now;
@@ -151,7 +160,7 @@ export const useMapInteractions = ({
                 ? map.queryRenderedFeatures(e.point, { layers: activeLayers })
                 : [];
 
-            const isProperty = interactiveHits.some((f: any) =>
+            const isProperty = interactiveHits.some((f) =>
                 f.layer?.id === 'unclustered-point' ||
                 f.layer?.id === 'unclustered-point-text' ||
                 f.layer?.id === 'clusters'
@@ -166,7 +175,7 @@ export const useMapInteractions = ({
                 return;
             }
 
-            const discoveryHit = interactiveHits.find((f: any) => f.layer?.id === 'discovery-poi-layer');
+            const discoveryHit = interactiveHits.find((f) => f.layer?.id === 'discovery-poi-layer');
             if (discoveryHit) {
                 container.classList.add('has-pointer-cursor');
                 const nextName = discoveryHit.properties?.name || null;
@@ -187,7 +196,7 @@ export const useMapInteractions = ({
         }
     }, [onHoverPoi]);
 
-    const attachMouseLeave = useCallback((map: any) => {
+    const attachMouseLeave = useCallback((map: MapboxMap) => {
         const container = map.getCanvasContainer();
         const handleLeave = () => container.classList.remove('has-pointer-cursor');
         container.addEventListener('mouseleave', handleLeave);

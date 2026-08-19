@@ -109,10 +109,21 @@ const Map = React.memo(
             const [isStyleLoaded, setIsStyleLoaded] = React.useState(false);
             const [mapReady, setMapReady] = React.useState(false);
             const [firstSymbolId, setFirstSymbolId] = React.useState<string>();
-            const cursorPatchedRef = React.useRef(false);
             // Track previous mapStyle so we only reset isStyleLoaded on real style *changes*,
             // not on the initial load where handleLoad already set it to true.
             const prevMapStyleRef = React.useRef<string | null>(null);
+
+            // Read at setup time rather than depended on: the style-setup effect
+            // below registers listeners and starts a poll, so re-running it every
+            // time a caller passes a fresh inline object or callback would be
+            // wasteful. Config changes after load are already handled by the
+            // dedicated `standardConfig` effect further down.
+            const onStyleReadyRef = React.useRef(onStyleReady);
+            const standardConfigRef = React.useRef(standardConfig);
+            React.useEffect(() => {
+                onStyleReadyRef.current = onStyleReady;
+                standardConfigRef.current = standardConfig;
+            });
 
             React.useEffect(() => {
                 const map = mapRef.current?.getMap();
@@ -135,7 +146,7 @@ const Map = React.memo(
                         const style = map.getStyle();
 
                         if (!isStandard && style?.layers) {
-                            style.layers.forEach((layer: any) => {
+                            style.layers.forEach((layer) => {
                                 if (layer.type === 'symbol' && layer.layout?.['text-field']) {
                                     map.setLayoutProperty(layer.id, 'text-field', [
                                         'coalesce', ['get', 'name_en'], ['get', 'name'],
@@ -149,11 +160,12 @@ const Map = React.memo(
                             if (firstSymbol) setFirstSymbolId(firstSymbol.id);
                         }
 
-                        if (isStandard && standardConfig) {
-                            Object.entries(standardConfig).forEach(([key, value]) => {
+                        const initialConfig = standardConfigRef.current;
+                        if (isStandard && initialConfig) {
+                            Object.entries(initialConfig).forEach(([key, value]) => {
                                 if (value !== undefined) {
                                     try {
-                                        const current = (map as any).getConfigProperty?.('basemap', key);
+                                        const current = (map as Partial<Pick<typeof map, 'getConfigProperty'>>).getConfigProperty?.('basemap', key);
                                         if (current !== value) map.setConfigProperty('basemap', key, value);
                                     } catch { /* Ignore errors during initial burst */ }
                                 }
@@ -180,7 +192,7 @@ const Map = React.memo(
 
                         setTimeout(() => {
                             setIsStyleLoaded(true);
-                            onStyleReady?.(map);
+                            onStyleReadyRef.current?.(map);
                         }, 0);
                     } catch (err) {
                         console.warn('Map setup failed, retrying...', err);
@@ -210,7 +222,7 @@ const Map = React.memo(
                         map.off('style.load', setup);
                     };
                 }
-            }, [mapStyle, mapReady, isStandard, enable3DTerrain, terrainExaggeration]);
+            }, [mapStyle, mapReady, isStandard, enable3DTerrain, terrainExaggeration, mapRef]);
 
             const handleLoad = React.useCallback(
                 (e: mapboxgl.MapboxEvent) => {
@@ -221,33 +233,16 @@ const Map = React.memo(
                 [onLoad]
             );
 
-            React.useEffect(() => {
-                if (!mapReady || cursorPatchedRef.current) return;
-                const map = mapRef.current?.getMap();
-                if (!map) return;
-
-                const container = map.getContainer();
-                cursorPatchedRef.current = true;
-
-                const restoreCursor = () => {
-                    const canvases = container.querySelectorAll<HTMLCanvasElement>('canvas');
-                    canvases.forEach(c => {
-                        if (c.style.cursor === '' || c.style.cursor === 'auto') {
-                            c.style.cursor = 'grab';
-                        }
-                    });
-                };
-
-                restoreCursor();
-                container.addEventListener('mousemove', restoreCursor);
-                container.addEventListener('mouseenter', restoreCursor);
-
-                return () => {
-                    container.removeEventListener('mousemove', restoreCursor);
-                    container.removeEventListener('mouseenter', restoreCursor);
-                    cursorPatchedRef.current = false;
-                };
-            }, [mapReady, mapRef]);
+            // The map's cursor is left entirely to Mapbox. It drives the value
+            // through classes on `.mapboxgl-canvas-container` — `mapboxgl-interactive`
+            // for grab, `:active` for grabbing, `mapboxgl-track-pointer` for pointer —
+            // and never writes `style.cursor` itself.
+            //
+            // A patch here used to stamp an inline `cursor: grab` onto the canvas on
+            // every mousemove. The canvas covers the container, so that inline value
+            // outranked every one of those class rules: the cursor could no longer
+            // become `grabbing` on drag or `pointer` over a pin, and each mousemove
+            // paid for a `querySelectorAll` across the whole marker subtree.
 
             const lastConfigRef = React.useRef<string>('');
             React.useEffect(() => {
@@ -267,7 +262,7 @@ const Map = React.memo(
                         if (value !== undefined) {
                             try {
                                 if (!map.isStyleLoaded()) return;
-                                const current = (map as any).getConfigProperty?.('basemap', key);
+                                const current = (map as Partial<Pick<typeof map, 'getConfigProperty'>>).getConfigProperty?.('basemap', key);
                                 if (current !== value) map.setConfigProperty('basemap', key, value);
                             } catch { /* Ignore */ }
                         }
@@ -284,7 +279,9 @@ const Map = React.memo(
             return (
                 <div
                     className={cn(
-                        'relative w-full h-full min-h-[200px] rounded-lg overflow:clip cursor-grab active:cursor-grabbing',
+                        // No cursor utilities here: Mapbox's own canvas-container
+                        // classes are the single source for the map cursor.
+                        'relative w-full h-full min-h-[200px] rounded-lg overflow:clip',
                         className
                     )}
                 >

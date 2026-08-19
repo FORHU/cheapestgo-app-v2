@@ -30,7 +30,7 @@ export default function RefundPage() {
                             <p className="text-sm leading-relaxed">
                                 CheapestGo acts as an intermediary between you and travel suppliers (hotels, airlines,
                                 and package providers). Cancellation and refund rights are primarily governed by the
-                                individual supplier's policies, which vary by property, rate type, and booking dates.
+                                individual supplier&apos;s policies, which vary by property, rate type, and booking dates.
                                 This policy explains how we facilitate cancellations and refunds on your behalf.
                             </p>
                         </section>
@@ -43,7 +43,7 @@ export default function RefundPage() {
                                     <p className="font-semibold text-green-800 dark:text-green-300 mb-1 text-sm">Free Cancellation</p>
                                     <p className="text-sm text-slate-600 dark:text-slate-300">
                                         You may cancel at no charge before the deadline specified at booking. The exact
-                                        deadline (e.g., "Free cancellation until 48 hours before check-in") is shown on
+                                        deadline (e.g., &quot;Free cancellation until 48 hours before check-in&quot;) is shown on
                                         the booking page and in your confirmation email.
                                     </p>
                                 </div>
@@ -58,7 +58,7 @@ export default function RefundPage() {
                                     <p className="font-semibold text-red-800 dark:text-red-300 mb-1 text-sm">Non-Refundable</p>
                                     <p className="text-sm text-slate-600 dark:text-slate-300">
                                         No refund is provided if you cancel. These rates are typically lower in price
-                                        and are clearly labeled "Non-refundable" before checkout.
+                                        and are clearly labeled &quot;Non-refundable&quot; before checkout.
                                     </p>
                                 </div>
                             </div>
@@ -100,7 +100,7 @@ export default function RefundPage() {
                                 </li>
                                 <li>
                                     <strong>Stripe processing fees:</strong> Payment processing fees charged by Stripe
-                                    are non-refundable by CheapestGo, in line with Stripe's standard policy.
+                                    are non-refundable by CheapestGo, in line with Stripe&apos;s standard policy.
                                 </li>
                                 <li>
                                     <strong>Currency:</strong> Refunds are issued in the same currency as the original

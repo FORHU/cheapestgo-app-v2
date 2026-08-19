@@ -6,7 +6,6 @@ import { Search, Plane, BedDouble, Sparkles, Calendar, Users, ChevronDown, MapPi
 import { motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { useSearchStore, useDates, useTravelers, useActiveDropdown } from '@/shared/stores/search.store';
-import { TicketStub, TICKET_SURFACE } from '@/shared/components/ui/ticket-stub';
 import { DestinationInput } from './destination-input';
 import { DatePicker } from './date-picker';
 import { TravelerPicker } from './traveler-picker';
@@ -109,7 +108,7 @@ export function SearchForm() {
         cn('text-sm font-medium truncate mt-0.5', hasValue ? 'text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-500');
     const divider = 'border-b sm:border-b-0 sm:border-r border-slate-100 dark:border-white/5';
 
-    const stubNote = searchMode === 'ai'
+    const _stubNote = searchMode === 'ai'
         ? 'AI trip planning — describe the trip you want'
         : 'Taxes and fees included';
 

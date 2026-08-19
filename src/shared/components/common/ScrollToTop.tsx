@@ -28,7 +28,9 @@ export const ScrollToTop = () => {
                     className={cn(
                         "fixed z-50 flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-full",
                         "bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-                        "right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] lg:bottom-8"
+                        // Clears the bottom nav: 80px of bar over the safe area,
+                        // plus air. Move this if the nav's height changes.
+                        "right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] lg:bottom-8"
                     )}
                     aria-label="Scroll to top"
                 >

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
-import { cn } from '@/shared/lib/cn';
 import type { Booking, BookingStatus } from '@/shared/types';
 
 // ─── Status badge mapping ─────────────────────────────────────────────────────

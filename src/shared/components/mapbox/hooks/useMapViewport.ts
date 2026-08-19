@@ -62,7 +62,7 @@ export const useMapViewport = ({
             [[lngs[lo], lats[lo]], [lngs[hi], lats[hi]]],
             { padding: 80, maxZoom: 13, duration: 800, pitch: 0, bearing: 0 }
         );
-    }, [isMapLoaded, properties.length, mapRef, center, selectedId, skipInitialFit]);
+    }, [isMapLoaded, properties, mapRef, center, selectedId, skipInitialFit]);
 
     // flyTo selected (only when disableFlyToSelected is false)
     useEffect(() => {

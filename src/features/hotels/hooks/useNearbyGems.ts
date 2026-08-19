@@ -6,6 +6,28 @@ import {
 } from 'lucide-react';
 import { env } from '@/shared/lib/env';
 import type { PoiCategory } from '@/shared/config/map-discovery';
+import { isAbortError } from '@/shared/lib/error';
+
+/**
+ * A POI from either upstream — the app's own nearby endpoint or the Mapbox
+ * fallback the hook falls back to when that returns too few. Everything is
+ * optional because the two disagree about which fields they send.
+ */
+interface PoiFeature {
+    type?: string;
+    geometry?: { coordinates?: [number, number] };
+    properties?: {
+        name?: string;
+        category?: string;
+        place_id?: string;
+        mapbox_id?: string;
+        photoReference?: string;
+        isStub?: boolean;
+        source?: string;
+        rating?: number | null;
+        [key: string]: unknown;
+    };
+}
 
 export interface NearbyGem {
     id: string;
@@ -63,10 +85,14 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
     const [gems, setGems]       = useState<NearbyGem[]>([]);
     const [loading, setLoading] = useState(false);
 
-    const hasCoords = !!(coordinates && coordinates.lat !== 0 && coordinates.lng !== 0);
+    // Callers build `coordinates` inline, so the effect keys off the two
+    // primitives instead of the object — depending on its identity would
+    // refetch on every render.
+    const lat = coordinates?.lat;
+    const lng = coordinates?.lng;
 
     useEffect(() => {
-        if (!hasCoords || !coordinates) return;
+        if (!lat || !lng) return;
 
         const controller = new AbortController();
         const { signal } = controller;
@@ -78,12 +104,12 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
 
             try {
                 // Stage 1: Google Places via V2 API proxy
-                const discoverUrl = `${apiBase}/hotels/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&category=${category}&radius=${radiusMeters}`;
+                const discoverUrl = `${apiBase}/hotels/nearby?lat=${lat}&lng=${lng}&category=${category}&radius=${radiusMeters}`;
                 const discoverRes  = await fetch(discoverUrl, { signal });
                 const discoverData = discoverRes.ok
-                    ? await discoverRes.json() as { features?: any[] }
+                    ? await discoverRes.json() as { features?: PoiFeature[] }
                     : { features: [] };
-                let features: any[] = discoverData.features ?? [];
+                const features: PoiFeature[] = discoverData.features ?? [];
 
                 // Stage 2: Mapbox fallback when Google returns sparse results
                 if (features.length < 5 && env.NEXT_PUBLIC_MAPBOX_TOKEN) {
@@ -101,7 +127,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     const mbResults = await Promise.all(
                         cats.map(cat =>
                             fetch(
-                                `https://api.mapbox.com/search/searchbox/v1/category/${encodeURIComponent(cat)}?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}&language=en&limit=15&proximity=${coordinates.lng},${coordinates.lat}`,
+                                `https://api.mapbox.com/search/searchbox/v1/category/${encodeURIComponent(cat)}?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}&language=en&limit=15&proximity=${lng},${lat}`,
                                 { signal }
                             ).then(r => r.json()).catch(() => ({ features: [] }))
                         )
@@ -179,7 +205,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                                 });
                                 const r = await fetch(`${apiBase}/photos/poi?${qs.toString()}`, { signal });
                                 if (!r.ok || signal.aborted) return;
-                                const d = await r.json() as any;
+                                const d = await r.json() as { rating?: number | string; category?: string };
 
                                 const hasLowRating = d.rating !== undefined && d.rating !== null && Number(d.rating) < 3.5;
                                 if (hasLowRating) {
@@ -187,7 +213,10 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                                 } else {
                                     buffer = buffer.map(g => g.id !== gem.id ? g : {
                                         ...g,
-                                        rating:          d.rating ?? g.rating,
+                                        // The endpoint sends this as a string sometimes — the
+                                        // threshold check above already coerced it, but the raw
+                                        // value was landing in a field typed `number`.
+                                        rating:          d.rating != null ? Number(d.rating) : g.rating,
                                         displayCategory: d.category ?? g.category,
                                         isStub:          false,
                                     });
@@ -197,8 +226,8 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                         })
                     )
                 );
-            } catch (e: any) {
-                if (e?.name !== 'AbortError') console.error('[useNearbyGems]', e);
+            } catch (e) {
+                if (!isAbortError(e)) console.error('[useNearbyGems]', e);
             } finally {
                 if (!signal.aborted) setLoading(false);
             }
@@ -206,7 +235,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
 
         run();
         return () => controller.abort();
-    }, [hasCoords, coordinates?.lat, coordinates?.lng, category, radiusMeters]);
+    }, [lat, lng, category, radiusMeters]);
 
     return { gems, loading };
 }

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {  AnimatePresence } from 'framer-motion';
 import { Plane, Search } from 'lucide-react';
-import { Skeleton } from '@/shared/components/ui/skeleton';
 import { cn } from '@/shared/lib/cn';
 import type { FlightOffer } from '@/shared/types';
 import { FlightCard } from './flight-card';

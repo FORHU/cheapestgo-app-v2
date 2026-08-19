@@ -2,6 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { PlaneTakeoff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -27,7 +28,7 @@ const StandardFooter = () => {
                     <div className="flex flex-col gap-2 lg:gap-4">
                         <span className="text-slate-900 dark:text-white font-bold uppercase tracking-wider text-[9px] lg:text-xs">{t('module')}</span>
                         <div className="flex flex-col gap-1.5 lg:gap-3">
-                            <a href="/flights/search" className="text-slate-500 hover:text-blue-500 transition-colors">{t('flights')}</a>
+                            <Link href="/flights/search" className="text-slate-500 hover:text-blue-500 transition-colors">{t('flights')}</Link>
                             <a href="/hotels/search" className="text-slate-500 hover:text-blue-500 transition-colors">{t('hotels')}</a>
                             <a href="#" className="text-slate-500 hover:text-blue-500 transition-colors">{t('cars')}</a>
                         </div>

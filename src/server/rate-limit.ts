@@ -72,7 +72,9 @@ export interface RateLimitResult {
 }
 
 function getClientKey(req: Request): string {
-    const headers = (req as any).headers;
+    // `Request` always carries `headers`; the optional chaining below keeps
+    // the helper safe for the hand-rolled request objects the tests pass in.
+    const headers = req.headers as Headers | undefined;
     const get = (name: string): string => headers?.get?.(name) ?? '';
 
     const realIp = get('x-real-ip').trim();

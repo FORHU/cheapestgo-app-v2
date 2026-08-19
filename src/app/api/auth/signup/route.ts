@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         await createUserSession(id);
 
         return NextResponse.json({ user: { id, email } }, { status: 201 });
-    } catch (err: any) {
+    } catch (err) {
         console.error('[auth/signup]', err);
         return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 500 });
     }

@@ -291,7 +291,9 @@ interface DealsSectionProps { deals?: Deal[] }
 
 const DealsSection: React.FC<DealsSectionProps> = ({ deals }) => {
   const t         = useTranslations();
-  const rawDeals  = deals || [];
+  // Memoised so the empty-state array keeps its identity across renders —
+  // otherwise it invalidates the `sortedDeals` memo below on every render.
+  const rawDeals  = useMemo(() => deals ?? [], [deals]);
   const gridRef   = useRef<HTMLDivElement>(null);
   const { ref: rowRef, dragProps } = useDragScroll<HTMLDivElement>();
   const [showAll,    setShowAll]    = useState(false);

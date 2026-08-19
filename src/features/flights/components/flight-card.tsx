@@ -3,9 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, ArrowRight, Luggage, ChevronDown, ChevronUp, Shield, XCircle, BadgeDollarSign, Users, Heart } from 'lucide-react';
+import { Plane, ArrowRight, Luggage, ChevronDown, ChevronUp, Shield, XCircle, BadgeDollarSign, Users } from 'lucide-react';
 import type { FlightOffer, NormalizedSegment } from '@/shared/types';
-import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/cn';
 import { SaveButton } from './SaveButton';
 
@@ -18,7 +17,7 @@ function formatTime(iso?: string): string {
     return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function formatDate(iso?: string): string {
+function _formatDate(iso?: string): string {
     if (!iso) return '';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';

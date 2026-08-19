@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 
 type Theme = 'light' | 'dark';
@@ -9,39 +9,98 @@ interface BaseProps { children: React.ReactNode; }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+/** Length of the colour cross-fade, in step with `.theme-transition` in globals.css. */
+const FADE_MS = 160;
+
+/**
+ * The class on <html> is the theme, not this module's state.
+ *
+ * The inline script in the root layout puts it there before the first paint, so
+ * reading it back is both what survives a reload and what keeps a second click
+ * correct while a `startTransition` update is still in flight.
+ */
+const readTheme = (): Theme =>
+  document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+
 export const ThemeProvider: React.FC<BaseProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>('light');
+  const fadeTimer = useRef<number | undefined>(undefined);
 
+  // Adopt what the layout script already applied. This used to be a pair of
+  // effects that read localStorage and then wrote the class from `theme` — and
+  // the write ran first with the mount default ('light', the only thing the
+  // server can render), painting over the script's choice before correcting
+  // itself a render later.
   useEffect(() => {
-    const saved = localStorage.getItem('theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      setTheme(saved);
-    }
+    setTheme(readTheme());
+    return () => window.clearTimeout(fadeTimer.current);
   }, []);
 
+  /**
+   * Holds the window open until the last colour has actually changed.
+   *
+   * The class swap is not the only thing that repaints on a theme change: the
+   * search page paints its shell from `theme` in an inline style, and that now
+   * lands a commit after the swap. Re-arming here — after that commit — keeps
+   * the fade covering it instead of letting it snap in behind the window.
+   */
   useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    localStorage.setItem('theme', theme);
+    const root = document.documentElement;
+    if (!root.classList.contains('theme-transition')) return;
+    window.clearTimeout(fadeTimer.current);
+    fadeTimer.current = window.setTimeout(() => {
+      root.classList.remove('theme-transition');
+    }, FADE_MS + 60);
   }, [theme]);
 
   /**
    * Cross-fades colours on the way between themes.
    *
-   * The class is only on the document for the length of the fade: a standing
-   * `transition` on every element would also animate hovers, menu opens, and
-   * anything else that happens to change a colour.
+   * The order here is the whole trick, and it is: paint, then React.
+   *
+   * `setTheme` on a click is a discrete update, so React flushes it
+   * synchronously before the browser gets a chance to paint — and its consumers
+   * are the search page, the map container and the header, which is easily
+   * 100ms+ of blocked main thread on a heavy route. Everything after the swap
+   * was landing behind that: the fade began late, and the timer that ends it
+   * had been counting since the click, so it was regularly cut mid-flight or
+   * missed altogether. Hence `startTransition` — the swap paints on the next
+   * frame and consumers re-render after it, at a priority that yields.
+   *
+   * `.theme-transition` is only on the document for the length of the fade: a
+   * standing `transition` on every element would also animate hovers, menu
+   * opens, and anything else that happens to change a colour. Its removal is
+   * anchored to a frame rather than to the click for the same reason as above.
    */
-  const toggleTheme = () => {
-    const root = window.document.documentElement;
+  const toggleTheme = useCallback(() => {
+    const root = document.documentElement;
+    const next: Theme = readTheme() === 'dark' ? 'light' : 'dark';
+
     root.classList.add('theme-transition');
-    window.setTimeout(() => root.classList.remove('theme-transition'), 220);
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
+    root.classList.remove('light', 'dark');
+    root.classList.add(next);
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      // Private mode / storage disabled: the theme just does not persist.
+    }
+
+    window.clearTimeout(fadeTimer.current);
+    requestAnimationFrame(() => {
+      // Runs on the frame that paints the swap, so the window covers the fade
+      // wherever the frame lands. The margin covers a slow frame at the end.
+      fadeTimer.current = window.setTimeout(() => {
+        root.classList.remove('theme-transition');
+      }, FADE_MS + 60);
+    });
+
+    startTransition(() => setTheme(next));
+  }, []);
+
+  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
       <Toaster
         theme={theme}

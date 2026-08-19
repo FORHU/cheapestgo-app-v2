@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plane, SlidersHorizontal } from 'lucide-react';
-import { cn } from '@/shared/lib/cn';
+import {  SlidersHorizontal } from 'lucide-react';
 import type { FlightOffer } from '@/shared/types';
 
 interface ProviderStatusProps {
@@ -76,7 +75,7 @@ export function ResponsiveFlightHeader({
     resultCount,
     onFiltersOpen,
     onSearchEdit,
-    className,
+    className: _className,
 }: ResponsiveFlightHeaderProps) {
     return (
         <>

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { http } from '@/shared/lib/http';
 import { CancellationFeeCard } from './CancellationFeeCard';
 import { Button } from '@/shared/components/ui/button';
+import { errorMessage } from '@/shared/lib/error';
 
 interface CancellationModalProps {
     isOpen: boolean;
@@ -79,8 +80,8 @@ export function CancellationModal({
             toast.success('Booking cancellation requested successfully!');
             onSuccess();
             onClose();
-        } catch (err: any) {
-            setError(err.message || 'Cancellation request failed. Please try again.');
+        } catch (err) {
+            setError(errorMessage(err, 'Cancellation request failed. Please try again.'));
         } finally {
             setIsLoading(false);
         }

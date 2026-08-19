@@ -93,6 +93,39 @@
   background-size: 40px 40px;
 }
 
+/*
+ * A screen that owns the viewport outright — the search page's map view. The
+ * search page adds this to <body> for as long as that view is showing.
+ *
+ * Three things have to go, and all three of them live on the app shell in
+ * layout.tsx rather than on the page, which is why this is a body class and not
+ * a prop:
+ *
+ *   - the page grid, which is the only thing behind a full-bleed map and shows
+ *     as a strip of graph paper wherever the map does not quite reach;
+ *   - the shell's `min-h-screen`, which is 100vh — larger than the 100dvh the
+ *     map fills whenever the browser's URL bar is on screen, so the difference
+ *     scrolls into view as bare shell;
+ *   - the bottom inset that keeps scrolling pages clear of the nav. This page
+ *     has nothing to scroll; the inset only pushes 96px of shell out below a
+ *     screen that is already exactly one viewport tall.
+ *
+ * `overflow: hidden` then makes the no-scroll intent explicit rather than
+ * leaving it as an arithmetic coincidence.
+ */
+body.map-immersive {
+  overflow: hidden;
+}
+
+body.map-immersive .app-shell {
+  background-image: none;
+  min-height: 100dvh;
+}
+
+body.map-immersive .app-shell-main {
+  padding-bottom: 0;
+}
+
 @utility thin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
@@ -179,6 +212,24 @@
  */
 .map-gray .mapboxgl-canvas {
   filter: contrast(0.62) saturate(1.05) brightness(1.04);
+}
+
+/*
+ * Pointer cursor over interactive map features.
+ *
+ * useMapInteractions toggles `has-pointer-cursor` on the canvas container
+ * whenever a hotel pin, a cluster or a discovery POI is under the pointer. The
+ * class had no rule behind it since it was introduced, so the hover never
+ * changed anything.
+ *
+ * Three classes rather than one: Mapbox's `.mapboxgl-canvas-container
+ * .mapboxgl-interactive { cursor: grab }` is a two-class selector in an
+ * unlayered stylesheet that layout.tsx imports *after* this file, so a
+ * same-specificity rule would lose the tie. The third class takes it outright
+ * — the same shape Mapbox uses for its own `mapboxgl-track-pointer` rule.
+ */
+.mapboxgl-canvas-container.mapboxgl-interactive.has-pointer-cursor {
+  cursor: pointer;
 }
 
 /*
@@ -280,6 +331,70 @@
 }
 
 /*
+ * Nearby-place markers arrive with a pop rather than a fade.
+ *
+ * They land as a batch the moment a hotel is selected, and a batch that fades
+ * in reads as the map redrawing itself. The overshoot is what makes each disc
+ * read as its own object dropping onto the basemap instead, and the stagger
+ * (set per marker in NearbyPlaceMarker) is what turns the batch into a
+ * sequence rather than one flash.
+ *
+ * `backwards`, not `both`: the marker's selected-state transform lives on the
+ * element *inside* this one, so a forwards fill here would leave an animation
+ * transform pinned on the wrapper for good. Backwards still holds the first
+ * frame — invisible, small — through the stagger delay, which is what stops a
+ * marker appearing full-size and then shrinking to animate.
+ *
+ * The cost of that fill is that `animation-delay` is no longer a write-once
+ * value: raising it on an element whose animation has already finished drops
+ * that element back into the before phase and replays the whole pop. The delay
+ * is therefore frozen at mount — see NearbyPlaceMarker — and must stay that
+ * way even though the marker's index in the list does not.
+ */
+@keyframes map-poi-pop {
+  0%   { opacity: 0; transform: scale(0.3); }
+  55%  { opacity: 1; transform: scale(1.14); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.map-poi-pop {
+  transform-origin: center bottom;
+  animation: map-poi-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/*
+ * And the way out, when the preview card that summoned them is closed.
+ *
+ * A batch that simply stops being rendered reads as a glitch — the same
+ * objection that made the arrival a pop rather than a fade. So the exit is the
+ * entrance played backwards and quicker: a small anticipatory swell, then away.
+ * Quicker because a dismissal should feel like one; the swell because without
+ * it the discs just deflate.
+ *
+ * `forwards`, so a marker that has finished leaving stays gone for the frames
+ * between its animation ending and the container actually unmounting it. The
+ * container holds the whole batch mounted for POI_EXIT_MS (NearbyPlaceMarker)
+ * to give this time to run at all — an unmounted element cannot animate.
+ */
+@keyframes map-poi-pop-out {
+  0%   { opacity: 1; transform: scale(1); }
+  30%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(0.3); }
+}
+
+.map-poi-pop-out {
+  transform-origin: center bottom;
+  animation: map-poi-pop-out 240ms cubic-bezier(0.4, 0, 0.9, 0.35) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-poi-pop { animation: none; }
+  /* Not just `animation: none` — that would leave the marker sitting on the
+     map, fully drawn, for the whole hold the container is still counting out. */
+  .map-poi-pop-out { animation: none; opacity: 0; }
+}
+
+/*
  * Map pin price placeholder. Defined here rather than inline because the pins
  * render into detached roots via createRoot and cannot carry a <style> of
  * their own.
@@ -296,19 +411,26 @@
  *
  * Only colour properties — transitioning `all` here would animate layout on
  * every element mid-switch. `!important` is needed to beat the inline styles
- * the map chrome and cards set.
+ * the map chrome and cards set, and any longer `duration-*` an element carries.
+ *
+ * 160ms, matched by FADE_MS in ThemeContext: long enough to read as a fade,
+ * short enough that the switch still feels immediate.
  */
 .theme-transition,
 .theme-transition *,
 .theme-transition *::before,
 .theme-transition *::after {
   transition:
-    background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease,
-    fill 200ms ease,
-    stroke 200ms ease !important;
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out,
+    fill 160ms ease-out,
+    stroke 160ms ease-out !important;
   transition-delay: 0ms !important;
+  /* Beats a longer `duration-*` an element carries of its own: without this a
+     card on `transition-all duration-500` keeps fading long after the page
+     around it has settled. */
+  transition-duration: 160ms !important;
 }
 
 /* Respect a reduced-motion preference: switch instantly instead. */
@@ -337,13 +459,6 @@ body {
 body {
   overflow-x: clip;
   max-width: 100vw;
-}
-
-/* Smooth Theme Transition */
-body {
-  transition-property: background-color, color, border-color;
-  transition-duration: 800ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .blur-transition {

@@ -32,7 +32,7 @@ export function PriceAlertButton({
                 if (!cancelled) {
                     setIsLoggedIn(true);
                     const items = Array.isArray(res) ? res : res?.data ?? [];
-                    const existing = items.find((a: any) =>
+                    const existing = items.find((a) =>
                         a.origin === origin &&
                         a.destination === destination &&
                         a.adults === adults &&

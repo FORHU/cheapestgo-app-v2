@@ -1,6 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
 import { env } from '@/shared/lib/env';
 
+/** A Mapbox Geocoding v5 result, narrowed to the fields the list renders. */
+interface GeocodeFeature {
+    id: string;
+    place_name: string;
+    /** [lng, lat] — Mapbox's order, flipped on the way into state. */
+    center: [number, number];
+}
+
 export interface SearchResult {
     id: string;
     name: string;
@@ -49,7 +57,7 @@ export function useMapboxSearch({ proximity }: UseMapboxSearchParams = {}) {
                 if (!res.ok) throw new Error('Geocoding request failed');
 
                 const data = await res.json();
-                setOriginResults(data.features?.map((f: any) => ({
+                setOriginResults(data.features?.map((f: GeocodeFeature) => ({
                     id: f.id,
                     name: f.place_name,
                     lat: f.center[1],

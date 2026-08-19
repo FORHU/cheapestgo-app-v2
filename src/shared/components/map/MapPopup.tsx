@@ -1,4 +1,5 @@
 'use client';
+import type { MapRef } from 'react-map-gl/mapbox';
 
 import React, { useEffect, useState } from 'react';
 import { Popup } from 'react-map-gl/mapbox';
@@ -12,7 +13,7 @@ interface MapPopupProps {
     property: MappableProperty;
     onClose: () => void;
     onViewDetails: (id: string) => void;
-    mapRef?: React.RefObject<any>;
+    mapRef?: React.RefObject<MapRef | null>;
     isCentered?: boolean;
 }
 

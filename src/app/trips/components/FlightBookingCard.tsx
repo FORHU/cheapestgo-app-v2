@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Plane, ChevronRight, Calendar, Tag, Download, Ticket } from 'lucide-react';
+import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatDate } from '@/shared/lib/format';
 import type { FlightBooking } from '@/shared/types';

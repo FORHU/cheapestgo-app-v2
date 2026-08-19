@@ -2,7 +2,7 @@
 // Values like "BA0178", "72°", "45% humidity" are illustrative and not sourced from a live API.
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Plane, Sun, Cloud, CloudSun, TrendingDown } from 'lucide-react';
+import { Activity, Plane, Sun, CloudSun, TrendingDown } from 'lucide-react';
 import { TelemetryData } from '../../../types';
 
 export const StatusBadge = () => (
