@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { DollarSign, TrendingUp, Percent, Download, ChevronLeft, ChevronRight, Plane, Building2 } from 'lucide-react';
+import { DollarSign, Download, ChevronLeft, ChevronRight, Plane, Building2 } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Skeleton } from '@/shared/components/ui/skeleton';

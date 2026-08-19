@@ -1,5 +1,5 @@
 import { Map, type StandardStyleConfig } from '@/shared/components/ui/map';
-import { AttributionControl, MapRef } from 'react-map-gl/mapbox';
+import { AttributionControl, MapRef, type MapEvent, type MapMouseEvent, type ViewStateChangeEvent } from 'react-map-gl/mapbox';
 import { Layers } from 'lucide-react';
 import { MapDetailsPanel } from './MapDetailsPanel';
 import { useMapDetails } from '../hooks/useMapDetails';
@@ -15,12 +15,12 @@ interface MapContainerProps {
         bounds?: [number, number, number, number] | [[number, number], [number, number]];
         fitBoundsOptions?: { padding?: number; maxZoom?: number; duration?: number };
     };
-    onLoad: (e: any) => void;
-    onClick: (e: any) => void;
-    onMouseMove: (e: any) => void;
-    onMove?: (e: any) => void;
-    onMoveEnd?: (e: any) => void;
-    onDragStart?: (e: any) => void;
+    onLoad: (e: MapEvent) => void;
+    onClick: (e: MapMouseEvent) => void;
+    onMouseMove: (e: MapMouseEvent) => void;
+    onMove?: (e: ViewStateChangeEvent) => void;
+    onMoveEnd?: (e: ViewStateChangeEvent) => void;
+    onDragStart?: (e: ViewStateChangeEvent) => void;
     children?: React.ReactNode;
     hideLayersButton?: boolean;
     mapStyle?: string;

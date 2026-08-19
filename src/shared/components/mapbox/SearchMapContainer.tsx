@@ -18,14 +18,51 @@ import { useMapDetails } from './hooks/useMapDetails';
 import { MapDetailsPanel } from './components/MapDetailsPanel';
 import { env } from '@/shared/lib/env';
 import { useIsMobile } from '@/shared/hooks/useMediaQuery';
-import { cn, } from '@/shared/lib/cn';
 import { formatCurrency } from '@/shared/lib/format';
-import { NearbyPlaceMarker } from '@/shared/components/map/NearbyPlaceMarker';
+import { NearbyPlaceMarker, POI_EXIT_MS } from '@/shared/components/map/NearbyPlaceMarker';
 import { HotelPin } from '@/shared/components/map/HotelPin';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { NearbyPlacePopup } from '@/shared/components/map/NearbyPlacePopup';
-import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
+import { useNearbyGems, type NearbyGem } from '@/features/hotels/hooks/useNearbyGems';
 import type { NearbyPlace } from '@/shared/components/map/useMapNearbyPlaces';
+import type { MapEvent } from 'react-map-gl/mapbox';
+import type { Marker as MapboxMarker } from 'mapbox-gl';
+import { isAbortError } from '@/shared/lib/error';
+
+/**
+ * A place on the map, plus where it sits in the entrance stagger.
+ *
+ * `popIndex` is per *arrival*, not per list position. The places come in three
+ * category batches at three different moments, and a marker in the second batch
+ * has to start counting its wait from zero — take its index in the combined
+ * list instead and it inherits whatever the first batch left off at, which at
+ * this list's length is the stagger cap: it would sit invisible for the better
+ * part of half a second after landing.
+ */
+type DrawnPlace = NearbyPlace & { popIndex: number };
+
+/** Identity of a place, used both to dedupe the batch and to key the marker. */
+const placeKey = (p: { name: string; lat: number; lng: number }) => `${p.name}-${p.lat}-${p.lng}`;
+
+/**
+ * Fold an incoming list into the batch already on the map: keep every place
+ * that is there, add the ones that are not, and number the arrivals from zero.
+ *
+ * Additive on purpose — see the call site. Returns `prev` untouched when
+ * nothing new arrived, so the repeated upstream updates that carry no new
+ * places (a rating landing, a re-sorted hotel list changing an object's
+ * identity) stop short of re-rendering every marker.
+ */
+function withPopOrder(prev: DrawnPlace[], incoming: NearbyPlace[]): DrawnPlace[] {
+    const byKey = new Map(prev.map(p => [placeKey(p), p]));
+    let arrivals = 0;
+    for (const place of incoming) {
+        const key = placeKey(place);
+        if (byKey.has(key)) continue;
+        byKey.set(key, { ...place, popIndex: arrivals++ });
+    }
+    return arrivals === 0 ? prev : Array.from(byKey.values());
+}
 
 // Haversine distance
 const calculateDistance = (l1: { lat: number; lng: number }, l2: { lat: number; lng: number }) => {
@@ -49,7 +86,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function createCircleGeoJSON(center: [number, number], radiusMeters: number): any {
+function createCircleGeoJSON(center: [number, number], radiusMeters: number): GeoJSON.Feature<GeoJSON.Polygon> {
     const points = 64;
     const coords: [number, number][] = [];
     const R = 6371000;
@@ -65,6 +102,17 @@ function createCircleGeoJSON(center: [number, number], radiusMeters: number): an
 }
 
 const DISTRICT_MARKER_THRESHOLD = 11;
+
+/**
+ * The nearby-places radius, as ink rather than as a colour of its own.
+ *
+ * It was a blue that belonged to nothing else on the map and read as a feature
+ * in its own right. Blackish reads as a measurement — but only over the day
+ * basemap; the night preset would swallow it, so the dark theme takes the same
+ * ink inverted. Mapbox paint properties cannot read the `--map-card-*` variables
+ * the POI discs invert through, so the rule is spelled out again here.
+ */
+const RADIUS_INK = { light: '#141414', dark: '#E6E6E6' } as const;
 
 /**
  * Zoom the map settles on when a hotel is picked — close enough to read the
@@ -97,6 +145,12 @@ interface SearchMapContainerProps {
     cityName?: string;
     onZoomChange?: (zoom: number) => void;
     showAllProperties?: boolean;
+    /**
+     * Whether to draw the nearby-place discs and their radius. Owned by the
+     * toolbar's toggle, which lives on the search page — the map only obeys it.
+     * Defaults on, so the map behaves as it always has if nobody passes it.
+     */
+    showPois?: boolean;
 }
 
 export const SearchMapContainer = React.memo(({
@@ -114,6 +168,7 @@ export const SearchMapContainer = React.memo(({
     cityName,
     onZoomChange,
     showAllProperties,
+    showPois = true,
 }: SearchMapContainerProps) => {
     const { mapRef, isMapLoaded, isMapIdle, handleMapLoad: instanceHandleMapLoad, handleMapStyleChange } = useMapboxInstance();
     const isMobile = useIsMobile();
@@ -150,7 +205,7 @@ export const SearchMapContainer = React.memo(({
         return prices;
     }, [mappableProperties, targetCurrency]);
 
-    const displayPrices = useMemo(() => {
+    const _displayPrices = useMemo(() => {
         const formatted: Record<string, string> = {};
         for (const p of mappableProperties) {
             formatted[p.id] = formatCurrency(markerPrices[p.id] || 0, targetCurrency);
@@ -164,7 +219,7 @@ export const SearchMapContainer = React.memo(({
     // Wrap the load handler so we can call fitBounds synchronously on the raw
     // map instance (via e.target) BEFORE any React state update triggers
     // re-renders — the most reliable way to zoom to the district bbox.
-    const handleMapLoad = useCallback((e?: any) => {
+    const handleMapLoad = useCallback((e?: MapEvent) => {
         if (districtBbox && !districtFitDoneRef.current) {
             districtFitDoneRef.current = true;
             const rawMap = e?.target ?? mapRef.current?.getMap?.();
@@ -188,7 +243,7 @@ export const SearchMapContainer = React.memo(({
     const [selectedPoi, setSelectedPoi] = React.useState<PoiData | null>(null);
     const [hoveredPoi, setHoveredPoi] = React.useState<PoiData | null>(null);
 
-    const [routeGeometry, setRouteGeometry] = React.useState<any>(null);
+    const [routeGeometry, setRouteGeometry] = React.useState<GeoJSON.Geometry | null>(null);
     const [carDuration, setCarDuration] = React.useState<string | null>(null);
     const [walkDuration, setWalkDuration] = React.useState<string | null>(null);
 
@@ -205,7 +260,7 @@ export const SearchMapContainer = React.memo(({
         if (!map) return;
         const cleanup = attachMouseLeave(map);
         return cleanup;
-    }, [isMapLoaded, attachMouseLeave]);
+    }, [isMapLoaded, attachMouseLeave, mapRef]);
 
     // Track movement so pins can ignore the mouseenter events a moving map
     // generates. Any hover already showing is dropped when the map starts to move.
@@ -225,7 +280,7 @@ export const SearchMapContainer = React.memo(({
             map.off('moveend', end);
             map.off('zoomend', end);
         };
-    }, [isMapLoaded]);
+    }, [isMapLoaded, mapRef]);
 
     useMapViewport({ mapRef, isMapLoaded, properties: mappableProperties, center: defaultCenter, selectedId, disableFlyToSelected: true, skipInitialFit: !!districtBbox });
 
@@ -235,15 +290,15 @@ export const SearchMapContainer = React.memo(({
     // paint pins after the map style finishes loading) and create raw
     // mapboxgl.Marker instances directly. createRoot renders React content
     // into each marker's DOM element so the pin visuals still come from React.
-    type MarkerEntry = { marker: any; root: Root; el: HTMLDivElement; visible: boolean };
+    type MarkerEntry = { marker: MapboxMarker; root: Root; el: HTMLDivElement; visible: boolean };
     const imperativeMarkersRef = React.useRef<Map<string, MarkerEntry>>(new Map());
     // mapbox-gl Marker class, loaded once on mount. Kept in state so the
     // marker effect re-fires if it ran before the dynamic import resolved.
-    const [MapboxMarkerClass, setMapboxMarkerClass] = React.useState<any>(null);
+    const [MapboxMarkerClass, setMapboxMarkerClass] = React.useState<typeof MapboxMarker | null>(null);
 
     React.useEffect(() => {
         import('mapbox-gl').then((mod) => {
-            const Cls = (mod as any).Marker ?? (mod as any).default?.Marker ?? null;
+            const Cls = mod.Marker ?? mod.default?.Marker ?? null;
             // Wrap in arrow so React doesn't treat the class as a setState updater
             setMapboxMarkerClass(() => Cls);
         }).catch(() => { /* ignore */ });
@@ -390,7 +445,7 @@ export const SearchMapContainer = React.memo(({
         });
     }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const propertyIndexMap = useMemo(() => {
+    const _propertyIndexMap = useMemo(() => {
         const map: Record<string, number> = {};
         mappableProperties.forEach((p, i) => { map[p.id] = i + 1; });
         return map;
@@ -457,7 +512,7 @@ export const SearchMapContainer = React.memo(({
     const { gems: medicalGems, loading: medicalLoading } = useNearbyGems({ coordinates: gemCoords, category: 'medical', radiusMeters: nearbyRadius });
     const { gems: transitGems, loading: transitLoading } = useNearbyGems({ coordinates: gemCoords, category: 'transit', radiusMeters: nearbyRadius });
 
-    const isFetchingGems = cafeLoading || medicalLoading || transitLoading;
+    const _isFetchingGems = cafeLoading || medicalLoading || transitLoading;
 
     // Google and the Mapbox fallback can each return the same place, so merge on id.
     const nearbyGems = useMemo(() => {
@@ -487,13 +542,66 @@ export const SearchMapContainer = React.memo(({
         [filteredGems]
     );
 
+    /**
+     * The places actually drawn, which is not the places we have.
+     *
+     * Three `useNearbyGems` hooks feed this — one per category — and each of
+     * them blanks its own list to `[]` before it refetches, lands at its own
+     * moment, and then prunes low-rated entries in the background. Mirroring
+     * that straight onto the map renders every intermediate state: markers
+     * arrive, a slice of them unmounts when one category resets, and the same
+     * discs mount and pop a second time when it comes back.
+     *
+     * So what is drawn is a batch of its own, with two rules. It is rebuilt
+     * from scratch only when the selected hotel changes — a different hotel
+     * genuinely invalidates it. For as long as one hotel stays selected it only
+     * ever *gains* places: an upstream list going empty is an artefact of
+     * refetching, not news that a café closed, and unmounting on it is what
+     * made the batch pop in twice.
+     */
+    const selectedKey  = selectedProperty?.id ?? null;
+    /**
+     * Nothing to draw: either no hotel is selected, or the toolbar's POI toggle
+     * is off. The two are the same state as far as the markers are concerned —
+     * both play the exit and both rebuild from scratch on the way back — so they
+     * fold into one flag rather than being tracked apart.
+     */
+    const poisLeaving  = !selectedKey || !showPois;
+    const [drawnPlaces, setDrawnPlaces] = React.useState<DrawnPlace[]>([]);
+    /** Which hotel `drawnPlaces` was built for, so a change can reset it. */
+    const drawnForRef = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        // Hidden: hold the batch for the length of the exit — an unmounted
+        // element cannot animate — then let it go.
+        if (poisLeaving) {
+            drawnForRef.current = null;
+            const t = setTimeout(() => setDrawnPlaces([]), POI_EXIT_MS);
+            return () => clearTimeout(t);
+        }
+
+        // A different hotel. The old batch describes somewhere else, so it goes
+        // at once rather than merging into the new one.
+        if (drawnForRef.current !== selectedKey) {
+            drawnForRef.current = selectedKey;
+            setDrawnPlaces(withPopOrder([], nearbyPlaceMarkers));
+            return;
+        }
+
+        setDrawnPlaces(prev => withPopOrder(prev, nearbyPlaceMarkers));
+    }, [poisLeaving, selectedKey, nearbyPlaceMarkers]);
+
+    /** Blackish over the day basemap, its inverse over the night one. */
+    const radiusInk = RADIUS_INK[theme];
+
+    // The radius is the POI layer's own measurement, so it goes with them.
     const radiusCircleGeoJSON = useMemo(() => {
-        if (!selectedProperty) return null;
+        if (!selectedProperty || !showPois) return null;
         return createCircleGeoJSON(
             [selectedProperty.coordinates.lng, selectedProperty.coordinates.lat],
             nearbyRadius,
         );
-    }, [selectedProperty, nearbyRadius]);
+    }, [selectedProperty, nearbyRadius, showPois]);
 
     const nearbyPlaceDistanceKm = useMemo(() => {
         if (!selectedNearbyPlace || !selectedProperty) return null;
@@ -503,10 +611,11 @@ export const SearchMapContainer = React.memo(({
         );
     }, [selectedNearbyPlace, selectedProperty]);
 
-    const handleGemClick = useCallback((gem: any) => {
+    const handleGemClick = useCallback((gem: NearbyGem) => {
         const name = gem.name;
-        const lng  = gem.coordinates?.lng ?? gem.geometry?.coordinates[0];
-        const lat  = gem.coordinates?.lat ?? gem.geometry?.coordinates[1];
+        // `NearbyGem` carries `coordinates`, never a GeoJSON `geometry`; the
+        // fallback these two used to have was unreachable.
+        const { lng, lat } = gem.coordinates;
         if (activeGemName === name) {
             setActiveGemName(null);
             setSelectedNearbyPlace(null);
@@ -515,11 +624,11 @@ export const SearchMapContainer = React.memo(({
         setActiveGemName(name);
         setSelectedNearbyPlace({
             name, category: gem.category || 'place', lat, lng,
-            rating: gem.rating, userRatingsTotal: undefined,
+            rating: gem.rating ?? undefined, userRatingsTotal: undefined,
             placeId: gem.id, vicinity: undefined,
         });
         mapRef.current?.flyTo({ center: [lng, lat], zoom: 16, pitch: 30, duration: 600 });
-    }, [activeGemName]);
+    }, [activeGemName, mapRef]);
 
     React.useEffect(() => {
         if (!selectedId) {
@@ -559,8 +668,8 @@ export const SearchMapContainer = React.memo(({
                     const route = walkingJson.routes[0];
                     setWalkDuration(`${Math.max(1, Math.round(route.duration / 60))} min`);
                 }
-            } catch (err: any) {
-                if (err.name !== 'AbortError') console.error('Directions error:', err);
+            } catch (err) {
+                if (!isAbortError(err)) console.error('Directions error:', err);
             }
         }, 400);
 
@@ -705,16 +814,20 @@ export const SearchMapContainer = React.memo(({
                         {radiusCircleGeoJSON && (
                             <Source id="nearby-radius" type="geojson" data={radiusCircleGeoJSON}>
                                 <Layer id="nearby-radius-fill" type="fill"
-                                    paint={{ 'fill-color': '#3b82f6', 'fill-opacity': 0.06 }} />
+                                    paint={{ 'fill-color': radiusInk, 'fill-opacity': 0.07 }} />
                                 <Layer id="nearby-radius-outline" type="line"
-                                    paint={{ 'line-color': '#3b82f6', 'line-width': 1.5, 'line-opacity': 0.35, 'line-dasharray': [3, 2] }} />
+                                    paint={{ 'line-color': radiusInk, 'line-width': 1.5, 'line-opacity': 0.34, 'line-dasharray': [3, 2] }} />
                             </Source>
                         )}
 
-                        {selectedProperty && nearbyPlaceMarkers.map((place) => (
+                        {drawnPlaces.map((place) => (
                             <NearbyPlaceMarker
-                                key={`${place.name}-${place.lat}-${place.lng}`}
+                                // The same key the batch dedupes on, so the two
+                                // can never disagree about what one place is.
+                                key={placeKey(place)}
                                 place={place}
+                                index={place.popIndex}
+                                leaving={poisLeaving}
                                 isSelected={activeGemName === place.name}
                                 onClick={(p) => {
                                     const gem = filteredGems.find(g => g.name === p.name);
@@ -816,3 +929,8 @@ export const SearchMapContainer = React.memo(({
         </div>
     );
 });
+
+
+// `React.memo` returns an anonymous object, so React DevTools and the
+// react/display-name rule both need the name spelled out.
+SearchMapContainer.displayName = 'SearchMapContainer';

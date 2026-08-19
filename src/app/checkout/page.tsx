@@ -412,7 +412,7 @@ function CheckoutContent() {
     const children     = parseInt(searchParams.get('children') ?? '0', 10);
     const totalPrice   = parseFloat(searchParams.get('totalPrice') ?? '0');
     const currency     = searchParams.get('currency')     ?? 'USD';
-    const roomId       = searchParams.get('roomId')       ?? '';
+    const _roomId = searchParams.get('roomId')       ?? '';
     const rateKey      = searchParams.get('rateKey')      ?? searchParams.get('offerId') ?? '';
     const roomName     = searchParams.get('roomName')     ?? '';
     const hotelName    = searchParams.get('hotelName')    ?? 'Hotel';
@@ -493,7 +493,7 @@ function CheckoutContent() {
         setSubmitting(true); setErrorMsg(null);
         try {
             // Step 1: Prebook — validate the offer and get a confirmed book token
-            const pbRes = await http.post<{ success: boolean; data: { prebookId: string; price?: any } }>(
+            const pbRes = await http.post<{ success: boolean; data: { prebookId: string; price?: number } }>(
                 '/api/hotels/prebook',
                 { offerId: rateKey, roomName, adults, children, currency }
             );
@@ -682,7 +682,7 @@ function CheckoutContent() {
                                 datesLabel && { label: 'Dates', value: datesLabel },
                                 { label: 'Guests', value: `${adults} guest${adults !== 1 ? 's' : ''}` },
                                 roomName && { label: 'Room', value: roomName },
-                            ].filter(Boolean).map((row: any) => (
+                            ].filter((row): row is { label: string; value: string } => Boolean(row)).map((row) => (
                                 <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
                                     <span>{row.label}</span><span style={{ fontWeight: 600 }}>{row.value}</span>
                                 </div>

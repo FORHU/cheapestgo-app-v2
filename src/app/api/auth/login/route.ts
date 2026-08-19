@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
                 avatarUrl: user.avatar_url,
             },
         });
-    } catch (err: any) {
+    } catch (err) {
         console.error('[auth/login]', err);
         return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
     }

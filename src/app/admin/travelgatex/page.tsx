@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
     Hotel, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-    Key, Globe, RefreshCw, Wifi, WifiOff, Activity, Building2, TrendingUp,
+    Key, Globe, RefreshCw, Wifi, WifiOff, Activity,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';

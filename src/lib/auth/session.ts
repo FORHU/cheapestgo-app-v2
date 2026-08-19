@@ -9,7 +9,7 @@
 
 import { cookies } from 'next/headers';
 import { getLucia } from './lucia';
-import type { Session, User } from 'lucia';
+import type { Session } from 'lucia';
 import { getSqlAdmin } from '@/lib/db/postgres';
 import { hash, verify } from '@node-rs/argon2';
 
@@ -28,6 +28,23 @@ export interface SessionUser {
     avatarUrl?: string;
     role: 'user' | 'admin';
     bannedAt?: string | null;
+}
+
+/**
+ * The user columns Lucia merges onto `User` but does not declare.
+ *
+ * Snake-cased because these are the row's own column names, arriving exactly as
+ * the database spells them; the mapping to camelCase happens on the way out.
+ */
+interface UserAttributes {
+    /** Not optional: `SessionUser.email` is required, and the column is NOT
+     *  NULL — a session without one could not have been created. */
+    email: string;
+    first_name?: string;
+    last_name?: string;
+    avatar_url?: string;
+    role?: 'user' | 'admin';
+    banned_at?: string | null;
 }
 
 /**
@@ -52,17 +69,21 @@ export async function getSession(): Promise<SessionResult> {
         cookieStore.set(newCookie.name, newCookie.value, newCookie.attributes);
     }
 
-    // In Lucia v3, user attributes are merged directly onto the User object
+    // In Lucia v3, user attributes are merged directly onto the User object —
+    // but its own `User` type declares only `id`, so the columns this app
+    // selects are named once here and narrowed in one cast rather than six.
+    const attrs = user as typeof user & UserAttributes;
+
     return {
         session,
         user: {
             id: user.id,
-            email: (user as any).email,
-            firstName: (user as any).first_name,
-            lastName: (user as any).last_name,
-            avatarUrl: (user as any).avatar_url,
-            role: ((user as any).role ?? 'user') as 'user' | 'admin',
-            bannedAt: (user as any).banned_at,
+            email: attrs.email,
+            firstName: attrs.first_name,
+            lastName: attrs.last_name,
+            avatarUrl: attrs.avatar_url,
+            role: attrs.role ?? 'user',
+            bannedAt: attrs.banned_at,
         },
     };
 }

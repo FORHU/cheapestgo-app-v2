@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Star, MessageSquare, Trash2, Building2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Star, Trash2, Building2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Button } from '@/shared/components/ui/button';

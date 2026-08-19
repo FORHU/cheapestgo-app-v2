@@ -28,7 +28,7 @@ export default function PrivacyPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Who We Are</h2>
                             <p className="text-sm leading-relaxed">
-                                CheapestGo ("we," "us," or "our") is an online travel agency operated by JTP Partners,
+                                CheapestGo (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is an online travel agency operated by JTP Partners,
                                 located at 30 Wall Street, 8th Floor, New York, NY 10005, United States. We provide hotel
                                 booking, flight package, and travel deal services primarily to travelers in Southeast Asia
                                 through our website and mobile platform.
@@ -142,7 +142,7 @@ export default function PrivacyPage() {
                             <ul className="list-disc pl-5 space-y-1.5 text-sm">
                                 <li><strong>Access:</strong> Request a copy of the personal data we hold about you</li>
                                 <li><strong>Correction:</strong> Request correction of inaccurate or incomplete data</li>
-                                <li><strong>Deletion:</strong> Request deletion of your personal data ("right to be forgotten")</li>
+                                <li><strong>Deletion:</strong> Request deletion of your personal data (&quot;right to be forgotten&quot;)</li>
                                 <li><strong>Portability:</strong> Receive your data in a structured, machine-readable format</li>
                                 <li><strong>Opt-out:</strong> Unsubscribe from marketing emails at any time using the link in our emails</li>
                                 <li><strong>Withdraw consent:</strong> Where processing is based on consent, you may withdraw it at any time</li>
@@ -157,7 +157,7 @@ export default function PrivacyPage() {
                         </section>
 
                         <section>
-                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Children's Privacy</h2>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Children&apos;s Privacy</h2>
                             <p className="text-sm leading-relaxed">
                                 CheapestGo is not intended for children under the age of 18. We do not knowingly collect
                                 personal information from children. If you believe we have inadvertently collected

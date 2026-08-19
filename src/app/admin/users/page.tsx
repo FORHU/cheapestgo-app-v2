@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Users, Shield, UserCheck, Clock, Search, X } from 'lucide-react';
+import { Users, Search, X } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Badge } from '@/shared/components/ui/badge';

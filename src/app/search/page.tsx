@@ -5,28 +5,43 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import type { MappableProperty } from '@/shared/components/map/types';
+import type { MappableProperty, ApiHotel } from '@/shared/components/map/types';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
+import { HotelFilters, type HotelFiltersState } from '@/features/hotels/components/hotel-filters';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
 import { env } from '@/shared/lib/env';
 import { useUserCurrency } from '@/stores/searchStore';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
-import { ArrowLeft, List, Building2, ChevronDown, ChevronUp, Sun, Moon, Search, MapPin } from 'lucide-react';
+import { Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
-import { useMapboxSearch } from '@/shared/components/mapbox/hooks/useMapboxSearch';
+import { useDeclareChromeTone } from '@/shared/components/ChromeToneContext';
+import { useIsMobile } from '@/shared/hooks/useMediaQuery';
+import { cn } from '@/shared/lib/cn';
+import { SearchTopBar } from '@/features/search/components/search-top-bar';
+import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const ACCENT        = '#FF6B4B';
-const TEXT          = '#F5EFE4';
 const BG            = '#15111E';
-const BORDER        = 'rgba(255,255,255,0.08)';
-const DIM           = 'rgba(245,239,228,0.45)';
-const OVERLAY_BG    = 'rgba(28,23,36,0.82)';
-const OVERLAY_BDR   = 'rgba(255,255,255,0.15)';
+/**
+ * The list view's ground — neutral, not the map view's plum, and a step below
+ * the card surface so the cards read as plates rather than as the page.
+ */
+const LIST_BG       = { dark: '#141414', light: '#F1F1F4' };
+
+/**
+ * Nothing filtered, for either view's panel.
+ *
+ * `±Infinity` means "not set": the price bounds are only known once results
+ * have streamed, and a concrete 0 would read as a deliberate filter the moment
+ * the cheapest stay costs more than nothing.
+ */
+const EMPTY_FILTERS: HotelFiltersState = {
+    sortBy: 'recommended', starRatings: [], minPrice: -Infinity, maxPrice: Infinity,
+};
 
 const SearchMapContainer = dynamic(
     () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
@@ -36,24 +51,32 @@ const SearchMapContainer = dynamic(
 // ─── Types ────────────────────────────────────────────────────────────────────
 type StreamStatus = 'idle' | 'loading' | 'streaming' | 'done' | 'error';
 type ViewMode = 'map' | 'list';
-type SortValue = 'recommended' | 'price-low' | 'price-high' | 'rating' | 'most-reviewed';
 
-const SORT_OPTIONS: { value: SortValue; label: string }[] = [
-    { value: 'recommended',   label: 'Recommended' },
-    { value: 'price-low',     label: 'Cheapest first' },
-    { value: 'rating',        label: 'Top Rated' },
-    { value: 'most-reviewed', label: 'Most Reviewed' },
-    { value: 'price-high',    label: 'Price: High to Low' },
-];
+/**
+ * A `prices` chunk off the search stream: the rate for one hotel, arriving
+ * after the hotel itself did. Only the three fields the merge below reads.
+ */
+interface PriceUpdate {
+    hotelId: string;
+    price?: number;
+    currency?: string;
+}
+
+/** A row from `/hotels/suggest`, narrowed by the caller to the `city` kind. */
+interface SuggestDestination {
+    type?: string;
+    lat?: number;
+    lng?: number;
+}
 
 // ─── Adapter ─────────────────────────────────────────────────────────────────
-function toMappable(h: any): MappableProperty | null {
+function toMappable(h: ApiHotel): MappableProperty | null {
     const lat = h.lat ?? h.latitude ?? h.coordinates?.lat;
     const lng = h.lng ?? h.longitude ?? h.coordinates?.lng;
     if (!lat || !lng) return null;
     return {
-        id: h.id ?? h.hotelId,
-        name: h.name,
+        id: (h.id ?? h.hotelId) as string,
+        name: h.name as string,
         price: typeof h.price === 'number' ? h.price : parseFloat(h.price ?? '0'),
         currency: h.currency ?? 'USD',
         coordinates: { lat: Number(lat), lng: Number(lng) },
@@ -95,73 +118,100 @@ function fmtPill(destination: string, checkIn: string, checkOut: string, adults:
 }
 
 // ─── Bottom rail card ─────────────────────────────────────────────────────────
-// Geometry is the design's own, scaled from its 345px artboard: image 0.58 of
-// the width, price circle 0.30, panel the remainder. The circle straddles the
-// image/panel seam and runs a few px past the right edge, where the card's
-// `overflow: hidden` crops it.
+// The design's landscape plate: the photo fills the left edge over the card's
+// full height, the name and address stack against it, and the baseline carries
+// the price/rating pair against the View Stay pill on the right.
 //
-// The price sits on ONE line inside the circle, and the circle scales with the
-// card — so the width used to be pinned here, because below it the label ran
-// out of circle. `priceFontFor` now sizes the label from the room actually
-// available instead, which is what lets this be tuned freely.
+// Geometry is scaled from the design's 340px artboard, so CARD_W is the single
+// number to tune — every other measure follows it through `px` / `fpx`.
 
-const CARD_W = 196;
-const CARD_REF_W = 320;
+const CARD_W = 340;
+const CARD_REF_W = 340;
 const SCALE = CARD_W / CARD_REF_W;
 /** Geometry: whole pixels. */
 const px = (n: number) => Math.round(n * SCALE);
 /**
- * Type does not follow the geometry all the way down. Scaled linearly, a 190px
- * card puts the title at 8px and the price at 6px — proportionally right and
- * unreadable. The floor keeps text legible while the card is free to shrink;
- * above roughly CARD_W 290 the floor stops binding and type is proportional
- * again.
+ * Type does not follow the geometry all the way down. Scaled linearly, a
+ * narrow card puts the title at 8px and the price at 6px — proportionally
+ * right and unreadable. The floor keeps text legible while the card is free to
+ * shrink; at or above the artboard width the floor stops binding and type is
+ * proportional again.
  */
 const TYPE_SCALE = Math.max(SCALE, 0.9);
 const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
 
-const CARD_IMG_H   = px(160);
-const PRICE_CIRCLE = px(97);
-const PANEL_PAD_X  = px(17);
-/** A floor, not a fixed height — the panel grows if the type needs the room. */
-const PANEL_HEIGHT = px(124);
-/** Roughly the card's finished height. */
-const CARD_H = CARD_IMG_H + PANEL_HEIGHT;
+/** The rail's inset from the window edge. */
+const RAIL_GUTTER        = 24;
+const RAIL_GUTTER_MOBILE = 16;
+
+/**
+ * The card's box, at the two sizes it is drawn.
+ *
+ * `minH` is a floor, not the height: type is held at TYPE_SCALE while the
+ * geometry runs at SCALE, so the panel routinely outgrows it. Anything that
+ * has to match the card's *rendered* height measures it — see `railCardH` —
+ * and takes this only as the starting estimate.
+ */
+const CARD_GEOM = {
+    /** The photo column — the design's left third, full-bleed top to bottom. */
+    imgW:  px(104),
+    padX:  px(14),
+    padY:  px(12),
+    minH:  px(112),
+    width: `${CARD_W}px`,
+    /** The View Stay pill's own padding. */
+    pillX: px(18),
+    pillFs: fpx(12),
+    priceFs: fpx(13),
+    pillLabel: 'View Stay',
+};
+/**
+ * The phone's card is the same plate, drawn tighter: a narrower box, a
+ * narrower photo, and less air around the type. It stops short of the window
+ * on both sides, so the card after it shows at the edge and the strip reads as
+ * something to swipe rather than as a single fixed panel.
+ *
+ * The photo gives up proportionally more than the panel does. The panel's
+ * baseline row is what actually constrains this card — a price and a pill on
+ * one line — so shrinking both columns evenly would have run the two into each
+ * other long before the card got narrow.
+ */
+const CARD_W_MOBILE = 258;
+const CARD_GEOM_MOBILE = {
+    imgW:  px(74),
+    padX:  px(11),
+    padY:  px(9),
+    minH:  px(96),
+    width: `min(${CARD_W_MOBILE}px, calc(100vw - ${RAIL_GUTTER_MOBILE * 2}px))`,
+    pillX: px(12),
+    pillFs: fpx(11.5),
+    priceFs: fpx(12.5),
+    /**
+     * "View Stay" no longer clears a long price on one line here — a peso
+     * amount runs to thirteen characters — and the price is the half that
+     * cannot be abbreviated. The card is the tap target either way, so the
+     * pill is only a visible affordance for it and reads fine shortened.
+     */
+    pillLabel: 'View',
+};
+/**
+ * Room the rail leaves under itself for the app's bottom nav.
+ *
+ * The nav is `lg:hidden` and stands 80px over the safe area — a 70px bar plus
+ * its own 10px inset — so the rail clears it at every width below `lg`, not
+ * just below `md` where the phone layout starts. Sitting on the same
+ * breakpoint the nav uses is the only thing that keeps a tablet's cards out
+ * from under it.
+ */
+const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:pb-7';
+/** The same clearance as an offset, for anything that floats rather than pads. */
+const RAIL_BOTTOM_MOBILE = 'bottom-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:bottom-7';
 /** How much a selected card grows. */
-const SELECT_SCALE = 1.15;
+const SELECT_SCALE = 1.08;
 /** Half the horizontal growth — applied as margin either side of the selected
  *  card so its neighbours slide out of the way instead of being covered.
  *  `transform` alone paints over them without moving them. */
 const SELECT_GUTTER = Math.round((CARD_W * (SELECT_SCALE - 1)) / 2);
-/** Vertical growth the rail must leave clear above the cards. */
-const SELECT_HEADROOM = Math.ceil(CARD_H * (SELECT_SCALE - 1));
-
-/**
- * Largest size at which `label` still fits on one line inside the price circle.
- *
- * The ramp this replaces stepped on character count alone — 10.5 up to 14
- * characters, then down — which held only at the width the design was drawn
- * at. The circle scales with the card, so the same 14-character label that fit
- * at 220 overflowed at 196. Sizing from the room available keeps the design's
- * type at full size whenever it fits and steps down only when it genuinely
- * has to, at any card width.
- *
- * `AVG_CHAR_EM` is a rough advance width for the UI face — close enough for a
- * label of digits and a short word, and erring small.
- */
-const AVG_CHAR_EM = 0.54;
-const PRICE_PAD   = 8;
-function priceFontFor(label: string): number {
-    const room = PRICE_CIRCLE - PRICE_PAD;
-    const fitted = room / Math.max(1, label.length * AVG_CHAR_EM);
-    // Never above the design's size, never below legibility.
-    return Math.max(6.5, Math.min(fpx(10.5), Math.round(fitted * 10) / 10));
-}
-
-/** How far the circle runs past the right edge before the crop. */
-const CIRCLE_BLEED = -18;
-/** The name shares a line with the circle's lower arc, so it stops short of it. */
-const NAME_PAD_R   = PRICE_CIRCLE - CIRCLE_BLEED + px(8) - PANEL_PAD_X;
 
 /**
  * The card takes its palette from the app theme rather than from the page's
@@ -186,7 +236,7 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, theme,
+    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
@@ -194,27 +244,42 @@ function RailCard({
     onSelect: (id: string) => void; onHover: (id: string | null) => void;
     onViewDetails: (id: string) => void;
     currency: string; theme: 'light' | 'dark';
+    /** One card to a screen, edge to edge — the design's phone layout. */
+    mobile: boolean;
+    /** Hands the card's element up so the rail can scroll it into view when its
+     *  pin is clicked. */
+    elementRef?: (el: HTMLDivElement | null) => void;
 }) {
     const c = railCardPalette(theme);
     const price = convertCurrency(property.price, property.currency || 'USD', currency);
     const priceStr = formatCurrency(price, currency);
     const rating = property.rating ?? 0;
-    const enlarged = isSelected || isHovered;
-
-    // One line, as designed. KRW and JPY run long enough to overrun the circle,
-    // so the label steps down a size rather than wrapping.
-    const priceLine = `${priceStr}/ night`;
-    const priceFont = priceFontFor(priceLine);
+    /**
+     * Selection grows the card at every width — it is how a pin click shows
+     * which of the cards it landed on, and the phone's card is no longer wide
+     * enough for growing it to push its edges under the window's.
+     *
+     * Hover only counts where there is a real pointer. A tap fires
+     * `mouseenter` on most touch browsers and never fires `mouseleave`, so on a
+     * phone the hover state sticks and would leave a card grown after it had
+     * been deselected.
+     */
+    const enlarged = isSelected || (!mobile && isHovered);
+    const address = property.location ?? property.city ?? '';
+    const g = mobile ? CARD_GEOM_MOBILE : CARD_GEOM;
 
     return (
         <div
+            ref={elementRef}
             onClick={() => onSelect(property.id)}
             onMouseEnter={() => onHover(property.id)}
             onMouseLeave={() => onHover(null)}
             className="shrink-0 cursor-pointer"
             style={{
                 position: 'relative',
-                width: CARD_W, borderRadius: px(16), overflow: 'hidden',
+                width: g.width, minHeight: g.minH,
+                borderRadius: px(16), overflow: 'hidden',
+                display: 'flex', alignItems: 'stretch',
                 background: c.surface,
                 border: '',
                 boxShadow: 'none',
@@ -226,8 +291,8 @@ function RailCard({
                 // card itself. Margin on the grown card would shift it sideways,
                 // sliding it out from under the cursor — which un-hovers it,
                 // shrinks it back under the cursor, and flickers forever.
-                marginLeft: shiftLeft,
-                marginRight: shiftRight,
+                marginLeft: mobile ? 0 : shiftLeft,
+                marginRight: mobile ? 0 : shiftRight,
                 zIndex: isSelected ? 5 : isHovered ? 4 : 1,
                 transition: 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1), margin 280ms cubic-bezier(0.22, 1, 0.36, 1)',
                 // The rail is pointer-transparent so its scale headroom doesn't
@@ -235,10 +300,10 @@ function RailCard({
                 pointerEvents: 'auto',
             }}
         >
-            {/* Image */}
-            <div style={{ height: CARD_IMG_H, position: 'relative', background: c.imageBg }}>
+            {/* Photo — the card's left edge, cropped by the card's own radius. */}
+            <div style={{ width: g.imgW, flexShrink: 0, position: 'relative', background: c.imageBg }}>
                 {property.image ? (
-                    <Image src={property.image} alt={property.name} fill className="object-cover" sizes="320px" />
+                    <Image src={property.image} alt={property.name} fill className="object-cover" sizes="140px" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center">
                         <Building2 size={26} style={{ color: c.muted }} />
@@ -251,312 +316,69 @@ function RailCard({
                 )}
             </div>
 
-            {/* Price circle*/}
-            <div className="absolute flex items-center justify-center" style={{
-                width: PRICE_CIRCLE, height: PRICE_CIRCLE, borderRadius: '50%',
-                top: CARD_IMG_H - PRICE_CIRCLE / 2, right: -CIRCLE_BLEED, zIndex: 10,
-                background: c.chipBg,
-                boxShadow: '0 2px 12px rgba(0,0,0,0.28)',
-            }}>
-                {property.priceLoading ? (
-                    <div className="animate-pulse rounded-full" style={{ width: px(42), height: px(11), background: 'rgba(128,128,128,0.35)' }} />
-                ) : (
-                    <span style={{
-                        fontSize: priceFont, fontWeight: 700, color: c.chipText,
-                        whiteSpace: 'nowrap', lineHeight: 1.2,
-                        // Only when the circle is cropped: shifts the label left of
-                        // true centre so it sits centred in the visible part.
-                        paddingRight: Math.max(0, CIRCLE_BLEED * 2),
-                    }}>
-                        {priceLine}
-                    </span>
-                )}
-            </div>
-
             {/* Panel */}
-            <div style={{ minHeight: PANEL_HEIGHT, display: 'flex', flexDirection:'column', padding: `${px(30)}px ${PANEL_PAD_X}px ${px(18)}px`, background: c.surface }}>
+            <div style={{
+                flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
+                padding: `${g.padY}px ${g.padX}px`, background: c.surface,
+            }}>
                 <h3 style={{
                     fontSize: fpx(14), fontWeight: 700, color: c.title, lineHeight: 1.3,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    paddingRight: NAME_PAD_R,
                 }}>
                     {property.name}
                 </h3>
-                {/* Both rows always render, falling back to a non-breaking space.
-                    Rendered conditionally they collapsed, so a hotel with no
-                    rating produced a shorter card than its neighbours and the
-                    rail's baseline went ragged. */}
+                {/* The address and the rating always render, falling back to a
+                    non-breaking space. Rendered conditionally they collapsed, so
+                    a hotel missing either one came out shorter than its
+                    neighbours and the rail's baseline went ragged. */}
                 <p style={{
-                    fontSize: fpx(11), color: c.muted, marginTop: px(4), lineHeight: 1.35,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: fpx(11), color: c.muted, marginTop: px(3), lineHeight: 1.35,
+                    // Two lines of address, as drawn — clamped rather than cut on
+                    // one line so a street address still reads.
+                    display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+                    overflow: 'hidden',
+                    // Holds the two-line box open when the clamp has one line, or
+                    // none, to work with.
+                    minHeight: fpx(11) * 1.35 * 2,
                 }}>
-                    {property.location ?? property.city ?? ' '}
+                    {address || ' '}
                 </p>
-                <p style={{ fontSize: fpx(11), color: c.muted, marginTop: px(8), lineHeight: 1.35 }}>
-                    {rating > 0 ? `${rating.toFixed(1)} rating` : ' '}
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
+                {/* Baseline: the price over the rating, the pill opposite. */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: px(10),
+                    marginTop: 'auto', paddingTop: px(8),
+                }}>
+                    {/* Price / rating stack */}
+                    <div style={{ minWidth: 0 }}>
+                        {property.priceLoading ? (
+                            <div className="animate-pulse rounded-full" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
+                        ) : (
+                            <p style={{
+                                fontSize: g.priceFs, fontWeight: 700, color: c.title, lineHeight: 1.3,
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                                {`${priceStr}/night`}
+                            </p>
+                        )}
+                        <p style={{ fontSize: fpx(11), color: c.muted, marginTop: px(2), lineHeight: 1.35 }}>
+                            {rating > 0 ? `${rating.toFixed(1)} rating` : ' '}
+                        </p>
+                    </div>
+
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onViewDetails(property.id); }}
                         style={{
+                            marginLeft: 'auto', flexShrink: 0,
                             background: c.chipBg, color: c.chipText, border: 'none',
-                            borderRadius: 100, padding: `${px(10)}px ${px(21)}px`,
-                            fontSize: fpx(12), fontWeight: 600, cursor: 'pointer',
+                            borderRadius: 100, padding: `${px(9)}px ${g.pillX}px`,
+                            fontSize: g.pillFs, fontWeight: 600, cursor: 'pointer',
                             whiteSpace: 'nowrap',
                         }}>
-                        View Stay
+                        {g.pillLabel}
                     </button>
                 </div>
             </div>
-        </div>
-    );
-}
-
-// ─── Search bar ───────────────────────────────────────────────────────────────
-/**
- * Four states, per the design:
- *
- *   inactive  — 'Where to next? Try "Phuket Town"...'   nothing searched yet
- *   selected  — empty field, caret, suggestions          focused
- *   searching — "Searching..."                           a search is in flight
- *   searched  — "Gangnam District | …"                   the current search
- *
- * Every state but `selected` renders muted text, so those three drive the
- * placeholder and leave the value empty. Focus deliberately clears the summary
- * rather than seeding the field with it: the design's selected state is an
- * empty bar, and typing over a long summary is worse anyway.
- *
- * Suggestions come from the same debounced Mapbox geocoder the map overlay
- * uses, so picking one carries real coordinates through to the search rather
- * than a bare string the API has to re-resolve.
- */
-function SearchBar({
-    summary, searching, theme, proximity, onSubmit,
-}: {
-    summary: string; searching: boolean; theme: 'light' | 'dark';
-    proximity?: { lat: number; lng: number };
-    onSubmit: (name: string, coords?: { lat: number; lng: number }) => void;
-}) {
-    const [focused, setFocused] = useState(false);
-    const [activeIndex, setActiveIndex] = useState(-1);
-    const wrapRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const dark = theme === 'dark';
-    const p = sortPalette(theme);
-    const muted = dark ? 'rgba(245,245,245,0.55)' : 'rgba(17,17,17,0.45)';
-
-    const {
-        originQuery, originResults, showOriginResults, setShowOriginResults,
-        isSearching: suggesting, handleOriginSearch, clearSearch,
-    } = useMapboxSearch({ proximity });
-
-    const state = focused ? 'selected' : searching ? 'searching' : summary ? 'searched' : 'inactive';
-    const placeholder =
-        state === 'searching' ? 'Searching...' :
-        state === 'searched'  ? summary :
-        state === 'inactive'  ? 'Where to next? Try "Phuket Town"...' : '';
-
-    const suggestions = focused && showOriginResults ? originResults : [];
-
-    const close = useCallback(() => {
-        setFocused(false);
-        setActiveIndex(-1);
-        clearSearch();
-    }, [clearSearch]);
-
-    // Click-away closes the panel. Focus alone is not enough: picking a
-    // suggestion uses mousedown, which fires before blur.
-    useEffect(() => {
-        if (!focused) return;
-        const onDown = (e: MouseEvent) => {
-            if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) close();
-        };
-        document.addEventListener('mousedown', onDown);
-        return () => document.removeEventListener('mousedown', onDown);
-    }, [focused, close]);
-
-    const submit = (name: string, coords?: { lat: number; lng: number }) => {
-        const trimmed = name.trim();
-        if (!trimmed) return;
-        inputRef.current?.blur();
-        close();
-        onSubmit(trimmed, coords);
-    };
-
-    const onKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Escape') { inputRef.current?.blur(); close(); return; }
-        if (!suggestions.length) return;
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setActiveIndex(i => (i + 1) % suggestions.length);
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setActiveIndex(i => (i <= 0 ? suggestions.length : i) - 1);
-        }
-    };
-
-    return (
-        // Grows into the toolbar's free space but stops short of hogging it —
-        // the design keeps the controls that follow close to the field.
-        <div ref={wrapRef} className="relative min-w-0" style={{ flex: '1 1 auto', maxWidth: 470 }}>
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    const picked = activeIndex >= 0 ? suggestions[activeIndex] : undefined;
-                    if (picked) submit(picked.name, { lat: picked.lat, lng: picked.lng });
-                    else submit(originQuery);
-                }}
-                className="flex items-center gap-3 rounded-full"
-                style={{
-                    height: 40, padding: '0 18px',
-                    background: p.field,
-                    border: `1px solid ${p.border}`,
-                    boxShadow: focused
-                        ? `0 0 0 2px ${dark ? 'rgba(255,255,255,0.18)' : 'rgba(17,17,17,0.14)'}`
-                        : 'none',
-                    transition: 'box-shadow .15s',
-                }}
-            >
-                <Search size={16} style={{ color: muted, flexShrink: 0 }} />
-                <input
-                    ref={inputRef}
-                    value={focused ? originQuery : ''}
-                    onChange={(e) => { handleOriginSearch(e.target.value); setActiveIndex(-1); }}
-                    onFocus={() => setFocused(true)}
-                    onKeyDown={onKeyDown}
-                    placeholder={placeholder}
-                    aria-label="Search for hotels"
-                    aria-expanded={suggestions.length > 0}
-                    aria-autocomplete="list"
-                    role="combobox"
-                    className="flex-1 min-w-0 bg-transparent outline-none"
-                    style={{ fontSize: 14, color: p.text, caretColor: p.text }}
-                />
-                {focused && suggesting && (
-                    <span className="animate-spin shrink-0" style={{
-                        width: 13, height: 13, borderRadius: '50%',
-                        border: `1.5px solid ${p.border}`, borderTopColor: p.text,
-                    }} />
-                )}
-            </form>
-
-            <AnimatePresence>
-                {suggestions.length > 0 && (
-                    <motion.ul
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.12 }}
-                        role="listbox"
-                        className="absolute left-0 right-0 z-50 overflow-hidden"
-                        style={{
-                            top: '100%', marginTop: 8, borderRadius: 18,
-                            background: p.menu, border: `1px solid ${p.border}`,
-                            boxShadow: p.shadow,
-                        }}
-                    >
-                        {suggestions.map((r, i) => (
-                            <li key={r.id} role="option" aria-selected={i === activeIndex}>
-                                <button
-                                    type="button"
-                                    // mousedown, not click: the input's blur would
-                                    // otherwise tear the list down first.
-                                    onMouseDown={(e) => { e.preventDefault(); submit(r.name, { lat: r.lat, lng: r.lng }); }}
-                                    onMouseEnter={() => setActiveIndex(i)}
-                                    className="flex w-full items-center gap-3 text-left"
-                                    style={{
-                                        padding: '11px 18px', fontSize: 13,
-                                        color: p.text,
-                                        opacity: i === activeIndex ? 1 : 0.75,
-                                        background: i === activeIndex ? p.hover : 'transparent',
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    <MapPin size={14} style={{ color: muted, flexShrink: 0 }} />
-                                    <span className="truncate">{r.name}</span>
-                                </button>
-                            </li>
-                        ))}
-                    </motion.ul>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-// ─── Sort dropdown ────────────────────────────────────────────────────────────
-/**
- * The map's chrome, as three tones rather than one: the toolbar `bar` is the
- * ground, the controls sitting on it are a step lighter (`surface`), and the
- * search `field` is a step darker still, which is what makes it read as an
- * input rather than another button.
- */
-function sortPalette(theme: 'light' | 'dark') {
-    const dark = theme === 'dark';
-    return {
-        bar:     dark ? '#16171A' : '#ECECEF',
-        surface: dark ? '#232428' : '#FFFFFF',
-        field:   dark ? '#000000' : '#FFFFFF',
-        text:    dark ? '#FFFFFF' : '#111111',
-        border:  dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-        menu:    dark ? '#1B1C20' : '#FFFFFF',
-        hover:   dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)',
-        shadow:  dark ? '0 8px 28px rgba(0,0,0,0.55)' : '0 8px 24px rgba(15,23,42,0.16)',
-    };
-}
-
-function SortPill({ value, onChange, theme }: { value: SortValue; onChange: (v: SortValue) => void; theme: 'light' | 'dark' }) {
-    const [open, setOpen] = useState(false);
-    const p = sortPalette(theme);
-    const label = SORT_OPTIONS.find(o => o.value === value)?.label ?? 'Recommended';
-
-    return (
-        <div style={{ position: 'relative' }}>
-            {/* No shadow: this sits on the toolbar, not over the map. */}
-            <button onClick={() => setOpen(v => !v)} style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                background: p.surface, border: `1px solid ${p.border}`,
-                borderRadius: 100, padding: '0 16px', height: 40,
-                color: p.text, fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>
-                {label}
-                <ChevronDown size={14} style={{ opacity: 0.75, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }} />
-            </button>
-            <AnimatePresence>
-                {open && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                        transition={{ duration: 0.12 }}
-                        style={{
-                            position: 'absolute', right: 0, top: '100%', marginTop: 8,
-                            zIndex: 100, minWidth: 186, borderRadius: 16, overflow: 'hidden',
-                            background: p.menu, border: `1px solid ${p.border}`,
-                            boxShadow: p.shadow,
-                        }}>
-                        {SORT_OPTIONS.map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => { onChange(opt.value); setOpen(false); }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = p.hover; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                style={{
-                                    display: 'block', width: '100%', textAlign: 'left',
-                                    padding: '11px 16px', fontSize: 12.5,
-                                    fontWeight: value === opt.value ? 700 : 500,
-                                    color: p.text, opacity: value === opt.value ? 1 : 0.72,
-                                    background: 'transparent', border: 'none', cursor: 'pointer',
-                                    transition: 'background .12s',
-                                }}>
-                                {opt.label}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
@@ -683,6 +505,34 @@ function HotelSearchContent() {
     const [hoveredId, setHoveredId]             = useState<string | null>(null);
     const [mapZoom, setMapZoom]                 = useState(11);
     const [showAllCityOverride, setShowAllCityOverride] = useState(false);
+    /** The toolbar's nearby-places toggle. On by default, as the map has always
+     *  behaved; the button only gives that behaviour a way off. */
+    const [showPois, setShowPois]               = useState(true);
+    const [filtersOpen, setFiltersOpen]         = useState(false);
+    /**
+     * The list view's own toolbar panel, and the filters behind it.
+     *
+     * The values are lifted out of `HotelResults` so the panel hanging off the
+     * toolbar and the sidebar inside the results can be the same filters seen
+     * twice rather than two that disagree. Below `lg` the dropdown is the only
+     * one of the two on screen; above it, the sidebar.
+     *
+     * Separate from `mapFilters` below on purpose: the two views filter
+     * different sets — the map's is district-scoped — and are never on screen
+     * together, so nothing is gained by sharing one state and a stale filter
+     * carried across the toggle would be worse than none.
+     */
+    const [listFiltersOpen, setListFiltersOpen] = useState(false);
+    const [listFilters, setListFilters] = useState<HotelFiltersState>(EMPTY_FILTERS);
+    /**
+     * The map view's own filter panel state.
+     *
+     * `sortBy` is carried but never read: the panel's Sort By section is handed
+     * the toolbar's own list and `sortBy` state through its `sort` prop, so the
+     * pill and the panel set one value between them. This field stays in the
+     * shape only so the panel can take `HotelFiltersState` whole.
+     */
+    const [mapFilters, setMapFilters] = useState<HotelFiltersState>(EMPTY_FILTERS);
     const [railHidden, setRailHidden]           = useState(false);
     const [mapCenter, setMapCenter]             = useState<{ lat: number; lng: number } | undefined>(
         lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined
@@ -697,6 +547,13 @@ function HotelSearchContent() {
     }, [bboxParam]);
 
     const currency   = useUserCurrency();
+    /**
+     * Only the card rail asks in JS — its width is a value, not a class. The
+     * rest of the phone layout is plain `md:` breakpoints, which are already
+     * right on the first paint; this flips a frame after mount, and the rail
+     * has no cards to draw until a search comes back anyway.
+     */
+    const isMobile   = useIsMobile();
     const { theme, toggleTheme } = useTheme();
     /**
      * The UI runs opposite the app theme, so it always contrasts the basemap:
@@ -706,7 +563,25 @@ function HotelSearchContent() {
     const uiTone     = theme === 'dark' ? 'light' : 'dark';
     /** One surface for every control floating over the map. */
     const chrome     = sortPalette(uiTone);
-    const searchKey  = `${destination}|${checkIn}|${checkOut}|${adults}|${children}|${rooms}|${lat}|${lng}`;
+    /**
+     * The app's bottom nav overlaps the map, so it inverts with the rest of the
+     * chrome here — otherwise it lands as a white slab under a row of dark
+     * cards. The list view has no basemap to contrast, so it claims nothing and
+     * the nav falls back to the theme like everywhere else.
+     */
+    useDeclareChromeTone(viewMode === 'map' ? uiTone : 'theme');
+    /**
+     * The map view is one viewport tall and fills it, so it takes the app shell
+     * out of the way: no page grid showing through at the edges, no 100vh floor
+     * taller than the map, and none of the shell's bottom nav inset. The list
+     * view scrolls and needs all three, so it opts out. See `.map-immersive`.
+     */
+    useEffect(() => {
+        if (viewMode !== 'map') return;
+        document.body.classList.add('map-immersive');
+        return () => document.body.classList.remove('map-immersive');
+    }, [viewMode]);
+    const searchKey  =`${destination}|${checkIn}|${checkOut}|${adults}|${children}|${rooms}|${lat}|${lng}`;
 
     useEffect(() => {
         if (!destination && !lat) return;
@@ -731,7 +606,7 @@ function HotelSearchContent() {
         };
 
         const run = async () => {
-            const body: Record<string, any> = {
+            const body: Record<string, string | number> = {
                 destination, checkIn, checkOut,
                 adults: Number(adults), children: Number(children), rooms: Number(rooms),
             };
@@ -765,13 +640,15 @@ function HotelSearchContent() {
                     const json = t.startsWith('data: ') ? t.slice(6) : t;
                     try {
                         const chunk = JSON.parse(json);
-                        const list: any[] = Array.isArray(chunk.data) ? chunk.data : Array.isArray(chunk.hotels) ? chunk.hotels : [];
+                        const list: ApiHotel[] = Array.isArray(chunk.data) ? chunk.data : Array.isArray(chunk.hotels) ? chunk.hotels : [];
                         if ((chunk.type === 'instant' || chunk.type === 'hotels') && list.length > 0) {
                             accumulated += list.length;
                             const mapped = list.map(toMappable).filter((h): h is MappableProperty => !!h && isNearby(h));
                             if (!cancelled) { setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); }); setStatus('streaming'); }
                         } else if (chunk.type === 'prices' && Array.isArray(chunk.data)) {
-                            const pm = new Map<string, any>(chunk.data.map((p: any) => [p.hotelId, p]));
+                            const pm = new Map<string, PriceUpdate>(
+                                (chunk.data as PriceUpdate[]).map((p) => [p.hotelId, p]),
+                            );
                             if (!cancelled) setHotels(prev => prev.map(h => { const p = pm.get(h.id); return p ? { ...h, price: p.price ?? h.price, currency: p.currency ?? h.currency, priceLoading: false } : h; }));
                         } else if (chunk.type === 'remove' && Array.isArray(chunk.ids)) {
                             const s = new Set(chunk.ids as string[]);
@@ -801,10 +678,14 @@ function HotelSearchContent() {
         let cancelled = false;
         fetch(`${apiBase}/hotels/suggest?q=${encodeURIComponent(destination)}`)
             .then(r => r.json())
-            .then((data: any) => {
+            .then((data: { destinations?: SuggestDestination[] }) => {
                 if (cancelled) return;
+                // A type predicate, not a plain boolean: `find` carries the
+                // narrowing out to `city` only if the callback declares it, and
+                // the two `typeof` checks are what make it true.
                 const city = (data?.destinations ?? []).find(
-                    (d: any) => d.type === 'city' && typeof d.lat === 'number' && typeof d.lng === 'number'
+                    (d): d is SuggestDestination & { lat: number; lng: number } =>
+                        d.type === 'city' && typeof d.lat === 'number' && typeof d.lng === 'number'
                 );
                 if (city) setGeocodedCoords({ lat: city.lat, lng: city.lng });
             })
@@ -837,6 +718,11 @@ function HotelSearchContent() {
 
     // Pre-convert prices to the user's preferred currency for the list view
     // so HotelCard renders the same currency as the map rail cards.
+    //
+    // Off `sorted` rather than `mapFiltered`: the list view has a filter panel of
+    // its own, and stacking the two would filter the list by criteria its panel
+    // does not show — each side would then explain only half of why a hotel is
+    // missing.
     const listHotels = useMemo(() =>
         sorted.map(h => ({
             ...h,
@@ -844,14 +730,77 @@ function HotelSearchContent() {
             currency,
         })),
     [sorted, currency]);
+
+    /**
+     * Price bounds for the filter panel's slider, in the user's own currency —
+     * the same figures the cards show, so dragging the handle to a number means
+     * what it looks like it means.
+     */
+    const priceRange = useMemo(() => {
+        const prices = sorted
+            .filter(h => !h.priceLoading)
+            .map(h => convertCurrency(h.price, h.currency || 'USD', currency))
+            .filter(p => p > 0);
+        if (prices.length === 0) return { min: 0, max: 1000 };
+        const min = Math.floor(Math.min(...prices));
+        const max = Math.ceil(Math.max(...prices));
+        // A single price point would give the slider a zero-width track.
+        return { min, max: max > min ? max : min + 1 };
+    }, [sorted, currency]);
+
+    /**
+     * The panel's bounds, clamped to the range. Unset bounds fall back to it,
+     * and set ones are clipped, since the range keeps widening while prices
+     * stream in behind the user's back.
+     */
+    const clampToRange = (f: HotelFiltersState) => {
+        const min = Number.isFinite(f.minPrice) ? Math.max(f.minPrice, priceRange.min) : priceRange.min;
+        const max = Number.isFinite(f.maxPrice) ? Math.min(f.maxPrice, priceRange.max) : priceRange.max;
+        return { min, max, narrowed: min > priceRange.min || max < priceRange.max };
+    };
+
+    const listBounds = clampToRange(listFilters);
+    /** The list toolbar button's dot, counted the same way the map's is. */
+    const listActiveFilterCount = listFilters.starRatings.length + (listBounds.narrowed ? 1 : 0);
+
+    const filterMin = Number.isFinite(mapFilters.minPrice) ? Math.max(mapFilters.minPrice, priceRange.min) : priceRange.min;
+    const filterMax = Number.isFinite(mapFilters.maxPrice) ? Math.min(mapFilters.maxPrice, priceRange.max) : priceRange.max;
+    const priceNarrowed = filterMin > priceRange.min || filterMax < priceRange.max;
+    /** What the toolbar button's dot is counting. */
+    const activeFilterCount = mapFilters.starRatings.length + (priceNarrowed ? 1 : 0);
+
+    /**
+     * `sorted` with the toolbar's filter panel applied — the list the map draws
+     * pins for and the rail draws cards for, so the two always agree.
+     */
+    const mapFiltered = useMemo(() => {
+        let list = sorted;
+        if (mapFilters.starRatings.length > 0) {
+            list = list.filter(h =>
+                h.starRating !== undefined && mapFilters.starRatings.includes(Math.round(h.starRating)),
+            );
+        }
+        if (priceNarrowed) {
+            // A stay whose price has not landed yet is kept: it has no figure to
+            // judge, and dropping it would have pins blinking off the map as the
+            // price stream catches up.
+            list = list.filter(h => {
+                if (h.priceLoading) return true;
+                const p = convertCurrency(h.price, h.currency || 'USD', currency);
+                return p >= filterMin && p <= filterMax;
+            });
+        }
+        return list;
+    }, [sorted, mapFilters.starRatings, priceNarrowed, filterMin, filterMax, currency]);
+
     const railSorted = useMemo(() => {
-        if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return sorted;
+        if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return mapFiltered;
         const [minLng, minLat, maxLng, maxLat] = districtBbox;
-        return sorted.filter(p =>
+        return mapFiltered.filter(p =>
             p.coordinates.lng >= minLng && p.coordinates.lng <= maxLng &&
             p.coordinates.lat >= minLat && p.coordinates.lat <= maxLat
         );
-    }, [sorted, districtBbox, showAllCityOverride, mapZoom]);
+    }, [mapFiltered, districtBbox, showAllCityOverride, mapZoom]);
     const count   = railSorted.length;
 
     /**
@@ -861,6 +810,21 @@ function HotelSearchContent() {
      */
     const railCards = useMemo(() => {
         const shown = railSorted.slice(0, 50);
+        /**
+         * The strip always holds the selected stay, even when its own window
+         * does not reach it.
+         *
+         * The map draws every hotel in `sorted`; the rail draws the first 50 of
+         * a district-scoped subset. So a pin can be clicked for a stay the strip
+         * has no card for — past the window, or outside the district — and
+         * without this the click would select a hotel the rail could neither
+         * scroll to nor grow. Appended rather than slotted in: its real position
+         * is somewhere past the end anyway.
+         */
+        if (selectedId && !shown.some(p => p.id === selectedId)) {
+            const picked = mapFiltered.find(p => p.id === selectedId);
+            if (picked) shown.push(picked);
+        }
         const grown = new Set<number>();
         shown.forEach((p, i) => {
             if (p.id === selectedId || p.id === hoveredId) grown.add(i);
@@ -872,7 +836,7 @@ function HotelSearchContent() {
             shiftLeft:  grown.has(i - 1) ? SELECT_GUTTER : 0,
             shiftRight: grown.has(i + 1) ? SELECT_GUTTER : 0,
         }));
-    }, [railSorted, selectedId, hoveredId]);
+    }, [railSorted, mapFiltered, selectedId, hoveredId]);
     const isLoading    = status === 'loading';
     const isStreaming  = status === 'streaming';
     const pillText     = fmtPill(destination, checkIn, checkOut, adults, children);
@@ -907,6 +871,70 @@ function HotelSearchContent() {
     // window runs before Mapbox's own handler, so stopping propagation there
     // covers the whole strip, cards and gaps alike.
     const railScrollRef = useRef<HTMLDivElement | null>(null);
+
+    /**
+     * Headroom for a grown card, measured rather than derived.
+     *
+     * The scroller is `overflow-x: auto`, which forces `overflow-y: auto` with
+     * it, so anything a card gains from `scale()` is clipped unless the padding
+     * above it already covers the growth. Computing that padding from
+     * the geometry's own floor under-reserved it — the panel outgrows it —
+     * and the top of a hovered card was cropped. Every card renders the same
+     * rows, so measuring one is enough for all of them, and it stays right if
+     * the type or the padding ever moves.
+     */
+    const [railCardH, setRailCardH] = useState(CARD_GEOM.minH);
+    const railHeadroom = Math.ceil(railCardH * (SELECT_SCALE - 1));
+    useEffect(() => {
+        const card = railScrollRef.current?.firstElementChild as HTMLElement | null;
+        if (!card) return;
+        // offsetHeight is the layout box, so a card mid-hover reports its
+        // resting height rather than its scaled one.
+        const measure = () => setRailCardH(card.offsetHeight || CARD_GEOM.minH);
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(card);
+        return () => ro.disconnect();
+    }, [railHidden, sorted.length]);
+
+    /**
+     * The cards, by hotel id, so a selection can find its own.
+     *
+     * A ref map rather than a `[data-id]` query: hotel ids come from the
+     * supplier and are not guaranteed to be safe inside a CSS selector.
+     */
+    const railCardEls = useRef(new Map<string, HTMLDivElement>());
+
+    /**
+     * Clicking a pin selects a hotel; the rail then brings that hotel's card to
+     * the middle, so the map and the strip never disagree about which stay is
+     * being looked at. The card grows on its own — see `enlarged` in RailCard —
+     * this is only the travel.
+     *
+     * A hidden rail is opened first. The scroll cannot run in the same pass,
+     * because the cards do not exist yet; the effect re-runs on `railHidden` and
+     * finds them on the way back through.
+     *
+     * `offsetLeft` rather than a bounding rect: the selected card is already
+     * wearing its `scale()` by the time this runs, and a rect would report the
+     * grown box — centring on it would sit a few percent of the card's width off.
+     * Layout offsets ignore transforms. They also ignore the neighbours' margin
+     * transition, which is still animating here, so on desktop the landing can be
+     * up to a gutter out until that settles.
+     */
+    useEffect(() => {
+        if (!selectedId) return;
+        if (railHidden) { setRailHidden(false); return; }
+
+        const scroller = railScrollRef.current;
+        const card = railCardEls.current.get(selectedId);
+        if (!scroller || !card) return;
+
+        const left = card.offsetLeft - scroller.offsetLeft
+            - (scroller.clientWidth - card.offsetWidth) / 2;
+        scroller.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+    }, [selectedId, railHidden]);
+
     useEffect(() => {
         let target: number | null = null;
         let raf = 0;
@@ -958,28 +986,106 @@ function HotelSearchContent() {
     // ── List view ─────────────────────────────────────────────────────────────
     if (viewMode === 'list') {
         return (
-            <div className="dark flex flex-col min-h-screen" style={{ background: BG, color: TEXT }}>
-                <div className="sticky top-0 z-20 flex items-center gap-3 px-4 h-14"
-                    style={{ background: 'rgba(15,11,22,0.95)', borderBottom: `1px solid ${BORDER}`, backdropFilter: 'blur(12px)' }}>
-                    <button onClick={() => setViewMode('map')}
-                        className="flex items-center justify-center rounded-full cursor-pointer"
-                        style={{ width: 36, height: 36, background: OVERLAY_BG, border: `1px solid ${OVERLAY_BDR}`, flexShrink: 0 }}>
-                        <ArrowLeft size={16} style={{ color: TEXT }} />
-                    </button>
-                    <span className="flex-1 font-semibold text-sm truncate" style={{ color: TEXT }}>
-                        {destination || 'Search results'}
-                    </span>
-                    {count > 0 && <span className="text-xs" style={{ color: DIM }}>{count} properties</span>}
-                    <SortPill value={sortBy} onChange={setSortBy} theme={uiTone} />
+            <div
+                className={theme === 'dark' ? 'dark flex flex-col min-h-screen' : 'flex flex-col min-h-screen'}
+                style={{ background: LIST_BG[theme], color: theme === 'dark' ? '#F5F5F5' : '#111111' }}
+            >
+                {/* The map view's toolbar, the same component at the same
+                    sizes. Sort is the one control that stays behind — the
+                    filter panel owns it here, and two of them would disagree —
+                    and filters and nearby places go with it, the first because
+                    the panel below is already the list's filter surface, the
+                    second because there are no map discs to draw.
+
+                    The bar takes the card surface rather than the map's own
+                    `bar` tone, so in either theme it is the same plate as the
+                    cards and the filter panel below it.
+
+                    The tally is not up here either: the map keeps it in the
+                    corner of its card rail, and this view prints it under the
+                    results heading.
+
+                    The bar floats on the page ground rather than spanning the
+                    window, so the sticky wrapper paints that ground; a
+                    transparent one would let cards scroll through the inset. */}
+                <div className="sticky top-0 z-30 px-4 pt-4 pb-3 sm:px-6" style={{ background: LIST_BG[theme] }}>
+                    {/* The panel hangs off the bar, so the two share a box: the
+                        cap is on this wrapper rather than the bar itself, and
+                        the dropdown measures its offset from the bar's own
+                        height instead of a hardcoded number the way the map's
+                        does — this bar changes height at `md`. */}
+                    <div className="relative max-w-350 mx-auto">
+                        <SearchTopBar
+                            tone={theme}
+                            barBackground={theme === 'dark' ? '#1A1A1A' : '#FFFFFF'}
+                            onBack={() => router.back()}
+                            summary={pillText}
+                            searching={isLoading || isStreaming}
+                            proximity={mapCenter}
+                            onSearchSubmit={handleSearchSubmit}
+                            theme={theme}
+                            onToggleTheme={toggleTheme}
+                            view="list"
+                            onViewChange={setViewMode}
+                            filters={{
+                                open: listFiltersOpen,
+                                activeCount: listActiveFilterCount,
+                                onToggle: () => setListFiltersOpen(v => !v),
+                                mobileOnly: true,
+                            }}
+                        />
+
+                        {/* The map view's filter dropdown, on the list's toolbar.
+                            Same motion, same offset off the bar, and it keeps its
+                            Sort By section — unlike the map's, this toolbar has no
+                            sort pill to disagree with.
+
+                            `lg:hidden` matches the button that opens it: past that
+                            width the sidebar in the results is the filter surface,
+                            and this would be the second one. It closes with the
+                            breakpoint rather than lingering as a panel whose button
+                            has gone. */}
+                        <AnimatePresence>
+                            {listFiltersOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                                    className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 md:right-auto md:w-[300px] lg:hidden"
+                                >
+                                    <HotelFilters
+                                        filters={{ ...listFilters, minPrice: listBounds.min, maxPrice: listBounds.max }}
+                                        onChange={(next) => setListFilters(f => ({ ...f, ...next }))}
+                                        onReset={() => setListFilters(EMPTY_FILTERS)}
+                                        priceRange={priceRange}
+                                        currency={currency}
+                                    />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
-                <div className="max-w-350 mx-auto px-4 sm:px-6 py-6 w-full">
-                    <HotelResults
-                        hotels={listHotels as unknown as HotelResult[]}
-                        loading={isLoading}
-                        error={status === 'error' ? 'Search failed. Please try again.' : null}
-                        destination={destination}
-                        searchQs={searchQs}
-                    />
+                {/* The same two boxes as the toolbar above, in the same order —
+                    the gutter outside, the 350 cap inside. It used to carry both
+                    on one div, which put the cap around the padding rather than
+                    inside it: past 1400px the results grid sat a gutter's width
+                    to the right of the bar, so the filter panel's left edge and
+                    the bar's did not line up. Nested this way they share both
+                    edges at every width. */}
+                <div className="px-4 py-6 sm:px-6">
+                    <div className="max-w-350 mx-auto w-full">
+                        <HotelResults
+                            hotels={listHotels as unknown as HotelResult[]}
+                            loading={isLoading}
+                            error={status === 'error' ? 'Search failed. Please try again.' : null}
+                            destination={destination}
+                            searchQs={searchQs}
+                            filters={listFilters}
+                            onFiltersChange={(next) => setListFilters(f => ({ ...f, ...next }))}
+                            onFiltersReset={() => setListFilters(EMPTY_FILTERS)}
+                        />
+                    </div>
                 </div>
             </div>
         );
@@ -997,7 +1103,7 @@ function HotelSearchContent() {
                 already a mid-tone. Re-add it here if dark still reads too deep. */}
             <div className="absolute inset-0 overflow-hidden">
                 <SearchMapContainer
-                    properties={sorted}
+                    properties={mapFiltered}
                     selectedId={selectedId}
                     onSelectId={setSelectedId}
                     hoveredId={hoveredId}
@@ -1011,82 +1117,73 @@ function HotelSearchContent() {
                     cityName={canonicalCity || destination}
                     onZoomChange={setMapZoom}
                     showAllProperties={showAllCityOverride}
+                    showPois={showPois}
                 />
             </div>
 
             {/* ── Floating top bar ─────────────────────────────── */}
-            {/* One continuous toolbar rather than a row of loose pills: the bar is
-                the ground, every control sits on it in the lighter tone. */}
-            <div
-                className="absolute left-4 right-4 z-30 flex items-center gap-2"
-                style={{
-                    top: 16, height: 60, padding: '0 10px', borderRadius: 20,
-                    background: chrome.bar,
-                    border: `1px solid ${chrome.border}`,
-                    boxShadow: chrome.shadow,
-                }}
-            >
-                {/* Back */}
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80"
-                    style={{ width: 40, height: 40, flexShrink: 0, background: chrome.surface, border: `1px solid ${chrome.border}` }}>
-                    <ArrowLeft size={18} style={{ color: chrome.text }} />
-                </button>
+            {/* The shared toolbar, floating over the basemap on the inverted
+                tone and carrying the two controls only this view has: the
+                filters button, whose panel hangs off its left edge below, and
+                the nearby-places toggle.
 
-                {/* Search */}
-                <SearchBar
-                    summary={pillText}
-                    searching={isLoading || isStreaming}
-                    theme={uiTone}
-                    proximity={mapCenter}
-                    onSubmit={handleSearchSubmit}
-                />
+                Sort is not among them. It sat here as a pill until the panel
+                took the same list over — one control in one place, and the pill
+                was desktop-only anyway, so the panel is the only surface both
+                breakpoints reach. */}
+            <SearchTopBar
+                className="absolute left-3 right-3 top-3 z-30 md:left-4 md:right-4 md:top-4"
+                tone={uiTone}
+                onBack={() => router.back()}
+                summary={pillText}
+                searching={isLoading || isStreaming}
+                proximity={mapCenter}
+                onSearchSubmit={handleSearchSubmit}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                view="map"
+                onViewChange={setViewMode}
+                filters={{ open: filtersOpen, activeCount: activeFilterCount, onToggle: () => setFiltersOpen(v => !v) }}
+                pois={{ on: showPois, onToggle: () => setShowPois(v => !v) }}
+            />
 
-                {/* Theme */}
-                <button
-                    onClick={toggleTheme}
-                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                    className="flex items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80"
-                    style={{ width: 40, height: 40, flexShrink: 0, background: chrome.surface, border: `1px solid ${chrome.border}` }}>
-                    {theme === 'dark'
-                        ? <Sun size={17} style={{ color: chrome.text }} />
-                        : <Moon size={17} style={{ color: chrome.text }} />}
-                </button>
+            {/* ── Filter panel ─────────────────────────────────── */}
+            {/* Hangs off the toolbar's left edge, clearing its own height: full
+                width on a phone, the sidebar's own 300px above it.
 
-                {/* List view */}
-                <button
-                    onClick={() => setViewMode('list')}
-                    className="flex items-center gap-2 rounded-full shrink-0 cursor-pointer transition-opacity hover:opacity-80"
-                    style={{ height: 40, padding: '0 16px', background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text, fontSize: 13, fontWeight: 600 }}>
-                    <List size={15} />
-                    List View
-                </button>
-
-                {/* Right cluster — pinned to the toolbar's far end */}
-                <div className="ml-auto flex items-center gap-2">
-                    {/* Count badge — shows spinner while streaming */}
-                    {count > 0 && (
-                        <div className="flex items-center gap-2 px-4 rounded-full shrink-0"
-                            style={{ height: 40, background: chrome.surface, border: `1px solid ${chrome.border}` }}>
-                            {isStreaming && (
-                                <div className="animate-spin flex-shrink-0" style={{
-                                    width: 11, height: 11, borderRadius: '50%',
-                                    border: `1.5px solid ${chrome.border}`,
-                                    borderTopColor: chrome.text,
-                                }} />
-                            )}
-                            <span className="font-semibold whitespace-nowrap" style={{ fontSize: 13, color: chrome.text }}>
-                                {isStreaming ? `${count}+` : count} stays
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Sort */}
-                    <SortPill value={sortBy} onChange={setSortBy} theme={uiTone} />
-                </div>
-            </div>
+                The panel reuses the list view's, minus its Sort By section —
+                that value belongs to the sort pill up in the toolbar, and two
+                controls over one value disagree. Dismissed from the same button
+                that opened it, which stays lit for as long as it is up. */}
+            <AnimatePresence>
+                {filtersOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                        className="absolute left-3 right-3 top-[68px] z-30 md:right-auto md:left-4 md:top-[80px] md:w-[300px]"
+                    >
+                        <HotelFilters
+                            filters={{ ...mapFilters, minPrice: filterMin, maxPrice: filterMax }}
+                            onChange={(next) => setMapFilters(f => ({ ...f, ...next }))}
+                            onReset={() => { setMapFilters(EMPTY_FILTERS); setSortBy('recommended'); }}
+                            priceRange={priceRange}
+                            currency={currency}
+                            // The toolbar's own sort, in the panel. Same list,
+                            // same state as the sort pill, so the two read as
+                            // one control in two places rather than disagreeing
+                            // — and on a phone, where the pill is off the
+                            // toolbar, this is the only way to sort the map.
+                            sort={{
+                                value: sortBy,
+                                options: SORT_OPTIONS,
+                                onChange: (v) => setSortBy(v as SortValue),
+                            }}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Looking. The skeleton rail that used to sit along the bottom is
                 gone: it promised a card layout the results may not fill, and it
@@ -1115,7 +1212,7 @@ function HotelSearchContent() {
 
             {/* ── Bottom card rail ──────────────────────────────── */}
             <AnimatePresence>
-                {sorted.length > 0 && !railHidden && (
+                {mapFiltered.length > 0 && !railHidden && (
                     <motion.div
                         initial={{ y: 160, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -1124,27 +1221,48 @@ function HotelSearchContent() {
                         className="absolute left-0 right-0 bottom-0 z-20"
                         style={{ pointerEvents: 'none' }}
                     >
-                        {/* List view toggle + count */}
-                        <div className="flex items-center justify-between px-4 mb-0.5">
-                            <div className="flex items-center gap-2">
+                        {/* Count + rail controls */}
+                        <div className="mb-1.5 flex items-end justify-between px-4 md:mb-0.5 md:items-center md:px-4">
+                            {/* The tally, in the slider's top-left corner.
+
+                                It was drawn twice and named three ways: this
+                                chip on a phone, a loose grey line above the
+                                desktop rail in colours the tone never reached,
+                                and a third copy in the toolbar. The chip is the
+                                one the design draws, and the rail is what it
+                                counts, so it holds this corner at every width —
+                                on the toolbar’s own geometry above `md`, so the
+                                badge reads as having moved rather than changed. */}
+                            <div
+                                className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 md:h-10 md:gap-2 md:px-4 md:py-0"
+                                style={{
+                                    background: chrome.surface,
+                                    border: `1px solid ${chrome.border}`,
+                                    boxShadow: chrome.shadow,
+                                }}
+                            >
                                 {isStreaming && (
                                     <div className="animate-spin shrink-0" style={{
                                         width: 10, height: 10, borderRadius: '50%',
-                                        border: '1.5px solid rgba(180,150,255,0.3)',
-                                        borderTopColor: '#a78bfa',
+                                        border: `1.5px solid ${chrome.border}`,
+                                        borderTopColor: chrome.text,
                                     }} />
                                 )}
-                                <span style={{ fontSize: 11, color: isStreaming ? 'rgba(245,239,228,0.7)' : 'rgba(245,239,228,0.5)' }}>
-                                    {isStreaming ? `Searching · ${count} found…` : `${count} properties`}
+                                <span className="whitespace-nowrap text-[11.5px] font-semibold md:text-[13px]" style={{ color: chrome.text }}>
+                                    {isStreaming ? `${count}+` : count} Stays
                                 </span>
                             </div>
 
                             {/* Right cluster */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
                                 {/* District filter pill — shown when cards are scoped to a neighbourhood */}
                                 {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
                                     <button
                                         onClick={() => setShowAllCityOverride(true)}
+                                        // Truncates rather than pushing the row wide:
+                                        // on a phone this label is longer than the
+                                        // screen it has to share with the count chip.
+                                        className="max-w-[60vw] truncate md:max-w-none"
                                         style={{
                                             background: 'rgba(255,107,75,0.15)',
                                             border: '1px solid rgba(255,107,75,0.4)',
@@ -1161,29 +1279,35 @@ function HotelSearchContent() {
                                     </button>
                                 )}
 
-                                {/* Hide the rail. In this row rather than floating over
-                                    the strip below: anywhere inside the scroller it
-                                    covered a card, and no z-index fixes that — the cards
-                                    still have to pass underneath it. Here it has the
-                                    line to itself. */}
+                                {/* Hide the rail. In this row rather than floating
+                                    over the strip below: anywhere inside the
+                                    scroller it covered a card, and no z-index
+                                    fixes that — the cards still have to pass
+                                    underneath it. Here it has the line to itself.
+
+                                    On a phone it is drawn down to the count
+                                    chip's own height so the two read as one row,
+                                    which is what `items-end` on the wrapper is
+                                    lining up. */}
                                 <button
                                     onClick={() => setRailHidden(true)}
                                     aria-label="Hide stay cards"
                                     title="Hide cards"
-                                    className="flex items-center justify-center rounded-full shrink-0 cursor-pointer transition-opacity hover:opacity-80"
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-10"
                                     style={{
-                                        width: 40, height: 40,
                                         background: chrome.surface, border: `1px solid ${chrome.border}`,
                                         boxShadow: chrome.shadow,
                                         pointerEvents: 'auto',
                                     }}>
-                                    <ChevronDown size={18} style={{ color: chrome.text }} />
+                                    <ChevronDown size={15} className="md:size-[18px]" style={{ color: chrome.text }} />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Horizontal scroll cards — wheel handler converts vertical scroll to horizontal */}
-                        <div className="relative" style={{ paddingBottom: 28, paddingLeft: 24 }}>
+                        {/* Horizontal scroll cards — wheel handler converts vertical
+                            scroll to horizontal. The bottom inset clears the app's
+                            bottom nav wherever that nav is on screen. */}
+                        <div className={cn('relative', RAIL_PAD_B_MOBILE)} style={{ paddingLeft: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER }}>
                             <div
                                 ref={railScrollRef}
                                 className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
@@ -1192,7 +1316,7 @@ function HotelSearchContent() {
                                 // gives it somewhere to grow; the whole rail is
                                 // pointer-transparent so that headroom doesn't swallow
                                 // clicks meant for the map.
-                                style={{ overscrollBehaviorX: 'contain', paddingTop: SELECT_HEADROOM }}
+                                style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
                             >
                                 {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
                                     <RailCard
@@ -1207,11 +1331,16 @@ function HotelSearchContent() {
                                         onViewDetails={handleViewDetails}
                                         currency={currency}
                                         theme={uiTone}
+                                        mobile={isMobile}
+                                        elementRef={(el) => {
+                                            if (el) railCardEls.current.set(property.id, el);
+                                            else railCardEls.current.delete(property.id);
+                                        }}
                                     />
                                 ))}
                                 {/* Mirrors the strip's left inset so the last card
                                     doesn't butt against the window edge */}
-                                <div style={{ minWidth: 24, flexShrink: 0 }} />
+                                <div style={{ minWidth: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER, flexShrink: 0 }} />
                             </div>
                         </div>
                     </motion.div>
@@ -1220,16 +1349,17 @@ function HotelSearchContent() {
 
             {/* Bring the rail back */}
             <AnimatePresence>
-                {sorted.length > 0 && railHidden && (
+                {mapFiltered.length > 0 && railHidden && (
                     <motion.button
                         initial={{ y: 60, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 60, opacity: 0 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 200 }}
                         onClick={() => setRailHidden(false)}
-                        className="absolute z-20 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
+                        // Rides the same bottom inset as the rail it restores, so
+                        // it clears the app's bottom nav too.
+                        className={cn('absolute right-4 z-20 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80', RAIL_BOTTOM_MOBILE)}
                         style={{
-                            right: 16, bottom: 28,
                             background: chrome.surface, border: `1px solid ${chrome.border}`,
                             borderRadius: 100, padding: '9px 15px',
                             fontSize: 12, fontWeight: 700, color: chrome.text,

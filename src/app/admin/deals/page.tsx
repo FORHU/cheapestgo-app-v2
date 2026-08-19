@@ -8,10 +8,48 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { cn } from '@/shared/lib/cn';
+import { errorMessage } from '@/shared/lib/error';
 
 type Tab = 'vouchers' | 'flight_deals' | 'hotel_deals';
 
-interface DealsResponse { items: any[]; total: number; page: number; }
+/**
+ * A row in any of the three tables.
+ *
+ * One loose shape rather than three: the tables are fed from one `items`
+ * state that changes meaning with the active tab, so a union would need a cast
+ * at every render site. Every field is optional and named after the column it
+ * comes from — this documents what the three tables actually read.
+ */
+interface DealRow {
+    id: string;
+    // Vouchers
+    code?: string;
+    description?: string;
+    discount_type?: 'percent' | 'fixed';
+    discount_value?: number | string;
+    times_used?: number;
+    usage_limit?: number;
+    active?: boolean;
+    // Flight deals
+    origin?: string;
+    airline?: string;
+    departure_date?: string;
+    discount_tag?: string;
+    updated_at?: string;
+    valid_until?: string;
+    // Hotel deals
+    name?: string;
+    destination?: string;
+    check_in?: string;
+    discount_pct?: number;
+    stars?: number;
+    min?: number;
+    // Shared
+    currency?: string;
+    price?: number | string;
+}
+
+interface DealsResponse { items: DealRow[]; total: number; page: number; }
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: 'vouchers',     label: 'Vouchers',     icon: Ticket    },
@@ -26,7 +64,7 @@ const EMPTY_FORM = {
     valid_until: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
 };
 
-function fmtDate(iso: string | null) {
+function fmtDate(iso?: string | null) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -44,7 +82,7 @@ function SkeletonRows({ cols }: { cols: number }) {
 }
 
 function VouchersTable({ items, loading, onToggle, onDelete, loadingId }: {
-    items: any[]; loading: boolean;
+    items: DealRow[]; loading: boolean;
     onToggle: (id: string) => void; onDelete: (id: string) => void;
     loadingId: string | null;
 }) {
@@ -99,7 +137,7 @@ function VouchersTable({ items, loading, onToggle, onDelete, loadingId }: {
     );
 }
 
-function FlightDealsTable({ items, loading }: { items: any[]; loading: boolean }) {
+function FlightDealsTable({ items, loading }: { items: DealRow[]; loading: boolean }) {
     if (loading && items.length === 0) return <SkeletonRows cols={5} />;
     if (!loading && items.length === 0) return (
         <div className="p-12 text-center">
@@ -133,7 +171,7 @@ function FlightDealsTable({ items, loading }: { items: any[]; loading: boolean }
     );
 }
 
-function HotelDealsTable({ items, loading }: { items: any[]; loading: boolean }) {
+function HotelDealsTable({ items, loading }: { items: DealRow[]; loading: boolean }) {
     if (loading && items.length === 0) return <SkeletonRows cols={5} />;
     if (!loading && items.length === 0) return (
         <div className="p-12 text-center">
@@ -169,7 +207,7 @@ function HotelDealsTable({ items, loading }: { items: any[]; loading: boolean })
 
 export default function AdminDealsPage() {
     const [tab, setTab]         = useState<Tab>('vouchers');
-    const [items, setItems]     = useState<any[]>([]);
+    const [items, setItems]     = useState<DealRow[]>([]);
     const [total, setTotal]     = useState(0);
     const [page, setPage]       = useState(1);
     const [loading, setLoading] = useState(true);
@@ -197,8 +235,10 @@ export default function AdminDealsPage() {
         finally { setLoading(false); }
     }, [tab, search]);
 
-    useEffect(() => { setPage(1); load(1); }, [tab, search]);
-    useEffect(() => { load(page); }, [page]);
+    // The page rewind lives in the tab/search handlers, so a filter change
+    // reaches this effect as a single render: `load` (which closes over both)
+    // gets a new identity and `page` is already back at 1 — one fetch, not two.
+    useEffect(() => { load(page); }, [load, page]);
 
     async function apiPost(body: object) {
         const res = await http.post<{ success: boolean; active?: boolean; error?: string }>('/admin/deals', body);
@@ -212,7 +252,7 @@ export default function AdminDealsPage() {
             const res = await apiPost({ action: 'toggle_voucher', id });
             setItems(prev => prev.map(v => v.id !== id ? v : { ...v, active: res.active }));
             showToast(true, res.active ? 'Voucher activated.' : 'Voucher deactivated.');
-        } catch (e: any) { showToast(false, e.message); }
+        } catch (e) { showToast(false, errorMessage(e)); }
         finally { setLId(null); }
     }
 
@@ -224,7 +264,7 @@ export default function AdminDealsPage() {
             setItems(prev => prev.filter(v => v.id !== id));
             setTotal(t => t - 1);
             showToast(true, 'Voucher deleted.');
-        } catch (e: any) { showToast(false, e.message); }
+        } catch (e) { showToast(false, errorMessage(e)); }
         finally { setLId(null); }
     }
 
@@ -238,7 +278,7 @@ export default function AdminDealsPage() {
             setShowForm(false);
             setFormState({ ...EMPTY_FORM });
             showToast(true, 'Voucher created.');
-        } catch (e: any) { showToast(false, e.message); }
+        } catch (e) { showToast(false, errorMessage(e)); }
         finally { setSaving(false); }
     }
 
@@ -275,7 +315,7 @@ export default function AdminDealsPage() {
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Type</label>
-                            <select value={form.discount_type} onChange={e => setFormState(f => ({ ...f, discount_type: e.target.value as any }))}
+                            <select value={form.discount_type} onChange={e => setFormState(f => ({ ...f, discount_type: e.target.value as 'percent' | 'fixed' }))}
                                 className="w-full rounded-xl border border-slate-200 bg-white text-sm px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
                                 <option value="percent">Percentage (%)</option>
                                 <option value="fixed">Fixed Amount</option>
@@ -317,7 +357,7 @@ export default function AdminDealsPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
                     {TABS.map(({ key, label, icon: Icon }) => (
-                        <button key={key} onClick={() => setTab(key)}
+                        <button key={key} onClick={() => { setTab(key); setPage(1); }}
                             className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
                                 tab === key ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-blue-600'
                             )}>
@@ -326,8 +366,8 @@ export default function AdminDealsPage() {
                     ))}
                 </div>
                 <div className="relative flex-1 max-w-xs">
-                    <Input icon={Search} placeholder={`Search…`} value={search} onChange={e => setSearch(e.target.value)} />
-                    {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}
+                    <Input icon={Search} placeholder={`Search…`} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+                    {search && <button onClick={() => { setSearch(''); setPage(1); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}
                 </div>
             </div>
 

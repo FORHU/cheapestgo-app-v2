@@ -53,7 +53,7 @@ export default function DealsPage() {
                         Limited-time offers
                     </div>
                     <h1 className="text-2xl md:text-4xl font-bold text-slate-900 dark:text-white">
-                        Today's Best Hotel Deals
+                        Today&apos;s Best Hotel Deals
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 max-w-xl">
                         Handpicked deals with the lowest prices we could find. Prices update frequently — book early to lock in your rate.

@@ -1,6 +1,6 @@
 'use client';
 
-import type { FlightOffer, NormalizedSegment } from '@/shared/types';
+import type {  NormalizedSegment } from '@/shared/types';
 
 export function formatPrice(amount: number, currency: string, targetCurrency?: string): string {
     const ccy = targetCurrency || currency;

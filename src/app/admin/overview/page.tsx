@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Info, BookOpen, DollarSign, Users, Hotel } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { BookingsTable } from '@/features/admin/components/bookings-table';

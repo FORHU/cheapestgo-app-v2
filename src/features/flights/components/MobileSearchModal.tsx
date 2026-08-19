@@ -12,7 +12,7 @@ interface MobileSearchModalProps {
     children?: React.ReactNode;
 }
 
-export function MobileSearchModal({ isOpen, onClose, onSearch, children }: MobileSearchModalProps) {
+export function MobileSearchModal({ isOpen, onClose: _onClose, onSearch: _onSearch, children }: MobileSearchModalProps) {
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';

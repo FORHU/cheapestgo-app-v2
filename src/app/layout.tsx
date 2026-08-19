@@ -85,13 +85,35 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     return (
         <html lang={locale} suppressHydrationWarning>
             <body className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${fredoka.variable} ${plusJakarta.variable} ${openSans.variable} font-sans`}>
+                {/* Puts the saved theme on <html> before the first paint.
+                    ThemeProvider reads the class back rather than localStorage,
+                    so this is what carries a dark-mode reader through a reload
+                    without the page flashing light first. Blocking on purpose:
+                    anything deferred paints after the flash it is meant to
+                    prevent. Defaults to light, as the app always has. */}
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: "try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light')}catch(e){document.documentElement.classList.add('light')}",
+                    }}
+                />
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <Providers>
                         <AuthListener />
                         <ExchangeRateListener />
-                        <div className="relative min-h-screen w-full bg-alabaster dark:bg-obsidian text-slate-900 dark:text-white transition-colors duration-800 bg-grid-alabaster dark:bg-grid-obsidian bg-size-40px_40px">
+                        {/* The two class hooks are for screens that own the whole
+                            viewport and want none of this — the page grid, the
+                            100vh floor, the nav inset. They cannot be dropped
+                            here with a route test, because this is a server
+                            component and one of them (the search page's map view
+                            against its list view) is a matter of client state.
+                            See `.map-immersive` in globals.css. */}
+                        <div className="app-shell relative min-h-screen w-full bg-alabaster dark:bg-obsidian text-slate-900 dark:text-white transition-colors bg-grid-alabaster dark:bg-grid-obsidian bg-size-40px_40px">
                             <GlobalSparkle />
-                            <div className="relative flex flex-col flex-1 pb-24 lg:pb-0">
+                            {/* Room under the page for the bottom nav — 80px of
+                                bar plus its safe-area inset, plus air. A flat
+                                pb-24 came up short on a phone with a home
+                                indicator even before the nav grew. */}
+                            <div className="app-shell-main relative flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+96px)] lg:pb-0">
                                 {children}
                             </div>
                             <ScrollToTop />

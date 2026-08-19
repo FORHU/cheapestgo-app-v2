@@ -117,7 +117,7 @@ function HotelCard({ booking }: { booking: HotelBooking }) {
 
 // ─── Flight Card ──────────────────────────────────────────────────────────────
 
-function FlightCard({ booking }: { booking: FlightBooking }) {
+function _FlightCard({ booking }: { booking: FlightBooking }) {
     const segments = booking.flight_segments ?? [];
     const first = segments[0];
     const last = segments[segments.length - 1];

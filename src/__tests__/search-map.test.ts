@@ -23,13 +23,27 @@ type MappableProperty = {
     originalPrice?: number;
 };
 
-function toMappable(h: any): MappableProperty | null {
+// Inlined for the same reason as MappableProperty above — the real one lives in
+// @/shared/components/map/types, and this file stays free of app imports.
+type ApiHotel = {
+    id?: string; hotelId?: string; name?: string;
+    price?: number | string; currency?: string;
+    lat?: number | string; latitude?: number | string; lng?: number | string; longitude?: number | string;
+    coordinates?: { lat?: number | string; lng?: number | string };
+    images?: string[]; thumbnailUrl?: string; image?: string;
+    rating?: number; reviewScore?: number; reviewCount?: number;
+    refundableTag?: string; starRating?: number;
+    location?: string; city?: string; country?: string; boardType?: string;
+    priceLoading?: boolean; originalPrice?: number;
+};
+
+function toMappable(h: ApiHotel): MappableProperty | null {
     const lat = h.lat ?? h.latitude ?? h.coordinates?.lat;
     const lng = h.lng ?? h.longitude ?? h.coordinates?.lng;
     if (!lat || !lng) return null;
     return {
-        id: h.id ?? h.hotelId,
-        name: h.name,
+        id: (h.id ?? h.hotelId) as string,
+        name: h.name as string,
         price: typeof h.price === 'number' ? h.price : parseFloat(h.price ?? '0'),
         currency: h.currency ?? 'USD',
         coordinates: { lat: Number(lat), lng: Number(lng) },

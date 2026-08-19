@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plane, CheckCircle2, XCircle, Clock, TrendingUp, CreditCard, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Plane, Clock, TrendingUp, ExternalLink, AlertTriangle } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Badge } from '@/shared/components/ui/badge';

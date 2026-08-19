@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -9,7 +9,7 @@ import {
     Clock, RotateCcw, AlertTriangle, Loader2,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http';
-import { formatCurrency, formatDate } from '@/shared/lib/format';
+import { formatCurrency } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 import type { AnyBooking, HotelBooking, FlightBooking } from '@/shared/types';
 
@@ -390,7 +390,7 @@ export function BookingDetail({ id }: BookingDetailProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchBooking = () => {
+    const fetchBooking = useCallback(() => {
         setIsLoading(true);
         http.get<AnyBooking>(`/api/bookings/${id}`)
             .then(setBooking)
@@ -404,11 +404,11 @@ export function BookingDetail({ id }: BookingDetailProps) {
                 }
             })
             .finally(() => setIsLoading(false));
-    };
+    }, [id, router]);
 
     useEffect(() => {
         fetchBooking();
-    }, [id, router]);
+    }, [fetchBooking]);
 
     return (
         <main className="min-h-screen pt-4 pb-20 px-3 sm:pt-6 sm:px-4 md:px-6">

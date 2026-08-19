@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Users, Search, DollarSign, Calendar, Award, Clock, X, Eye, ShieldBan, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Users, Search, Clock, X, Eye, ShieldBan, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Badge } from '@/shared/components/ui/badge';

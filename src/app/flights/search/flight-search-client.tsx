@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, ListFilter, X } from 'lucide-react';
+import { Plane, X } from 'lucide-react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import BackButton from '@/shared/components/common/BackButton';
@@ -11,7 +11,7 @@ import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { http } from '@/shared/lib/http';
 import { FlightResults } from '@/features/flights/components/flight-results';
-import { FlightFilters, DEFAULT_FLIGHT_FILTERS, type FlightFilterState, type SortBy } from '@/features/flights/components/flight-filters';
+import { FlightFilters, DEFAULT_FLIGHT_FILTERS, type FlightFilterState } from '@/features/flights/components/flight-filters';
 import { ResponsiveFlightHeader, ProviderStatus } from '@/features/flights/components/ResponsiveFlightHeader';
 import { PriceAlertButton } from '@/features/flights/components/PriceAlertButton';
 import type { FlightOffer } from '@/shared/types';
@@ -87,7 +87,7 @@ function getAirlines(offers: FlightOffer[]): string[] {
     return Array.from(set).sort();
 }
 
-function getProviderCounts(offers: FlightOffer[]): Record<string, number> {
+function _getProviderCounts(offers: FlightOffer[]): Record<string, number> {
     const counts: Record<string, number> = {};
     for (const o of offers) {
         counts[o.provider] = (counts[o.provider] || 0) + 1;
@@ -163,7 +163,7 @@ export function FlightSearchClient() {
     const abortRef = useRef<AbortController | null>(null);
     // Filter state
     const [filters, setFilters] = useState<FlightFilterState>(DEFAULT_FLIGHT_FILTERS);
-    const [filtersOpen, setFiltersOpen] = useState(true);
+    const [filtersOpen, _setFiltersOpen] = useState(true);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     // allOffers holds the unfiltered list (used to populate the filter panel)
     const [allOffers, setAllOffers] = useState<FlightOffer[]>([]);
@@ -173,10 +173,12 @@ export function FlightSearchClient() {
     };
 
     // Derive offers for filter sidebar airline/provider lists from the unfiltered set
-    const airlines = useMemo(() => getAirlines(allOffers.length > 0 ? allOffers : (state.status === 'success' ? state.offers : [])), [allOffers, state]);
+    const _airlines = useMemo(() => getAirlines(allOffers.length > 0 ? allOffers : (state.status === 'success' ? state.offers : [])), [allOffers, state]);
 
     // Client-side filtering
-    const rawOffers = state.status === 'success' ? state.offers : [];
+    // Memoised so the empty-state array keeps its identity across renders —
+    // otherwise it invalidates the `filteredOffers` memo below on every render.
+    const rawOffers = useMemo(() => (state.status === 'success' ? state.offers : []), [state]);
     const filteredOffers = useMemo(() => {
         const base = allOffers.length > 0 ? allOffers : rawOffers;
         let offers = [...base];

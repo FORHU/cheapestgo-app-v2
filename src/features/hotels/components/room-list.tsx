@@ -34,6 +34,10 @@ interface RoomListProps {
 type RateFilter = 'all' | 'rfn' | 'nrfn';
 
 const ROOMS_PER_PAGE = 5;
+// `childCount`, not `children`: this is the number of child guests, and a
+// prop literally named `children` on a React component reads as slot content
+// to both a reviewer and react/no-children-prop. The URL param it feeds is
+// still `children` — that name belongs to the API, not to this component.
 
 function RoomCard({
     room,
@@ -41,8 +45,8 @@ function RoomCard({
     checkIn,
     checkOut,
     adults,
-    children,
-}: { room: RoomOption; hotelId: string; checkIn?: string; checkOut?: string; adults?: number; children?: number }) {
+    childCount,
+}: { room: RoomOption; hotelId: string; checkIn?: string; checkOut?: string; adults?: number; childCount?: number }) {
     const router = useRouter();
     const isRefundable = room.refundableTag === 'RFN';
 
@@ -56,7 +60,7 @@ function RoomCard({
         if (checkIn)  params.set('checkIn', checkIn);
         if (checkOut) params.set('checkOut', checkOut);
         if (adults)   params.set('adults', String(adults));
-        if (children) params.set('children', String(children));
+        if (childCount) params.set('children', String(childCount));
         router.push(`/checkout?${params.toString()}`);
     };
 
@@ -201,7 +205,7 @@ export function RoomList({ hotelId, rooms, checkIn, checkOut, adults, children }
                                 checkIn={checkIn}
                                 checkOut={checkOut}
                                 adults={adults}
-                                children={children}
+                                childCount={children}
                             />
                         ))}
                     </div>

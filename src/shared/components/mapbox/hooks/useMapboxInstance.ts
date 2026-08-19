@@ -27,7 +27,7 @@ export const useMapboxInstance = () => {
         if (!map) return;
 
         // Already idle (e.g. cached tiles on Fast Refresh)
-        if ((map as any).areTilesLoaded?.()) {
+        if (map.areTilesLoaded?.()) {
             setIsMapIdle(true);
             return;
         }

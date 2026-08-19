@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, CheckCircle2, AlertCircle, Loader2, Settings2, Globe, Shield, Bell } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Settings2, Globe } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -33,7 +33,7 @@ const TIMEZONES = [
 const CURRENCIES = ['USD', 'PHP', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'JPY', 'HKD'];
 
 export default function AdminSettingsPage() {
-    const [settings, setSettings] = useState<AppSettings | null>(null);
+    const [_settings, setSettings] = useState<AppSettings | null>(null);
     const [loading, setLoading]   = useState(true);
     const [error, setError]       = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabId>('general');

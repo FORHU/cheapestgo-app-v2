@@ -3,7 +3,6 @@
  * Static fallback rates; call refreshExchangeRates() on app mount to hydrate.
  */
 
-import { env } from './env';
 import { http } from './http';
 
 const STATIC_RATES: Record<string, number> = {

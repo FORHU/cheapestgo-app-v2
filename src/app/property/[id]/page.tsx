@@ -328,7 +328,7 @@ function PropertyContent() {
     const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
     const heroImage     = content?.images?.[0] ?? null;
     const allImages     = content?.images ?? [];
-    const galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
+    const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
     const amenities    = (content?.amenities ?? []).slice(0, 5);
     const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map(r => r.price)) : null;
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;

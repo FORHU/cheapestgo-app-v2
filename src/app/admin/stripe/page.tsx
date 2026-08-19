@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import {
-    CreditCard, TrendingUp, RefreshCw, AlertTriangle, ExternalLink,
-    Banknote, Clock, CheckCircle2, Shield, Zap,
+     RefreshCw, AlertTriangle, ExternalLink,
+    Banknote, Clock, Shield, Zap,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';

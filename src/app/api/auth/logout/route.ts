@@ -12,7 +12,7 @@ export async function POST() {
     try {
         await invalidateSession();
         return NextResponse.json({ success: true });
-    } catch (err: any) {
+    } catch (err) {
         console.error('[auth/logout]', err);
         return NextResponse.json({ error: 'Logout failed.' }, { status: 500 });
     }

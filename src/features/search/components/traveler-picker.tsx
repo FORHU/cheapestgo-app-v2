@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/shared/lib/cn';
 import { useSearchStore, useTravelers, useActiveDropdown } from '@/shared/stores/search.store';
 
 interface CounterProps {
@@ -70,7 +69,7 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
     }, [adults, childrenAges, setTravelers]);
 
     const isOpen = forceOpen || activeDropdown === 'travelers';
-    const onClose = () => { if (!forceOpen) setActiveDropdown(null); };
+    const onClose = useCallback(() => { if (!forceOpen) setActiveDropdown(null); }, [forceOpen, setActiveDropdown]);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -78,7 +77,7 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
         };
         if (isOpen) document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
-    }, [isOpen]);
+    }, [isOpen, onClose]);
 
     const summaryText = useMemo(() => {
         const parts = [`${adults} adult${adults !== 1 ? 's' : ''}`];

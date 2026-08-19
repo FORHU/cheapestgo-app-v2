@@ -98,7 +98,9 @@ export interface RateLimitResult {
  * Fallback order: x-real-ip → rightmost x-forwarded-for → 'unknown'
  */
 function getClientKey(req: Request): string {
-    const headers = (req as any).headers;
+    // `Request` always carries `headers`; the optional chaining below keeps
+    // the helper safe for the hand-rolled request objects the tests pass in.
+    const headers = req.headers as Headers | undefined;
     const get = (name: string): string => headers?.get?.(name) ?? '';
 
     // x-real-ip is set by Vercel's edge and is not forwardable by clients

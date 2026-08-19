@@ -16,10 +16,10 @@ interface PoiPopupProps {
 
 export const PoiPopup = React.memo(({ poi, distance, carDuration, walkDuration, onClose }: PoiPopupProps) => {
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${poi.coordinates.lat},${poi.coordinates.lng}`;
-    const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('error');
+    const [_imgStatus, _setImgStatus] = useState<'loading' | 'loaded' | 'error'>('error');
 
     // Image URL stub — POI image fetching is a separate task
-    const imageUrl = '';
+    const _imageUrl = '';
 
     return (
         <Popup
@@ -90,3 +90,8 @@ export const PoiPopup = React.memo(({ poi, distance, carDuration, walkDuration, 
         </Popup>
     );
 });
+
+
+// `React.memo` returns an anonymous object, so React DevTools and the
+// react/display-name rule both need the name spelled out.
+PoiPopup.displayName = 'PoiPopup';

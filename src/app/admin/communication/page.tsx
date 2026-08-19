@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Mail, CheckCircle2, AlertCircle, Clock, RefreshCw, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mail, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';

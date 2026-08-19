@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart3, Activity, Clock, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
+import { BarChart3, Activity, AlertTriangle } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Skeleton } from '@/shared/components/ui/skeleton';

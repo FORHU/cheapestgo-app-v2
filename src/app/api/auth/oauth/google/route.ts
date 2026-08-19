@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) {
         return NextResponse.json({ error: 'GOOGLE_CLIENT_ID is not configured' }, { status: 500 });

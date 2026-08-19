@@ -11,6 +11,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSqlAdmin } from '@/lib/db/postgres';
 import { createUserSession } from '@/lib/auth/session';
+import { errorMessage } from '@/shared/lib/error';
 
 function validateRedirectUrl(url: string): string {
     if (!url.startsWith('/') || url.startsWith('//') || url.includes('://')) return '/';
@@ -149,8 +150,8 @@ export async function GET(request: Request) {
             await createUserSession(userId);
 
             return NextResponse.redirect(`${origin}/`);
-        } catch (err: any) {
-            console.error('[OAuth] Google callback error:', err.message);
+        } catch (err) {
+            console.error('[OAuth] Google callback error:', errorMessage(err));
             return NextResponse.redirect(`${origin}/login?error=oauth_failed`);
         }
     }

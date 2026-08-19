@@ -12,6 +12,25 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Search, Star, MapPin, Loader2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
+/**
+ * A place as this panel draws it.
+ *
+ * Loose because the panel is fed from two shapes — the gem objects the nearby
+ * hook produces and the raw GeoJSON features behind them — and reads whichever
+ * of the two carries the field.
+ */
+interface PanelGem {
+    name?: string;
+    category?: string;
+    geometry?: { coordinates?: [number, number] };
+    properties?: {
+        name?: string;
+        category?: string;
+        imageUrl?: string;
+        rating?: number | string;
+    };
+}
+
 // ─── Stub for POI_FILTERS (POI task will replace this) ───────────────────────
 const POI_FILTERS = [
     { id: 'all', icon: Search, label: 'All' },
@@ -23,7 +42,7 @@ const POI_FILTERS = [
 ];
 
 // ─── Stub for getPoiImageUrl (POI task will replace this) ────────────────────
-function getPoiImageUrl(_name: string, _lat: number, _lng: number, _opts?: any): string {
+function getPoiImageUrl(_name: string, _lat?: number, _lng?: number, _opts?: unknown): string {
     return '';
 }
 
@@ -35,14 +54,14 @@ const DISTANCE_OPTIONS = [
 ] as const;
 
 interface MapGemsPanelProps {
-    gems: any[];
+    gems: PanelGem[];
     isLoading: boolean;
     selectedCategory: string;
     onCategoryChange: (cat: string) => void;
     radiusMeters: number;
     onRadiusChange: (r: number) => void;
     activeGemName: string | null;
-    onGemClick: (gem: any) => void;
+    onGemClick: (gem: PanelGem) => void;
 }
 
 export function MapGemsPanel({
@@ -59,7 +78,7 @@ export function MapGemsPanel({
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [imageStatus, setImageStatus] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
 
-    const firstGemName = gems[0] ? (gems[0].properties?.name || gems[0].name) : null;
+    const firstGemName = gems[0] ? (gems[0].properties?.name || gems[0].name || null) : null;
     const prevFirstRef = React.useRef<string | null>(null);
     React.useEffect(() => {
         if (firstGemName !== prevFirstRef.current) {
@@ -175,13 +194,13 @@ export function MapGemsPanel({
                     )}
 
                     {gems.map((gem, idx) => {
-                        const name = gem.properties?.name || gem.name;
+                        const name = gem.properties?.name || gem.name || '';
                         const status = imageStatus[name] ?? 'loading';
                         if (status === 'error') return null;
 
                         const isActive = activeGemName === name;
-                        const lng = gem.geometry?.coordinates[0];
-                        const lat = gem.geometry?.coordinates[1];
+                        const lng = gem.geometry?.coordinates?.[0];
+                        const lat = gem.geometry?.coordinates?.[1];
                         const category = gem.properties?.category || gem.category || '';
                         const imageUrl = gem.properties?.imageUrl || getPoiImageUrl(name, lat, lng, { category });
                         const ratingRaw = Number(gem.properties?.rating);

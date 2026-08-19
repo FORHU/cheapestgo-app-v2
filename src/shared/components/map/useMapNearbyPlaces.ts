@@ -1,5 +1,19 @@
 import { useState, useEffect } from 'react';
 import { env } from '@/shared/lib/env';
+import { isAbortError } from '@/shared/lib/error';
+
+/** One row of the nearby-places GeoJSON, as this hook reads it. */
+interface PlaceFeature {
+    properties: {
+        name: string;
+        category?: string;
+        rating?: number;
+        userRatingsTotal?: number;
+        place_id?: string;
+        vicinity?: string;
+    };
+    geometry: { coordinates: [number, number] };
+}
 
 export interface NearbyPlace {
     name: string;
@@ -28,8 +42,13 @@ export function useMapNearbyPlaces({
     const [places, setPlaces] = useState<NearbyPlace[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Keyed off the primitives, not the object: callers pass `coordinates`
+    // inline, so depending on its identity would refetch every render.
+    const lat = coordinates?.lat;
+    const lng = coordinates?.lng;
+
     useEffect(() => {
-        if (!enabled || !coordinates) {
+        if (!enabled || lat === undefined || lng === undefined) {
             setPlaces([]);
             setIsLoading(false);
             return;
@@ -43,12 +62,12 @@ export function useMapNearbyPlaces({
             setPlaces([]);
             try {
                 const res = await fetch(
-                    `${env.NEXT_PUBLIC_API_URL}/hotels/nearby?lat=${coordinates.lat}&lng=${coordinates.lng}&category=${category}&radius=${radiusMeters}`,
+                    `${env.NEXT_PUBLIC_API_URL}/hotels/nearby?lat=${lat}&lng=${lng}&category=${category}&radius=${radiusMeters}`,
                     { signal }
                 );
                 if (!res.ok || signal.aborted) return;
                 const data = await res.json();
-                const mapped: NearbyPlace[] = (data.features || []).map((f: any) => ({
+                const mapped: NearbyPlace[] = (data.features || []).map((f: PlaceFeature) => ({
                     name: f.properties.name,
                     category: f.properties.category || 'place',
                     lat: f.geometry.coordinates[1],
@@ -59,8 +78,8 @@ export function useMapNearbyPlaces({
                     vicinity: f.properties.vicinity,
                 }));
                 if (!signal.aborted) setPlaces(mapped);
-            } catch (e: any) {
-                if (e.name !== 'AbortError') console.error('[MapNearbyPlaces]', e);
+            } catch (e) {
+                if (!isAbortError(e)) console.error('[MapNearbyPlaces]', e);
             } finally {
                 if (!signal.aborted) setIsLoading(false);
             }
@@ -68,7 +87,7 @@ export function useMapNearbyPlaces({
 
         load();
         return () => controller.abort();
-    }, [enabled, coordinates?.lat, coordinates?.lng, radiusMeters, category]);
+    }, [enabled, lat, lng, radiusMeters, category]);
 
     return { places, isLoading };
 }

@@ -62,3 +62,47 @@ export function computeBounds(properties: MappableProperty[]): MapBounds {
         centerLng: (minLng + maxLng) / 2,
     };
 }
+
+/**
+ * A property as the search API sends it, before `toMappable` normalises it.
+ *
+ * Every field is optional and several are alternates — `lat` / `latitude` /
+ * `coordinates.lat` are one value under three spellings, because the search
+ * endpoint, the price stream and the suggest endpoint disagree. This documents
+ * the spellings the adapter actually handles rather than claiming a contract
+ * the API does not promise.
+ */
+export interface ApiHotel {
+    id?: string;
+    hotelId?: string;
+    name?: string;
+    /** A number from the search endpoint, a string from some price payloads. */
+    price?: number | string;
+    currency?: string;
+    /**
+     * Numbers from most endpoints, strings from a few — `toMappable` coerces
+     * with `Number()`, and `search-map.test.ts` pins that behaviour with a case
+     * that passes them as strings.
+     */
+    lat?: number | string;
+    latitude?: number | string;
+    lng?: number | string;
+    longitude?: number | string;
+    coordinates?: { lat?: number | string; lng?: number | string };
+    images?: string[];
+    thumbnailUrl?: string;
+    image?: string;
+    rating?: number;
+    reviewScore?: number;
+    reviewRating?: number;
+    reviewCount?: number;
+    reviews?: number;
+    refundableTag?: string;
+    starRating?: number;
+    location?: string;
+    city?: string;
+    country?: string;
+    boardType?: string;
+    priceLoading?: boolean;
+    originalPrice?: number;
+}

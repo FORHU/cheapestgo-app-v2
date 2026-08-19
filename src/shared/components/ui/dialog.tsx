@@ -46,11 +46,11 @@ function DialogTrigger({
     if (asChild && React.isValidElement(children)) {
         return React.cloneElement(children, {
             onClick: (e: React.MouseEvent) => {
-                (children.props as any).onClick?.(e);
+                (children.props as { onClick?: React.MouseEventHandler }).onClick?.(e);
                 setOpen(true);
             },
             ...props,
-        } as any);
+        } as React.HTMLAttributes<HTMLElement>);
     }
     return <button onClick={() => setOpen(true)} {...props}>{children}</button>;
 }
@@ -89,7 +89,7 @@ function DialogContent({
                                 'relative w-full max-w-lg overflow-hidden bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-white/10',
                                 className
                             )}
-                            {...(props as any)}
+                            {...(props as React.ComponentProps<typeof motion.div>)}
                         >
                             {children}
                             {showCloseButton && (
@@ -134,11 +134,11 @@ function DialogClose({
     if (asChild && React.isValidElement(children)) {
         return React.cloneElement(children, {
             onClick: (e: React.MouseEvent) => {
-                (children.props as any).onClick?.(e);
+                (children.props as { onClick?: React.MouseEventHandler }).onClick?.(e);
                 setOpen(false);
             },
             ...props,
-        } as any);
+        } as React.HTMLAttributes<HTMLElement>);
     }
     return <button onClick={() => setOpen(false)} {...props}>{children}</button>;
 }

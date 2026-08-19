@@ -83,7 +83,7 @@ export function ProfileSection() {
             <div className="pt-2 border-t border-slate-200 dark:border-white/5">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Password</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                    We'll send a password reset link to your email.
+                    We&apos;ll send a password reset link to your email.
                 </p>
 
                 {resetSent ? (

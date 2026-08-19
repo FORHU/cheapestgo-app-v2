@@ -32,7 +32,7 @@ export default function CookiesPage() {
                                 widely used to make websites work efficiently, to remember your preferences, and to
                                 provide information to website operators. Similar technologies include web beacons,
                                 pixels, local storage, and session storage, all of which we refer to collectively as
-                                "cookies" in this policy.
+                                &quot;cookies&quot; in this policy.
                             </p>
                         </section>
 
@@ -111,7 +111,7 @@ export default function CookiesPage() {
                                     <strong>Stripe</strong> — sets cookies for fraud detection and payment session
                                     management. See{' '}
                                     <a href="https://stripe.com/privacy" className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
-                                        Stripe's Privacy Policy
+                                        Stripe&apos;s Privacy Policy
                                     </a>.
                                 </li>
                             </ul>
@@ -163,7 +163,7 @@ export default function CookiesPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Do Not Track</h2>
                             <p className="text-sm leading-relaxed">
-                                Some browsers send a "Do Not Track" (DNT) signal. CheapestGo does not currently respond
+                                Some browsers send a &quot;Do Not Track&quot; (DNT) signal. CheapestGo does not currently respond
                                 to DNT signals, as there is no universal standard for how websites should react to them.
                                 We continue to evaluate this area as standards evolve.
                             </p>
@@ -174,7 +174,7 @@ export default function CookiesPage() {
                             <p className="text-sm leading-relaxed">
                                 We may update this Cookie Policy from time to time to reflect changes in technology,
                                 regulation, or our use of cookies. When we make material changes, we will update the
-                                "Last Updated" date at the top of this page. Continued use of the Platform after changes
+                                &quot;Last Updated&quot; date at the top of this page. Continued use of the Platform after changes
                                 are posted constitutes your acceptance of the revised policy.
                             </p>
                         </section>

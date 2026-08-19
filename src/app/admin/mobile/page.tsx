@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Smartphone, Bell, Send, TrendingUp, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Smartphone, Bell, Send, AlertTriangle } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { Badge } from '@/shared/components/ui/badge';
