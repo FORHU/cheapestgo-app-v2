@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
-import { useDragScroll } from '@/hooks/useDragScroll';
-import { cityImagePath } from '@/lib/destination-images';
+import { useDragScroll } from '@/shared/hooks/useDragScroll';
+import { cityImagePath } from '@/shared/lib/destination-images';
 import { useTranslations } from 'next-intl';
 
 interface City {

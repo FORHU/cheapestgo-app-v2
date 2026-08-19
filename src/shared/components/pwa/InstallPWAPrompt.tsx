@@ -4,7 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Share, Plus, ArrowDownToLine } from 'lucide-react';
 import Image from 'next/image';
-import { usePWAInstall } from '@/contexts/PWAInstallContext';
+import { usePWAInstall } from '@/shared/contexts/PWAInstallContext';
 
 const IOS_STEPS = [
   {

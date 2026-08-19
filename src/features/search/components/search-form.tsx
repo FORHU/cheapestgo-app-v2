@@ -53,21 +53,24 @@ export function SearchForm() {
             if (!dates.checkIn || !dates.checkOut) { setError('Please select check-in and check-out dates'); return; }
 
             const params = new URLSearchParams({
-                destination:  destination.title,
-                code:         destination.code ?? '',
-                type:         destination.type,
+                destination:  destination.canonicalCity ?? destination.title,
                 checkIn:      dates.checkIn.toISOString().slice(0, 10),
                 checkOut:     dates.checkOut.toISOString().slice(0, 10),
                 adults:       String(travelers.adults),
                 children:     String(travelers.children),
                 rooms:        String(travelers.rooms),
             });
-            // Coordinates come from the geocoder, not from the opaque Mapbox feature id.
             if (destination.lat != null && destination.lng != null) {
                 params.set('lat', String(destination.lat));
                 params.set('lng', String(destination.lng));
             }
             if (destination.countryCode) params.set('countryCode', destination.countryCode);
+            if (destination.code)        params.set('destinationCode', destination.code);
+            if (destination.rung)        params.set('rung', destination.rung);
+            if (destination.bbox?.length === 4) params.set('bbox', destination.bbox.join(','));
+            if (destination.districtName) params.set('districtName', destination.districtName);
+            if (destination.canonicalCity) params.set('canonicalCity', destination.canonicalCity);
+            if (destination.id)          params.set('placeId', destination.id);
             setIsSearching(true);
             router.push(`/search?${params}`);
         }

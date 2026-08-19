@@ -6,7 +6,7 @@ import { Popup } from 'react-map-gl/mapbox';
 import { X } from 'lucide-react';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
-import { useUserCurrency } from '@/stores/searchStore';
+import { useUserCurrency } from '@/shared/stores/search.store';
 import type { MappableProperty } from './types';
 
 interface MapPopupProps {

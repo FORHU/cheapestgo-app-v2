@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { MapPin, Building2 } from 'lucide-react';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
-import { useUserCurrency } from '@/stores/searchStore';
+import { useUserCurrency } from '@/shared/stores/search.store';
 import { cn } from '@/shared/lib/cn';
 import type { MappableProperty } from './types';
 

@@ -27,6 +27,14 @@ export interface Destination {
     priceCurrency?: string;
     /** Thumbnail URL for hotel-type suggestions. */
     image?: string | null;
+    /** Granularity ladder rung — drives which resolution path the search uses. */
+    rung?: 'country' | 'province' | 'city' | 'district' | 'poi';
+    /** Mapbox bounding box [minLng, minLat, maxLng, maxLat] — used to scope map pins. */
+    bbox?: [number, number, number, number];
+    /** Original district/neighbourhood name when this result is a sub-city area. */
+    districtName?: string;
+    /** Canonical city for TGX search when user searched a district alias. */
+    canonicalCity?: string;
 }
 
 export interface DateRange {
@@ -147,15 +155,45 @@ export interface FlightPassenger {
 export interface Property {
     id: string;
     name: string;
-    address: string;
-    city: string;
-    country: string;
+    location: string;
+    description: string;
+    rating: number;
+    reviews: number;
+    price: number;
+    currency?: string;
+    originalPrice?: number;
+    image: string;
+    images: string[];
+    amenities: string[];
+    badges: string[];
+    type: 'hotel' | 'apartment' | 'resort' | 'villa';
+    coordinates: { lat: number; lng: number };
+    refundableTag?: 'RFN' | 'NRFN' | string;
+    distance?: string;
+    boardTypes?: string[];
+    city?: string;
     starRating?: number;
-    reviewScore?: number;
-    reviewCount?: number;
-    images?: string[];
-    coordinates?: { lat: number; lng: number };
-    propertyType?: string;
+    provider?: 'travelgatex' | 'duffel';
+    priceLoading?: boolean;
+    rateId?: string;
+    offerId?: string;
+    _tgx?: {
+        optionId: string;
+        token: string;
+        accessCode: string;
+        supplierCode?: string;
+        boardCode?: string;
+        rateRules?: string[];
+    };
+    checkIn?: string;
+    checkOut?: string;
+    importantInformation?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    contactWeb?: string;
+    amenityGroups?: Array<{ amenityCode: string; type?: string; texts?: Array<{ language: string; text: string }> }>;
+    giataId?: string;
+    chainCode?: string;
 }
 
 export interface HotelOffer {
@@ -324,3 +362,92 @@ export interface PaginatedResponse<T> {
     page: number;
     pageSize: number;
 }
+
+// ─── Auth (client-side) ───────────────────────────────────────────────────────
+
+export interface RegisterData {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+}
+
+export type SocialProvider = 'google' | 'apple' | 'facebook';
+
+// ─── Landing / Content types ──────────────────────────────────────────────────
+
+export interface RecentItem {
+    id: string;
+    destination: string;
+    dates: string;
+    type: string;
+    image: string;
+    price: number;
+}
+
+export interface TelemetryData {
+    label: string;
+    value: string;
+    subValue: string;
+    trend: 'up' | 'down' | 'stable';
+    icon: 'chart' | 'plane' | 'sun';
+}
+
+export interface Deal {
+    id: string;
+    title: string;
+    subtitle: string;
+    discount: string;
+    originalPrice: number;
+    salePrice: number;
+    currency?: string;
+    image: string;
+    endsIn: string;
+    tag?: string;
+    origin?: string;
+    destination?: string;
+    departure_date?: string;
+    return_date?: string;
+    cabinClass?: string;
+    lastRefreshedAt?: string;
+}
+
+export interface WeekendDeal {
+    id: string | number;
+    name: string;
+    location: string;
+    rating: number;
+    reviews: number;
+    originalPrice: number;
+    salePrice: number;
+    currency: string;
+    image: string;
+    badge?: string;
+    hotelCode?: string;
+    checkIn?: string;
+    checkOut?: string;
+}
+
+export interface RecentSearch {
+    id: string | number;
+    destination: string;
+    dates: string;
+    travelers: string;
+    rooms: string;
+}
+
+export interface VacationPackage {
+    id: string | number;
+    name: string;
+    location: string;
+    rating: number;
+    reviews: number;
+    originalPrice: number;
+    salePrice: number;
+    image: string;
+    includes: string[];
+    destinationCode?: string;
+}
+
+export const packageTabs = ["All Places", "Ho Chi Minh City", "Bali", "Seoul", "Bangkok"] as const;
+export const styleTabs = ['Beach', 'Kid-Friendly', 'Ski', 'Romantic', 'Wellness and Relaxation'] as const;

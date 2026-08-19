@@ -1,10 +1,16 @@
-export type { User, AuthStep } from '@/shared/types';
-
-export interface RegisterData {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
+export interface User {
+    id:         string;
+    email:      string;
+    firstName:  string;
+    lastName:   string;
+    avatar?:    string;
+    role:       'user' | 'admin';
 }
 
-export type SocialProvider = 'google' | 'apple' | 'facebook';
+export type AuthStep =
+    | 'email'
+    | 'login'
+    | 'register'
+    | 'verify'
+    | 'reset'
+    | 'success';

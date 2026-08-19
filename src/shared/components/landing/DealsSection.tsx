@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import SectionHeader from './SectionHeader';
-import { type Deal } from '@/types';
-import { useDragScroll } from '@/hooks/useDragScroll';
+import { type Deal } from '@/shared/types';
+import { useDragScroll } from '@/shared/hooks/useDragScroll';
 import { useTranslations } from 'next-intl';
 
 // ── IATA lookups ──────────────────────────────────────────────────────────────

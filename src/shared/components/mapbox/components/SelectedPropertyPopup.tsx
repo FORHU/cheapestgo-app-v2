@@ -4,7 +4,7 @@ import { X, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
 import { MapMarker } from '@/shared/components/map/MapMarker';
 import type { MappableProperty } from '@/shared/components/map/types';
-import { useUserCurrency } from '@/stores/searchStore';
+import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { http } from '@/shared/lib/http';
@@ -15,6 +15,7 @@ interface SelectedPropertyPopupProps {
     onViewDetails: (id: string) => void;
     onSelect: (id: string) => void;
     isMobile?: boolean;
+    nights?: number;
 }
 
 /**
@@ -278,7 +279,7 @@ function GalleryDots({ count, active, onSelect }: {
  * phone they are a thumb target next to a tap target that navigates.
  */
 function HotelPreviewCard({
-    property, content, reviewRating, onClose, onViewDetails, isMobile,
+    property, content, reviewRating, onClose, onViewDetails, isMobile, nights,
 }: {
     property: MappableProperty;
     content: HotelContent | null;
@@ -286,6 +287,7 @@ function HotelPreviewCard({
     onClose: () => void;
     onViewDetails: (id: string) => void;
     isMobile: boolean;
+    nights: number;
 }) {
     const currency = useUserCurrency();
 
@@ -352,7 +354,7 @@ function HotelPreviewCard({
         priceLabel = property.priceLoading
             ? ''
             : `${formatCurrency(
-                convertCurrency(property.price, property.currency || 'USD', currency),
+                convertCurrency(property.price, property.currency || 'USD', currency) / nights,
                 currency,
             )}/ night`;
     } catch { /* an unknown currency just drops the line */ }
@@ -477,6 +479,7 @@ export const SelectedPropertyPopup = React.memo(({
     onViewDetails,
     onSelect,
     isMobile = false,
+    nights = 1,
 }: SelectedPropertyPopupProps) => {
     const targetCurrency = useUserCurrency();
     // Hooks run unconditionally; the id going null is what clears the fetch.
@@ -488,7 +491,7 @@ export const SelectedPropertyPopup = React.memo(({
         <>
             <MapMarker
                 property={selectedProperty}
-                displayPrice={convertCurrency(selectedProperty.price, selectedProperty.currency || 'USD', targetCurrency)}
+                displayPrice={convertCurrency(selectedProperty.price, selectedProperty.currency || 'USD', targetCurrency) / nights}
                 displayCurrency={targetCurrency}
                 isSelected={true}
                 isHovered={false}
@@ -514,6 +517,7 @@ export const SelectedPropertyPopup = React.memo(({
                     onClose={onClose}
                     onViewDetails={onViewDetails}
                     isMobile={isMobile}
+                    nights={nights}
                 />
             </Popup>
         </>

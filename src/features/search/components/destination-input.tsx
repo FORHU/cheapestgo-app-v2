@@ -39,6 +39,13 @@ function getIcon(type: Destination['type']) {
     }
 }
 
+interface TrendingDestination {
+    city: string;
+    countryCode: string;
+    countryName: string;
+    imageUrl: string;
+}
+
 export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: DestinationInputProps) {
     const router = useRouter();
     const ref = useRef<HTMLDivElement>(null);
@@ -53,6 +60,16 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     const dropdownKey = getDropdownKey(segmentIndex, field);
     const isFlightField = segmentIndex !== undefined && field !== undefined;
     const activeQuery = isFlightField ? localQuery : query;
+
+    const { data: trendingData } = useQuery<TrendingDestination[]>({
+        queryKey: ['trending-destinations'],
+        queryFn: () =>
+            fetch('/api/trending-destinations')
+                .then(r => r.json())
+                .then((res: { success: boolean; data: TrendingDestination[] }) => res.success ? res.data : []),
+        staleTime: 30 * 60 * 1000,
+        enabled: !isFlightField,
+    });
 
     const [debouncedQuery, setDebouncedQuery] = useState(activeQuery);
     useEffect(() => {
@@ -159,9 +176,9 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                     </div>
 
                     {/* Results */}
-                    <div className="max-h-[260px] overflow-y-auto py-2">
+                    <div className="max-h-[380px] overflow-y-auto py-2">
                         {/* Recent searches */}
-                        {!query && recentSearches.length > 0 && (
+                        {!activeQuery && recentSearches.length > 0 && (
                             <>
                                 <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">
                                     Recent
@@ -192,6 +209,40 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                                     </div>
                                 ))}
                             </>
+                        )}
+
+                        {/* Trending destinations */}
+                        {!activeQuery && !isFlightField && trendingData && trendingData.length > 0 && (
+                            <div className="px-4 pb-3 pt-1">
+                                <div className="px-2 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">
+                                    Trending right now
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-1">
+                                    {trendingData.map((item, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleSelect({
+                                                type:        'city',
+                                                title:       item.city,
+                                                subtitle:    item.countryName,
+                                                countryCode: item.countryCode,
+                                            })}
+                                            className="relative rounded-xl overflow-hidden h-[90px] text-left group focus:outline-none"
+                                        >
+                                            <img
+                                                src={item.imageUrl}
+                                                alt={item.city}
+                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 p-2.5">
+                                                <p className="text-[11px] font-bold text-white leading-tight">{item.city}</p>
+                                                <p className="text-[9px] text-white/70 leading-tight">{item.countryName}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         )}
 
                         {/* Autocomplete results */}

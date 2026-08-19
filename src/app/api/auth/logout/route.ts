@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { invalidateSession } from '@/lib/auth/session';
+import { invalidateSession } from '@/server/auth/session';
 
 export const dynamic = 'force-dynamic';
 

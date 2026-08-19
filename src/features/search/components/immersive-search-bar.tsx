@@ -20,23 +20,31 @@ interface DestSuggestion {
     lat?: number;
     lng?: number;
     code?: string;
+    rung?: string;
+    bbox?: [number, number, number, number];
+    districtName?: string;
+    canonicalCity?: string;
 }
 
-interface TrendingDest {
+export interface TrendingDest {
     id: string;
     name: string;
     country: string;
     tag: string;
     bgClass: string;
+    lat?: number | null;
+    lng?: number | null;
+    countryCode?: string;
+    imageUrl?: string | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TRENDING: TrendingDest[] = [
-    { id: 'bali',      name: 'Bali',      country: 'Indonesia', tag: 'Island escape',  bgClass: 'bg-gradient-to-br from-teal-500 to-emerald-700' },
-    { id: 'santorini', name: 'Santorini', country: 'Greece',    tag: 'Coastal cliffs', bgClass: 'bg-gradient-to-br from-blue-400 to-sky-700' },
-    { id: 'kyoto',     name: 'Kyoto',     country: 'Japan',     tag: 'Culture & calm', bgClass: 'bg-gradient-to-br from-pink-400 to-rose-700' },
-    { id: 'marrakech', name: 'Marrakech', country: 'Morocco',   tag: 'Desert warmth',  bgClass: 'bg-gradient-to-br from-amber-400 to-orange-700' },
+    { id: 'bali',      name: 'Bali',      country: 'Indonesia', tag: 'Island escape',  bgClass: 'bg-gradient-to-br from-teal-500 to-emerald-700', lat: -8.4095,  lng: 115.1889,  countryCode: 'ID' },
+    { id: 'santorini', name: 'Santorini', country: 'Greece',    tag: 'Coastal cliffs', bgClass: 'bg-gradient-to-br from-blue-400 to-sky-700',    lat:  36.3932,  lng:  25.4615,  countryCode: 'GR' },
+    { id: 'kyoto',     name: 'Kyoto',     country: 'Japan',     tag: 'Culture & calm', bgClass: 'bg-gradient-to-br from-pink-400 to-rose-700',   lat:  35.0116,  lng: 135.7681,  countryCode: 'JP' },
+    { id: 'marrakech', name: 'Marrakech', country: 'Morocco',   tag: 'Desert warmth',  bgClass: 'bg-gradient-to-br from-amber-400 to-orange-700', lat:  31.6295,  lng:  -7.9811,  countryCode: 'MA' },
 ];
 
 const FLEX_CHIPS = ['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
@@ -348,7 +356,13 @@ function DestPanel({
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
                         {trending.map(dest => (
                             <div key={dest.id} className="imm-dest-card" style={{ flex: '1 1 120px', cursor: 'pointer', transition: 'opacity .2s' }} onClick={() => onPickTrending(dest)}>
-                                <div className={dest.bgClass} style={{ width: '100%', height: '80px', marginBottom: '8px', borderRadius: '14px' }} />
+                                <div
+                                    className={dest.bgClass}
+                                    style={{
+                                        width: '100%', height: '80px', marginBottom: '8px', borderRadius: '14px',
+                                        ...(dest.imageUrl ? { backgroundImage: `url(${dest.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
+                                    }}
+                                />
                                 <div style={{ fontWeight: 700, fontSize: '14px' }}>{dest.name}</div>
                                 <div style={{ fontSize: '12px', color: 'rgba(241,245,249,0.6)' }}>{dest.country} · {dest.tag}</div>
                             </div>
@@ -362,7 +376,8 @@ function DestPanel({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function ImmersiveSearchBar() {
+export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinations?: TrendingDest[] }) {
+    const activeTrending = trendingDestinations?.length ? trendingDestinations : TRENDING;
     const router = useRouter();
     const { recentSearches, setDestination, setDates, setTravelers, setIsSearching, addRecentSearch, setSearchMode, setFlightSegment } = useSearchStore();
 
@@ -383,7 +398,7 @@ export function ImmersiveSearchBar() {
     const [destQuery, setDestQuery] = useState('');
     const [destSugs, setDestSugs] = useState<DestSuggestion[]>([]);
     const [destSugLoading, setDestSugLoading] = useState(false);
-    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string; lat?: number; lng?: number; code?: string } | null>(null);
+    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string; lat?: number; lng?: number; code?: string; rung?: string; bbox?: [number, number, number, number]; districtName?: string; canonicalCity?: string } | null>(null);
 
     // Dates
     const [checkIn, setCheckIn] = useState<Date | null>(null);
@@ -505,7 +520,7 @@ export function ImmersiveSearchBar() {
 
     const pickDestTrending = useCallback((t: TrendingDest) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: t.name });
+        setPickedDest({ name: t.name, lat: t.lat ?? undefined, lng: t.lng ?? undefined });
         setDestQuery('');
         setDestSugs([]);
         setPanelOpen('dates');
@@ -513,7 +528,7 @@ export function ImmersiveSearchBar() {
 
     const pickDestSuggestion = useCallback((s: DestSuggestion) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: s.title, id: s.id, lat: s.lat, lng: s.lng, code: s.code });
+        setPickedDest({ name: s.canonicalCity ?? s.title, id: s.id, lat: s.lat, lng: s.lng, code: s.code, rung: s.rung, bbox: s.bbox, districtName: s.districtName, canonicalCity: s.canonicalCity });
         setDestQuery('');
         setDestSugs([]);
         setPanelOpen('dates');
@@ -581,10 +596,12 @@ export function ImmersiveSearchBar() {
         setCtaState('searching');
         setPanelOpen(null);
 
-        clearTimeout(ctaT1.current);
-        ctaT1.current = setTimeout(() => {
-            const count = 1180 + Math.floor(Math.random() * 3600);
-            setResultsCount(count);
+        void (async () => {
+            const countUrl     = `/api/hotels/count?city=${encodeURIComponent(pickedDest.name)}`;
+            const countPromise = fetch(countUrl).then(r => r.json()).then((d: { count: number }) => d.count).catch(() => null);
+            const delayPromise = new Promise<void>(resolve => { ctaT1.current = setTimeout(resolve, 1200); });
+            const [count]      = await Promise.all([countPromise, delayPromise]);
+            setResultsCount(count ?? null);
             setCtaState('done');
             setIsSearching(true);
 
@@ -597,8 +614,6 @@ export function ImmersiveSearchBar() {
 
                 const params = new URLSearchParams({
                     destination: pickedDest.name,
-                    code: pickedDest.code ?? '',
-                    type: 'city',
                     checkIn:  checkIn  ? checkIn.toISOString().slice(0, 10)  : '',
                     checkOut: checkOut ? checkOut.toISOString().slice(0, 10) : '',
                     adults: String(adults), children: String(children), rooms: '1',
@@ -607,6 +622,11 @@ export function ImmersiveSearchBar() {
                     params.set('lat', String(pickedDest.lat));
                     params.set('lng', String(pickedDest.lng));
                 }
+                if (pickedDest.code)                          params.set('destinationCode', pickedDest.code);
+                if (pickedDest.rung)                          params.set('rung', pickedDest.rung);
+                if (pickedDest.bbox?.length === 4)            params.set('bbox', pickedDest.bbox.join(','));
+                if (pickedDest.districtName)                  params.set('districtName', pickedDest.districtName);
+                if (pickedDest.canonicalCity)                 params.set('canonicalCity', pickedDest.canonicalCity);
                 clearTimeout(ctaT2.current);
                 ctaT2.current = setTimeout(() => router.push(`/search?${params}`), 800);
             } else {
@@ -632,7 +652,7 @@ export function ImmersiveSearchBar() {
                 clearTimeout(ctaT2.current);
                 ctaT2.current = setTimeout(() => router.push(`/flights/search?${params}`), 800);
             }
-        }, 1200);
+        })();
     }, [mode, tripType, pickedOrigin, pickedDest, checkIn, checkOut, adults, children, router, setDestination, setDates, setTravelers, setIsSearching, addRecentSearch, setSearchMode, setFlightSegment]);
 
     // ── Derived ───────────────────────────────────────────────────────────────
@@ -661,8 +681,8 @@ export function ImmersiveSearchBar() {
     const nights = (checkIn && checkOut) ? Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000) : null;
 
     const filteredTrending = destQuery.trim()
-        ? TRENDING.filter(t => `${t.name}${t.country}`.toLowerCase().includes(destQuery.trim().toLowerCase()))
-        : TRENDING;
+        ? activeTrending.filter(t => `${t.name}${t.country}`.toLowerCase().includes(destQuery.trim().toLowerCase()))
+        : activeTrending;
 
     // White stamp on the dark card; the confirmation state keeps its green so a
     // completed search still reads at a glance.
@@ -761,7 +781,7 @@ export function ImmersiveSearchBar() {
                                                     suggestions={originSugs}
                                                     sugLoading={originSugLoading}
                                                     onPickSuggestion={pickOriginSuggestion}
-                                                    trending={TRENDING}
+                                                    trending={activeTrending}
                                                     onPickTrending={pickOriginTrending}
                                                     placeholder="Search cities, airports…"
                                                     trendingLabel="Popular cities"

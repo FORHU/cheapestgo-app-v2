@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail } from '@/lib/auth/session';
-import { getSqlAdmin } from '@/lib/db/postgres';
-import { rateLimit } from '@/lib/server/rate-limit';
+import { getUserByEmail } from '@/server/auth/session';
+import { getSqlAdmin } from '@/server/db/postgres';
+import { rateLimit } from '@/server/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid or expired reset token.' }, { status: 400 });
     }
 
-    const { updatePassword } = await import('@/lib/auth/session');
+    const { updatePassword } = await import('@/server/auth/session');
     await updatePassword(rows[0].user_id, password);
     await sql`DELETE FROM password_reset_tokens WHERE user_id = ${rows[0].user_id}`;
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { SORT_OPTIONS, sortPalette, type SortValue } from './search-chrome';
+export { sortPalette } from './search-chrome';
 
 export function SortPill({ value, onChange, theme }: { value: SortValue; onChange: (v: SortValue) => void; theme: 'light' | 'dark' }) {
     const [open, setOpen] = useState(false);
