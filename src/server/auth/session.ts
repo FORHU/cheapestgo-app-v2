@@ -10,7 +10,7 @@
 import { cookies } from 'next/headers';
 import { getLucia } from './lucia';
 import type { Session } from 'lucia';
-import { getSqlAdmin } from '@/lib/db/postgres';
+import { getSqlAdmin } from '@/server/db/postgres';
 import { hash, verify } from '@node-rs/argon2';
 
 // ─── Session resolution ───────────────────────────────────────────────────────
