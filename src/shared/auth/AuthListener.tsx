@@ -4,14 +4,10 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/shared/stores/auth.store';
 
 export const AuthListener = () => {
-    const { initSession, fetchAndSyncRole } = useAuthStore();
+    const { initSession } = useAuthStore();
 
     useEffect(() => {
-        const init = async () => {
-            await initSession();
-            await fetchAndSyncRole();
-        };
-        init();
+        initSession();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return null;

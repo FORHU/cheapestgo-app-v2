@@ -20,6 +20,10 @@ interface DestSuggestion {
     lat?: number;
     lng?: number;
     code?: string;
+    rung?: string;
+    bbox?: [number, number, number, number];
+    districtName?: string;
+    canonicalCity?: string;
 }
 
 export interface TrendingDest {
@@ -394,7 +398,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
     const [destQuery, setDestQuery] = useState('');
     const [destSugs, setDestSugs] = useState<DestSuggestion[]>([]);
     const [destSugLoading, setDestSugLoading] = useState(false);
-    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string; lat?: number; lng?: number; code?: string } | null>(null);
+    const [pickedDest, setPickedDest] = useState<{ name: string; id?: string; lat?: number; lng?: number; code?: string; rung?: string; bbox?: [number, number, number, number]; districtName?: string; canonicalCity?: string } | null>(null);
 
     // Dates
     const [checkIn, setCheckIn] = useState<Date | null>(null);
@@ -524,7 +528,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
 
     const pickDestSuggestion = useCallback((s: DestSuggestion) => {
         clearTimeout(advanceT.current);
-        setPickedDest({ name: s.title, id: s.id, lat: s.lat, lng: s.lng, code: s.code });
+        setPickedDest({ name: s.canonicalCity ?? s.title, id: s.id, lat: s.lat, lng: s.lng, code: s.code, rung: s.rung, bbox: s.bbox, districtName: s.districtName, canonicalCity: s.canonicalCity });
         setDestQuery('');
         setDestSugs([]);
         setPanelOpen('dates');
@@ -610,8 +614,6 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
 
                 const params = new URLSearchParams({
                     destination: pickedDest.name,
-                    code: pickedDest.code ?? '',
-                    type: 'city',
                     checkIn:  checkIn  ? checkIn.toISOString().slice(0, 10)  : '',
                     checkOut: checkOut ? checkOut.toISOString().slice(0, 10) : '',
                     adults: String(adults), children: String(children), rooms: '1',
@@ -620,6 +622,11 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                     params.set('lat', String(pickedDest.lat));
                     params.set('lng', String(pickedDest.lng));
                 }
+                if (pickedDest.code)                          params.set('destinationCode', pickedDest.code);
+                if (pickedDest.rung)                          params.set('rung', pickedDest.rung);
+                if (pickedDest.bbox?.length === 4)            params.set('bbox', pickedDest.bbox.join(','));
+                if (pickedDest.districtName)                  params.set('districtName', pickedDest.districtName);
+                if (pickedDest.canonicalCity)                 params.set('canonicalCity', pickedDest.canonicalCity);
                 clearTimeout(ctaT2.current);
                 ctaT2.current = setTimeout(() => router.push(`/search?${params}`), 800);
             } else {

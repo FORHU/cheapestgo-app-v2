@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import type { Destination } from '@/shared/types';
 
-// ─── Flights mode: airport search via BE (Duffel Places API) ─────────────────
+// ─── Flights mode: airport search via BE ─────────────────────────────────────
 
 async function fetchAirportsFromBackend(query: string): Promise<Destination[]> {
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
@@ -32,79 +32,37 @@ async function fetchAirportsFromBackend(query: string): Promise<Destination[]> {
     }
 }
 
-// ─── Hotels mode: suggestions via BE (Mapbox + hotel-coverage filter + alias resolution) ──
+// ─── Hotels mode: Mapbox + city-alias + hotel-coverage filter ─────────────────
+// Uses autocompleteDestinations() directly (same as v1) so bbox and rung are
+// always present — the search page needs them to scope map pins to the city.
 
-interface BeSuggestResponse {
-    destinations: Array<{
-        type:        'city' | 'country';
-        rung:        string;
-        title:       string;
-        subtitle:    string;
-        countryCode: string;
-        id?:         string;
-        lat?:        number;
-        lng?:        number;
-        code?:       string;
-    }>;
-    hotels: Array<{
-        id:           string;
-        name:         string | null;
-        city:         string | null;
-        country:      string | null;
-        starRating?:  number | null;
-        reviewRating?: number | null;
-        image:        string | null;
-        lat?:         number | null;
-        lng?:         number | null;
-    }>;
-}
+async function fetchHotelSuggestions(query: string, locale?: string): Promise<Destination[]> {
+    const { autocompleteDestinations } = await import('@/server/search');
+    const result = await autocompleteDestinations(query, locale);
+    if (!result.success) return [];
 
-async function fetchHotelSuggestFromBackend(query: string): Promise<Destination[]> {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiBase) return [];
-
-    try {
-        const res = await fetch(
-            `${apiBase}/hotels/suggest?q=${encodeURIComponent(query)}`,
-            { signal: AbortSignal.timeout(5000) },
-        );
-        if (!res.ok) return [];
-
-        const json = await res.json() as BeSuggestResponse;
-        const { destinations = [], hotels = [] } = json;
-
-        const destItems: Destination[] = destinations.map(d => ({
-            type:        d.type === 'country' ? 'country' as const : 'city' as const,
-            title:       d.title,
-            subtitle:    d.subtitle,
-            countryCode: d.countryCode ?? '',
-            id:          d.id,
-            lat:         d.lat,
-            lng:         d.lng,
-            code:        d.code,
-        }));
-
-        const hotelItems: Destination[] = hotels.slice(0, 4).map(h => ({
-            type:        'hotel' as const,
-            title:       h.name ?? '',
-            subtitle:    [h.city, h.country].filter(Boolean).join(', '),
-            id:          String(h.id ?? ''),
-            lat:         h.lat ?? undefined,
-            lng:         h.lng ?? undefined,
-            image:       h.image ?? null,
-        }));
-
-        return [...destItems, ...hotelItems];
-    } catch {
-        return [];
-    }
+    return result.data.map(r => ({
+        type:         r.type,
+        title:        r.title,
+        subtitle:     r.subtitle,
+        countryCode:  r.countryCode,
+        id:           r.id,
+        code:         r.code,
+        lat:          r.lat,
+        lng:          r.lng,
+        rung:         r.rung,
+        bbox:         r.bbox,
+        districtName: r.districtName,
+        canonicalCity: r.canonicalCity,
+    }));
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
-    const query = req.nextUrl.searchParams.get('query') ?? '';
-    const mode  = req.nextUrl.searchParams.get('mode') ?? 'hotels';
+    const query  = req.nextUrl.searchParams.get('query') ?? '';
+    const mode   = req.nextUrl.searchParams.get('mode') ?? 'hotels';
+    const locale = req.nextUrl.searchParams.get('locale') ?? undefined;
 
     if (!query || query.length < 2) {
         return Response.json({ success: true, data: [] });
@@ -116,8 +74,7 @@ export async function GET(req: NextRequest) {
             return Response.json({ success: true, data });
         }
 
-        // Hotels mode: delegate entirely to the BE
-        const data = await fetchHotelSuggestFromBackend(query);
+        const data = await fetchHotelSuggestions(query, locale);
         return Response.json({ success: true, data });
     } catch {
         return Response.json({ success: false, error: 'Autocomplete failed' }, { status: 500 });

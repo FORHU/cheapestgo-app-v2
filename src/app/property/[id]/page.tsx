@@ -7,7 +7,10 @@ import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
 import { Map } from '@/shared/components/ui/map';
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
-import type { RoomOption } from '@/features/hotels/components/room-list';
+import type { RoomOption, RateRow } from '@/features/hotels/types/property.types';
+import { useUserCurrency } from '@/stores/searchStore';
+import { convertCurrency } from '@/shared/lib/currency';
+import { formatCurrency } from '@/shared/lib/format';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -288,17 +291,22 @@ function PropertyContent() {
     const searchParams = useSearchParams();
     const router       = useRouter();
 
+    const currency = useUserCurrency();
+
     const hotelId  = params.id as string;
     const checkIn  = searchParams.get('checkIn')  ?? '';
     const checkOut = searchParams.get('checkOut') ?? '';
     const adults   = Number(searchParams.get('adults')   ?? 2);
     const children = Number(searchParams.get('children') ?? 0);
 
-    const [data, setData]                     = useState<PropertyApiResponse | null>(null);
-    const [loading, setLoading]               = useState(true);
-    const [error, setError]                   = useState<string | null>(null);
-    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-    const [saved, setSaved]                   = useState(false);
+    const [data, setData]     = useState<PropertyApiResponse | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError]   = useState<string | null>(null);
+    const [saved, setSaved]   = useState(false);
+    // { roomId → selected rate index }
+    const [selectedRates, setSelectedRates] = useState<Record<string, number>>({});
+    // Which room card is "booked" (user clicked Select)
+    const [bookedRoomId, setBookedRoomId]   = useState<string | null>(null);
 
     useEffect(() => {
         if (!hotelId) return;
@@ -320,32 +328,53 @@ function PropertyContent() {
         return () => { cancelled = true; };
     }, [hotelId, checkIn, checkOut, adults, children]);
 
-    const content      = data?.content;
-    const rooms        = data?.rooms ?? [];
-    const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
-    const reviewScore  = Number(data?.reviews?.rating ?? 0);
-    const reviewCount  = data?.reviews?.reviews_count ?? 0;
-    const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
-    const heroImage     = content?.images?.[0] ?? null;
+    const content     = data?.content;
+    const rooms       = data?.rooms ?? [];
+    const reviewItems = (data?.reviewItems ?? []).slice(0, 4);
+    const reviewScore = Number(data?.reviews?.rating ?? 0);
+    const reviewCount = data?.reviews?.reviews_count ?? 0;
+    const heroImage   = content?.images?.[0] ?? null;
     const allImages     = content?.images ?? [];
     const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
     const amenities    = (content?.amenities ?? []).slice(0, 5);
-    const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map(r => r.price)) : null;
-    const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
     const nights       = (checkIn && checkOut)
         ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
         : null;
+    // TGX returns total-stay price; divide by nights for per-night display
+    const toNightly = (price: number, fromCurrency: string) =>
+        convertCurrency(price, fromCurrency || 'USD', currency) / (nights ?? 1);
+
+    const lowestPrice = rooms.length > 0
+        ? Math.min(...rooms.flatMap(r => {
+            const rates = (r.rates && r.rates.length > 0) ? r.rates : [{ price: r.price, currency: r.currency }];
+            return rates.map(rt => toNightly(rt.price, rt.currency));
+        }))
+        : null;
+    const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
+
+    // Get the currently-highlighted rate for a given room
+    function selectedRateFor(room: RoomOption): RateRow {
+        const idx = selectedRates[room.id] ?? 0;
+        const rates = room.rates ?? [];
+        return rates[idx] ?? rates[0] ?? {
+            offerId: room.offerId ?? room.id, price: room.price, currency: room.currency,
+            refundable: false, refundableTag: 'NON_REFUNDABLE',
+        };
+    }
+
+    const bookedRoom = bookedRoomId ? rooms.find(r => r.id === bookedRoomId) ?? null : null;
+    const bookedRate = bookedRoom ? selectedRateFor(bookedRoom) : null;
 
     function goCheckout() {
-        if (!selectedRoom) return;
+        if (!bookedRoom || !bookedRate) return;
         const p = new URLSearchParams({
             hotelId,
-            roomId:     selectedRoom.id,
-            offerId:    selectedRoom.offerId ?? selectedRoom.id,
-            rateKey:    selectedRoom.offerId ?? selectedRoom.id,
-            currency:   selectedRoom.currency,
-            totalPrice: String(nights ? selectedRoom.price * nights : selectedRoom.price),
-            roomName:   selectedRoom.name,
+            roomId:     bookedRoom.id,
+            offerId:    bookedRate.offerId,
+            rateKey:    bookedRate.offerId,
+            currency:   bookedRate.currency,
+            totalPrice: String(bookedRate.price),
+            roomName:   bookedRoom.name,
             hotelName:  content?.name ?? 'Hotel',
         });
         if (checkIn)          p.set('checkIn',      checkIn);
@@ -452,7 +481,7 @@ function PropertyContent() {
                     {lowestPrice !== null && (
                         <div>
                             <span style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>
-                                {rooms[0]?.currency} {lowestPrice.toLocaleString()}
+                                {formatCurrency(lowestPrice, currency)}
                             </span>
                             <span style={{ fontSize: 13, color: 'rgba(245,239,228,.5)' }}> /night</span>
                         </div>
@@ -485,46 +514,154 @@ function PropertyContent() {
                         <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
                             Choose your room
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             {rooms.map(room => {
-                                const selected     = room.id === selectedRoomId;
-                                const isRefundable = room.refundableTag === 'RFN';
-                                const hasBreakfast = ['BB', 'HB', 'FB', 'AI'].includes(room.boardType ?? '');
+                                const isBooked  = room.id === bookedRoomId;
+                                const roomPhotos = room.roomImages ?? [];
+                                // Bed type lives in the parenthetical of the room name: "Standard Double room (full double bed)"
+                                const bedTypeMatch = room.name.match(/\(([^)]+)\)$/);
+                                const bedType = bedTypeMatch?.[1] ?? null;
+                                // Clean name strips the parenthetical for the heading
+                                const cleanName = room.name.replace(/\s*\([^)]+\)$/, '').trim();
+
+                                // Fallback: synthesise a rate from room-level fields when rates is empty
+                                const fallbackRate: import('@/features/hotels/types/property.types').RateRow = {
+                                    offerId:    room.offerId ?? room.id,
+                                    price:      room.price,
+                                    currency:   room.currency,
+                                    boardCode:  room.boardType,
+                                    boardName:  room.boardName ?? 'Room only',
+                                    refundable: room.refundableTag === 'REFUNDABLE',
+                                    refundableTag: room.refundableTag ?? 'NON_REFUNDABLE',
+                                    cancellationDeadline: room.cancellationDeadline,
+                                };
+                                const allRates   = (room.rates && room.rates.length > 0) ? room.rates : [fallbackRate];
+                                const selRateIdx = selectedRates[room.id] ?? 0;
+                                const selRate    = allRates[selRateIdx] ?? allRates[0];
+                                const RATES_VISIBLE = 3;
+                                const showAll      = (selectedRates[`${room.id}_expanded`] ?? 0) === 1;
+                                const visibleRates = showAll ? allRates : allRates.slice(0, RATES_VISIBLE);
+                                const hiddenCount  = allRates.length - RATES_VISIBLE;
+                                const nightlySelRate = selRate ? toNightly(selRate.price, selRate.currency) : null;
 
                                 return (
                                     <div
                                         key={room.id}
-                                        onClick={() => setSelectedRoomId(selected ? null : room.id)}
-                                        style={{ display: 'flex', background: 'rgba(255,255,255,.04)', borderRadius: 16, border: selected ? `2px solid ${ACCENT}` : '1px solid rgba(255,255,255,.1)', cursor: 'pointer', overflow: 'hidden', transition: 'border-color .2s' }}
+                                        style={{ display: 'flex', background: 'rgba(255,255,255,.04)', borderRadius: 18, border: isBooked ? `2px solid ${ACCENT}` : '1px solid rgba(255,255,255,.1)', overflow: 'hidden', transition: 'border-color .2s', minHeight: 160 }}
                                     >
-                                        <div style={{ flex: 1, minWidth: 0, padding: '16px 18px' }}>
-                                            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{room.name}</div>
-                                            {(hasBreakfast || isRefundable) && (
-                                                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                                                    {hasBreakfast && (
-                                                        <span style={{ fontSize: 11, fontWeight: 600, color: TEXT, background: 'rgba(255,255,255,.08)', padding: '3px 9px', borderRadius: 8 }}>
-                                                            Breakfast included
-                                                        </span>
-                                                    )}
-                                                    {isRefundable && (
-                                                        <span style={{ fontSize: 11, fontWeight: 600, color: GREEN, background: 'rgba(47,182,127,.15)', padding: '3px 9px', borderRadius: 8 }}>
-                                                            Free cancellation
-                                                        </span>
-                                                    )}
+                                        {/* ── Left: photo stack ── */}
+                                        <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden', background: '#111' }}>
+                                            {roomPhotos.length === 0 ? (
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.03)' }}>
+                                                    <span style={{ fontSize: 28 }}>🛏</span>
                                                 </div>
+                                            ) : (
+                                                <>
+                                                    <div style={{ flex: roomPhotos.length >= 3 ? '0 0 66%' : 1, position: 'relative', overflow: 'hidden' }}>
+                                                        <img src={roomPhotos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                        {roomPhotos.length > 1 && (
+                                                            <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,.65)', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4 }}>
+                                                                📷 {roomPhotos.length}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {roomPhotos.length >= 2 && (
+                                                        <div style={{ flex: '0 0 32%', overflow: 'hidden' }}>
+                                                            <img src={roomPhotos[1]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
-                                        <div style={{ width: 1, flexShrink: 0, background: 'repeating-linear-gradient(to bottom,rgba(255,255,255,.2) 0 6px,transparent 6px 12px)' }} />
-                                        <div style={{ width: 140, flexShrink: 0, padding: '16px 18px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 8 }}>
-                                            <div style={{ fontWeight: 800, fontSize: 18, color: '#fff' }}>
-                                                {room.currency} {room.price.toLocaleString()}
+
+                                        {/* ── Middle: room info + rate table ── */}
+                                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                            {/* Room name + specs */}
+                                            <div style={{ padding: '14px 16px 10px' }}>
+                                                <div style={{ fontWeight: 700, fontSize: 14, color: '#fff', lineHeight: 1.3 }}>{cleanName}</div>
+                                                <div style={{ display: 'flex', gap: 10, marginTop: 5, flexWrap: 'wrap' }}>
+                                                    {bedType && (
+                                                        <span style={{ fontSize: 11, color: 'rgba(245,239,228,.55)' }}>🛏 {bedType}</span>
+                                                    )}
+                                                    {adults > 0 && (
+                                                        <span style={{ fontSize: 11, color: 'rgba(245,239,228,.55)' }}>👤 Sleeps {adults}</span>
+                                                    )}
+                                                </div>
                                             </div>
+
+                                            {/* Rate rows */}
+                                            <div style={{ borderTop: '1px solid rgba(255,255,255,.07)', flex: 1 }}>
+                                                {visibleRates.map((rate, idx) => {
+                                                    const isSelected  = idx === selRateIdx;
+                                                    const deadline    = rate.cancellationDeadline
+                                                        ? new Date(rate.cancellationDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                        : null;
+
+                                                    return (
+                                                        <div
+                                                            key={rate.offerId}
+                                                            onClick={() => setSelectedRates(prev => ({ ...prev, [room.id]: idx }))}
+                                                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px', cursor: 'pointer', borderBottom: idx < visibleRates.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none', background: isSelected ? 'rgba(255,107,75,.06)' : 'transparent', transition: 'background .15s', borderLeft: `2px solid ${isSelected ? ACCENT : 'transparent'}` }}
+                                                        >
+                                                            {/* Radio */}
+                                                            <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${isSelected ? ACCENT : 'rgba(255,255,255,.2)'}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                {isSelected && <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT }} />}
+                                                            </div>
+                                                            {/* Info */}
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                                    <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{rate.boardName ?? 'Room only'}</span>
+                                                                    <span style={{ fontSize: 11 }}>
+                                                                        {rate.refundable
+                                                                            ? <span style={{ color: GREEN }}>✓ Free cancel{deadline ? ` until ${deadline}` : ''}</span>
+                                                                            : <span style={{ color: '#F59E0B' }}>⚠ Non-refundable</span>
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                                {(() => {
+                                                                    const code = rate.boardCode ?? '';
+                                                                    if (['FB', 'fullboard'].includes(code))       return <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>🍳 All meals included</div>;
+                                                                    if (['HB', 'halfboard'].includes(code))       return <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>🍳 Breakfast + dinner</div>;
+                                                                    if (['AI', 'allinclusive'].includes(code))    return <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>🍹 All inclusive</div>;
+                                                                    if (['BB', 'CB', 'AB', 'EB', 'breakfast'].includes(code)) return <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>🍳 Breakfast included</div>;
+                                                                    return null;
+                                                                })()}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {hiddenCount > 0 && (
+                                                    <button
+                                                        onClick={() => setSelectedRates(prev => ({ ...prev, [`${room.id}_expanded`]: showAll ? 0 : 1 }))}
+                                                        style={{ display: 'block', width: '100%', padding: '6px 16px', background: 'transparent', border: 'none', color: ACCENT, fontSize: 11, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+                                                    >
+                                                        {showAll ? '↑ Fewer' : `↓ ${hiddenCount} more option${hiddenCount > 1 ? 's' : ''}`}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* ── Right: price + button ── */}
+                                        <div style={{ width: 130, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '16px 14px', borderLeft: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.02)' }}>
+                                            {nightlySelRate !== null && (
+                                                <>
+                                                    <div style={{ fontWeight: 800, fontSize: 17, color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
+                                                        {formatCurrency(nightlySelRate, currency)}
+                                                    </div>
+                                                    <div style={{ fontSize: 10, color: 'rgba(245,239,228,.4)' }}>/night</div>
+                                                </>
+                                            )}
                                             <button
-                                                onClick={e => { e.stopPropagation(); setSelectedRoomId(selected ? null : room.id); }}
-                                                style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: selected ? GREEN : ACCENT, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                                                onClick={() => setBookedRoomId(isBooked ? null : room.id)}
+                                                style={{ marginTop: 4, padding: '9px 0', width: '100%', borderRadius: 100, border: 'none', background: isBooked ? GREEN : ACCENT, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
                                             >
-                                                {selected ? 'Selected' : 'Select'}
+                                                {isBooked ? '✓ Selected' : 'Choose room'}
                                             </button>
+                                            {nights && (
+                                                <div style={{ fontSize: 10, color: 'rgba(245,239,228,.3)', textAlign: 'center' }}>
+                                                    {nights} night{nights > 1 ? 's' : ''} incl. taxes
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -586,17 +723,17 @@ function PropertyContent() {
             >
                 <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
-                        {selectedRoom ? 'Selected room' : 'Starting from'}
+                        {bookedRoom ? 'Selected room' : 'Starting from'}
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {selectedRoom
-                            ? `${selectedRoom.name} · ${selectedRoom.currency} ${selectedRoom.price.toLocaleString()}/night`
+                        {bookedRoom && bookedRate
+                            ? `${bookedRoom.name} · ${formatCurrency(toNightly(bookedRate.price, bookedRate.currency), currency)}/night`
                             : lowestPrice !== null
-                                ? `${rooms[0]?.currency ?? ''} ${lowestPrice.toLocaleString()}/night`
+                                ? `${formatCurrency(lowestPrice, currency)}/night`
                                 : '—'}
                     </div>
                 </div>
-                {selectedRoom ? (
+                {bookedRoom ? (
                     <button
                         onClick={goCheckout}
                         style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}

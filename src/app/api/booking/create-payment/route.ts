@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
             SELECT gross, currency, expires_at FROM hotel_prebook_quotes
             WHERE prebook_id = ${prebookId} LIMIT 1
         `;
-        const quote = quoteRows[0] ?? null;
+        const quote = (quoteRows[0] ?? null) as import('@/server/bookings/hotelChargeBase').StoredQuote | null;
 
         if (quote && String(quote.currency).toUpperCase() !== currency.toUpperCase()) {
             await refreshExchangeRates();

@@ -236,14 +236,14 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef,
+    onSelect, onHover, onViewDetails, currency, nights, theme, mobile, elementRef,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
     shiftLeft: number; shiftRight: number;
     onSelect: (id: string) => void; onHover: (id: string | null) => void;
     onViewDetails: (id: string) => void;
-    currency: string; theme: 'light' | 'dark';
+    currency: string; nights: number; theme: 'light' | 'dark';
     /** One card to a screen, edge to edge — the design's phone layout. */
     mobile: boolean;
     /** Hands the card's element up so the rail can scroll it into view when its
@@ -251,7 +251,7 @@ function RailCard({
     elementRef?: (el: HTMLDivElement | null) => void;
 }) {
     const c = railCardPalette(theme);
-    const price = convertCurrency(property.price, property.currency || 'USD', currency);
+    const price = convertCurrency(property.price, property.currency || 'USD', currency) / nights;
     const priceStr = formatCurrency(price, currency);
     const rating = property.rating ?? 0;
     /**
@@ -497,13 +497,21 @@ function HotelSearchContent() {
     const canonicalCity = searchParams.get('canonicalCity') ?? '';
     const searchQs    = searchParams.toString();
 
+    const nights = useMemo(() => {
+        const ci = new Date(checkIn);
+        const co = new Date(checkOut);
+        if (isNaN(ci.getTime()) || isNaN(co.getTime())) return 1;
+        const n = Math.round((co.getTime() - ci.getTime()) / 86_400_000);
+        return n > 0 ? n : 1;
+    }, [checkIn, checkOut]);
+
     const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
     const [status, setStatus]                   = useState<StreamStatus>('idle');
     const [viewMode, setViewMode]               = useState<ViewMode>('map');
     const [sortBy, setSortBy]                   = useState<SortValue>('recommended');
     const [selectedId, setSelectedId]           = useState<string | null>(null);
     const [hoveredId, setHoveredId]             = useState<string | null>(null);
-    const [mapZoom, setMapZoom]                 = useState(11);
+    const [mapZoom, setMapZoom]                 = useState(12);
     const [showAllCityOverride, setShowAllCityOverride] = useState(false);
     /** The toolbar's nearby-places toggle. On by default, as the map has always
      *  behaved; the button only gives that behaviour a way off. */
@@ -726,10 +734,10 @@ function HotelSearchContent() {
     const listHotels = useMemo(() =>
         sorted.map(h => ({
             ...h,
-            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency)),
+            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency) / nights),
             currency,
         })),
-    [sorted, currency]);
+    [sorted, currency, nights]);
 
     /**
      * Price bounds for the filter panel's slider, in the user's own currency —
@@ -739,14 +747,14 @@ function HotelSearchContent() {
     const priceRange = useMemo(() => {
         const prices = sorted
             .filter(h => !h.priceLoading)
-            .map(h => convertCurrency(h.price, h.currency || 'USD', currency))
+            .map(h => convertCurrency(h.price, h.currency || 'USD', currency) / nights)
             .filter(p => p > 0);
         if (prices.length === 0) return { min: 0, max: 1000 };
         const min = Math.floor(Math.min(...prices));
         const max = Math.ceil(Math.max(...prices));
         // A single price point would give the slider a zero-width track.
         return { min, max: max > min ? max : min + 1 };
-    }, [sorted, currency]);
+    }, [sorted, currency, nights]);
 
     /**
      * The panel's bounds, clamped to the range. Unset bounds fall back to it,
@@ -786,12 +794,12 @@ function HotelSearchContent() {
             // price stream catches up.
             list = list.filter(h => {
                 if (h.priceLoading) return true;
-                const p = convertCurrency(h.price, h.currency || 'USD', currency);
+                const p = convertCurrency(h.price, h.currency || 'USD', currency) / nights;
                 return p >= filterMin && p <= filterMax;
             });
         }
         return list;
-    }, [sorted, mapFilters.starRatings, priceNarrowed, filterMin, filterMax, currency]);
+    }, [sorted, mapFilters.starRatings, priceNarrowed, filterMin, filterMax, currency, nights]);
 
     const railSorted = useMemo(() => {
         if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return mapFiltered;
@@ -1066,6 +1074,40 @@ function HotelSearchContent() {
                         </AnimatePresence>
                     </div>
                 </div>
+                {/* Streaming banner — let the user know results are still arriving */}
+                <AnimatePresence>
+                    {(isLoading || isStreaming) && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden px-4 sm:px-6"
+                        >
+                            <div className="max-w-350 mx-auto pb-2">
+                                <div
+                                    className="flex items-center gap-2 text-xs font-medium"
+                                    style={{ color: theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)' }}
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        className="shrink-0 animate-spin rounded-full"
+                                        style={{
+                                            width: 12, height: 12,
+                                            border: '1.5px solid currentColor',
+                                            borderTopColor: 'transparent',
+                                        }}
+                                    />
+                                    {isLoading
+                                        ? 'Searching for stays…'
+                                        : `${count}+ stays found · still searching…`
+                                    }
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* The same two boxes as the toolbar above, in the same order —
                     the gutter outside, the 350 cap inside. It used to carry both
                     on one div, which put the cap around the padding rather than
@@ -1103,7 +1145,7 @@ function HotelSearchContent() {
                 already a mid-tone. Re-add it here if dark still reads too deep. */}
             <div className="absolute inset-0 overflow-hidden">
                 <SearchMapContainer
-                    properties={mapFiltered}
+                    properties={railSorted}
                     selectedId={selectedId}
                     onSelectId={setSelectedId}
                     hoveredId={hoveredId}
@@ -1118,6 +1160,7 @@ function HotelSearchContent() {
                     onZoomChange={setMapZoom}
                     showAllProperties={showAllCityOverride}
                     showPois={showPois}
+                    nights={nights}
                 />
             </div>
 
@@ -1146,6 +1189,47 @@ function HotelSearchContent() {
                 filters={{ open: filtersOpen, activeCount: activeFilterCount, onToggle: () => setFiltersOpen(v => !v) }}
                 pois={{ on: showPois, onToggle: () => setShowPois(v => !v) }}
             />
+
+            {/* ── Streaming progress toast ─────────────────────── */}
+            {/* Visible while results are still arriving so users know the page
+                is active, not stuck. Hidden during full-screen loading (that
+                StatusScreen covers it) and once streaming ends. */}
+            <AnimatePresence>
+                {isStreaming && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        <div
+                            className="flex items-center gap-2 rounded-full px-4 py-2"
+                            style={{
+                                background: chrome.surface,
+                                border: `1px solid ${chrome.border}`,
+                                boxShadow: chrome.shadow,
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                            }}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="shrink-0 animate-spin rounded-full"
+                                style={{
+                                    width: 12, height: 12,
+                                    border: `1.5px solid ${chrome.border}`,
+                                    borderTopColor: chrome.text,
+                                }}
+                            />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                                {count > 0 ? `${count}+ stays found · still searching…` : 'Fetching results…'}
+                            </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ── Filter panel ─────────────────────────────────── */}
             {/* Hangs off the toolbar's left edge, clearing its own height: full
@@ -1330,6 +1414,7 @@ function HotelSearchContent() {
                                         onHover={setHoveredId}
                                         onViewDetails={handleViewDetails}
                                         currency={currency}
+                                        nights={nights}
                                         theme={uiTone}
                                         mobile={isMobile}
                                         elementRef={(el) => {

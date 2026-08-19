@@ -65,6 +65,63 @@ export async function sendBookingConfirmationEmail(params: BookingConfirmationPa
     }
 }
 
+interface HotelCancellationEmailParams {
+    bookingId: string;
+    email: string;
+    guestName: string;
+    hotelName: string;
+    roomName: string;
+    checkIn: string;
+    checkOut: string;
+    refundAmount?: number;
+    currency?: string;
+    refundStatus?: string;
+}
+
+interface HotelAmendmentEmailParams {
+    bookingId: string;
+    email: string;
+    guestName: string;
+    hotelName: string;
+    changes: string;
+}
+
+export async function sendHotelCancellationEmail(params: HotelCancellationEmailParams): Promise<void> {
+    try {
+        const subject = `Booking Cancelled — ${params.hotelName}`;
+        const refundLine = params.refundAmount && params.refundAmount > 0
+            ? `<p>A refund of <strong>${params.currency} ${params.refundAmount.toFixed(2)}</strong> has been initiated (status: ${params.refundStatus ?? 'pending'}).</p>`
+            : '<p>This booking is non-refundable.</p>';
+        const html = `<p>Dear ${params.guestName},</p>
+<p>Your booking at <strong>${params.hotelName}</strong> has been cancelled.</p>
+<ul>
+<li>Booking ID: ${params.bookingId}</li>
+<li>Room: ${params.roomName}</li>
+<li>Check-in: ${params.checkIn}</li>
+<li>Check-out: ${params.checkOut}</li>
+</ul>
+${refundLine}
+<p>Thank you for using ${BRAND_NAME}.</p>`;
+        await sendViaResend(params.email, subject, html);
+    } catch (e) {
+        console.error('[email] sendHotelCancellationEmail failed:', e);
+    }
+}
+
+export async function sendHotelAmendmentEmail(params: HotelAmendmentEmailParams): Promise<void> {
+    try {
+        const subject = `Booking Updated — ${params.hotelName}`;
+        const html = `<p>Dear ${params.guestName},</p>
+<p>Your booking at <strong>${params.hotelName}</strong> has been updated.</p>
+<p>Changes: ${params.changes}</p>
+<p>Booking ID: ${params.bookingId}</p>
+<p>Thank you for using ${BRAND_NAME}.</p>`;
+        await sendViaResend(params.email, subject, html);
+    } catch (e) {
+        console.error('[email] sendHotelAmendmentEmail failed:', e);
+    }
+}
+
 export async function sendHotelRefundEmail(params: HotelRefundEmailParams): Promise<void> {
     try {
         const subject = `Refund Processed — ${params.hotelName}`;

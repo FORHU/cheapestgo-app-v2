@@ -365,9 +365,10 @@ async function fetchTgxRoomCatalog(
 
     try {
         const sql = getSqlAdmin();
+        const etgId = hotelId.replace(/^H/i, '');
         const rows = await sql<{ room_groups: any }[]>`
             SELECT room_groups FROM hotel_content
-            WHERE hotel_id = ${hotelId} AND room_groups IS NOT NULL
+            WHERE hotel_id = ${etgId} AND room_groups IS NOT NULL
             LIMIT 1
         `;
         if (rows[0] !== undefined) {

@@ -151,6 +151,8 @@ interface SearchMapContainerProps {
      * Defaults on, so the map behaves as it always has if nobody passes it.
      */
     showPois?: boolean;
+    /** Number of nights in the search — used to convert total-stay prices to per-night display prices. */
+    nights?: number;
 }
 
 export const SearchMapContainer = React.memo(({
@@ -165,10 +167,11 @@ export const SearchMapContainer = React.memo(({
     isSearching,
     districtBbox,
     districtName: _districtName,
-    cityName,
+    cityName: _cityName,
     onZoomChange,
     showAllProperties,
     showPois = true,
+    nights = 1,
 }: SearchMapContainerProps) => {
     const { mapRef, isMapLoaded, isMapIdle, handleMapLoad: instanceHandleMapLoad, handleMapStyleChange } = useMapboxInstance();
     const isMobile = useIsMobile();
@@ -200,10 +203,10 @@ export const SearchMapContainer = React.memo(({
     const markerPrices = useMemo(() => {
         const prices: Record<string, number> = {};
         for (const p of mappableProperties) {
-            prices[p.id] = convertCurrency(p.price, p.currency || 'USD', targetCurrency);
+            prices[p.id] = convertCurrency(p.price, p.currency || 'USD', targetCurrency) / nights;
         }
         return prices;
-    }, [mappableProperties, targetCurrency]);
+    }, [mappableProperties, targetCurrency, nights]);
 
     const _displayPrices = useMemo(() => {
         const formatted: Record<string, string> = {};
@@ -213,23 +216,11 @@ export const SearchMapContainer = React.memo(({
         return formatted;
     }, [mappableProperties, markerPrices, targetCurrency]);
 
-    const [currentZoom, setCurrentZoom] = React.useState(11);
-    const districtFitDoneRef = React.useRef(false);
+    const [currentZoom, setCurrentZoom] = React.useState(12);
 
-    // Wrap the load handler so we can call fitBounds synchronously on the raw
-    // map instance (via e.target) BEFORE any React state update triggers
-    // re-renders — the most reliable way to zoom to the district bbox.
-    const handleMapLoad = useCallback((e?: MapEvent) => {
-        if (districtBbox && !districtFitDoneRef.current) {
-            districtFitDoneRef.current = true;
-            const rawMap = e?.target ?? mapRef.current?.getMap?.();
-            if (rawMap) {
-                const [minLng, minLat, maxLng, maxLat] = districtBbox;
-                rawMap.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 15, duration: 0 });
-            }
-        }
+    const handleMapLoad = useCallback((_e?: MapEvent) => {
         instanceHandleMapLoad();
-    }, [districtBbox, instanceHandleMapLoad]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [instanceHandleMapLoad]);
 
     const markerProperties = useMemo(() => {
         if (!districtBbox || showAllProperties || currentZoom < DISTRICT_MARKER_THRESHOLD) return mappableProperties;
@@ -282,7 +273,10 @@ export const SearchMapContainer = React.memo(({
         };
     }, [isMapLoaded, mapRef]);
 
-    useMapViewport({ mapRef, isMapLoaded, properties: mappableProperties, center: defaultCenter, selectedId, disableFlyToSelected: true, skipInitialFit: !!districtBbox });
+    // skipInitialFit is never set: useMapViewport returns early via the `center`
+    // branch when defaultCenter is provided, so it won't run fitBounds on all
+    // properties even when a district bbox is active.
+    useMapViewport({ mapRef, isMapLoaded, properties: mappableProperties, center: defaultCenter, selectedId, disableFlyToSelected: true });
 
 
     // ── Imperative hotel pin markers ─────────────────────────────────────────
@@ -412,11 +406,15 @@ export const SearchMapContainer = React.memo(({
     React.useEffect(() => {
         const markersRef = imperativeMarkersRef;
         return () => {
+            const roots: Root[] = [];
             for (const { marker, root } of markersRef.current.values()) {
                 try { marker.remove(); } catch { /* noop */ }
-                try { root.unmount(); } catch { /* noop */ }
+                roots.push(root);
             }
             markersRef.current.clear();
+            // Defer unmount — synchronously unmounting React roots inside a cleanup
+            // that fires during React's own commit phase causes "unmount during render".
+            setTimeout(() => roots.forEach(r => { try { r.unmount(); } catch { /* noop */ } }), 0);
         };
     }, []);
     // ─────────────────────────────────────────────────────────────────────────
@@ -732,23 +730,11 @@ export const SearchMapContainer = React.memo(({
     }, [themedMapStyle, handleMapStyleChange]);
 
     const initialViewState = useMemo(() => {
-        if (districtBbox) {
-            const [minLng, minLat, maxLng, maxLat] = districtBbox;
-            return {
-                longitude: (minLng + maxLng) / 2,
-                latitude: (minLat + maxLat) / 2,
-                zoom: 14,
-                pitch: 0,
-                bearing: 0,
-            };
-        }
-        return {
-            longitude: defaultCenter?.lng ?? 139.6917,
-            latitude: defaultCenter?.lat ?? 35.6895,
-            zoom: 12,
-            pitch: 0,
-            bearing: 0,
-        };
+        // Always prefer the explicit search coordinates from the URL (lat/lng from
+        // autocomplete). The bbox center can land in the sea for coastal cities.
+        const lng = defaultCenter?.lng ?? (districtBbox ? (districtBbox[0] + districtBbox[2]) / 2 : 139.6917);
+        const lat = defaultCenter?.lat ?? (districtBbox ? (districtBbox[1] + districtBbox[3]) / 2 : 35.6895);
+        return { longitude: lng, latitude: lat, zoom: 12, pitch: 0, bearing: 0 };
     }, [defaultCenter?.lat, defaultCenter?.lng, districtBbox]);
 
     return (
@@ -865,6 +851,7 @@ export const SearchMapContainer = React.memo(({
                     onViewDetails={onViewDetails}
                     onSelect={(id) => onSelectId(id)}
                     isMobile={isMobile}
+                    nights={nights}
                 />
 
                 {selectedNearbyPlace && (
@@ -878,28 +865,6 @@ export const SearchMapContainer = React.memo(({
                     />
                 )}
             </MapContainer>
-
-            {/* District zoom-out banner — shown when user zooms out past district threshold */}
-            {districtBbox && currentZoom < DISTRICT_MARKER_THRESHOLD && cityName && (
-                <div style={{
-                    position: 'absolute', top: 72, left: '50%', transform: 'translateX(-50%)',
-                    zIndex: 35, pointerEvents: 'none',
-                }}>
-                    <div style={{
-                        background: 'rgba(28,23,36,0.92)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: 100,
-                        padding: '8px 18px',
-                        fontSize: 13,
-                        color: '#F5EFE4',
-                        backdropFilter: 'blur(10px)',
-                        whiteSpace: 'nowrap',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
-                    }}>
-                        Showing all hotels in {cityName}
-                    </div>
-                </div>
-            )}
 
             {/* Map Search Overlay */}
             <MapSearchOverlay

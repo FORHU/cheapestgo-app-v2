@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache';
 import { getSqlAdmin } from '@/server/db/postgres';
 import { CITY_ALIASES, resolveHotelDbCity } from '@/server/constants/cityAliases';
 import { COUNTRY_SEARCH_LIST, extractCountryCode } from '@/server/constants/countries';
@@ -220,7 +219,7 @@ async function fetchCitiesFromMapbox(query: string, locale?: string): Promise<Au
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?types=${types}&limit=8&language=${language}&proximity=126.9780,37.5665&access_token=${token}`;
 
     try {
-        const res = await fetch(url, { next: { revalidate: 300 } });
+        const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) return [];
         const data = await res.json();
 
@@ -358,12 +357,6 @@ async function fetchAutocomplete(query: string, locale?: string): Promise<Autoco
     return [...countryResults, ...sorted];
 }
 
-const getCachedAutocomplete = unstable_cache(
-    fetchAutocomplete,
-    ['autocomplete-destinations'],
-    { revalidate: 300 }
-);
-
 export async function autocompleteDestinations(
     query: string,
     locale?: string,
@@ -371,7 +364,7 @@ export async function autocompleteDestinations(
     if (!query || query.length < 2) return { success: true, data: [] };
 
     try {
-        const data = await getCachedAutocomplete(query, locale);
+        const data = await fetchAutocomplete(query, locale);
         return { success: true, data };
     } catch (error) {
         console.error('[autocompleteDestinations] Error:', error);

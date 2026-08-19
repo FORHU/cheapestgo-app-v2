@@ -1,15 +1,34 @@
+export interface RateRow {
+    offerId: string;
+    price: number;
+    currency: string;
+    boardCode?: string;
+    boardName?: string;
+    refundable: boolean;
+    refundableTag: string;
+    cancellationDeadline?: string;
+}
+
 export interface RoomOption {
     id: string;
     offerId?: string;
     name: string;
-    price: number;
+    price: number;        // lowest rate price (total stay)
     currency: string;
     refundableTag?: string;
+    boardType?: string;
+    boardName?: string;
     maxOccupancy?: number;
     bedType?: string;
-    boardType?: string;
     size?: number;
     amenities?: string[];
+    roomImages?: string[];
+    cancellationDeadline?: string;
+    cancelPolicy?: {
+        refundable?: boolean;
+        cancelPenalties?: Array<{ deadline?: string; amount?: number; currency?: string }>;
+    };
+    rates?: RateRow[];
 }
 
 export interface HotelContent {
