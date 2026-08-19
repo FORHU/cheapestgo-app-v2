@@ -18,6 +18,7 @@ import { useTheme } from '@/shared/components/ThemeContext';
 import { useDeclareChromeTone } from '@/shared/components/ChromeToneContext';
 import { useIsMobile } from '@/shared/hooks/useMediaQuery';
 import { cn } from '@/shared/lib/cn';
+import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
 
@@ -42,6 +43,7 @@ const LIST_BG       = { dark: '#141414', light: '#F1F1F4' };
 const EMPTY_FILTERS: HotelFiltersState = {
     sortBy: 'recommended', starRatings: [], minPrice: -Infinity, maxPrice: Infinity,
 };
+
 
 const SearchMapContainer = dynamic(
     () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
@@ -140,9 +142,23 @@ const px = (n: number) => Math.round(n * SCALE);
 const TYPE_SCALE = Math.max(SCALE, 0.9);
 const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
 
-/** The rail's inset from the window edge. */
-const RAIL_GUTTER        = 24;
-const RAIL_GUTTER_MOBILE = 16;
+/**
+ * The rail's inset, as a number, for the one thing that needs it as one: the
+ * phone card's own width.
+ *
+ * Everywhere else the rail sits in `SHELL_GUTTER` / `SHELL_CAP` — the toolbar's
+ * box — so the strip begins under the bar's left edge and ends under its right
+ * one at every width. It used to be measured on its own, in JS, off an
+ * `isMobile` that flips at 768 where the shell's gutter steps at 640; between
+ * those two widths the first card started 8px inside the tally chip above it,
+ * and past 1448 the whole strip sat a couple of hundred pixels left of the bar.
+ *
+ * The cap costs the strip nothing it was using: it still runs off its box's
+ * right edge, so the card after the last visible one still shows and the strip
+ * still reads as something to swipe — that edge is now the bar's rather than
+ * the window's.
+ */
+const RAIL_GUTTER_MOBILE = 20;
 
 /**
  * The card's box, at the two sizes it is drawn.
@@ -1008,13 +1024,13 @@ function HotelSearchContent() {
                     The bar floats on the page ground rather than spanning the
                     window, so the sticky wrapper paints that ground; a
                     transparent one would let cards scroll through the inset. */}
-                <div className="sticky top-0 z-30 px-4 pt-4 pb-3 sm:px-6" style={{ background: LIST_BG[theme] }}>
+                <div className={cn('sticky top-0 z-30 pt-4 pb-3', SHELL_GUTTER)} style={{ background: LIST_BG[theme] }}>
                     {/* The panel hangs off the bar, so the two share a box: the
                         cap is on this wrapper rather than the bar itself, and
                         the dropdown measures its offset from the bar's own
-                        height instead of a hardcoded number the way the map's
-                        does — this bar changes height at `md`. */}
-                    <div className="relative max-w-350 mx-auto">
+                        height instead of a hardcoded number. The map view now
+                        holds its bar the same way. */}
+                    <div className={cn('relative', SHELL_CAP)}>
                         <SearchTopBar
                             tone={theme}
                             barBackground={theme === 'dark' ? '#1A1A1A' : '#FFFFFF'}
@@ -1060,6 +1076,13 @@ function HotelSearchContent() {
                                         onReset={() => setListFilters(EMPTY_FILTERS)}
                                         priceRange={priceRange}
                                         currency={currency}
+                                        // This view does follow the theme, but
+                                        // says so rather than leaving it to the
+                                        // default — the map's panel below reads
+                                        // as the deliberate exception then, not
+                                        // as the only one of the two that was
+                                        // thought about.
+                                        tone={theme}
                                     />
                                 </motion.div>
                             )}
@@ -1073,8 +1096,8 @@ function HotelSearchContent() {
                     to the right of the bar, so the filter panel's left edge and
                     the bar's did not line up. Nested this way they share both
                     edges at every width. */}
-                <div className="px-4 py-6 sm:px-6">
-                    <div className="max-w-350 mx-auto w-full">
+                <div className={cn('py-6', SHELL_GUTTER)}>
+                    <div className={cn('w-full', SHELL_CAP)}>
                         <HotelResults
                             hotels={listHotels as unknown as HotelResult[]}
                             loading={isLoading}
@@ -1130,60 +1153,84 @@ function HotelSearchContent() {
                 Sort is not among them. It sat here as a pill until the panel
                 took the same list over — one control in one place, and the pill
                 was desktop-only anyway, so the panel is the only surface both
-                breakpoints reach. */}
-            <SearchTopBar
-                className="absolute left-3 right-3 top-3 z-30 md:left-4 md:right-4 md:top-4"
-                tone={uiTone}
-                onBack={() => router.back()}
-                summary={pillText}
-                searching={isLoading || isStreaming}
-                proximity={mapCenter}
-                onSearchSubmit={handleSearchSubmit}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                view="map"
-                onViewChange={setViewMode}
-                filters={{ open: filtersOpen, activeCount: activeFilterCount, onToggle: () => setFiltersOpen(v => !v) }}
-                pois={{ on: showPois, onToggle: () => setShowPois(v => !v) }}
-            />
+                breakpoints reach.
 
-            {/* ── Filter panel ─────────────────────────────────── */}
-            {/* Hangs off the toolbar's left edge, clearing its own height: full
-                width on a phone, the sidebar's own 300px above it.
+                It floats in the list view's own box — the same gutter outside,
+                the same cap inside — so the bar holds still when the view
+                toggles instead of sliding out to the window edges. The box is
+                pointer-transparent and only the controls opt back in: it is
+                wider and taller than the bar it holds, and the map has to stay
+                draggable through the slack. */}
+            <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-30 pt-4', SHELL_GUTTER)}>
+                <div className={cn('relative', SHELL_CAP)}>
+                    <SearchTopBar
+                        className="pointer-events-auto"
+                        tone={uiTone}
+                        onBack={() => router.back()}
+                        summary={pillText}
+                        searching={isLoading || isStreaming}
+                        proximity={mapCenter}
+                        onSearchSubmit={handleSearchSubmit}
+                        theme={theme}
+                        onToggleTheme={toggleTheme}
+                        view="map"
+                        onViewChange={setViewMode}
+                        filters={{ open: filtersOpen, activeCount: activeFilterCount, onToggle: () => setFiltersOpen(v => !v) }}
+                        pois={{ on: showPois, onToggle: () => setShowPois(v => !v) }}
+                    />
 
-                The panel reuses the list view's, minus its Sort By section —
-                that value belongs to the sort pill up in the toolbar, and two
-                controls over one value disagree. Dismissed from the same button
-                that opened it, which stays lit for as long as it is up. */}
-            <AnimatePresence>
-                {filtersOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
-                        className="absolute left-3 right-3 top-[68px] z-30 md:right-auto md:left-4 md:top-[80px] md:w-[300px]"
-                    >
-                        <HotelFilters
-                            filters={{ ...mapFilters, minPrice: filterMin, maxPrice: filterMax }}
-                            onChange={(next) => setMapFilters(f => ({ ...f, ...next }))}
-                            onReset={() => { setMapFilters(EMPTY_FILTERS); setSortBy('recommended'); }}
-                            priceRange={priceRange}
-                            currency={currency}
-                            // The toolbar's own sort, in the panel. Same list,
-                            // same state as the sort pill, so the two read as
-                            // one control in two places rather than disagreeing
-                            // — and on a phone, where the pill is off the
-                            // toolbar, this is the only way to sort the map.
-                            sort={{
-                                value: sortBy,
-                                options: SORT_OPTIONS,
-                                onChange: (v) => setSortBy(v as SortValue),
-                            }}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    {/* ── Filter panel ─────────────────────────── */}
+                    {/* Hangs off the toolbar's left edge, clearing its own
+                        height: full width on a phone, the sidebar's own 300px
+                        above it. Inside the bar's box and offset off `100%`
+                        rather than the 68/80px it used to guess at, which is
+                        the same thing the list view's dropdown does — and this
+                        bar changes height at `md` too.
+
+                        The panel reuses the list view's, minus its Sort By
+                        section — that value belongs to the sort pill up in the
+                        toolbar, and two controls over one value disagree.
+                        Dismissed from the same button that opened it, which
+                        stays lit for as long as it is up. */}
+                    <AnimatePresence>
+                        {filtersOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                                className="pointer-events-auto absolute left-0 right-0 top-[calc(100%+8px)] z-30 md:right-auto md:w-[300px]"
+                            >
+                                <HotelFilters
+                                    filters={{ ...mapFilters, minPrice: filterMin, maxPrice: filterMax }}
+                                    onChange={(next) => setMapFilters(f => ({ ...f, ...next }))}
+                                    onReset={() => { setMapFilters(EMPTY_FILTERS); setSortBy('recommended'); }}
+                                    priceRange={priceRange}
+                                    currency={currency}
+                                    // The tone the rest of this view's chrome
+                                    // runs on, which is the app theme inverted.
+                                    // Without it the panel took the `dark` class
+                                    // this view hardcodes on its root and was
+                                    // the one control on the map with no light
+                                    // form at all — a dark panel hanging off a
+                                    // light toolbar over a light basemap.
+                                    tone={uiTone}
+                                    // The toolbar's own sort, in the panel. Same list,
+                                    // same state as the sort pill, so the two read as
+                                    // one control in two places rather than disagreeing
+                                    // — and on a phone, where the pill is off the
+                                    // toolbar, this is the only way to sort the map.
+                                    sort={{
+                                        value: sortBy,
+                                        options: SORT_OPTIONS,
+                                        onChange: (v) => setSortBy(v as SortValue),
+                                    }}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
 
             {/* Looking. The skeleton rail that used to sit along the bottom is
                 gone: it promised a card layout the results may not fill, and it
@@ -1221,126 +1268,137 @@ function HotelSearchContent() {
                         className="absolute left-0 right-0 bottom-0 z-20"
                         style={{ pointerEvents: 'none' }}
                     >
-                        {/* Count + rail controls */}
-                        <div className="mb-1.5 flex items-end justify-between px-4 md:mb-0.5 md:items-center md:px-4">
-                            {/* The tally, in the slider's top-left corner.
+                        {/* The toolbar's box, again: the gutter outside, the cap
+                            inside. Everything the rail draws — the tally, the
+                            controls opposite it, and the strip under both —
+                            then starts on the bar's left edge and ends on its
+                            right one, instead of the rail running to the window
+                            while the bar stopped at 1400. */}
+                        <div className={SHELL_GUTTER}>
+                            <div className={SHELL_CAP}>
+                                {/* Count + rail controls */}
+                                <div className="mb-1.5 flex items-end justify-between md:mb-0.5 md:items-center">
+                                    {/* The tally, in the slider's top-left corner.
 
-                                It was drawn twice and named three ways: this
-                                chip on a phone, a loose grey line above the
-                                desktop rail in colours the tone never reached,
-                                and a third copy in the toolbar. The chip is the
-                                one the design draws, and the rail is what it
-                                counts, so it holds this corner at every width —
-                                on the toolbar’s own geometry above `md`, so the
-                                badge reads as having moved rather than changed. */}
-                            <div
-                                className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 md:h-10 md:gap-2 md:px-4 md:py-0"
-                                style={{
-                                    background: chrome.surface,
-                                    border: `1px solid ${chrome.border}`,
-                                    boxShadow: chrome.shadow,
-                                }}
-                            >
-                                {isStreaming && (
-                                    <div className="animate-spin shrink-0" style={{
-                                        width: 10, height: 10, borderRadius: '50%',
-                                        border: `1.5px solid ${chrome.border}`,
-                                        borderTopColor: chrome.text,
-                                    }} />
-                                )}
-                                <span className="whitespace-nowrap text-[11.5px] font-semibold md:text-[13px]" style={{ color: chrome.text }}>
-                                    {isStreaming ? `${count}+` : count} Stays
-                                </span>
-                            </div>
-
-                            {/* Right cluster */}
-                            <div className="flex min-w-0 items-center gap-2">
-                                {/* District filter pill — shown when cards are scoped to a neighbourhood */}
-                                {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
-                                    <button
-                                        onClick={() => setShowAllCityOverride(true)}
-                                        // Truncates rather than pushing the row wide:
-                                        // on a phone this label is longer than the
-                                        // screen it has to share with the count chip.
-                                        className="max-w-[60vw] truncate md:max-w-none"
+                                        It was drawn twice and named three ways: this
+                                        chip on a phone, a loose grey line above the
+                                        desktop rail in colours the tone never reached,
+                                        and a third copy in the toolbar. The chip is the
+                                        one the design draws, and the rail is what it
+                                        counts, so it holds this corner at every width —
+                                        on the toolbar’s own geometry above `md`, so the
+                                        badge reads as having moved rather than changed. */}
+                                    <div
+                                        className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 md:h-10 md:gap-2 md:px-4 md:py-0"
                                         style={{
-                                            background: 'rgba(255,107,75,0.15)',
-                                            border: '1px solid rgba(255,107,75,0.4)',
-                                            borderRadius: 100,
-                                            padding: '4px 12px',
-                                            fontSize: 11, fontWeight: 700,
-                                            color: ACCENT, cursor: 'pointer',
-                                            backdropFilter: 'blur(8px)',
-                                            whiteSpace: 'nowrap',
-                                            pointerEvents: 'auto',
+                                            background: chrome.surface,
+                                            border: `1px solid ${chrome.border}`,
+                                            boxShadow: chrome.shadow,
                                         }}
                                     >
-                                        {districtName} · See all in {canonicalCity || destination}
-                                    </button>
-                                )}
+                                        {isStreaming && (
+                                            <div className="animate-spin shrink-0" style={{
+                                                width: 10, height: 10, borderRadius: '50%',
+                                                border: `1.5px solid ${chrome.border}`,
+                                                borderTopColor: chrome.text,
+                                            }} />
+                                        )}
+                                        <span className="whitespace-nowrap text-[11.5px] font-semibold md:text-[13px]" style={{ color: chrome.text }}>
+                                            {isStreaming ? `${count}+` : count} Stays
+                                        </span>
+                                    </div>
 
-                                {/* Hide the rail. In this row rather than floating
-                                    over the strip below: anywhere inside the
-                                    scroller it covered a card, and no z-index
-                                    fixes that — the cards still have to pass
-                                    underneath it. Here it has the line to itself.
+                                    {/* Right cluster */}
+                                    <div className="flex min-w-0 items-center gap-2">
+                                        {/* District filter pill — shown when cards are scoped to a neighbourhood */}
+                                        {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
+                                            <button
+                                                onClick={() => setShowAllCityOverride(true)}
+                                                // Truncates rather than pushing the row wide:
+                                                // on a phone this label is longer than the
+                                                // screen it has to share with the count chip.
+                                                className="max-w-[60vw] truncate md:max-w-none"
+                                                style={{
+                                                    background: 'rgba(255,107,75,0.15)',
+                                                    border: '1px solid rgba(255,107,75,0.4)',
+                                                    borderRadius: 100,
+                                                    padding: '4px 12px',
+                                                    fontSize: 11, fontWeight: 700,
+                                                    color: ACCENT, cursor: 'pointer',
+                                                    backdropFilter: 'blur(8px)',
+                                                    whiteSpace: 'nowrap',
+                                                    pointerEvents: 'auto',
+                                                }}
+                                            >
+                                                {districtName} · See all in {canonicalCity || destination}
+                                            </button>
+                                        )}
 
-                                    On a phone it is drawn down to the count
-                                    chip's own height so the two read as one row,
-                                    which is what `items-end` on the wrapper is
-                                    lining up. */}
-                                <button
-                                    onClick={() => setRailHidden(true)}
-                                    aria-label="Hide stay cards"
-                                    title="Hide cards"
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-10"
-                                    style={{
-                                        background: chrome.surface, border: `1px solid ${chrome.border}`,
-                                        boxShadow: chrome.shadow,
-                                        pointerEvents: 'auto',
-                                    }}>
-                                    <ChevronDown size={15} className="md:size-[18px]" style={{ color: chrome.text }} />
-                                </button>
-                            </div>
-                        </div>
+                                        {/* Hide the rail. In this row rather than floating
+                                            over the strip below: anywhere inside the
+                                            scroller it covered a card, and no z-index
+                                            fixes that — the cards still have to pass
+                                            underneath it. Here it has the line to itself.
 
-                        {/* Horizontal scroll cards — wheel handler converts vertical
-                            scroll to horizontal. The bottom inset clears the app's
-                            bottom nav wherever that nav is on screen. */}
-                        <div className={cn('relative', RAIL_PAD_B_MOBILE)} style={{ paddingLeft: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER }}>
-                            <div
-                                ref={railScrollRef}
-                                className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
-                                // `overflow-x: auto` forces overflow-y to auto too, so a
-                                // selected card scaling up would be clipped. The headroom
-                                // gives it somewhere to grow; the whole rail is
-                                // pointer-transparent so that headroom doesn't swallow
-                                // clicks meant for the map.
-                                style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
-                            >
-                                {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
-                                    <RailCard
-                                        key={property.id}
-                                        property={property}
-                                        isSelected={isSelected}
-                                        isHovered={isHovered}
-                                        shiftLeft={shiftLeft}
-                                        shiftRight={shiftRight}
-                                        onSelect={handleSelect}
-                                        onHover={setHoveredId}
-                                        onViewDetails={handleViewDetails}
-                                        currency={currency}
-                                        theme={uiTone}
-                                        mobile={isMobile}
-                                        elementRef={(el) => {
-                                            if (el) railCardEls.current.set(property.id, el);
-                                            else railCardEls.current.delete(property.id);
-                                        }}
-                                    />
-                                ))}
-                                {/* Mirrors the strip's left inset so the last card
-                                    doesn't butt against the window edge */}
-                                <div style={{ minWidth: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER, flexShrink: 0 }} />
+                                            On a phone it is drawn down to the count
+                                            chip's own height so the two read as one row,
+                                            which is what `items-end` on the wrapper is
+                                            lining up. */}
+                                        <button
+                                            onClick={() => setRailHidden(true)}
+                                            aria-label="Hide stay cards"
+                                            title="Hide cards"
+                                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-10"
+                                            style={{
+                                                background: chrome.surface, border: `1px solid ${chrome.border}`,
+                                                boxShadow: chrome.shadow,
+                                                pointerEvents: 'auto',
+                                            }}>
+                                            <ChevronDown size={15} className="md:size-[18px]" style={{ color: chrome.text }} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Horizontal scroll cards — wheel handler converts vertical
+                                    scroll to horizontal. The bottom inset clears the app's
+                                    bottom nav wherever that nav is on screen.
+
+                                    No gutter of its own any more, and no spacer after the
+                                    last card: the box above supplies both edges, so the
+                                    strip starts and ends exactly where the toolbar does. */}
+                                <div className={cn('relative', RAIL_PAD_B_MOBILE)}>
+                                    <div
+                                        ref={railScrollRef}
+                                        className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
+                                        // `overflow-x: auto` forces overflow-y to auto too, so a
+                                        // selected card scaling up would be clipped. The headroom
+                                        // gives it somewhere to grow; the whole rail is
+                                        // pointer-transparent so that headroom doesn't swallow
+                                        // clicks meant for the map.
+                                        style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
+                                    >
+                                        {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
+                                            <RailCard
+                                                key={property.id}
+                                                property={property}
+                                                isSelected={isSelected}
+                                                isHovered={isHovered}
+                                                shiftLeft={shiftLeft}
+                                                shiftRight={shiftRight}
+                                                onSelect={handleSelect}
+                                                onHover={setHoveredId}
+                                                onViewDetails={handleViewDetails}
+                                                currency={currency}
+                                                theme={uiTone}
+                                                mobile={isMobile}
+                                                elementRef={(el) => {
+                                                    if (el) railCardEls.current.set(property.id, el);
+                                                    else railCardEls.current.delete(property.id);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -1350,24 +1408,32 @@ function HotelSearchContent() {
             {/* Bring the rail back */}
             <AnimatePresence>
                 {mapFiltered.length > 0 && railHidden && (
-                    <motion.button
+                    <motion.div
                         initial={{ y: 60, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 60, opacity: 0 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 200 }}
-                        onClick={() => setRailHidden(false)}
                         // Rides the same bottom inset as the rail it restores, so
-                        // it clears the app's bottom nav too.
-                        className={cn('absolute right-4 z-20 flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80', RAIL_BOTTOM_MOBILE)}
-                        style={{
-                            background: chrome.surface, border: `1px solid ${chrome.border}`,
-                            borderRadius: 100, padding: '9px 15px',
-                            fontSize: 12, fontWeight: 700, color: chrome.text,
-                            boxShadow: chrome.shadow,
-                        }}>
-                        <ChevronUp size={14} />
-                        Show {count} stays
-                    </motion.button>
+                        // it clears the app's bottom nav too, and the same box, so
+                        // it comes back on the right edge the Hide button it
+                        // replaces sat on rather than out at the window's.
+                        className={cn('pointer-events-none absolute inset-x-0 z-20', SHELL_GUTTER, RAIL_BOTTOM_MOBILE)}
+                    >
+                        <div className={cn('flex justify-end', SHELL_CAP)}>
+                            <button
+                                onClick={() => setRailHidden(false)}
+                                className="pointer-events-auto flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
+                                style={{
+                                    background: chrome.surface, border: `1px solid ${chrome.border}`,
+                                    borderRadius: 100, padding: '9px 15px',
+                                    fontSize: 12, fontWeight: 700, color: chrome.text,
+                                    boxShadow: chrome.shadow,
+                                }}>
+                                <ChevronUp size={14} />
+                                Show {count} stays
+                            </button>
+                        </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

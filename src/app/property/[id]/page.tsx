@@ -2,11 +2,15 @@
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Heart, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
 import { Map } from '@/shared/components/ui/map';
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
+import { PropertyDescription } from '@/features/hotels/components/property-description';
+import { RoomSelection } from '@/features/hotels/components/room-selection';
+import { cn } from '@/shared/lib/cn';
+import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import type { RoomOption } from '@/features/hotels/components/room-list';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,6 +27,17 @@ interface HotelContent {
     amenities: string[] | null;
     lat: number | null;
     lng: number | null;
+    /**
+     * Front-desk hours, under both of the names suppliers give them.
+     *
+     * Optional because it is not certain every supplier sends either — the
+     * description panel draws the IN / OUT pair only once one arrives, rather
+     * than printing a plausible 3:00 PM nobody has confirmed.
+     */
+    check_in_time?: string | null;
+    check_out_time?: string | null;
+    check_in?: string | null;
+    check_out?: string | null;
 }
 
 interface PropertyApiResponse {
@@ -45,7 +60,27 @@ interface PropertyApiResponse {
 const ACCENT = '#FF6B4B';
 const GREEN  = '#2FB67F';
 const TEXT   = '#F5EFE4';
-const BG     = 'linear-gradient(180deg,#15111E,#1B1526)';
+const BG     = '#000000';
+
+/**
+ * The page's column — one edge for every section on it, so the hero's name, the
+ * description, the rooms and the bar at the bottom all start on the same line.
+ *
+ * It is the app shell's, shared with the search page: 16/24px of gutter, capped
+ * at 1400px. A stay therefore occupies the same column in the results as it
+ * does on its own page, and does not slide sideways when it is opened.
+ *
+ * A pair of nested elements rather than one, because the cap has to land inside
+ * the padding — see `SHELL_GUTTER`. Held here as a component so the four places
+ * that need it do not each write the nesting out and get it half right.
+ */
+function PageColumn({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+    return (
+        <div className={SHELL_GUTTER} style={style}>
+            <div className={SHELL_CAP}>{children}</div>
+        </div>
+    );
+}
 
 function ratingInfo(score: number): { label: string; color: string } {
     if (score >= 9) return { label: 'Exceptional', color: GREEN };
@@ -93,9 +128,12 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
     const topGems  = gems.slice(0, 5);
 
     return (
-        <div style={{ display: 'flex', gap: 16, minHeight: 220 }}>
-            {/* Mini-map */}
-            <div style={{ width: '42%', height: 220, borderRadius: 14, overflow: 'hidden', flexShrink: 0, background: '#1e293b' }}>
+        // The map over its list rather than beside it: in the design this
+        // section is a column of its own next to the rooms, and a map given
+        // 42% of *that* would be a thumbnail.
+        <div>
+            {/* Map — the column's full width, at the placeholder's proportions */}
+            <div style={{ width: '100%', height: 360, borderRadius: 12, overflow: 'hidden', background: '#1e293b' }}>
                 <Map
                     mapStyle="mapbox://styles/mapbox/dark-v11"
                     initialViewState={{ longitude: coordinates.lng, latitude: coordinates.lat, zoom: 14 }}
@@ -115,8 +153,11 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
                 </Map>
             </div>
 
-            {/* Place list */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {/* Place list. The design shows only the map box, but the map is
+                non-interactive and draws its places as unlabelled dots — on its
+                own it says there is something nearby without saying what. The
+                names and distances stay under it. */}
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
                 {topGems.length === 0 && (
                     <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 13 }}>Loading nearby places…</p>
                 )}
@@ -298,7 +339,6 @@ function PropertyContent() {
     const [loading, setLoading]               = useState(true);
     const [error, setError]                   = useState<string | null>(null);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-    const [saved, setSaved]                   = useState(false);
 
     useEffect(() => {
         if (!hotelId) return;
@@ -324,12 +364,13 @@ function PropertyContent() {
     const rooms        = data?.rooms ?? [];
     const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
     const reviewScore  = Number(data?.reviews?.rating ?? 0);
-    const reviewCount  = data?.reviews?.reviews_count ?? 0;
     const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
     const heroImage     = content?.images?.[0] ?? null;
     const allImages     = content?.images ?? [];
     const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
-    const amenities    = (content?.amenities ?? []).slice(0, 5);
+    // Whole list, not the first five: the description panel draws the row the
+    // design shows and keeps the rest behind its own "See all amenities".
+    const amenities    = content?.amenities ?? [];
     const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map(r => r.price)) : null;
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
     const nights       = (checkIn && checkOut)
@@ -359,11 +400,22 @@ function PropertyContent() {
         router.push(`/checkout?${p.toString()}`);
     }
 
+    /**
+     * No `fontFamily` here on purpose: the page inherits `font-sans` off the
+     * body, which is what the search page does and what makes the two read as
+     * one product.
+     *
+     * It used to name `--font-jakarta` — a *second* next/font instance of Plus
+     * Jakarta Sans that the layout loads beside `--font-plus-jakarta`, the one
+     * `font-sans` is bound to. Same family, separately hosted and separately
+     * fetched, and pinned here at a fixed weight range while the shell's is
+     * variable across 400–800. Inheriting drops the duplicate rather than
+     * matching it.
+     */
     const rootStyle: React.CSSProperties = {
         minHeight: '100vh',
         background: BG,
         color: TEXT,
-        fontFamily: "var(--font-jakarta), 'Plus Jakarta Sans', sans-serif",
     };
 
     if (loading) {
@@ -388,13 +440,11 @@ function PropertyContent() {
         );
     }
 
-    const rinfo = ratingInfo(reviewScore);
-
     return (
         <div style={rootStyle}>
 
             {/* ── Hero ──────────────────────────────────────────────────────── */}
-            <div style={{ position: 'relative', height: '58vh', minHeight: 320 }}>
+            <div style={{ position: 'relative', height: '58vh', minHeight: 320, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' }}>
                 {heroImage ? (
                     <img
                         src={heroImage}
@@ -406,139 +456,103 @@ function PropertyContent() {
                 )}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.15) 0%,rgba(10,8,14,.25) 45%,rgba(10,8,14,.85) 100%)' }} />
 
-                {/* Back */}
-                <button
-                    onClick={() => router.back()}
-                    aria-label="Back"
-                    style={{ position: 'absolute', top: 20, left: 20, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.25)', background: 'rgba(255,255,255,.14)', backdropFilter: 'blur(8px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                >
-                    <ArrowLeft size={16} />
-                </button>
-
-                {/* Heart */}
-                <button
-                    onClick={() => setSaved(s => !s)}
-                    aria-label={saved ? 'Unsave' : 'Save'}
-                    style={{ position: 'absolute', top: 20, right: reviewScore > 0 ? 90 : 20, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.25)', background: 'rgba(255,255,255,.14)', backdropFilter: 'blur(8px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                >
-                    <Heart size={18} fill={saved ? ACCENT : 'none'} stroke={saved ? ACCENT : '#fff'} />
-                </button>
-
-                {/* Rating stamp */}
-                {reviewScore > 0 && (
-                    <div style={{ position: 'absolute', top: 20, right: 20, width: 58, height: 58, borderRadius: '50%', background: rinfo.color, color: '#fff', border: '2px dashed rgba(255,255,255,.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1 }}>{reviewScore.toFixed(1)}</div>
-                        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', marginTop: 1 }}>{rinfo.label}</div>
-                    </div>
-                )}
-
-                {/* Name + location */}
-                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 'clamp(20px,4vw,40px)' }}>
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 'clamp(26px,4vw,44px)', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
-                        {content.name}
-                    </div>
-                    <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginTop: 6 }}>
-                        {[content.city, content.country].filter(Boolean).join(' · ')}
-                        {reviewCount > 0 ? ` · ${reviewCount.toLocaleString()} reviews` : ''}
-                    </div>
+                {/* Name + location. The photo stays full-bleed; only the type
+                    over it takes the column, so the hotel's name starts on the
+                    same line as the price under it. */}
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(20px,4vw,40px)' }}>
+                    <PageColumn>
+                        <div style={{ fontWeight: 500, fontSize: 'clamp(26px,3.4vw,38px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
+                            {content.name}
+                        </div>
+                        {/* The street address, as the design has it, and only
+                            falling back to city/country when the supplier sent
+                            no address at all — the two together read as a
+                            duplicate whenever the address already names the
+                            city, which it usually does. */}
+                        <div style={{ fontSize: 15, color: 'rgba(255,255,255,.9)', marginTop: 6, textShadow: '0 2px 12px rgba(0,0,0,.45)' }}>
+                            {content.address || [content.city, content.country].filter(Boolean).join(', ')}
+                        </div>
+                    </PageColumn>
                 </div>
             </div>
 
             {/* ── Body ──────────────────────────────────────────────────────── */}
-            <div style={{ maxWidth: 760, margin: '0 auto', padding: 'clamp(20px,4vw,40px)', paddingBottom: 140 }}>
+            <PageColumn style={{ paddingTop: 'clamp(20px,4vw,40px)', paddingBottom: 140 }}>
 
-                {/* Price + amenity chips */}
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderBottom: '1px solid rgba(255,255,255,.1)', paddingBottom: 20, marginBottom: 24 }}>
-                    {lowestPrice !== null && (
-                        <div>
-                            <span style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>
-                                {rooms[0]?.currency} {lowestPrice.toLocaleString()}
-                            </span>
-                            <span style={{ fontSize: 13, color: 'rgba(245,239,228,.5)' }}> /night</span>
-                        </div>
-                    )}
-                    {amenities.length > 0 && (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {amenities.map(am => (
-                                <div key={am} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.06)', borderRadius: 100, padding: '6px 12px', fontSize: 12, fontWeight: 600, color: TEXT }}>
-                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT, display: 'inline-block', flexShrink: 0 }} />
-                                    {am}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {/* ── Description ────────────────────────────────────────────
+                    The rate, the desk's hours, what the stay comes with, and
+                    the supplier's own write-up — drawn straight onto the page
+                    ground, with no plate of its own, as the design has it.
 
-                {/* Description */}
-                {content.description && (
-                    <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(245,239,228,.82)', margin: '0 0 8px' }}>
-                        {content.description.slice(0, 300)}{content.description.length > 300 ? '…' : ''}
-                    </p>
+                    It replaces two blocks that were the same information split
+                    across the page and half-told: a price row whose chips
+                    stopped at five amenities with no way to reach the rest, and
+                    a paragraph cut at 300 characters with an ellipsis and no
+                    way to open it. Both now disclose in place.
+
+                    `tone="dark"` because this page paints itself dark from
+                    `rootStyle` rather than from the app theme — the section
+                    would otherwise come up light under a light theme, on a
+                    black ground, with cream text around it. */}
+                <PropertyDescription
+                    className="mb-8"
+                    tone="dark"
+                    price={lowestPrice}
+                    currency={rooms[0]?.currency}
+                    rating={reviewScore}
+                    checkInTime={content.check_in_time ?? content.check_in}
+                    checkOutTime={content.check_out_time ?? content.check_out}
+                    amenities={amenities}
+                    description={content.description}
+                />
+
+                {/* ── Rooms, and what is around them ─────────────────────────
+                    One row of two columns, as the design lays it out: the rate
+                    stack on the left at roughly five parts to the map's four,
+                    stacking under it below `lg` where neither half has the
+                    width to be half of anything. */}
+                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.25fr_1fr] lg:gap-12">
+
+                {/* ── Room selection ─────────────────────────────────────────
+                    The design's own section: a filter row over a stack of
+                    plates, each carrying a photo, the rate's features and its
+                    price. It replaces a hand-rolled list with no filters, no
+                    photo, and a rate's features shown as at most two badges.
+
+                    The photo is the hotel's own — suppliers return rates, not
+                    room photography — which is why one picture runs across the
+                    cards rather than a different one per room. The amenity list
+                    is the hotel's for the same reason, and is read only by rates
+                    that carry none of their own. */}
+                <RoomSelection
+                    id="rooms-section"
+                    className="min-w-0"
+                    tone="dark"
+                    rooms={rooms}
+                    image={heroImage}
+                    hotelAmenities={amenities}
+                    selectedRoomId={selectedRoomId}
+                    onSelect={(roomId) => setSelectedRoomId(prev => prev === roomId ? null : roomId)}
+                />
+
+                {/* ── Nearby places ────────────────────────────────────────── */}
+                {coordinates && (
+                    <section className="min-w-0">
+                        <h2 className={cn(SECTION_HEADING, 'text-white')}>Nearby Places</h2>
+                        <div className="mt-4">
+                            <NearbySection coordinates={coordinates} />
+                        </div>
+                    </section>
                 )}
+                </div>
 
                 {/* Photo gallery — thumb is images[1], lightbox shows all hotel images */}
                 {allImages.length > 1 && <PhotoGallery images={allImages} />}
 
-                {/* ── Room selection ─────────────────────────────────────────── */}
-                {rooms.length > 0 && (
-                    <div id="rooms-section" style={{ margin: '0 0 36px' }}>
-                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
-                            Choose your room
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            {rooms.map(room => {
-                                const selected     = room.id === selectedRoomId;
-                                const isRefundable = room.refundableTag === 'RFN';
-                                const hasBreakfast = ['BB', 'HB', 'FB', 'AI'].includes(room.boardType ?? '');
-
-                                return (
-                                    <div
-                                        key={room.id}
-                                        onClick={() => setSelectedRoomId(selected ? null : room.id)}
-                                        style={{ display: 'flex', background: 'rgba(255,255,255,.04)', borderRadius: 16, border: selected ? `2px solid ${ACCENT}` : '1px solid rgba(255,255,255,.1)', cursor: 'pointer', overflow: 'hidden', transition: 'border-color .2s' }}
-                                    >
-                                        <div style={{ flex: 1, minWidth: 0, padding: '16px 18px' }}>
-                                            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{room.name}</div>
-                                            {(hasBreakfast || isRefundable) && (
-                                                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                                                    {hasBreakfast && (
-                                                        <span style={{ fontSize: 11, fontWeight: 600, color: TEXT, background: 'rgba(255,255,255,.08)', padding: '3px 9px', borderRadius: 8 }}>
-                                                            Breakfast included
-                                                        </span>
-                                                    )}
-                                                    {isRefundable && (
-                                                        <span style={{ fontSize: 11, fontWeight: 600, color: GREEN, background: 'rgba(47,182,127,.15)', padding: '3px 9px', borderRadius: 8 }}>
-                                                            Free cancellation
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div style={{ width: 1, flexShrink: 0, background: 'repeating-linear-gradient(to bottom,rgba(255,255,255,.2) 0 6px,transparent 6px 12px)' }} />
-                                        <div style={{ width: 140, flexShrink: 0, padding: '16px 18px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: 8 }}>
-                                            <div style={{ fontWeight: 800, fontSize: 18, color: '#fff' }}>
-                                                {room.currency} {room.price.toLocaleString()}
-                                            </div>
-                                            <button
-                                                onClick={e => { e.stopPropagation(); setSelectedRoomId(selected ? null : room.id); }}
-                                                style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: selected ? GREEN : ACCENT, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-                                            >
-                                                {selected ? 'Selected' : 'Select'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
                 {/* ── Guest reviews ──────────────────────────────────────────── */}
                 {reviewItems.length > 0 && (
-                    <div style={{ margin: '36px 0' }}>
-                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
-                            What guests say
-                        </div>
+                    <div style={{ margin: '44px 0 0' }}>
+                        <h2 className={cn(SECTION_HEADING, 'mb-4 text-white')}>What guests say</h2>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                             {reviewItems.map((rev, i) => {
                                 const score = Number(rev.score ?? 0);
@@ -565,52 +579,48 @@ function PropertyContent() {
                         </div>
                     </div>
                 )}
-
-                {/* ── Nearby ────────────────────────────────────────────────── */}
-                {coordinates && (
-                    <div style={{ margin: '36px 0 0' }}>
-                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
-                            Nearby
-                        </div>
-                        <div style={{ background: 'rgba(255,255,255,.03)', borderRadius: 18, border: '1px solid rgba(255,255,255,.08)', padding: 16 }}>
-                            <NearbySection coordinates={coordinates} />
-                        </div>
-                    </div>
-                )}
-            </div>
+            </PageColumn>
 
             {/* ── Fixed bottom bar ──────────────────────────────────────────── */}
+            {/* The bar itself still spans the window — it is the page's edge
+                the fill belongs to, not the column's — but what it holds takes
+                the column, so the price sits under the price above it and the
+                button under the right edge of everything else. */}
             <div
                 className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-30"
-                style={{ background: 'rgba(21,17,30,.96)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,.1)', padding: '14px clamp(16px,4vw,40px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+                style={{ background: 'rgba(21,17,30,.96)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,.1)', padding: '14px 0' }}
             >
-                <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
-                        {selectedRoom ? 'Selected room' : 'Starting from'}
+                <PageColumn>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                        <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
+                                {selectedRoom ? 'Selected room' : 'Starting from'}
+                            </div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {selectedRoom
+                                    ? `${selectedRoom.name} · ${selectedRoom.currency} ${selectedRoom.price.toLocaleString()}/night`
+                                    : lowestPrice !== null
+                                        ? `${rooms[0]?.currency ?? ''} ${lowestPrice.toLocaleString()}/night`
+                                        : '—'}
+                            </div>
+                        </div>
+                        {selectedRoom ? (
+                            <button
+                                onClick={goCheckout}
+                                style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+                            >
+                                Continue to checkout
+                            </button>
+                        ) : (
+                            <a
+                                href="#rooms-section"
+                                style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
+                            >
+                                Check rooms ↓
+                            </a>
+                        )}
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {selectedRoom
-                            ? `${selectedRoom.name} · ${selectedRoom.currency} ${selectedRoom.price.toLocaleString()}/night`
-                            : lowestPrice !== null
-                                ? `${rooms[0]?.currency ?? ''} ${lowestPrice.toLocaleString()}/night`
-                                : '—'}
-                    </div>
-                </div>
-                {selectedRoom ? (
-                    <button
-                        onClick={goCheckout}
-                        style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
-                        Continue to checkout
-                    </button>
-                ) : (
-                    <a
-                        href="#rooms-section"
-                        style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
-                    >
-                        Check rooms ↓
-                    </a>
-                )}
+                </PageColumn>
             </div>
         </div>
     );

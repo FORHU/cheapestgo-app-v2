@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 
 type Theme = 'light' | 'dark';
@@ -64,8 +64,17 @@ export const ThemeProvider: React.FC<BaseProps> = ({ children }) => {
    * 100ms+ of blocked main thread on a heavy route. Everything after the swap
    * was landing behind that: the fade began late, and the timer that ends it
    * had been counting since the click, so it was regularly cut mid-flight or
-   * missed altogether. Hence `startTransition` — the swap paints on the next
-   * frame and consumers re-render after it, at a priority that yields.
+   * missed altogether. So the swap is written to the DOM first and the React
+   * update is queued from inside `requestAnimationFrame`, which runs on the
+   * frame that paints it — the fade starts on time, and the re-render lands
+   * behind that paint instead of in front of it.
+   *
+   * Deliberately NOT `startTransition`. A transition is an update React is
+   * allowed to postpone, and on the search page — a map, its markers, the card
+   * rail and the toolbar, all reading this context — it postponed it well past
+   * the fade window: the CSS-driven half of the page changed on the click and
+   * the half painted from `theme` in JS snapped in afterwards, which is the
+   * lag this used to have. Default priority cannot be deferred that way.
    *
    * `.theme-transition` is only on the document for the length of the fade: a
    * standing `transition` on every element would also animate hovers, menu
@@ -89,12 +98,11 @@ export const ThemeProvider: React.FC<BaseProps> = ({ children }) => {
     requestAnimationFrame(() => {
       // Runs on the frame that paints the swap, so the window covers the fade
       // wherever the frame lands. The margin covers a slow frame at the end.
+      setTheme(next);
       fadeTimer.current = window.setTimeout(() => {
         root.classList.remove('theme-transition');
       }, FADE_MS + 60);
     });
-
-    startTransition(() => setTheme(next));
   }, []);
 
   const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);

@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { ChevronUp, ChevronLeft, SlidersHorizontal, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
+import { useTheme } from '@/shared/components/ThemeContext';
+import { currencySymbol } from '@/shared/lib/format';
 
 /**
  * The accordion slide.
@@ -43,6 +45,19 @@ interface HotelFiltersProps {
     /** Rendered as the handle on the panel's right edge when provided. */
     onCollapse?: () => void;
     /**
+     * Which palette to draw from, for a caller whose chrome does not follow the
+     * app theme. Defaults to the theme, which is what every in-page use wants.
+     *
+     * The map view is the one that needs it: its chrome runs *opposite* the
+     * theme so it contrasts the basemap, and it forces that by hardcoding
+     * `dark` on its own root — under which `dark:` is defined as
+     * `:where(.dark, .dark *)` and so can only ever resolve one way, whatever
+     * the theme is. A tone prop is how the toolbar and the rail cards already
+     * solve this; the panel was the one control still left out of it, which is
+     * why it stayed dark while the map's chrome went light.
+     */
+    tone?: 'light' | 'dark';
+    /**
      * Draw the Sort By section from this panel's own options, against
      * `filters.sortBy`. Ignored when `sort` is supplied.
      */
@@ -77,21 +92,51 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 const STAR_OPTIONS = [5, 4, 3, 2, 1];
 
 /**
- * Selected sort — the same inverted chip the card's price and Book Now use, so
- * "this one is on" looks the same everywhere in the view.
+ * Every colour the panel paints with, picked by tone rather than by a `dark:`
+ * variant — see the `tone` prop for why the variant could not be used here.
+ *
+ * Whole class strings on both branches, never interpolated fragments, so
+ * Tailwind's scanner still finds each one.
  */
-const SELECTED_SORT = 'bg-[#1A1A1A] text-white dark:bg-white dark:text-[#111111]';
-/** Selected star rating — the slate pill the design puts behind "5 Stars". */
-const SELECTED_STAR = 'bg-slate-800 text-white dark:bg-[#5B6472]';
-/** Unselected, for both. */
-const IDLE_ROW = 'text-slate-700 hover:bg-slate-100 dark:text-white/90 dark:hover:bg-white/8';
+function filtersPalette(tone: 'light' | 'dark') {
+    const dark = tone === 'dark';
+    return {
+        /** The panel's plate. The light one carries the lift; the dark one is
+         *  already separated from its ground by value alone. */
+        panel:   dark ? 'bg-[#1A1A1A]' : 'bg-white shadow-sm',
+        heading: dark ? 'text-white' : 'text-slate-900',
+        icon:    dark ? 'text-white' : 'text-slate-700',
+        /** Section labels and the chevron beside them. */
+        muted:   dark ? 'text-white/70' : 'text-slate-500',
+        reset:   dark ? 'text-white/60' : 'text-slate-500',
+        /** Body copy inside a section — the price row's two labels. */
+        body:    dark ? 'text-white/90' : 'text-slate-700',
+        /**
+         * Selected sort — the same inverted chip the card's price and Book Now
+         * use, so "this one is on" looks the same everywhere in the view.
+         */
+        sortOn:  dark ? 'bg-white text-[#111111]' : 'bg-[#1A1A1A] text-white',
+        /** Selected star rating — the slate pill the design puts behind "5 Stars". */
+        starOn:  dark ? 'bg-[#5B6472] text-white' : 'bg-slate-800 text-white',
+        /** Unselected, for both. */
+        rowIdle: dark ? 'text-white/90 hover:bg-white/8' : 'text-slate-700 hover:bg-slate-100',
+        track:     dark ? 'bg-white/20' : 'bg-slate-200',
+        trackFill: dark ? 'bg-[#E4E4E4]' : 'bg-slate-900',
+        thumb: dark
+            ? '[&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white'
+            : '[&::-webkit-slider-thumb]:bg-slate-900 [&::-moz-range-thumb]:bg-slate-900',
+        handle: dark ? 'bg-white/25 text-white' : 'bg-slate-300/90 text-slate-800',
+    };
+}
+
+type Palette = ReturnType<typeof filtersPalette>;
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
 function Section({
-    label, open, onToggle, children,
+    label, open, onToggle, palette, children,
 }: {
-    label: string; open: boolean; onToggle: () => void; children: React.ReactNode;
+    label: string; open: boolean; onToggle: () => void; palette: Palette; children: React.ReactNode;
 }) {
     return (
         <div>
@@ -105,11 +150,12 @@ function Section({
                     size={16}
                     strokeWidth={1.75}
                     className={cn(
-                        'shrink-0 text-slate-500 transition-transform duration-200 dark:text-white/70',
+                        'shrink-0 transition-transform duration-200',
+                        palette.muted,
                         !open && 'rotate-180',
                     )}
                 />
-                <span className="text-[13px] tracking-[0.13em] text-slate-500 uppercase dark:text-white/70">
+                <span className={cn('text-[13px] tracking-[0.13em] uppercase', palette.muted)}>
                     {label}
                 </span>
             </button>
@@ -153,9 +199,10 @@ function Section({
  * high input covers it and the range can never be widened again.
  */
 function PriceRangeSlider({
-    min, max, low, high, onChange,
+    min, max, low, high, palette, onChange,
 }: {
     min: number; max: number; low: number; high: number;
+    palette: Palette;
     onChange: (low: number, high: number) => void;
 }) {
     const span = Math.max(1, max - min);
@@ -167,11 +214,10 @@ function PriceRangeSlider({
         '[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none ' +
         '[&::-webkit-slider-thumb]:h-[18px] [&::-webkit-slider-thumb]:w-[18px] ' +
         '[&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:rounded-full ' +
-        '[&::-webkit-slider-thumb]:bg-slate-900 dark:[&::-webkit-slider-thumb]:bg-white ' +
         '[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:border-0 ' +
         '[&::-moz-range-thumb]:h-[18px] [&::-moz-range-thumb]:w-[18px] ' +
         '[&::-moz-range-thumb]:cursor-grab [&::-moz-range-thumb]:rounded-full ' +
-        '[&::-moz-range-thumb]:bg-slate-900 dark:[&::-moz-range-thumb]:bg-white';
+        palette.thumb;
 
     const input =
         'pointer-events-none absolute inset-0 h-[18px] w-full appearance-none bg-transparent outline-none';
@@ -179,9 +225,9 @@ function PriceRangeSlider({
     return (
         <div className="relative h-[18px] px-1">
             {/* Track */}
-            <div className="absolute top-1/2 right-1 left-1 h-1.5 -translate-y-1/2 rounded-full bg-slate-200 dark:bg-white/20">
+            <div className={cn('absolute top-1/2 right-1 left-1 h-1.5 -translate-y-1/2 rounded-full', palette.track)}>
                 <div
-                    className="absolute h-full rounded-full bg-slate-900 dark:bg-[#E4E4E4]"
+                    className={cn('absolute h-full rounded-full', palette.trackFill)}
                     style={{ left: `${lowPct}%`, right: `${100 - highPct}%` }}
                 />
             </div>
@@ -206,29 +252,22 @@ function PriceRangeSlider({
     );
 }
 
-/** `$`, `₱`, `€` … — whatever `Intl` prefixes the amount with. */
-function currencySymbol(currency: string): string {
-    try {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 })
-            .format(0)
-            .replace(/[\d\s., ]/g, '');
-    } catch {
-        return '';
-    }
-}
-
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 /** One Sort By row. Shared so the caller's options and this panel's own draw
  *  identically rather than as two copies of the same button. */
-function SortRow({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function SortRow({
+    label, active, palette, onClick,
+}: {
+    label: string; active: boolean; palette: Palette; onClick: () => void;
+}) {
     return (
         <button
             type="button"
             onClick={onClick}
             className={cn(
                 'flex h-[34px] w-full items-center rounded-full pr-4 pl-[26px] text-left text-[15px] transition-colors',
-                active ? SELECTED_SORT : IDLE_ROW,
+                active ? palette.sortOn : palette.rowIdle,
             )}
         >
             {label}
@@ -237,10 +276,12 @@ function SortRow({ label, active, onClick }: { label: string; active: boolean; o
 }
 
 export function HotelFilters({
-    filters, onChange, onReset, priceRange, currency = 'USD', onCollapse, showSort = true, sort,
+    filters, onChange, onReset, priceRange, currency = 'USD', onCollapse, tone, showSort = true, sort,
 }: HotelFiltersProps) {
     const [open, setOpen] = useState({ sort: true, stars: true, price: true });
     const section = (k: keyof typeof open) => () => setOpen((s) => ({ ...s, [k]: !s[k] }));
+    const { theme } = useTheme();
+    const palette = filtersPalette(tone ?? theme);
 
     const toggleStar = (star: number) => {
         const next = filters.starRatings.includes(star)
@@ -265,20 +306,20 @@ export function HotelFilters({
         <div className="relative">
             {/* Same surface as the map view's rail cards, so the panel and the
                 results it filters read as one material. */}
-            <aside className="w-full overflow-hidden rounded-[20px] bg-white shadow-sm dark:bg-[#1A1A1A] dark:shadow-none">
+            <aside className={cn('w-full overflow-hidden rounded-[20px]', palette.panel)}>
                 {/* Still scrolls when the sections outgrow the viewport — the bar
                     is what's gone, not the overflow. A 3px thumb on a panel this
                     narrow was mostly a seam down its right edge. */}
                 <div className="no-scrollbar max-h-[calc(100dvh-7rem)] overflow-y-auto px-[18px] py-6">
                     {/* Header */}
                     <div className="flex items-center gap-2.5 px-1">
-                        <SlidersHorizontal size={17} strokeWidth={1.75} className="shrink-0 text-slate-700 dark:text-white" />
-                        <span className="text-[17px] text-slate-900 dark:text-white">Filters</span>
+                        <SlidersHorizontal size={17} strokeWidth={1.75} className={cn('shrink-0', palette.icon)} />
+                        <span className={cn('text-[17px]', palette.heading)}>Filters</span>
                         {hasActiveFilters && (
                             <button
                                 type="button"
                                 onClick={onReset}
-                                className="ml-auto text-[12px] text-slate-500 underline-offset-2 hover:underline dark:text-white/60"
+                                className={cn('ml-auto text-[12px] underline-offset-2 hover:underline', palette.reset)}
                             >
                                 Reset
                             </button>
@@ -291,13 +332,14 @@ export function HotelFilters({
                             Kept as two branches rather than one merged list so
                             each keeps its own value type. */}
                         {(sort || showSort) && (
-                        <Section label="Sort By" open={open.sort} onToggle={section('sort')}>
+                        <Section label="Sort By" open={open.sort} onToggle={section('sort')} palette={palette}>
                             {sort
                                 ? sort.options.map((opt) => (
                                     <SortRow
                                         key={opt.value}
                                         label={opt.label}
                                         active={sort.value === opt.value}
+                                        palette={palette}
                                         onClick={() => sort.onChange(opt.value)}
                                     />
                                 ))
@@ -306,6 +348,7 @@ export function HotelFilters({
                                         key={opt.value}
                                         label={opt.label}
                                         active={filters.sortBy === opt.value}
+                                        palette={palette}
                                         onClick={() => onChange({ sortBy: opt.value })}
                                     />
                                 ))}
@@ -313,7 +356,7 @@ export function HotelFilters({
                         )}
 
                         {/* Star rating */}
-                        <Section label="Star Rating" open={open.stars} onToggle={section('stars')}>
+                        <Section label="Star Rating" open={open.stars} onToggle={section('stars')} palette={palette}>
                             {STAR_OPTIONS.map((star) => {
                                 const active = filters.starRatings.includes(star);
                                 return (
@@ -324,7 +367,7 @@ export function HotelFilters({
                                         aria-pressed={active}
                                         className={cn(
                                             'flex h-[34px] w-full items-center justify-between gap-3 rounded-full pr-4 pl-[26px] text-left text-[15px] transition-colors',
-                                            active ? SELECTED_STAR : IDLE_ROW,
+                                            active ? palette.starOn : palette.rowIdle,
                                         )}
                                     >
                                         <span>{star === 1 ? '1 Star' : `${star} Stars`}</span>
@@ -339,11 +382,11 @@ export function HotelFilters({
                         </Section>
 
                         {/* Price */}
-                        <Section label="Price / Night" open={open.price} onToggle={section('price')}>
+                        <Section label="Price / Night" open={open.price} onToggle={section('price')} palette={palette}>
                             <div className="px-1">
                                 <div className="flex items-baseline justify-between gap-2">
-                                    <span className="text-[15px] text-slate-700 dark:text-white/90">Adjust Price</span>
-                                    <span className="text-[15px] whitespace-nowrap text-slate-700 dark:text-white/90">
+                                    <span className={cn('text-[15px]', palette.body)}>Adjust Price</span>
+                                    <span className={cn('text-[15px] whitespace-nowrap', palette.body)}>
                                         {sym}{Math.round(filters.minPrice).toLocaleString()}-{Math.round(filters.maxPrice).toLocaleString()}
                                     </span>
                                 </div>
@@ -354,6 +397,7 @@ export function HotelFilters({
                                         max={priceRange.max}
                                         low={filters.minPrice}
                                         high={filters.maxPrice}
+                                        palette={palette}
                                         onChange={(lo, hi) => onChange({ minPrice: lo, maxPrice: hi })}
                                     />
                                 </div>
@@ -369,7 +413,10 @@ export function HotelFilters({
                     type="button"
                     onClick={onCollapse}
                     aria-label="Hide filters"
-                    className="absolute top-1/2 -right-5 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full bg-slate-300/90 text-slate-800 backdrop-blur-sm transition-opacity hover:opacity-85 dark:bg-white/25 dark:text-white"
+                    className={cn(
+                        'absolute top-1/2 -right-5 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-85',
+                        palette.handle,
+                    )}
                 >
                     <ChevronLeft size={20} strokeWidth={1.75} />
                 </button>
