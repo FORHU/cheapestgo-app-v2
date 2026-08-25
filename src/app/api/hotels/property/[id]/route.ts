@@ -58,6 +58,11 @@ export async function GET(
                 amenities:      Array.isArray(d.amenities) ? d.amenities : [],
                 lat:            d.lat ?? null,
                 lng:            d.lng ?? null,
+                // The desk's hours, on to the page that draws the IN / OUT pair.
+                // Property-level and the same for every room, which is why they
+                // belong in the header rather than on each rate card.
+                check_in_time:  d.checkInTime ?? null,
+                check_out_time: d.checkOutTime ?? null,
             },
             reviews: {
                 rating:        d.reviewRating ?? null,
@@ -123,6 +128,12 @@ function groupByRoomName(roomTypes: any[]): RoomOption[] {
             cancellationDeadline: best.cancelPolicy?.cancelPenalties?.[0]?.deadline,
             cancelPolicy:         best.cancelPolicy,
             roomImages:           best.roomPhotos ?? [],
+            // Room-level detail, from the TGX room catalog rather than from the
+            // rate — the search option knows a price and a code, not what is in
+            // the room. Absent when the catalog had nothing for this code, in
+            // which case the card falls back to the hotel own amenity list.
+            bedType:              best.bedType,
+            amenities:            best.roomAmenities,
             rates,
         });
     }

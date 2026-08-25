@@ -194,7 +194,40 @@ query TgxHotelContent($criteria: HotelXHotelListInput!, $token: String) {
   }
 }`;
 
-const TGX_ROOMS_CATALOG_QUERY = `
+/**
+ * The room catalog, asked for twice over.
+ *
+ * `DETAILED` is what actually puts beds and amenities on a room card —
+ * the search option itself carries only a code, a description and a price,
+ * so this query is the only place room-level detail exists.
+ *
+ * `BASIC` is the same query minus everything that might not be in the
+ * supplier's schema. GraphQL rejects an unknown field by failing the whole
+ * document, so without a fallback one wrong guess here would cost us the
+ * room photos too — which do work today. See `fetchTgxRoomCatalog`.
+ */
+const TGX_ROOMS_CATALOG_QUERY_DETAILED = `
+query TgxRoomsCatalog($criteria: HotelXRoomQueryInput!, $token: String) {
+  hotelX {
+    rooms(criteria: $criteria, token: $token) {
+      token
+      edges {
+        node {
+          roomData {
+            code
+            roomName
+            description
+            medias { url type }
+            beds { type count }
+            roomAmenities { amenityData { amenityCode type } }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+const TGX_ROOMS_CATALOG_QUERY_BASIC = `
 query TgxRoomsCatalog($criteria: HotelXRoomQueryInput!, $token: String) {
   hotelX {
     rooms(criteria: $criteria, token: $token) {
@@ -210,6 +243,32 @@ query TgxRoomsCatalog($criteria: HotelXRoomQueryInput!, $token: String) {
     }
   }
 }`;
+
+/** What a room card can say about a room, over and above its rate. */
+export interface TgxRoomDetail {
+    photos: string[];
+    /** Already worded — "1 double bed", "2 twin beds". */
+    beds?: string;
+    /** Room-level amenities, as labels rather than OTA codes. */
+    amenities?: string[];
+    description?: string;
+}
+
+/**
+ * TGX gives beds as a type and a count; the card wants a phrase. Underscores
+ * out, count in, and pluralised — `DOUBLE`/2 becomes "2 double beds".
+ */
+function formatBeds(beds: unknown): string | undefined {
+    if (!Array.isArray(beds)) return undefined;
+    const parts = (beds as { type?: string; count?: number }[])
+        .filter((b) => b?.type)
+        .map((b) => {
+            const count = Number(b.count) || 1;
+            const type = String(b.type).toLowerCase().replace(/_/g, ' ');
+            return `${count} ${type} bed${count === 1 ? '' : 's'}`;
+        });
+    return parts.length ? parts.join(', ') : undefined;
+}
 
 function parseTgxHotelData(d: any, cityName?: string, countryCode?: string): TgxHotelContent {
     const images: string[] = (d.medias ?? [])
@@ -359,8 +418,8 @@ async function fetchTgxRoomCatalog(
     hotelId: string,
     roomCodes: string[],
     descMap?: Map<string, string>,
-): Promise<Map<string, string[]>> {
-    const photoMap = new Map<string, string[]>();
+): Promise<Map<string, TgxRoomDetail>> {
+    const photoMap = new Map<string, TgxRoomDetail>();
     if (!hotelId || !roomCodes.length) return photoMap;
 
     try {
@@ -376,14 +435,22 @@ async function fetchTgxRoomCatalog(
             if (Array.isArray(raw) && raw.length > 0 && descMap?.size) {
                 for (const [code, desc] of descMap) {
                     const photos = matchEtgRoomGroup(desc, raw as Array<{ name: string; images: string[] }>);
-                    if (photos.length) photoMap.set(code, photos);
+                    // ETG room groups are photo sets only — no beds, no
+                    // amenities — so this branch fills the pictures and
+                    // leaves the rest for the card to do without.
+                    if (photos.length) photoMap.set(code, { photos });
                 }
                 if (photoMap.size) console.log(`[tgx-rooms] ETG match for hotel ${hotelId}: ${photoMap.size}/${descMap.size} with photos`);
             } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-                const groups = raw as Record<string, { photos?: string[] }>;
+                // Rows written before this cached detail hold only
+                // `{ photos }`, which reads back as a detail with the rest
+                // absent — no migration needed.
+                const groups = raw as Record<string, TgxRoomDetail>;
                 for (const code of roomCodes) {
                     const entry = groups[code];
-                    if (entry?.photos?.length) photoMap.set(code, entry.photos);
+                    if (entry?.photos?.length || entry?.beds || entry?.amenities?.length) {
+                        photoMap.set(code, { photos: entry.photos ?? [], beds: entry.beds, amenities: entry.amenities, description: entry.description });
+                    }
                 }
                 if (photoMap.size) console.log(`[tgx-rooms] Cache hit for hotel ${hotelId}: ${photoMap.size}/${roomCodes.length} with photos`);
             }
@@ -394,33 +461,69 @@ async function fetchTgxRoomCatalog(
     }
 
     const cfg = getTgxConfig();
-    const catalogData: Record<string, { photos: string[] }> = {};
-    try {
-        const result = await tgxGraphQL(TGX_ROOMS_CATALOG_QUERY, {
-            criteria: { access: cfg.accessCode, roomCodes },
-        }, 10_000);
-        const edges: any[] = result?.data?.hotelX?.rooms?.edges ?? [];
-        for (const edge of edges) {
-            const rd = edge?.node?.roomData;
-            const roomCode = rd?.roomCode || rd?.code || edge?.node?.code;
-            if (!roomCode) continue;
-            const photos = (rd?.medias ?? [])
-                .filter((m: any) => m?.url)
-                .map((m: any) => String(m.url))
-                .slice(0, 5);
-            catalogData[roomCode] = { photos };
-            if (photos.length) photoMap.set(roomCode, photos);
+    const catalogData: Record<string, TgxRoomDetail> = {};
+
+    /**
+     * Ask for the detail; drop back to the selection we know works if the
+     * supplier's schema does not have it.
+     *
+     * A GraphQL document is validated whole, so one field this access does
+     * not expose fails the query and takes the photos down with it. Trying
+     * the smaller query second means the worst case is what we had before
+     * room detail existed, not worse than it.
+     */
+    let edges: any[] = [];
+    let detailed = true;
+    for (const query of [TGX_ROOMS_CATALOG_QUERY_DETAILED, TGX_ROOMS_CATALOG_QUERY_BASIC]) {
+        try {
+            const result = await tgxGraphQL(query, {
+                criteria: { access: cfg.accessCode, roomCodes },
+            }, 10_000);
+            const gqlErrors = result?.errors ?? [];
+            if (gqlErrors.length) throw new Error(gqlErrors.map((e: any) => e.message).join(  '; ').slice(0, 160));
+            edges = result?.data?.hotelX?.rooms?.edges ?? [];
+            break;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            if (detailed) {
+                console.warn('[tgx-rooms] detailed catalog query rejected, falling back to photos only:', message.slice(0, 140));
+                detailed = false;
+                continue;
+            }
+            console.warn('[tgx-rooms] hotelX.rooms query failed:', message.slice(0, 100));
+            return photoMap;
         }
-        console.log(`[tgx-rooms] Fetched catalog for hotel ${hotelId}: ${edges.length} rooms, ${photoMap.size} with photos`);
-    } catch (e: any) {
-        console.warn('[tgx-rooms] hotelX.rooms query failed:', e.message?.slice(0, 100));
-        return photoMap;
     }
 
+    for (const edge of edges) {
+        const rd = edge?.node?.roomData;
+        const roomCode = rd?.roomCode || rd?.code || edge?.node?.code;
+        if (!roomCode) continue;
+        const photos = (rd?.medias ?? [])
+            .filter((m: any) => m?.url)
+            .map((m: any) => String(m.url))
+            .slice(0, 5);
+        const amenities = (rd?.roomAmenities ?? [])
+            .map((a: { amenityData?: { amenityCode?: string } }) => otvCodeToLabel(a?.amenityData?.amenityCode ?? ''))
+            .filter((label: string): label is string => Boolean(label));
+        const detail: TgxRoomDetail = {
+            photos,
+            beds: formatBeds(rd?.beds),
+            amenities: amenities.length ? Array.from(new Set(amenities)) : undefined,
+            description: rd?.description ?? undefined,
+        };
+        catalogData[roomCode] = detail;
+        if (photos.length || detail.beds || detail.amenities?.length) photoMap.set(roomCode, detail);
+    }
+    console.log(`[tgx-rooms] Fetched catalog for hotel ${hotelId}: ${edges.length} rooms, ${photoMap.size} with detail (detailed=${detailed})`);
+
     const adminSql = getSqlAdmin();
+    // Round-tripped rather than cast: the detail carries optional fields, and
+    // `undefined` is not a JSON value. Serialising drops those keys, which is
+    // both what the column wants and what the reader above already expects.
     adminSql`
         UPDATE hotel_content
-        SET room_groups = ${adminSql.json(catalogData)}
+        SET room_groups = ${adminSql.json(JSON.parse(JSON.stringify(catalogData)))}
         WHERE hotel_id = ${hotelId}
     `.catch((e: any) => console.warn('[tgx-rooms] room_groups write failed:', e.message?.slice(0, 80)));
 
@@ -1607,8 +1710,18 @@ async function _runTgxSearch(params: TgxSearchParams): Promise<any> {
 
         const roomTypes = sorted.map(opt => {
             const normalized = normalizeOption(opt);
-            const photos = roomCatalog.get(normalized.roomCode ?? '');
-            return photos?.length ? { ...normalized, roomPhotos: photos } : normalized;
+            const detail = roomCatalog.get(normalized.roomCode ?? '');
+            if (!detail) return normalized;
+            // The catalog is what knows the room; the option only knows the
+            // price. Everything a card says about the bed or what is in the
+            // room comes from here.
+            return {
+                ...normalized,
+                ...(detail.photos.length     ? { roomPhotos: detail.photos } : {}),
+                ...(detail.beds              ? { bedType: detail.beds } : {}),
+                ...(detail.amenities?.length ? { roomAmenities: detail.amenities } : {}),
+                ...(detail.description       ? { roomDescription: detail.description } : {}),
+            };
         });
 
         const content = contentMap.get(String(hotelCode));
@@ -1638,6 +1751,12 @@ async function _runTgxSearch(params: TgxSearchParams): Promise<any> {
                 starRating:  content?.star_rating ?? 0,
                 reviewRating,
                 reviewCount: reviews?.reviews_count ?? content?.review_count ?? 0,
+                // The desk's hours. Parsed by `parseTgxHotelData`, stored, and
+                // selected back by `fetchHotelContent` — but until now dropped
+                // right here, which is why the property page never had them to
+                // draw. `buildCityResults` passes them on under the same names.
+                checkInTime:  content?.check_in_time ?? null,
+                checkOutTime: content?.check_out_time ?? null,
             },
         };
     }

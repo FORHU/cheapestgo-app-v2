@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
 import { Map } from '@/shared/components/ui/map';
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
-import { RoomSelection } from '@/features/hotels/components/room-selection';
 import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
-import type { RoomOption } from '@/features/hotels/components/room-list';
+import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
+import { useUserCurrency } from '@/stores/searchStore';
+import { convertCurrency } from '@/shared/lib/currency';
+import { formatCurrency } from '@/shared/lib/format';
+import type { RoomOption } from '@/features/hotels/types/property.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,6 +84,19 @@ function PageColumn({ children, style }: { children: React.ReactNode; style?: Re
         </div>
     );
 }
+
+/** The banner's prev/next buttons, which differ only in which edge they sit on. */
+const HERO_ARROW: React.CSSProperties = {
+    position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 2,
+    width: 44, height: 44, borderRadius: '50%',
+    // border: '1px solid rgba(255,255,255,.25)',
+    background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer',
+};
+
+/** Past this many photographs the dots become a counter — see the banner. */
+const HERO_DOTS_MAX = 8;
 
 function ratingInfo(score: number): { label: string; color: string } {
     if (score >= 9) return { label: 'Exceptional', color: GREEN };
@@ -159,7 +175,7 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
                 names and distances stay under it. */}
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
                 {topGems.length === 0 && (
-                    <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 13 }}>Loading nearby places…</p>
+                    <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 18 }}>Loading nearby places…</p>
                 )}
                 {topGems.map((gem, i) => {
                     const dist = haversine(coordinates.lat, coordinates.lng, gem.coordinates.lat, gem.coordinates.lng);
@@ -178,16 +194,16 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <Icon size={15} color={dot} />
+                                    <Icon size={21} color={dot} />
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: 13, color: '#fff', lineHeight: 1.25 }}>{gem.name}</div>
-                                    <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2, textTransform: 'capitalize' }}>
+                                    <div style={{ fontWeight: 600, fontSize: 18, color: '#fff', lineHeight: 1.25 }}>{gem.name}</div>
+                                    <div style={{ fontSize: 15, color: 'rgba(245,239,228,.45)', marginTop: 2, textTransform: 'capitalize' }}>
                                         {gem.displayCategory || gem.category}
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', fontWeight: 600, paddingLeft: 12, flexShrink: 0 }}>
+                            <div style={{ fontSize: 17, color: 'rgba(245,239,228,.55)', fontWeight: 600, paddingLeft: 12, flexShrink: 0 }}>
                                 {dist.toFixed(1)} mi
                             </div>
                         </div>
@@ -230,7 +246,7 @@ function Lightbox({ images, startIndex, onClose }: { images: string[]; startInde
             </button>
 
             {/* Counter */}
-            <div style={{ position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.6)' }}>
+            <div style={{ position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)', fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,.6)' }}>
                 {idx + 1} / {images.length}
             </div>
 
@@ -305,7 +321,7 @@ function PhotoGallery({ images }: { images: string[] }) {
                 />
                 {/* "View all" badge */}
                 {images.length > 1 && (
-                    <div style={{ position: 'absolute', bottom: 14, right: 14, background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', bottom: 14, right: 14, background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 17, fontWeight: 700, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', pointerEvents: 'none' }}>
                         View all {images.length} photos
                     </div>
                 )}
@@ -335,10 +351,22 @@ function PropertyContent() {
     const adults   = Number(searchParams.get('adults')   ?? 2);
     const children = Number(searchParams.get('children') ?? 0);
 
+    /** Everything with a price on this page is drawn in the guest's own
+     *  currency, not whichever one the supplier happened to quote in. */
+    const currency = useUserCurrency();
+
     const [data, setData]                     = useState<PropertyApiResponse | null>(null);
     const [loading, setLoading]               = useState(true);
     const [error, setError]                   = useState<string | null>(null);
-    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+    /**
+     * The offer the guest picked — a room *and* one of its rates.
+     * `selectedRoomId` was not enough: the same room comes back several
+     * times over at different boards and prices, and only the rate carries
+     * the `offerId` that checkout books against.
+     */
+    const [selectedOffer, setSelectedOffer] = useState<SelectedOffer | null>(null);
+    /** Which of the banner images is showing. */
+    const [heroIndex, setHeroIndex] = useState(0);
 
     useEffect(() => {
         if (!hotelId) return;
@@ -364,28 +392,72 @@ function PropertyContent() {
     const rooms        = data?.rooms ?? [];
     const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
     const reviewScore  = Number(data?.reviews?.rating ?? 0);
-    const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
+    const selectedRoom = selectedOffer?.room ?? null;
+    const selectedRate = selectedOffer?.rate ?? null;
     const heroImage     = content?.images?.[0] ?? null;
     const allImages     = content?.images ?? [];
+    /**
+     * What the banner pages through: the hotel's own photographs, then every
+     * room shot the supplier sent.
+     *
+     * The room shots used to sit one-per-card, where a card has room for
+     * exactly one of them and no way to see the rest. Here a set of six for a
+     * single room is something you can actually look through — and the cards
+     * keep the hotel photo, which is what they were showing most of the time
+     * anyway.
+     *
+     * De-duplicated because a supplier that has one photograph tends to return
+     * it as both the hotel's and the room's.
+     */
+    const heroImages = useMemo<string[]>(() => {
+        const roomShots = rooms.flatMap(r => r.roomImages ?? []);
+        return Array.from(new Set([...allImages, ...roomShots])).filter(Boolean);
+    }, [allImages, rooms]);
+    const heroCount = heroImages.length;
+    // Clamped rather than trusted: the rooms arrive after the content does, so
+    // the set grows under an index that has already been moved.
+    const heroShown = heroImages[Math.min(heroIndex, Math.max(0, heroCount - 1))] ?? heroImage;
     const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
     // Whole list, not the first five: the description panel draws the row the
     // design shows and keeps the rest behind its own "See all amenities".
     const amenities    = content?.amenities ?? [];
-    const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map(r => r.price)) : null;
+
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
     const nights       = (checkIn && checkOut)
         ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
         : null;
 
+    /**
+     * A supplier price, as the page shows it: the whole stay converted into
+     * the guest's own currency, then divided down to one night.
+     *
+     * TGX quotes the stay, not the night. Printing that figure beside
+     * "/night" was overstating every rate by the length of the trip.
+     */
+    const toNightly = (price: number, from: string) =>
+        convertCurrency(price, from || 'USD', currency) / Math.max(1, nights ?? 1);
+
+    /**
+     * The cheapest night on offer, across every rate of every room — off
+     * `ratesOf`, the same list the cards are built from, so the figure in
+     * the header is one a card below it actually shows.
+     */
+    const lowestPrice = rooms.length > 0
+        ? Math.min(...rooms.flatMap(r => ratesOf(r).map(rate => toNightly(rate.price, rate.currency))))
+        : null;
+
     function goCheckout() {
-        if (!selectedRoom) return;
+        if (!selectedRoom || !selectedRate) return;
         const p = new URLSearchParams({
             hotelId,
             roomId:     selectedRoom.id,
-            offerId:    selectedRoom.offerId ?? selectedRoom.id,
-            rateKey:    selectedRoom.offerId ?? selectedRoom.id,
-            currency:   selectedRoom.currency,
-            totalPrice: String(nights ? selectedRoom.price * nights : selectedRoom.price),
+            offerId:    selectedRate.offerId,
+            rateKey:    selectedRate.offerId,
+            // The rate's own figures, untouched: it is quoted for the whole
+            // stay in the supplier's currency, and that is what is booked.
+            // The conversion above is for display only.
+            currency:   selectedRate.currency,
+            totalPrice: String(selectedRate.price),
             roomName:   selectedRoom.name,
             hotelName:  content?.name ?? 'Hotel',
         });
@@ -432,7 +504,7 @@ function PropertyContent() {
                 <p style={{ color: 'rgba(245,239,228,.6)', textAlign: 'center' }}>{error ?? 'Property not found.'}</p>
                 <button
                     onClick={() => router.back()}
-                    style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+                    style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
                 >
                     Go back
                 </button>
@@ -444,10 +516,11 @@ function PropertyContent() {
         <div style={rootStyle}>
 
             {/* ── Hero ──────────────────────────────────────────────────────── */}
-            <div style={{ position: 'relative', height: '58vh', minHeight: 320, borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' }}>
-                {heroImage ? (
+            <div style={{ position: 'relative', height: '84vh', minHeight: 320, overflow: 'hidden' }}>
+                {heroShown ? (
                     <img
-                        src={heroImage}
+                        key={heroShown}
+                        src={heroShown}
                         alt={content.name ?? ''}
                         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -456,12 +529,81 @@ function PropertyContent() {
                 )}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.15) 0%,rgba(10,8,14,.25) 45%,rgba(10,8,14,.85) 100%)' }} />
 
+                {/* Back. Over the photo rather than in the page below it — the
+                    banner is the first thing on screen, and a control to leave
+                    should not be something you scroll to find. */}
+                <button
+                    onClick={() => router.back()}
+                    aria-label="Go back"
+                    style={{
+                        position: 'absolute', top: 20, left: 20, zIndex: 2,
+                        width: 44, height: 44, borderRadius: '50%',
+                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                    }}
+                >
+                    <ArrowLeft size={20} />
+                </button>
+
+                {/* Pagination. Only once there is more than one photograph to
+                    page through — a single-image banner with arrows and a lone
+                    dot is chrome promising something it cannot do. */}
+                {heroCount > 1 && (
+                    <>
+                        <button
+                            onClick={() => setHeroIndex(i => (i - 1 + heroCount) % heroCount)}
+                            aria-label="Previous photo"
+                            style={{ ...HERO_ARROW, left: 20 }}
+                        >
+                            <ChevronLeft size={22} />
+                        </button>
+                        <button
+                            onClick={() => setHeroIndex(i => (i + 1) % heroCount)}
+                            aria-label="Next photo"
+                            style={{ ...HERO_ARROW, right: 20 }}
+                        >
+                            <ChevronRight size={22} />
+                        </button>
+
+                        {/* Dots. Capped: a hotel with forty photographs would
+                            otherwise draw forty targets too small to hit, so
+                            past the cap the strip becomes a counter. */}
+                        <div style={{ position: 'absolute', bottom: 'clamp(96px,12vw,150px)', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 2 }}>
+                            {heroCount <= HERO_DOTS_MAX ? (
+                                heroImages.map((src, i) => (
+                                    <button
+                                        key={src}
+                                        onClick={() => setHeroIndex(i)}
+                                        aria-label={`Photo ${i + 1} of ${heroCount}`}
+                                        aria-current={i === heroIndex || undefined}
+                                        style={{
+                                            width: i === heroIndex ? 26 : 8, height: 8, borderRadius: 4,
+                                            border: 'none', padding: 0, cursor: 'pointer',
+                                            background: i === heroIndex ? '#fff' : 'rgba(255,255,255,.45)',
+                                            transition: 'width .2s ease, background .2s ease',
+                                        }}
+                                    />
+                                ))
+                            ) : (
+                                <span style={{
+                                    fontSize: 14, fontWeight: 600, color: '#fff',
+                                    background: 'rgba(20,20,20,.5)', backdropFilter: 'blur(8px)',
+                                    borderRadius: 100, padding: '4px 12px',
+                                }}>
+                                    {Math.min(heroIndex, heroCount - 1) + 1} / {heroCount}
+                                </span>
+                            )}
+                        </div>
+                    </>
+                )}
+
                 {/* Name + location. The photo stays full-bleed; only the type
                     over it takes the column, so the hotel's name starts on the
                     same line as the price under it. */}
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(20px,4vw,40px)' }}>
                     <PageColumn>
-                        <div style={{ fontWeight: 500, fontSize: 'clamp(26px,3.4vw,38px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
+                        <div style={{ fontWeight: 500, fontSize: 'clamp(36px,4.8vw,53px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
                             {content.name}
                         </div>
                         {/* The street address, as the design has it, and only
@@ -469,7 +611,7 @@ function PropertyContent() {
                             no address at all — the two together read as a
                             duplicate whenever the address already names the
                             city, which it usually does. */}
-                        <div style={{ fontSize: 15, color: 'rgba(255,255,255,.9)', marginTop: 6, textShadow: '0 2px 12px rgba(0,0,0,.45)' }}>
+                        <div style={{ fontSize: 21, color: 'rgba(255,255,255,.9)', marginTop: 6, textShadow: '0 2px 12px rgba(0,0,0,.45)' }}>
                             {content.address || [content.city, content.country].filter(Boolean).join(', ')}
                         </div>
                     </PageColumn>
@@ -498,7 +640,7 @@ function PropertyContent() {
                     className="mb-8"
                     tone="dark"
                     price={lowestPrice}
-                    currency={rooms[0]?.currency}
+                    currency={currency}
                     rating={reviewScore}
                     checkInTime={content.check_in_time ?? content.check_in}
                     checkOutTime={content.check_out_time ?? content.check_out}
@@ -511,7 +653,7 @@ function PropertyContent() {
                     stack on the left at roughly five parts to the map's four,
                     stacking under it below `lg` where neither half has the
                     width to be half of anything. */}
-                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.25fr_1fr] lg:gap-12">
+                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1fr] lg:gap-12">
 
                 {/* ── Room selection ─────────────────────────────────────────
                     The design's own section: a filter row over a stack of
@@ -531,8 +673,12 @@ function PropertyContent() {
                     rooms={rooms}
                     image={heroImage}
                     hotelAmenities={amenities}
-                    selectedRoomId={selectedRoomId}
-                    onSelect={(roomId) => setSelectedRoomId(prev => prev === roomId ? null : roomId)}
+                    nights={nights}
+                    currency={currency}
+                    selectedOfferId={selectedRate?.offerId ?? null}
+                    onSelect={(offer) => setSelectedOffer(
+                        prev => prev?.rate.offerId === offer.rate.offerId ? null : offer,
+                    )}
                 />
 
                 {/* ── Nearby places ────────────────────────────────────────── */}
@@ -564,15 +710,15 @@ function PropertyContent() {
                                         style={{ flex: '1 1 260px', background: 'rgba(255,255,255,.04)', borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: '1px solid rgba(255,255,255,.08)' }}
                                     >
                                         {score > 0 && (
-                                            <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 12, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
+                                            <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 17, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
                                                 {score.toFixed(1)}
                                             </div>
                                         )}
-                                        <p style={{ fontSize: 14, lineHeight: 1.55, color: 'rgba(245,239,228,.85)', margin: '0 0 12px' }}>
+                                        <p style={{ fontSize: 20, lineHeight: 1.55, color: 'rgba(245,239,228,.85)', margin: '0 0 12px' }}>
                                             &ldquo;{blurb}&rdquo;
                                         </p>
-                                        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{rev.reviewer_name ?? 'Guest'}</div>
-                                        {rev.country && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)' }}>{rev.country}</div>}
+                                        <div style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}>{rev.reviewer_name ?? 'Guest'}</div>
+                                        {rev.country && <div style={{ fontSize: 15, color: 'rgba(245,239,228,.5)' }}>{rev.country}</div>}
                                     </div>
                                 );
                             })}
@@ -593,28 +739,33 @@ function PropertyContent() {
                 <PageColumn>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
                         <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
+                            <div style={{ fontSize: 15, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
                                 {selectedRoom ? 'Selected room' : 'Starting from'}
                             </div>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {selectedRoom
-                                    ? `${selectedRoom.name} · ${selectedRoom.currency} ${selectedRoom.price.toLocaleString()}/night`
+                            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {/* The same figure the card shows: per night, in
+                                    the guest's currency. It used to print the
+                                    supplier's total-stay price against "/night",
+                                    which disagreed with the card above it and
+                                    overstated the rate by the length of the trip. */}
+                                {selectedRoom && selectedRate
+                                    ? `${selectedRoom.name} · ${formatCurrency(toNightly(selectedRate.price, selectedRate.currency), currency)}/night`
                                     : lowestPrice !== null
-                                        ? `${rooms[0]?.currency ?? ''} ${lowestPrice.toLocaleString()}/night`
+                                        ? `${formatCurrency(lowestPrice, currency)}/night`
                                         : '—'}
                             </div>
                         </div>
                         {selectedRoom ? (
                             <button
                                 onClick={goCheckout}
-                                style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+                                style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
                             >
                                 Continue to checkout
                             </button>
                         ) : (
                             <a
                                 href="#rooms-section"
-                                style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
+                                style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 20, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
                             >
                                 Check rooms ↓
                             </a>

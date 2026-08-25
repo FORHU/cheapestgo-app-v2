@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
-import { render as rtlRender, screen, cleanup } from '@testing-library/react';
+import { render as rtlRender, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 import { ThemeProvider } from '@/shared/components/ThemeContext';
@@ -72,24 +72,81 @@ describe('PropertyDescription', () => {
         expect(screen.queryByText('Out')).not.toBeInTheDocument();
     });
 
-    it('shows four amenities and keeps the rest behind the link', async () => {
+    it('shows four amenities and holds the rest behind the link', async () => {
         const user = userEvent.setup();
         render(
             <PropertyDescription
                 {...base}
+                amenities={['24 hour reception', 'Elevator / Lift', 'Internet Access', 'Parking', 'Swimming pool', 'Fitness centre']}
+            />,
+        );
+
+        // Every chip is in the list — clipping is what lets the reveal animate
+        // a height instead of a reflow — so what says a chip is held back is
+        // that it is hidden, not that it is missing.
+        const pool = screen.getByText('Swimming pool').closest('li')!;
+        expect(screen.getByText('24 hour reception').closest('li')).not.toHaveAttribute('aria-hidden');
+        expect(pool).toHaveAttribute('aria-hidden', 'true');
+
+        await user.click(screen.getByRole('button', { name: 'See all amenities' }));
+        expect(pool).not.toHaveAttribute('aria-hidden');
+        expect(screen.getByText('Fitness centre').closest('li')).not.toHaveAttribute('aria-hidden');
+
+        await user.click(screen.getByRole('button', { name: 'Show fewer amenities' }));
+        await waitFor(() => expect(pool).toHaveAttribute('aria-hidden', 'true'));
+    });
+
+    it('keeps the desk hours clear of the amenities column', async () => {
+        const user = userEvent.setup();
+        render(
+            <PropertyDescription
+                {...base}
+                checkInTime="15:00"
+                checkOutTime="08:00"
                 amenities={['24 hour reception', 'Elevator / Lift', 'Internet Access', 'Smoking Allowed', 'Parking', 'Swimming pool']}
             />,
         );
 
-        expect(screen.getByText('24 hour reception')).toBeInTheDocument();
-        expect(screen.queryByText('Parking')).not.toBeInTheDocument();
+        const times = screen.getByText('3:00 PM').closest('dl')!;
+        // The group's own box is the grid cell; the list is inside it.
+        const chipGroup = screen.getByText('24 hour reception').closest('ul')!.parentElement!;
+
+        // Siblings in the head grid, each holding its own cell, and the hours
+        // pinned to the top of theirs. That is the whole mechanism: the chips
+        // grow downward into their own cell, so opening the list cannot drag
+        // IN and OUT down with it the way bottom-aligning them in a flex row did.
+        expect(times.parentElement).toBe(chipGroup.parentElement);
+        expect(times.className).toContain('self-start');
 
         await user.click(screen.getByRole('button', { name: 'See all amenities' }));
         expect(screen.getByText('Parking')).toBeInTheDocument();
-        expect(screen.getByText('Swimming pool')).toBeInTheDocument();
+        expect(times.parentElement).toBe(chipGroup.parentElement);
+        expect(times.className).toContain('self-start');
+    });
 
-        await user.click(screen.getByRole('button', { name: 'Show fewer amenities' }));
-        expect(screen.queryByText('Parking')).not.toBeInTheDocument();
+    it('files house rules under policies, not amenities', () => {
+        render(
+            <PropertyDescription
+                {...base}
+                amenities={['Elevator / Lift', 'Smoking Allowed', 'Pets allowed', 'Internet Access']}
+            />,
+        );
+
+        // An amenity is something the stay gives you; a policy is something
+        // it asks of you. Suppliers return one flat list of both.
+        const group = (label: string) => screen.getByText(label).closest('div')!;
+        expect(group('Amenities')).toHaveTextContent('Elevator / Lift');
+        expect(group('Amenities')).toHaveTextContent('Internet Access');
+        expect(group('Amenities')).not.toHaveTextContent('Smoking Allowed');
+
+        expect(group('Policies & rules')).toHaveTextContent('Smoking Allowed');
+        expect(group('Policies & rules')).toHaveTextContent('Pets allowed');
+        expect(group('Policies & rules')).not.toHaveTextContent('Elevator');
+    });
+
+    it('draws no policies group when the hotel states none', () => {
+        render(<PropertyDescription {...base} amenities={['Elevator / Lift', 'Internet Access']} />);
+        expect(screen.queryByText('Policies & rules')).not.toBeInTheDocument();
     });
 
     it('offers no amenities link when they all fit', () => {

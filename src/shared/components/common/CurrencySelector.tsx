@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { useUserCurrency, useSearchActions } from '@/shared/stores/search.store';
-import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
+import { SELECTOR_TONES, type SelectorChrome, type SelectorVariant } from '@/shared/components/common/selector-tone';
 import { getCurrencySymbol } from '@/shared/lib/currency';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
@@ -22,14 +22,40 @@ interface CurrencySelectorProps {
   className?: string;
   align?: 'left' | 'right';
   variant?: SelectorVariant;
+  /**
+   * Draw from these colours instead of `variant`'s classes. See
+   * `SelectorChrome` — it is for chrome that is not the app theme, which no
+   * `dark:` variant can follow.
+   */
+  chrome?: SelectorChrome;
+  /**
+   * Collapse the trigger to a circle carrying the active currency's symbol
+   * alone — no code, no chevron.
+   *
+   * For a toolbar whose other controls are all icon circles, where a labelled
+   * pill is the one thing on the bar with a different silhouette. The symbol
+   * stays rather than becoming a generic money glyph: it is what the prices on
+   * screen are already printed in, so it says which currency is on without
+   * costing a character more than an icon would.
+   */
+  iconOnly?: boolean;
 }
 
 export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   className,
   align = 'right',
-  variant = 'default'
+  variant = 'default',
+  chrome,
+  iconOnly = false,
 }) => {
   const tone = SELECTOR_TONES[variant];
+  /**
+   * Row hover, in state rather than in CSS.
+   *
+   * The chrome path paints rows from inline styles, and an inline background
+   * outranks any `hover:` class that would otherwise cover this.
+   */
+  const [hovered, setHovered] = useState<string | null>(null);
   const userCurrency = useUserCurrency();
   const { setUserCurrency, setUserCountry } = useSearchActions();
   const router = useRouter();
@@ -67,14 +93,31 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
     <div className={cn("relative shrink-0", className)} ref={ref}>
       <button
         onClick={() => setIsOpen(o => !o)}
-        className={cn("flex items-center gap-1 px-1 py-1 text-xs font-medium rounded-lg transition-colors group cursor-pointer", tone.trigger)}
+        className={cn(
+          "flex items-center text-xs font-medium transition-colors group cursor-pointer",
+          chrome
+            // On chrome the trigger is a control on a toolbar, so it takes the
+            // toolbar's own geometry — the icon circle its neighbours are drawn
+            // at, or the same height as a pill when it still carries a label.
+            ? iconOnly
+              ? "h-6 w-6 shrink-0 justify-center rounded-full hover:opacity-80 md:h-7 md:w-7"
+              : "h-6 gap-1 rounded-full px-2 hover:opacity-80 md:h-7 md:px-2.5"
+            : cn("gap-1 px-1 py-1 rounded-lg", tone.trigger),
+        )}
+        style={chrome ? { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text } : undefined}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Select currency"
+        aria-label={iconOnly ? `Currency: ${userCurrency}` : 'Select currency'}
       >
-        <span className="text-sm leading-none">{currentSymbol}</span>
-        <span className="hidden sm:inline">{userCurrency}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className={cn("leading-none", iconOnly ? "text-[13px] font-semibold md:text-sm" : "text-sm")}>
+          {currentSymbol}
+        </span>
+        {!iconOnly && (
+          <>
+            <span className="hidden sm:inline">{userCurrency}</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </>
+        )}
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -87,10 +130,10 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
             aria-label="Currency"
             className={cn(
               "absolute top-full mt-1.5 min-w-[124px] overflow-hidden z-[1001]",
-              tone.menu,
-              tone.divider,
+              chrome ? "rounded-2xl" : cn(tone.menu, tone.divider),
               align === 'right' ? 'right-0' : 'left-0'
             )}
+            style={chrome ? { background: chrome.menu, border: `1px solid ${chrome.border}`, boxShadow: chrome.shadow } : undefined}
           >
             {CURRENCIES.map((currency) => {
               const selected = userCurrency === currency.code;
@@ -99,13 +142,19 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                   <button
                     type="button"
                     onClick={() => handleCurrencySelect(currency.code, currency.country)}
+                    onMouseEnter={chrome ? () => setHovered(currency.code) : undefined}
+                    onMouseLeave={chrome ? () => setHovered(null) : undefined}
                     className={cn(
                       "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide transition-colors cursor-pointer",
-                      tone.item(selected)
+                      !chrome && tone.item(selected)
                     )}
+                    style={chrome ? {
+                      background: selected || hovered === currency.code ? chrome.hover : 'transparent',
+                      color: chrome.text,
+                    } : undefined}
                   >
                     <span>{currency.code}</span>
-                    <span className={cn("text-[13px] leading-none", tone.glyph(selected))}>
+                    <span className={cn("text-[13px] leading-none", !chrome && tone.glyph(selected))}>
                       {currency.symbol}
                     </span>
                   </button>

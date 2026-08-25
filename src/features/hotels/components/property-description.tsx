@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     Accessibility, AirVent, ArrowUpDown, Baby, Car, Cigarette, Coffee,
     Dumbbell, PawPrint, Sparkles, Tv, Utensils, WashingMachine,
     Waves, Wifi, type LucideIcon,
 } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { currencySymbol } from '@/shared/lib/format';
+import { cleanSupplierDescription } from '@/features/hotels/lib/clean-description';
 
 /**
  * How many amenity chips the collapsed section draws — the row the design
@@ -25,6 +27,29 @@ const COLLAPSED_AMENITIES = 4;
  * that block ends.
  */
 const COLLAPSED_LINES = 5;
+
+/** One eased curve for the whole disclosure, so the list and the chips in it
+ *  are never on two different clocks. */
+const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+/**
+ * The list's own height, which is the thing that actually has to be smooth:
+ * it is a real layout property, so the rule and the description below it
+ * travel with it instead of jumping to their new places the instant the
+ * chips change.
+ */
+const CHIP_REVEAL = { duration: 0.42, ease: EASE };
+/** The revealed chips, coming up just behind the edge that uncovers them. */
+const CHIP_FADE_IN  = { duration: 0.28, ease: EASE, delay: 0.08 };
+/** And going out ahead of it, so nothing is still fading when the list closes. */
+const CHIP_FADE_OUT = { duration: 0.12, ease: 'linear' as const };
+
+/**
+ * The measurement below has to land before the browser paints, or the list
+ * shows every chip for a frame on the way in. `useLayoutEffect` is what does
+ * that, and React warns about it during SSR — hence the swap.
+ */
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 interface PropertyDescriptionProps {
     /** The cheapest nightly rate, in `currency`. Omitted, the price is dropped
@@ -157,10 +182,164 @@ function Disclosure({
             type="button"
             onClick={onClick}
             aria-expanded={expanded}
-            className={cn('cursor-pointer text-[13px] font-bold transition-colors', palette.link)}
+            className={cn('cursor-pointer text-[18px] font-bold transition-colors', palette.link)}
         >
             {label}
         </button>
+    );
+}
+
+// ─── Chip group ───────────────────────────────────────────────────────────────
+
+/**
+ * Which of a hotel's "amenities" are really house rules.
+ *
+ * Suppliers return one flat list with the lift and the smoking policy side by
+ * side, but they are not the same kind of fact: an amenity is something the
+ * stay gives you, a policy is something it asks of you. Mixed together the
+ * chips read as a list of features with two traps hidden in it.
+ *
+ * Matched on the words rather than on any code, because the list arrives as
+ * free text — see `otvCodeToLabel` upstream, which has already turned whatever
+ * the supplier sent into a label.
+ */
+const POLICY_AMENITY =
+    /\bsmok|\bpets?\b|\bchild|\binfant|\bage\b|deposit|passport|cancellation|\bpolic|\brules?\b|curfew|quiet hours|\bpart(y|ies)\b|\bevents?\b|\ballowed\b|not permitted|prohibit|\brequired\b|on request|surcharge|extra bed|minimum stay/i;
+
+function splitAmenities(list: string[]): { facilities: string[]; policies: string[] } {
+    const facilities: string[] = [];
+    const policies: string[] = [];
+    for (const item of list) {
+        (POLICY_AMENITY.test(item) ? policies : facilities).push(item);
+    }
+    return { facilities, policies };
+}
+
+/**
+ * A labelled group of chips that opens and closes.
+ *
+ * Extracted so the amenities and the policies can be two of these rather than
+ * one list rendered twice — each needs its own open state and its own measured
+ * heights, and sharing either would have one group opening the other.
+ */
+function ChipGroup({
+    label, items, moreLabel, lessLabel, palette, reduceMotion, className,
+}: {
+    label: string;
+    items: string[];
+    moreLabel: string;
+    lessLabel: string;
+    palette: Palette;
+    reduceMotion: boolean | null;
+    className?: string;
+}) {
+    const [showAll, setShowAll] = useState(false);
+
+    /**
+     * The two heights the list moves between: the bottom of the fourth chip,
+     * and the bottom of the last one.
+     *
+     * Measured rather than derived, because the list wraps: how many rows four
+     * chips occupy depends on how long their labels are and how wide the column
+     * is, and both change. Reading it off the fourth chip's own box is the only
+     * thing that stays right.
+     *
+     * Every chip is rendered either way and the extras are clipped, which is
+     * what lets this animate at all — the chips already on screen never move,
+     * so there is no reflow to smooth over, only a height to open.
+     */
+    const listRef = useRef<HTMLUListElement | null>(null);
+    const [heights, setHeights] = useState<{ collapsed: number; full: number } | null>(null);
+
+    useIsomorphicLayoutEffect(() => {
+        const el = listRef.current;
+        if (!el) return;
+
+        const measure = () => {
+            const chips = Array.from(el.children) as HTMLElement[];
+            const last = chips[COLLAPSED_AMENITIES - 1];
+            const full = el.scrollHeight;
+            const collapsed = last ? last.offsetTop + last.offsetHeight : full;
+            // Same numbers, same object: the observer below fires on the height
+            // animation itself, and a fresh object each time would re-render
+            // every frame of it.
+            setHeights(prev =>
+                prev && prev.collapsed === collapsed && prev.full === full
+                    ? prev
+                    : { collapsed, full });
+        };
+
+        measure();
+        // Re-measures when the column changes width and the chips rewrap.
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [items]);
+
+    if (items.length === 0) return null;
+
+    return (
+        <div className={className}>
+            <p className={cn('mb-3 text-[13px] font-bold tracking-[0.12em] uppercase', palette.muted)}>
+                {label}
+            </p>
+
+            {/* The disclosure is a height, not a reflow. Every chip is always in
+                the list and the extras are clipped, so the four already on
+                screen do not move at all — opening it only uncovers what was
+                behind the edge.
+
+                That the height is real matters as much as that it is animated: a
+                `layout` transform would slide the list's own box while whatever
+                follows snapped straight to its new place. */}
+            <motion.ul
+                ref={listRef}
+                // `relative`, so a chip's `offsetTop` is measured against this
+                // list rather than against whatever happens to be positioned
+                // above it.
+                className="relative flex flex-wrap gap-2 overflow-hidden"
+                initial={false}
+                animate={heights ? { height: showAll ? heights.full : heights.collapsed } : undefined}
+                transition={reduceMotion ? { duration: 0 } : CHIP_REVEAL}
+            >
+                {items.map((item, i) => {
+                    const Icon = amenityIcon(item);
+                    const clipped = !showAll && i >= COLLAPSED_AMENITIES;
+                    return (
+                        <motion.li
+                            key={item}
+                            // Clipped rather than unmounted — but still hidden
+                            // from a screen reader, or the button offering to
+                            // show them would be offering what it already read out.
+                            aria-hidden={clipped || undefined}
+                            initial={false}
+                            animate={{ opacity: clipped ? 0 : 1 }}
+                            transition={reduceMotion
+                                ? { duration: 0 }
+                                : (clipped ? CHIP_FADE_OUT : CHIP_FADE_IN)}
+                            className={cn(
+                                'inline-flex items-center gap-3 rounded-full px-6 py-3 text-[16px] sm:text-[17px]',
+                                palette.chip,
+                            )}
+                        >
+                            {Icon && <Icon size={17} strokeWidth={1.75} className={cn('shrink-0', palette.chipIcon)} />}
+                            {item}
+                        </motion.li>
+                    );
+                })}
+            </motion.ul>
+
+            {items.length > COLLAPSED_AMENITIES && (
+                <div className="mt-3">
+                    <Disclosure
+                        label={showAll ? lessLabel : moreLabel}
+                        expanded={showAll}
+                        palette={palette}
+                        onClick={() => setShowAll((v) => !v)}
+                    />
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -173,8 +352,22 @@ export function PropertyDescription({
     const { theme } = useTheme();
     const palette = descriptionPalette(tone ?? theme);
 
-    const [showAllAmenities, setShowAllAmenities] = useState(false);
+
+    /**
+     * The write-up, with the supplier facts block trimmed and its run-on
+     * sections split back apart — see `cleanSupplierDescription`. Memoised
+     * because the clamp measurement below re-runs on every resize and this
+     * should not run with it.
+     */
+    const body = useMemo(() => cleanSupplierDescription(description), [description]);
+    /** Honoured rather than assumed: the chips move a lot of the panel at
+     *  once, which is exactly what someone asking for less motion means. */
+    const reduceMotion = useReducedMotion();
     const [expanded, setExpanded] = useState(false);
+
+    /** The lift and the smoking policy arrive in one list; they are not the
+     *  same kind of fact. See `splitAmenities`. */
+    const { facilities, policies } = useMemo(() => splitAmenities(amenities), [amenities]);
 
     /**
      * Whether the clamp is actually cutting anything off.
@@ -197,18 +390,17 @@ export function PropertyDescription({
         const ro = new ResizeObserver(measure);
         ro.observe(el);
         return () => ro.disconnect();
-    }, [description, expanded]);
+    }, [body, expanded]);
 
     const inTime  = formatStayTime(checkInTime);
     const outTime = formatStayTime(checkOutTime);
     const hasTimes = Boolean(inTime || outTime);
 
-    const shownAmenities = showAllAmenities ? amenities : amenities.slice(0, COLLAPSED_AMENITIES);
     const hasPrice = typeof price === 'number' && price > 0;
     const hasRating = typeof rating === 'number' && rating > 0;
 
     // Nothing to say — no section, rather than an empty one.
-    if (!hasPrice && !hasRating && !hasTimes && amenities.length === 0 && !description) return null;
+    if (!hasPrice && !hasRating && !hasTimes && amenities.length === 0 && !body) return null;
 
     // An unknown code has no symbol, so it prints as the code itself.
     const symbol = currencySymbol(currency) || currency;
@@ -216,15 +408,19 @@ export function PropertyDescription({
     return (
         <section className={className}>
             {/* ── Head ─────────────────────────────────────────────────────────
-                The rate over the chips on the left, the desk's hours held
-                against the right edge.
+                The rate on its own line, the chips under it, and the desk's
+                hours held against the right edge alongside the chips.
 
-                `items-end`, so the hours sit on the chips' baseline rather than
-                the price's — the left column is two rows tall and the design
-                lands the pair against the bottom of it. */}
+                A grid rather than a flex row, and that is the whole point: the
+                hours get a cell of their own in the chips' row and sit at the
+                *top* of it. The chips can then wrap to three rows, or open from
+                four to forty, and grow downward into their own cell without
+                shifting the hours by a pixel. Bottom-aligning them in a flex row
+                — which is what this was — tied them to the height of the chips,
+                so opening the list dragged IN and OUT down the page with it. */}
             {(hasPrice || hasRating || hasTimes || amenities.length > 0) && (
-                <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-                    <div className="min-w-0">
+                <div className="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="min-w-0 sm:col-start-1 sm:row-start-1">
                         {(hasPrice || hasRating) && (
                             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                                 {hasPrice && (
@@ -232,43 +428,49 @@ export function PropertyDescription({
                                         {/* Symbol and digits are separate type,
                                             as drawn: the symbol a size down, so
                                             the number carries the line alone. */}
-                                        <span className={cn('text-[26px] font-bold sm:text-[30px]', palette.title)}>
+                                        <span className={cn('text-[36px] font-bold sm:text-[42px]', palette.title)}>
                                             {symbol}
                                         </span>
-                                        <span className={cn('-ml-1.5 text-[30px] font-bold tracking-[-0.02em] sm:text-[36px]', palette.title)}>
+                                        <span className={cn('-ml-1.5 text-[42px] font-bold tracking-[-0.02em] sm:text-[50px]', palette.title)}>
                                             {Math.round(price).toLocaleString()}
                                         </span>
-                                        <span className={cn('text-[15px] sm:text-[17px]', palette.muted)}>/night</span>
+                                        <span className={cn('text-[21px] sm:text-[24px]', palette.muted)}>/night</span>
                                     </>
                                 )}
                                 {hasRating && (
-                                    <span className={cn('text-[16px] sm:text-[18px]', palette.soft)}>
+                                    <span className={cn('text-[22px] sm:text-[25px]', palette.soft)}>
                                         <b className={cn('font-bold', palette.title)}>{rating.toFixed(1)}</b> rating
                                     </span>
                                 )}
                             </div>
                         )}
-
-                        {amenities.length > 0 && (
-                            <ul className={cn('flex flex-wrap gap-2', (hasPrice || hasRating) && 'mt-4')}>
-                                {shownAmenities.map((amenity) => {
-                                    const Icon = amenityIcon(amenity);
-                                    return (
-                                        <li
-                                            key={amenity}
-                                            className={cn(
-                                                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] sm:text-[12px]',
-                                                palette.chip,
-                                            )}
-                                        >
-                                            {Icon && <Icon size={12} strokeWidth={1.75} className={cn('shrink-0', palette.chipIcon)} />}
-                                            {amenity}
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
                     </div>
+
+                    {/* The chips, in the row under the price and beside the
+                        hours.
+
+                        The disclosure is a height, not a reflow. Every chip is
+                        always in the list and the extras are clipped, so the
+                        four already on screen do not move at all — opening it
+                        only uncovers what was behind the edge.
+
+                        That the height is real matters as much as that it is
+                        animated: a `layout` transform would slide the list's
+                        own box while the rule and the description below it
+                        snapped straight to their new places, which is exactly
+                        the jump this is meant to remove. */}
+                    {/* Facilities, in the row under the price and beside the
+                        hours — the group the design draws. Policies get their
+                        own below, out of the grid. */}
+                    <ChipGroup
+                        label="Amenities"
+                        items={facilities}
+                        moreLabel="See all amenities"
+                        lessLabel="Show fewer amenities"
+                        palette={palette}
+                        reduceMotion={reduceMotion}
+                        className="sm:col-start-1 sm:row-start-2"
+                    />
 
                     {hasTimes && (
                         // A description list, not two rows of spans: these are
@@ -277,7 +479,13 @@ export function PropertyDescription({
                         // box held right — the labels line up with each other,
                         // which is what the design draws; right-aligning the
                         // text instead would stagger `IN` off `OUT`.
-                        <dl className={cn('shrink-0 text-[15px] leading-[1.5] sm:text-[17px]', palette.soft)}>
+                        //
+                        // `self-start` in the chips' row is what holds it still
+                        // while they open: the row grows under it, not around it.
+                        <dl className={cn(
+                            'shrink-0 text-[21px] leading-[1.5] sm:col-start-2 sm:row-start-2 sm:self-start sm:justify-self-end sm:text-[24px]',
+                            palette.soft,
+                        )}>
                             {inTime && (
                                 <div className="flex gap-2">
                                     <dt className={cn('font-bold', palette.title)}>IN</dt>
@@ -295,22 +503,23 @@ export function PropertyDescription({
                 </div>
             )}
 
-            {/* Under the whole head rather than inside the left column: the
-                design runs it along the section's own left edge, below the
-                hours as well as below the chips. */}
-            {amenities.length > COLLAPSED_AMENITIES && (
-                <div className="mt-3">
-                    <Disclosure
-                        label={showAllAmenities ? 'Show fewer amenities' : 'See all amenities'}
-                        expanded={showAllAmenities}
-                        palette={palette}
-                        onClick={() => setShowAllAmenities((v) => !v)}
-                    />
-                </div>
-            )}
+            {/* House rules, kept apart from the facilities above. An amenity is
+                something the stay gives you; a policy is something it asks of
+                you, and a smoking rule sitting between the lift and the Wi-Fi
+                reads as neither. Below the head rather than in it, so the grid
+                keeps the shape the design draws. */}
+            <ChipGroup
+                label="Policies &amp; rules"
+                items={policies}
+                moreLabel="See all policies"
+                lessLabel="Show fewer policies"
+                palette={palette}
+                reduceMotion={reduceMotion}
+                className="mt-6"
+            />
 
             {/* ── Description ──────────────────────────────────────────────── */}
-            {description && (
+            {body && (
                 <>
                     {/* The rule the design draws under the amenities. Only when
                         there is something above it to divide from — on a stay
@@ -321,7 +530,13 @@ export function PropertyDescription({
                     )}
                     <p
                         ref={bodyRef}
-                        className={cn('mt-6 text-[12.5px] leading-[1.6]', palette.body)}
+                        // `whitespace-pre-line` so the paragraph breaks the
+                        // cleaner recovers actually render. One <p> rather
+                        // than several, because the clamp below is a property
+                        // of a single element — split into three paragraphs it
+                        // would clamp each of them to five lines instead of the
+                        // description as a whole.
+                        className={cn('mt-6 whitespace-pre-line text-[18px] leading-[1.6]', palette.body)}
                         // The clamp as a style rather than a `line-clamp-*`
                         // utility: it has to come off entirely when expanded,
                         // and toggling between two utilities leaves whichever
@@ -333,7 +548,7 @@ export function PropertyDescription({
                             overflow: 'hidden',
                         }}
                     >
-                        {description}
+                        {body}
                     </p>
 
                     {(overflowing || expanded) && (

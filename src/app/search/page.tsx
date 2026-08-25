@@ -219,6 +219,23 @@ const CARD_GEOM_MOBILE = {
  * breakpoint the nav uses is the only thing that keeps a tablet's cards out
  * from under it.
  */
+/**
+ * The map view's floating chrome sits on the bottom nav's box, not the shell's.
+ *
+ * `SHELL_GUTTER` opens at 20px and the nav's own fixed wrapper at 16px, so on a
+ * phone the toolbar floated 4px inside the nav below it and the two pills — the
+ * only two things on the screen with a hard left and right edge — did not line
+ * up. The nav is the one that cannot move: it is every screen's, while this
+ * gutter is this view's alone.
+ *
+ * Only the first step changes. Past `sm` the shell's own 32/48 take over again,
+ * which is where the nav stops being the thing the eye compares against — it
+ * still carries its 16px to `lg`, so between those two widths the bar is wider
+ * than the nav rather than narrower. If that reads wrong on a tablet, the fix
+ * is `px-4 lg:px-12` here, and it is a design call rather than a bug.
+ */
+const MAP_CHROME_GUTTER = 'px-4 sm:px-8 lg:px-12';
+
 const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:pb-7';
 /** The same clearance as an offset, for anything that floats rather than pads. */
 const RAIL_BOTTOM_MOBILE = 'bottom-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:bottom-7';
@@ -228,6 +245,59 @@ const SELECT_SCALE = 1.08;
  *  card so its neighbours slide out of the way instead of being covered.
  *  `transform` alone paints over them without moving them. */
 const SELECT_GUTTER = Math.round((CARD_W * (SELECT_SCALE - 1)) / 2);
+
+/** The strip's `gap-3`, as a number, for the page arithmetic below. */
+const RAIL_GAP = 12;
+
+/**
+ * The most cards the strip shows at once — and so, the most it steps by.
+ *
+ * A page is a screenful: the cards are sized so exactly this many fill the
+ * strip's width, and an arrow steps by exactly that many. Nothing is ever half
+ * on screen, at rest or after a step, which is the whole point — a card sliced
+ * by the container's edge reads as a card running off the strip rather than as
+ * the end of it.
+ *
+ * A cap rather than a fixed count: five 250px cards need 1300px of strip, which
+ * a laptop has and a phone does not. Below that the count drops rather than the
+ * cards being cut — see `railPerView`.
+ */
+const RAIL_PAGE_SIZE = 5;
+
+/**
+ * The narrowest a card may be squeezed to before the strip shows one fewer
+ * instead.
+ *
+ * Sets where each step down happens. At the shell's 1400px cap it lands just
+ * inside five, so a full-width desktop gets the five the design asks for at
+ * ~264px each — narrower than the 340px artboard, which the type scale's floor
+ * already covers.
+ */
+const RAIL_MIN_CARD_W = 250;
+
+/**
+ * Room the scroller keeps at both ends, outside the cards.
+ *
+ * Two things were cut off without it. A selected card wears `scale(1.08)`, and
+ * `overflow-x: auto` clips it — at the ends there is no neighbour to grow into,
+ * so the first and last cards lost their outer edge whenever they were the one
+ * picked. And at full scroll the last card sat flush against the box, which
+ * read as a card running off the strip rather than as the end of it.
+ *
+ * Spent as negative margin plus equal padding: the box grows outward by this
+ * much on each side, while the content starts exactly where it did. The strip's
+ * left edge still lines up under the toolbar's.
+ */
+const RAIL_EDGE_PAD = SELECT_GUTTER;
+
+/**
+ * How long one wheel gesture owns the rail.
+ *
+ * A wheel gesture is a burst of notches, not one event; without a floor between
+ * steps a single flick would run through every page it had. Long enough to
+ * swallow the burst, short enough that a deliberate second flick still lands.
+ */
+const RAIL_WHEEL_PAGE_MS = 320;
 
 /**
  * The card takes its palette from the app theme rather than from the page's
@@ -252,7 +322,7 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, nights, theme, mobile, elementRef,
+    onSelect, onHover, onViewDetails, currency, nights, theme, mobile, elementRef, width,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
@@ -265,6 +335,12 @@ function RailCard({
     /** Hands the card's element up so the rail can scroll it into view when its
      *  pin is clicked. */
     elementRef?: (el: HTMLDivElement | null) => void;
+    /**
+     * The exact width to draw at, in px, from the rail's own division of its
+     * strip. Falls back to the geometry's own width until the strip has been
+     * measured — one frame, on mount.
+     */
+    width?: number;
 }) {
     const c = railCardPalette(theme);
     const price = convertCurrency(property.price, property.currency || 'USD', currency) / nights;
@@ -293,7 +369,7 @@ function RailCard({
             className="shrink-0 cursor-pointer"
             style={{
                 position: 'relative',
-                width: g.width, minHeight: g.minH,
+                width: width ? `${width}px` : g.width, minHeight: g.minH,
                 borderRadius: px(16), overflow: 'hidden',
                 display: 'flex', alignItems: 'stretch',
                 background: c.surface,
@@ -580,11 +656,23 @@ function HotelSearchContent() {
     const isMobile   = useIsMobile();
     const { theme, toggleTheme } = useTheme();
     /**
-     * The UI runs opposite the app theme, so it always contrasts the basemap:
-     * light mode gets a light map under dark chrome and dark cards, dark mode
-     * the reverse. Everything on top of the map takes `uiTone`, never `theme`.
+     * The chrome floating over the map follows the app theme: dark mode gets
+     * black controls and black cards over the night basemap, light mode white
+     * ones over the day basemap.
+     *
+     * It used to run *opposite* the theme, on the reasoning that chrome should
+     * contrast the basemap rather than match it. That held the bar apart from
+     * the map, but it also meant turning the app dark turned this screen's
+     * controls white — the one screen in the app where dark mode did not go
+     * dark. Matching the theme is what people expect a theme to do; the map's
+     * own night preset is a mid-tone, so black chrome still reads as sitting on
+     * top of it rather than dissolving into it.
+     *
+     * Kept as its own name rather than folded into `theme` because everything
+     * over the map reads it — the bar, the rail cards, the filter panel, the
+     * bottom nav — and one name is what keeps them agreeing.
      */
-    const uiTone     = theme === 'dark' ? 'light' : 'dark';
+    const uiTone     = theme;
     /** One surface for every control floating over the map. */
     const chrome     = sortPalette(uiTone);
     /**
@@ -909,6 +997,66 @@ function HotelSearchContent() {
      */
     const [railCardH, setRailCardH] = useState(CARD_GEOM.minH);
     const railHeadroom = Math.ceil(railCardH * (SELECT_SCALE - 1));
+
+    /**
+     * The strip's own inner width — what the cards have to divide between them.
+     *
+     * Measured rather than derived from the breakpoint: the strip sits inside
+     * the shell's gutter *and* its cap, so its width is a function of both, and
+     * the cap only starts binding past ~1500px. Watched rather than read once,
+     * so a rotated phone or a dragged window re-divides the cards.
+     */
+    const [railViewW, setRailViewW] = useState(0);
+
+    /**
+     * Bumped by `attachRailScroll` on every genuine attach — the one signal
+     * the height effect below can trust to mean "the scroller (and its first
+     * card) now exist," whatever produced that attach.
+     */
+    const [railScrollEpoch, setRailScrollEpoch] = useState(0);
+    const railWidthObserverRef = useRef<ResizeObserver | null>(null);
+
+    /**
+     * Attaches (and re-attaches) the width observer directly off the DOM
+     * node's own lifecycle, via a callback ref, rather than off a piece of
+     * state used as a proxy for "has it (re)mounted yet."
+     *
+     * That distinction used to not matter, back when a map↔list switch was a
+     * synchronous swap: `railHidden`/`viewMode` changing and the new node
+     * appearing landed in the same tick, so keying an effect off them worked
+     * by coincidence. It stopped holding the moment the switch became
+     * animated (`AnimatePresence` in the view-switch above): `viewMode`
+     * flips instantly, but the new element doesn't exist until the outgoing
+     * view's exit animation finishes — the effect fired immediately, found
+     * nothing, and had no second trigger once the node actually arrived, since
+     * its dependency had already changed and wouldn't change again. A
+     * callback ref sidesteps the whole class of bug: React calls it with the
+     * element exactly when it's really there, and with `null` exactly when
+     * it's really gone, independent of whatever animation or delay produced
+     * that transition.
+     */
+    const attachRailScroll = useCallback((el: HTMLDivElement | null) => {
+        railScrollRef.current = el;
+        railWidthObserverRef.current?.disconnect();
+        railWidthObserverRef.current = null;
+        if (!el) return;
+
+        const measure = () => setRailViewW(el.clientWidth - RAIL_EDGE_PAD * 2);
+        measure();
+        railWidthObserverRef.current = new ResizeObserver(measure);
+        railWidthObserverRef.current.observe(el);
+
+        // Lets the height effect below (re)grab the first card now that the
+        // scroller genuinely exists, without giving it a reason to fire on
+        // every unrelated re-render.
+        setRailScrollEpoch(e => e + 1);
+    }, []);
+
+    // The first card's height, kept live for two different reasons: the
+    // scroller itself (re)appearing (`railScrollEpoch`, from the callback ref
+    // above), and the *same* scroller's first card changing identity as the
+    // result set is re-sorted or refiltered (`sorted.length`) — a case the
+    // callback ref can't see, since the scroller doesn't remount for it.
     useEffect(() => {
         const card = railScrollRef.current?.firstElementChild as HTMLElement | null;
         if (!card) return;
@@ -919,7 +1067,75 @@ function HotelSearchContent() {
         const ro = new ResizeObserver(measure);
         ro.observe(card);
         return () => ro.disconnect();
-    }, [railHidden, sorted.length]);
+    }, [sorted.length, railScrollEpoch]);
+
+    /**
+     * How many cards are on screen, and how wide each one is drawn.
+     *
+     * The division is the fix for cards being sliced by the container: rather
+     * than laying fixed-width cards down until the strip runs out mid-card, the
+     * strip decides how many whole cards it can hold at a sane size and gives
+     * each an exact share of what it has. `RAIL_PAGE_SIZE` caps the count and
+     * `RAIL_MIN_CARD_W` sets where it steps down.
+     *
+     * Both fall back to the geometry's own width for the one frame before the
+     * strip has been measured.
+     */
+    const railPerView = railViewW > 0
+        ? Math.max(1, Math.min(RAIL_PAGE_SIZE, Math.floor((railViewW + RAIL_GAP) / (RAIL_MIN_CARD_W + RAIL_GAP))))
+        : 1;
+    const railCardW = railViewW > 0
+        ? Math.floor((railViewW - (railPerView - 1) * RAIL_GAP) / railPerView)
+        : 0;
+
+    /**
+     * The strip's pages. One page is one screenful, so a step lands with whole
+     * cards filling the strip and nothing half-shown at either edge.
+     */
+    const railPageW     = (railCardW + RAIL_GAP) * railPerView;
+    const railPageCount = Math.max(1, Math.ceil(railCards.length / railPerView));
+    const [railPage, setRailPage] = useState(0);
+
+    /**
+     * How long the counter ignores what the scroller says.
+     *
+     * A page step sets the counter and then animates toward it, and a smooth
+     * scroll fires `scroll` the whole way. Without this the reader below would
+     * round every intermediate position back to the page being left, and the
+     * counter would tick backwards for a few frames before landing.
+     */
+    const railPagingUntil = useRef(0);
+
+    const goToRailPage = useCallback((page: number) => {
+        const el = railScrollRef.current;
+        if (!el) return;
+        const clamped = Math.max(0, Math.min(railPageCount - 1, page));
+        // The last page is short of a full stride whenever the card count is
+        // not a multiple of the page size, so the travel is clamped to what the
+        // scroller actually has left rather than to the page's own offset.
+        const max = Math.max(0, el.scrollWidth - el.clientWidth);
+        railPagingUntil.current = performance.now() + 600;
+        el.scrollTo({ left: Math.min(clamped * railPageW, max), behavior: 'smooth' });
+        setRailPage(clamped);
+    }, [railPageCount, railPageW]);
+
+    /**
+     * Keeps the counter honest when the strip is moved by something other than
+     * a page step — a swipe, a drag, or the scroll that centres the card behind
+     * a clicked pin.
+     */
+    const handleRailScroll = useCallback(() => {
+        const el = railScrollRef.current;
+        if (!el || railPageW <= 0) return;
+        if (performance.now() < railPagingUntil.current) return;
+        const page = Math.round(el.scrollLeft / railPageW);
+        setRailPage(Math.max(0, Math.min(railPageCount - 1, page)));
+    }, [railPageCount, railPageW]);
+
+    // A narrowed filter or a new search can leave the counter past the end.
+    useEffect(() => {
+        setRailPage(p => Math.min(p, railPageCount - 1));
+    }, [railPageCount]);
 
     /**
      * The cards, by hotel id, so a selection can find its own.
@@ -959,24 +1175,22 @@ function HotelSearchContent() {
         scroller.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
     }, [selectedId, railHidden]);
 
+    /**
+     * The page step, and where it is, read by the wheel listener below.
+     *
+     * That listener is registered once — it is a capturing window listener, and
+     * re-registering it on every page change would be a teardown per step — so
+     * it cannot close over either value directly.
+     */
+    const goToRailPageRef = useRef(goToRailPage);
+    const railPageRef     = useRef(railPage);
     useEffect(() => {
-        let target: number | null = null;
-        let raf = 0;
+        goToRailPageRef.current = goToRailPage;
+        railPageRef.current     = railPage;
+    });
 
-        const step = () => {
-            const el = railScrollRef.current;
-            if (!el || target === null) { raf = 0; return; }
-            const distance = target - el.scrollLeft;
-            if (Math.abs(distance) < 0.5) {
-                el.scrollLeft = target;
-                raf = 0;
-                return;
-            }
-            // Wheel ticks accumulate into a target the rail eases toward, so a
-            // burst of notches reads as one glide rather than a stack of jumps.
-            el.scrollLeft += distance * 0.18;
-            raf = requestAnimationFrame(step);
-        };
+    useEffect(() => {
+        let lastStep = 0;
 
         const onWheel = (e: WheelEvent) => {
             const el = railScrollRef.current;
@@ -992,25 +1206,40 @@ function HotelSearchContent() {
             e.preventDefault();
             e.stopPropagation();
 
-            if (e.deltaX !== 0) { target = null; return; }   // real horizontal intent: let the browser scroll
-            if (target === null || !raf) target = el.scrollLeft;
-            const max = el.scrollWidth - el.clientWidth;
-            // Wheel up advances to the following cards.
-            target = Math.max(0, Math.min(max, target - e.deltaY));
-            if (!raf) raf = requestAnimationFrame(step);
+            // Wheel up advances to the following cards, as it always has; a
+            // trackpad's horizontal axis reads the way the page does, where a
+            // positive delta moves further in.
+            const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? -e.deltaY : e.deltaX;
+            if (Math.abs(delta) < 1) return;
+
+            const now = performance.now();
+            if (now - lastStep < RAIL_WHEEL_PAGE_MS) return;
+            lastStep = now;
+
+            goToRailPageRef.current(railPageRef.current + (delta > 0 ? 1 : -1));
         };
 
         window.addEventListener('wheel', onWheel, { capture: true, passive: false });
-        return () => {
-            if (raf) cancelAnimationFrame(raf);
-            window.removeEventListener('wheel', onWheel, { capture: true });
-        };
+        return () => window.removeEventListener('wheel', onWheel, { capture: true });
     }, []);
 
-    // ── List view ─────────────────────────────────────────────────────────────
-    if (viewMode === 'list') {
-        return (
-            <div
+    // ── View switch ───────────────────────────────────────────────────────────
+    // One return rather than the early-return-per-view this used to be:
+    // `AnimatePresence` needs both sides of a swap as siblings under a parent
+    // that never itself unmounts, so it can hold the outgoing view mounted
+    // for its exit before the incoming one appears. `mode="wait"` sequences
+    // that exit-then-enter rather than overlapping them — list is normal
+    // document flow and map is a fixed `100dvh` shell, and cross-fading them
+    // concurrently would fight over the viewport rather than hand off cleanly.
+    return (
+        <AnimatePresence mode="wait">
+        {viewMode === 'list' ? (
+            <motion.div
+                key="list"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                 className={theme === 'dark' ? 'dark flex flex-col min-h-screen' : 'flex flex-col min-h-screen'}
                 style={{ background: LIST_BG[theme], color: theme === 'dark' ? '#F5F5F5' : '#111111' }}
             >
@@ -1057,6 +1286,10 @@ function HotelSearchContent() {
                                 onToggle: () => setListFiltersOpen(v => !v),
                                 mobileOnly: true,
                             }}
+                            // This page renders no app header in either view, so
+                            // without this the list view has no reachable currency
+                            // or language control at all — not just the map.
+                            showRegionControls
                         />
 
                         {/* The map view's filter dropdown, on the list's toolbar.
@@ -1152,13 +1385,17 @@ function HotelSearchContent() {
                         />
                     </div>
                 </div>
-            </div>
-        );
-    }
-
-    // ── Full-screen map view ──────────────────────────────────────────────────
-    return (
-        <div className="dark relative w-full overflow-hidden" style={{ height: '100dvh', background: BG }}>
+            </motion.div>
+        ) : (
+            <motion.div
+                key="map"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                className="dark relative w-full overflow-hidden"
+                style={{ height: '100dvh', background: BG }}
+            >
 
             {/* Full-bleed: the side gutters were page background showing through,
                 which read as a dark frame behind the card rail.
@@ -1197,62 +1434,26 @@ function HotelSearchContent() {
                 took the same list over — one control in one place, and the pill
                 was desktop-only anyway, so the panel is the only surface both
                 breakpoints reach. */}
-            <SearchTopBar
-                className="absolute left-3 right-3 top-3 z-30 md:left-4 md:right-4 md:top-4"
-                tone={uiTone}
-                onBack={() => router.back()}
-                summary={pillText}
-                searching={isLoading || isStreaming}
-                proximity={mapCenter}
-                onSearchSubmit={handleSearchSubmit}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                view="map"
-                onViewChange={setViewMode}
-                filters={{ open: filtersOpen, activeCount: activeFilterCount, onToggle: () => setFiltersOpen(v => !v) }}
-                pois={{ on: showPois, onToggle: () => setShowPois(v => !v) }}
-            />
-
-            {/* ── Streaming progress toast ─────────────────────── */}
-            {/* Visible while results are still arriving so users know the page
-                is active, not stuck. Hidden during full-screen loading (that
-                StatusScreen covers it) and once streaming ends. */}
-            <AnimatePresence>
-                {isStreaming && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.18 }}
-                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
-                        style={{ pointerEvents: 'none' }}
-                    >
-                        <div
-                            className="flex items-center gap-2 rounded-full px-4 py-2"
-                            style={{
-                                background: chrome.surface,
-                                border: `1px solid ${chrome.border}`,
-                                boxShadow: chrome.shadow,
-                                backdropFilter: 'blur(12px)',
-                                WebkitBackdropFilter: 'blur(12px)',
-                            }}
-                        >
-                            <span
-                                aria-hidden="true"
-                                className="shrink-0 animate-spin rounded-full"
-                                style={{
-                                    width: 12, height: 12,
-                                    border: `1.5px solid ${chrome.border}`,
-                                    borderTopColor: chrome.text,
-                                }}
-                            />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
-                                {count > 0 ? `${count}+ stays found · still searching…` : 'Fetching results…'}
-                            </span>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-30 pt-4', MAP_CHROME_GUTTER)}>
+                <div className={cn('relative', SHELL_CAP)}>
+                    <SearchTopBar
+                        className="pointer-events-auto"
+                        tone={uiTone}
+                        onBack={() => router.back()}
+                        summary={pillText}
+                        searching={isLoading || isStreaming}
+                        proximity={mapCenter}
+                        onSearchSubmit={handleSearchSubmit}
+                        theme={theme}
+                        onToggleTheme={toggleTheme}
+                        view="map"
+                        onViewChange={setViewMode}
+                        filters={{ open: filtersOpen, activeCount: activeFilterCount, onToggle: () => setFiltersOpen(v => !v) }}
+                        pois={{ on: showPois, onToggle: () => setShowPois(v => !v) }}
+                        // The map covers the app header, so this bar is the only
+                        // place on the screen these two can be reached from.
+                        showRegionControls
+                    />
 
                     {/* ── Filter panel ─────────────────────────── */}
                     {/* Hangs off the toolbar's left edge, clearing its own
@@ -1307,6 +1508,47 @@ function HotelSearchContent() {
                 </div>
             </div>
 
+            {/* ── Streaming progress toast ─────────────────────── */}
+            {/* Visible while results are still arriving so users know the page
+                is active, not stuck. Hidden during full-screen loading (that
+                StatusScreen covers it) and once streaming ends. */}
+            <AnimatePresence>
+                {isStreaming && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        <div
+                            className="flex items-center gap-2 rounded-full px-4 py-2"
+                            style={{
+                                background: chrome.surface,
+                                border: `1px solid ${chrome.border}`,
+                                boxShadow: chrome.shadow,
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                            }}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="shrink-0 animate-spin rounded-full"
+                                style={{
+                                    width: 12, height: 12,
+                                    border: `1.5px solid ${chrome.border}`,
+                                    borderTopColor: chrome.text,
+                                }}
+                            />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                                {count > 0 ? `${count}+ stays found · still searching…` : 'Fetching results…'}
+                            </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Looking. The skeleton rail that used to sit along the bottom is
                 gone: it promised a card layout the results may not fill, and it
                 competed with the badge for the eye. */}
@@ -1349,7 +1591,7 @@ function HotelSearchContent() {
                             then starts on the bar's left edge and ends on its
                             right one, instead of the rail running to the window
                             while the bar stopped at 1400. */}
-                        <div className={SHELL_GUTTER}>
+                        <div className={MAP_CHROME_GUTTER}>
                             <div className={SHELL_CAP}>
                                 {/* Count + rail controls */}
                                 <div className="mb-1.5 flex items-end justify-between md:mb-0.5 md:items-center">
@@ -1434,44 +1676,100 @@ function HotelSearchContent() {
                                     </div>
                                 </div>
 
-                        {/* Horizontal scroll cards — wheel handler converts vertical
-                            scroll to horizontal. The bottom inset clears the app's
-                            bottom nav wherever that nav is on screen. */}
-                        <div className={cn('relative', RAIL_PAD_B_MOBILE)} style={{ paddingLeft: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER }}>
-                            <div
-                                ref={railScrollRef}
-                                className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
-                                // `overflow-x: auto` forces overflow-y to auto too, so a
-                                // selected card scaling up would be clipped. The headroom
-                                // gives it somewhere to grow; the whole rail is
-                                // pointer-transparent so that headroom doesn't swallow
-                                // clicks meant for the map.
-                                style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
-                            >
-                                {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
-                                    <RailCard
-                                        key={property.id}
-                                        property={property}
-                                        isSelected={isSelected}
-                                        isHovered={isHovered}
-                                        shiftLeft={shiftLeft}
-                                        shiftRight={shiftRight}
-                                        onSelect={handleSelect}
-                                        onHover={setHoveredId}
-                                        onViewDetails={handleViewDetails}
-                                        currency={currency}
-                                        nights={nights}
-                                        theme={uiTone}
-                                        mobile={isMobile}
-                                        elementRef={(el) => {
-                                            if (el) railCardEls.current.set(property.id, el);
-                                            else railCardEls.current.delete(property.id);
+                                {/* Horizontal scroll cards — wheel handler converts vertical
+                                    scroll to horizontal. The bottom inset clears the app's
+                                    bottom nav wherever that nav is on screen. */}
+                                <div className={cn('relative', RAIL_PAD_B_MOBILE)}>
+                                    <div
+                                        ref={attachRailScroll}
+                                        onScroll={handleRailScroll}
+                                        className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
+                                        // `overflow-x: auto` forces overflow-y to auto too, so a
+                                        // selected card scaling up would be clipped. The headroom
+                                        // gives it somewhere to grow; the whole rail is
+                                        // pointer-transparent so that headroom doesn't swallow
+                                        // clicks meant for the map.
+                                        //
+                                        // The horizontal pair does the same job at the two ends —
+                                        // see RAIL_EDGE_PAD — and is what keeps the last card off
+                                        // the box's edge at full scroll.
+                                        style={{
+                                            overscrollBehaviorX: 'contain',
+                                            paddingTop: railHeadroom,
+                                            marginInline: -RAIL_EDGE_PAD,
+                                            paddingInline: RAIL_EDGE_PAD,
                                         }}
-                                    />
-                                ))}
-                                {/* Mirrors the strip's left inset so the last card
-                                    doesn't butt against the window edge */}
-                                <div style={{ minWidth: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER, flexShrink: 0 }} />
+                                    >
+                                        {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
+                                            <RailCard
+                                                key={property.id}
+                                                property={property}
+                                                isSelected={isSelected}
+                                                isHovered={isHovered}
+                                                shiftLeft={shiftLeft}
+                                                shiftRight={shiftRight}
+                                                onSelect={handleSelect}
+                                                onHover={setHoveredId}
+                                                onViewDetails={handleViewDetails}
+                                                currency={currency}
+                                                nights={nights}
+                                                theme={uiTone}
+                                                mobile={isMobile}
+                                                width={railCardW || undefined}
+                                                elementRef={(el) => {
+                                                    if (el) railCardEls.current.set(property.id, el);
+                                                    else railCardEls.current.delete(property.id);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {/* Pages, as dots under the strip rather than a
+                                        counter pill above it — drawn only once there is
+                                        somewhere to go. Each dot is a page, matching what
+                                        `goToRailPage` already steps through; the active one
+                                        stretches rather than just changing colour, so it
+                                        reads at a glance without counting.
+
+                                        This row floats straight over the live map, not a
+                                        `chrome.surface` plate, so `chrome.border`'s ~8%
+                                        tint would vanish here — a fixed opacity plus a drop
+                                        shadow (the same fix `HotelPin` and the gallery's own
+                                        dots use) keeps every dot legible over whatever the
+                                        basemap is showing underneath. */}
+                                    {railPageCount > 1 && (
+                                        <div
+                                            className="mt-2 flex items-center justify-center gap-1.5"
+                                            style={{ pointerEvents: 'auto' }}
+                                        >
+                                            {Array.from({ length: railPageCount }, (_, i) => {
+                                                const isActive = i === railPage;
+                                                return (
+                                                    <button
+                                                        key={i}
+                                                        type="button"
+                                                        onClick={() => goToRailPage(i)}
+                                                        aria-label={`Go to page ${i + 1} of ${railPageCount}`}
+                                                        aria-current={isActive}
+                                                        className="cursor-pointer"
+                                                        style={{
+                                                            width: isActive ? 16 : 6,
+                                                            height: 6,
+                                                            borderRadius: 100,
+                                                            padding: 0,
+                                                            border: 'none',
+                                                            background: isActive
+                                                                ? chrome.text
+                                                                : uiTone === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)',
+                                                            boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+                                                            transition: 'width 220ms ease, background 220ms ease',
+                                                        }}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -1490,7 +1788,7 @@ function HotelSearchContent() {
                         // it clears the app's bottom nav too, and the same box, so
                         // it comes back on the right edge the Hide button it
                         // replaces sat on rather than out at the window's.
-                        className={cn('pointer-events-none absolute inset-x-0 z-20', SHELL_GUTTER, RAIL_BOTTOM_MOBILE)}
+                        className={cn('pointer-events-none absolute inset-x-0 z-20', MAP_CHROME_GUTTER, RAIL_BOTTOM_MOBILE)}
                     >
                         <div className={cn('flex justify-end', SHELL_CAP)}>
                             <button
@@ -1509,7 +1807,9 @@ function HotelSearchContent() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+            </motion.div>
+        )}
+        </AnimatePresence>
     );
 }
 

@@ -18,6 +18,32 @@
 
 export type SelectorVariant = 'default' | 'onDark';
 
+/**
+ * A palette handed in by the caller, for a selector sitting on chrome whose
+ * colours are not the app theme's.
+ *
+ * The search map's toolbar is the case this exists for. Its tone is the app
+ * theme *inverted* — it contrasts the basemap rather than following the page —
+ * and the view hardcodes `dark` on its own root, so a `dark:` variant resolves
+ * to the dark skin there no matter which way the bar underneath is drawn.
+ * Neither variant above can express that: the values have to arrive from
+ * whoever drew the bar.
+ *
+ * Shaped to what the toolbar's own `sortPalette` returns, so it passes its
+ * palette straight through and the bar and the controls on it cannot drift.
+ */
+export interface SelectorChrome {
+    /** A control at rest, against the bar. */
+    surface: string;
+    text: string;
+    border: string;
+    /** The dropdown's ground — a step off `surface`, as on the sort menu. */
+    menu: string;
+    /** A row under the cursor, and the row already chosen. */
+    hover: string;
+    shadow: string;
+}
+
 interface SelectorTone {
     trigger: string;
     menu: string;

@@ -109,8 +109,11 @@ const DISTRICT_MARKER_THRESHOLD = 11;
  * It was a blue that belonged to nothing else on the map and read as a feature
  * in its own right. Blackish reads as a measurement — but only over the day
  * basemap; the night preset would swallow it, so the dark theme takes the same
- * ink inverted. Mapbox paint properties cannot read the `--map-card-*` variables
- * the POI discs invert through, so the rule is spelled out again here.
+ * ink inverted against the basemap instead. That's a different rule than the
+ * POI discs follow (they take the app theme directly via `--map-card-*`) —
+ * this ring is a Mapbox paint property, which can't read a CSS custom
+ * property at all, so it carries its own light/dark pair rather than reusing
+ * theirs.
  */
 const RADIUS_INK = { light: '#141414', dark: '#E6E6E6' } as const;
 
@@ -120,6 +123,24 @@ const RADIUS_INK = { light: '#141414', dark: '#E6E6E6' } as const;
  * the neighbouring pins entirely.
  */
 const SELECT_ZOOM = 15.5;
+
+/**
+ * How many hotel pins a single create/remove pass will mount inline before
+ * handing the rest to `requestAnimationFrame` — see docs/adr/0002-*. Below
+ * this, staggering would add complexity for a batch too small to be visible
+ * as jank; above it (the initial city-wide fit, or "See all in {city}"
+ * dropping the district filter), a hundred-odd markers mounting in one
+ * frame is not.
+ */
+const MARKER_STAGGER_THRESHOLD = 30;
+/**
+ * Markers created per animation frame once staggering kicks in. Chosen
+ * conservatively for the ~16ms frame budget given each one is a real
+ * `createRoot()` mount, not just a DOM append — loosen if profiling shows
+ * headroom. `requestAnimationFrame` rather than `requestIdleCallback`:
+ * Safari/iOS has no `requestIdleCallback`, and this is a booking site.
+ */
+const MARKER_STAGGER_CHUNK = 15;
 
 // Fixed offsets (in degrees) for loading placeholder pins around the city centre
 const LOADING_PIN_OFFSETS = [
@@ -231,6 +252,58 @@ export const SearchMapContainer = React.memo(({
         );
     }, [mappableProperties, districtBbox, currentZoom, showAllProperties]);
 
+    /**
+     * Bounds a hotel pin has to fall within to get a live marker — the map's
+     * current view, padded by half a screen so an ordinary pan doesn't pop
+     * pins in right at the edge. Recomputed on `moveend` only (see
+     * `handleMoveEnd`), never mid-drag: panning itself must not get more
+     * expensive than it already is. See docs/adr/0002-*.
+     *
+     * Padding is measured in screen pixels via `unproject`, not degrees — a
+     * fixed-degree pad would be far too generous zoomed in and far too tight
+     * zoomed out.
+     */
+    const [cullBounds, setCullBounds] = React.useState<{
+        minLng: number; maxLng: number; minLat: number; maxLat: number;
+    } | null>(null);
+
+    const computeCullBounds = useCallback(() => {
+        const map = mapRef.current?.getMap?.();
+        const canvas = map?.getCanvas();
+        const w = canvas?.clientWidth ?? 0;
+        const h = canvas?.clientHeight ?? 0;
+        if (!map || !w || !h) return null;
+        const pad = 0.5;
+        const nw = map.unproject([-w * pad, -h * pad]);
+        const se = map.unproject([w * (1 + pad), h * (1 + pad)]);
+        return {
+            minLng: Math.min(nw.lng, se.lng), maxLng: Math.max(nw.lng, se.lng),
+            minLat: Math.min(nw.lat, se.lat), maxLat: Math.max(nw.lat, se.lat),
+        };
+    }, [mapRef]);
+
+    // Bounds may not exist yet on first paint if the map settles into its
+    // initial view without ever firing `moveend` (no fly-to was needed).
+    // This backfills them once, without clobbering a real `moveend` result
+    // that beat it there.
+    React.useEffect(() => {
+        if (!isMapLoaded || !isMapIdle) return;
+        setCullBounds(prev => prev ?? computeCullBounds());
+    }, [isMapLoaded, isMapIdle, computeCullBounds]);
+
+    /**
+     * The hotels that actually get a marker. Not clustering — every pin here
+     * is still its own full, unmerged marker — just narrowed to the ones the
+     * map is currently looking at. See docs/adr/0002-*.
+     */
+    const culledMarkerProperties = useMemo(() => {
+        if (!cullBounds) return markerProperties;
+        return markerProperties.filter(p =>
+            p.coordinates.lng >= cullBounds.minLng && p.coordinates.lng <= cullBounds.maxLng &&
+            p.coordinates.lat >= cullBounds.minLat && p.coordinates.lat <= cullBounds.maxLat
+        );
+    }, [markerProperties, cullBounds]);
+
     const [selectedPoi, setSelectedPoi] = React.useState<PoiData | null>(null);
     const [hoveredPoi, setHoveredPoi] = React.useState<PoiData | null>(null);
 
@@ -307,6 +380,53 @@ export const SearchMapContainer = React.memo(({
     React.useEffect(() => { onSelectIdRef.current = onSelectId; }, [onSelectId]);
     React.useEffect(() => { onHoverIdRef.current  = onHoverId;  }, [onHoverId]);
 
+    // The current and previous hover id, read live rather than depended on —
+    // see the dedicated hover effect below, which is what owns hover updates
+    // now. Depending on `hoveredId` in the create/remove effect used to mean
+    // every hover re-rendered every mounted marker.
+    const hoveredIdRef = React.useRef(hoveredId);
+    const prevHoveredIdRef = React.useRef<string | null>(null);
+    React.useEffect(() => { hoveredIdRef.current = hoveredId; }, [hoveredId]);
+
+    // Property lookup by id, for the hover effect — kept as a ref so hovering
+    // doesn't depend on (and re-run against) the full property list.
+    const propertyByIdRef = React.useRef<Map<string, MappableProperty>>(new Map());
+    React.useEffect(() => {
+        propertyByIdRef.current = new Map(mappableProperties.map(p => [p.id, p]));
+    }, [mappableProperties]);
+
+    /**
+     * Draws one marker's contents — the thumbnail, the price, the bouncing
+     * dots while it streams in. A `useCallback`, not a plain inline function,
+     * so both the create/remove effect below and the dedicated hover effect
+     * can share the exact same render logic.
+     */
+    const renderPin = useCallback((root: Root, p: MappableProperty, isHov: boolean) => {
+        const price = markerPrices[p.id] ?? 0;
+        let priceLabel = '';
+        try { priceLabel = price > 0 ? formatCurrency(price, targetCurrency) : ''; } catch { /* noop */ }
+        root.render(
+            // `pointerEvents: none` keeps clicks and hovers on the marker
+            // element that owns the listeners. The pin's own colours come
+            // from CSS variables, so nothing here depends on the theme.
+            <div style={{ pointerEvents: 'none' }}>
+                <HotelPin
+                    image={p.image ?? p.images?.[0]}
+                    priceLabel={priceLabel}
+                    active={isHov}
+                />
+            </div>
+        );
+    }, [markerPrices, targetCurrency]);
+
+    /**
+     * Bumped on every create/remove pass. A staggered batch checks this
+     * before creating its next chunk and bails out if a newer pass has since
+     * started — otherwise a fast re-pan could leave two overlapping batches
+     * both creating markers for the same properties.
+     */
+    const creationGenerationRef = React.useRef(0);
+
     React.useEffect(() => {
         if (!isMapLoaded || !isMapIdle) return;
         const mapInstance = mapRef.current?.getMap?.();
@@ -315,27 +435,12 @@ export const SearchMapContainer = React.memo(({
         const MapboxMarker = MapboxMarkerClass;
         if (!MapboxMarker) return;
 
-        const renderPin = (root: Root, p: MappableProperty, isHov: boolean) => {
-            const price = markerPrices[p.id] ?? 0;
-            let priceLabel = '';
-            try { priceLabel = price > 0 ? formatCurrency(price, targetCurrency) : ''; } catch { /* noop */ }
-            root.render(
-                // `pointerEvents: none` keeps clicks and hovers on the marker
-                // element that owns the listeners. The pin's own colours come
-                // from CSS variables, so nothing here depends on the theme.
-                <div style={{ pointerEvents: 'none' }}>
-                    <HotelPin
-                        image={p.image ?? p.images?.[0]}
-                        priceLabel={priceLabel}
-                        active={isHov}
-                    />
-                </div>
-            );
-        };
+        const generation = ++creationGenerationRef.current;
 
-        const currentIds = new Set(markerProperties.map(p => p.id));
+        const currentIds = new Set(culledMarkerProperties.map(p => p.id));
 
-        // Remove markers for hotels no longer in results.
+        // Remove markers for hotels no longer in results — including ones
+        // panned out of `culledMarkerProperties`'s padded bounds.
         // Defer root.unmount() — calling it synchronously inside a useEffect body
         // during React's commit phase causes "unmount during render" errors in React 19.
         const staleRoots: Root[] = [];
@@ -351,56 +456,128 @@ export const SearchMapContainer = React.memo(({
             setTimeout(() => roots.forEach(r => { try { r.unmount(); } catch { /* noop */ } }), 0);
         }
 
-        for (const p of markerProperties) {
+        const createOne = (p: MappableProperty) => {
             const isSelected = p.id === selectedId;
-            const isHov     = p.id === hoveredId;
-            const existing  = imperativeMarkersRef.current.get(p.id);
+            const isHov = hoveredIdRef.current === p.id;
 
-            if (!existing) {
-                // Create new marker
-                const el = document.createElement('div');
-                el.style.cursor = 'pointer';
-                el.style.zIndex = isHov ? '10' : '1';
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    onSelectIdRef.current(p.id);
-                });
-                // Ignored while the map is moving: zooming and panning slide the
-                // pins under a stationary cursor, and the resulting mouseenter
-                // made pins pop to their hover size for no reason the user could
-                // see. Real hovers land on a settled map.
-                el.addEventListener('mouseenter', () => {
-                    if (mapMovingRef.current) return;
-                    onHoverIdRef.current(p.id);
-                });
-                el.addEventListener('mouseleave', () => onHoverIdRef.current(null));
+            const el = document.createElement('div');
+            el.style.cursor = 'pointer';
+            el.style.zIndex = isHov ? '10' : '1';
+            // Promotes the marker to its own compositor layer, so mapbox-gl's
+            // per-frame position update during pan/zoom is a GPU transform
+            // rather than a layout/paint pass. Safe as a static, always-on
+            // property now that culling bounds how many of these exist at
+            // once — see docs/adr/0002-*.
+            el.style.willChange = 'transform';
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onSelectIdRef.current(p.id);
+            });
+            // Ignored while the map is moving: zooming and panning slide the
+            // pins under a stationary cursor, and the resulting mouseenter
+            // made pins pop to their hover size for no reason the user could
+            // see. Real hovers land on a settled map.
+            el.addEventListener('mouseenter', () => {
+                if (mapMovingRef.current) return;
+                onHoverIdRef.current(p.id);
+            });
+            el.addEventListener('mouseleave', () => onHoverIdRef.current(null));
 
-                const root = createRoot(el);
-                renderPin(root, p, isHov);
+            const root = createRoot(el);
+            renderPin(root, p, isHov);
 
-                // Bottom-anchored so the pin's tail sits on the coordinate —
-                // matches MapMarker, which draws the selected pin.
-                const marker = new MapboxMarker({ element: el, anchor: 'bottom' })
-                    .setLngLat([p.coordinates.lng, p.coordinates.lat]);
+            // Bottom-anchored so the pin's tail sits on the coordinate —
+            // matches MapMarker, which draws the selected pin.
+            const marker = new MapboxMarker({ element: el, anchor: 'bottom' })
+                .setLngLat([p.coordinates.lng, p.coordinates.lat]);
 
-                if (!isSelected) marker.addTo(mapInstance);
+            if (!isSelected) marker.addTo(mapInstance);
 
-                imperativeMarkersRef.current.set(p.id, { marker, root, el, visible: !isSelected });
-            } else {
-                // Update visibility for selection changes
-                if (isSelected && existing.visible) {
-                    existing.marker.remove();
-                    existing.visible = false;
-                } else if (!isSelected && !existing.visible) {
-                    existing.marker.addTo(mapInstance);
-                    existing.visible = true;
-                }
-                // Update pin content for hover / price changes
-                renderPin(existing.root, p, isHov);
-                existing.el.style.zIndex = isHov ? '10' : '1';
+            imperativeMarkersRef.current.set(p.id, { marker, root, el, visible: !isSelected });
+        };
+
+        const toCreate: MappableProperty[] = [];
+        for (const p of culledMarkerProperties) {
+            if (!imperativeMarkersRef.current.has(p.id)) toCreate.push(p);
+        }
+
+        // Below the threshold, creating them all inline is invisible to the
+        // user — staggering would only add complexity for nothing. Above it
+        // (a big batch landing in one `moveend`, e.g. the initial city-wide
+        // fit, or "See all in {city}" dropping the district filter), spread
+        // the rest across frames so mounting a hundred-odd React roots does
+        // not block a single frame outright.
+        if (toCreate.length <= MARKER_STAGGER_THRESHOLD) {
+            toCreate.forEach(createOne);
+        } else {
+            let i = 0;
+            const runChunk = () => {
+                // A newer create/remove pass has since started — this batch
+                // is stale, stop rather than fight it for the same markers.
+                if (generation !== creationGenerationRef.current) return;
+                const end = Math.min(i + MARKER_STAGGER_CHUNK, toCreate.length);
+                for (; i < end; i++) createOne(toCreate[i]);
+                if (i < toCreate.length) requestAnimationFrame(runChunk);
+            };
+            runChunk();
+        }
+
+        // Markers that already exist: sync selection visibility and refresh
+        // their contents (price/currency may have changed). Hover alone does
+        // NOT belong here — see the dedicated hover effect below, which is
+        // the fix for hover no longer re-rendering every marker.
+        for (const p of culledMarkerProperties) {
+            const existing = imperativeMarkersRef.current.get(p.id);
+            if (!existing) continue; // newly created above, or still pending in a staggered chunk
+
+            const isSelected = p.id === selectedId;
+            if (isSelected && existing.visible) {
+                existing.marker.remove();
+                existing.visible = false;
+            } else if (!isSelected && !existing.visible) {
+                existing.marker.addTo(mapInstance);
+                existing.visible = true;
+            }
+
+            const isHov = hoveredIdRef.current === p.id;
+            renderPin(existing.root, p, isHov);
+            existing.el.style.zIndex = isHov ? '10' : '1';
+        }
+    }, [isMapLoaded, isMapIdle, MapboxMarkerClass, culledMarkerProperties, selectedId, renderPin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * Hover, on its own. This is the fix for the bug where any hover change
+     * used to re-render every mounted marker: it touches at most two — the
+     * one losing hover and the one gaining it — via direct map lookups
+     * rather than looping `culledMarkerProperties`.
+     *
+     * A hovered id with no entry here is a hotel the map isn't currently
+     * looking at (culled out by the padded-bounds effect above) — hovering
+     * its rail card is a deliberate no-op, not a bug: there is no marker on
+     * screen for it to highlight, and the map does not pan to reveal one.
+     */
+    React.useEffect(() => {
+        const prevId = prevHoveredIdRef.current;
+        prevHoveredIdRef.current = hoveredId;
+        if (prevId === hoveredId) return;
+
+        if (prevId) {
+            const entry = imperativeMarkersRef.current.get(prevId);
+            const p = propertyByIdRef.current.get(prevId);
+            if (entry && p) {
+                renderPin(entry.root, p, false);
+                entry.el.style.zIndex = '1';
             }
         }
-    }, [isMapLoaded, isMapIdle, MapboxMarkerClass, markerProperties, selectedId, hoveredId, markerPrices, targetCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
+        if (hoveredId) {
+            const entry = imperativeMarkersRef.current.get(hoveredId);
+            const p = propertyByIdRef.current.get(hoveredId);
+            if (entry && p) {
+                renderPin(entry.root, p, true);
+                entry.el.style.zIndex = '10';
+            }
+        }
+    }, [hoveredId, renderPin]);
 
     // Cleanup all imperative markers on unmount
     React.useEffect(() => {
@@ -465,7 +642,8 @@ export const SearchMapContainer = React.memo(({
         const zoom = mapRef.current?.getMap?.()?.getZoom?.() ?? currentZoom;
         setCurrentZoom(zoom);
         onZoomChange?.(zoom);
-    }, [onZoomChange]); // eslint-disable-line react-hooks/exhaustive-deps
+        setCullBounds(computeCullBounds());
+    }, [onZoomChange, computeCullBounds]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const selectedProperty = useMemo(
         () => mappableProperties.find((p: MappableProperty) => p.id === selectedId) ?? null,

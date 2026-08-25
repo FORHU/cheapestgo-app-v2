@@ -93,10 +93,10 @@ interface NearbyPlaceMarkerProps {
  * pointer that marks the coordinate.
  *
  * Colours come from `--map-card-*` (globals.css) — the same pair the preview
- * card uses, so the disc and the card it opens are one mark — and invert against
- * the app theme so the disc always contrasts the basemap: black-on-light in
- * light mode, white-on-dark in dark mode. Variables rather than a prop, so a
- * theme switch is a repaint rather than a re-render of every marker.
+ * card uses, so the disc and the card it opens are one mark — and follow the
+ * app theme directly: dark-on-white in light mode, white-on-dark in dark mode.
+ * Variables rather than a prop, so a theme switch is a repaint rather than a
+ * re-render of every marker.
  *
  * The pointer overlaps the disc rather than butting against it — the disc's
  * edge is a curve, so a triangle sitting on the tangent would leave a hairline

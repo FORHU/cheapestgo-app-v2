@@ -1,10 +1,10 @@
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render as rtlRender, screen, cleanup, within } from '@testing-library/react';
+import { render as rtlRender, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RoomSelection } from '@/features/hotels/components/room-selection';
 import { ThemeProvider } from '@/shared/components/ThemeContext';
-import type { RoomOption } from '@/features/hotels/components/room-list';
+import type { RateRow, RoomOption } from '@/features/hotels/types/property.types';
 
 afterEach(cleanup);
 
@@ -20,9 +20,19 @@ const room = (over: Partial<RoomOption> = {}): RoomOption => ({
     ...over,
 });
 
+const rate = (over: Partial<RateRow> = {}): RateRow => ({
+    offerId: 'o1',
+    price: 169,
+    currency: 'USD',
+    refundable: false,
+    refundableTag: 'NON_REFUNDABLE',
+    ...over,
+});
+
 const base = {
     tone: 'dark' as const,
-    selectedRoomId: null,
+    currency: 'USD',
+    selectedOfferId: null,
     onSelect: () => {},
 };
 
@@ -75,6 +85,38 @@ describe('RoomSelection', () => {
         // would silently drop every rate that carries no tag at all.
         await user.click(screen.getByRole('button', { name: 'Non-refundable' }));
         expect(shownRooms()).toEqual(['Non-refund', 'Unflagged']);
+    });
+
+    it('dates the cancellation row, since that is what differs between rates', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    rates: [rate({ refundable: true, cancellationDeadline: '2026-08-28T12:00:00Z' })],
+                })]}
+            />,
+        );
+        expect(screen.getByText('Free cancellation until Aug 28')).toBeInTheDocument();
+    });
+
+    it('still says a rate is refundable when no deadline came with it', () => {
+        render(<RoomSelection {...base} rooms={[room({ rates: [rate({ refundable: true })] })]} />);
+        expect(screen.getByText('Free cancellation')).toBeInTheDocument();
+    });
+
+    it('does not invent a date from a deadline it cannot read', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({ rates: [rate({ refundable: true, cancellationDeadline: 'whenever' })] })]}
+            />,
+        );
+        expect(screen.getByText('Free cancellation')).toBeInTheDocument();
+    });
+
+    it('says nothing about cancellation on a non-refundable rate', () => {
+        render(<RoomSelection {...base} rooms={[room({ rates: [rate({ cancellationDeadline: '2026-08-28T12:00:00Z' })] })]} />);
+        expect(screen.queryByText(/Free cancellation/)).not.toBeInTheDocument();
     });
 
     it('says so when a filter matches nothing', async () => {
@@ -169,7 +211,7 @@ describe('RoomSelection', () => {
         expect(screen.getByText('Private bathroom')).toBeInTheDocument();
     });
 
-    it('selects without the card underneath swallowing the click', async () => {
+    it('hands back the room and the rate, without the card swallowing the click', async () => {
         const onSelect = vi.fn();
         const user = userEvent.setup();
         render(<RoomSelection {...base} rooms={[room({ id: 'r7' })]} onSelect={onSelect} />);
@@ -178,19 +220,60 @@ describe('RoomSelection', () => {
         // Once, not twice: the button sits inside a card that is itself a
         // selection target, and its click must not bubble into it.
         expect(onSelect).toHaveBeenCalledTimes(1);
-        expect(onSelect).toHaveBeenCalledWith('r7');
+        expect(onSelect.mock.calls[0][0].room.id).toBe('r7');
+        expect(onSelect.mock.calls[0][0].rate.offerId).toBe('r7');
     });
 
-    it('lights the picked room', () => {
-        render(<RoomSelection {...base} rooms={[room({ id: 'r7' })]} selectedRoomId="r7" />);
-        const button = screen.getByRole('button', { name: 'Selected' });
-        expect(button).toHaveAttribute('aria-pressed', 'true');
+    it('lights the picked rate', () => {
+        render(<RoomSelection {...base} rooms={[room({ id: 'r7' })]} selectedOfferId="r7" />);
+        expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('prices in the room currency, with the symbol', () => {
-        render(<RoomSelection {...base} rooms={[room({ price: 2450, currency: 'PHP' })]} />);
-        const card = screen.getByRole('heading', { level: 4 }).closest('div')!;
-        expect(within(card.parentElement!).getByText('₱2,450')).toBeInTheDocument();
+    it('draws one card per rate, at each rate own price', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    rates: [
+                        rate({ offerId: 'a', price: 169, boardCode: 'RO' }),
+                        rate({ offerId: 'b', price: 200, boardCode: 'BB' }),
+                    ],
+                })]}
+            />,
+        );
+        // The same room, twice over — which is what a room with two rates is,
+        // and what the design draws.
+        expect(shownRooms()).toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
+        expect(screen.getByText('$169')).toBeInTheDocument();
+        expect(screen.getByText('$200')).toBeInTheDocument();
+        // Asserted on the cards' own rows: "Breakfast Included" is also the
+        // name of a filter chip above them.
+        const rows = screen.getAllByRole('listitem').map(li => li.textContent);
+        expect(rows).toContain('No Breakfast Included');
+        expect(rows).toContain('Breakfast Included');
+    });
+
+    it('lights only the rate that was picked, not its sibling', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({ rates: [rate({ offerId: 'a' }), rate({ offerId: 'b', price: 200 })] })]}
+                selectedOfferId="b"
+            />,
+        );
+        expect(screen.getAllByRole('button', { name: 'Selected' })).toHaveLength(1);
+        expect(screen.getAllByRole('button', { name: 'Select Room' })).toHaveLength(1);
+    });
+
+    it('divides the stay price down to a night', () => {
+        // Suppliers quote the whole stay; the card prints one night of it.
+        render(<RoomSelection {...base} rooms={[room({ price: 600 })]} nights={3} />);
+        expect(screen.getByText('$200')).toBeInTheDocument();
+    });
+
+    it('prices in the guest currency, with the symbol', () => {
+        render(<RoomSelection {...base} currency="PHP" rooms={[room({ price: 2450, currency: 'PHP' })]} />);
+        expect(screen.getByText('₱2,450')).toBeInTheDocument();
     });
 
     it('renders nothing when the stay has no rooms', () => {

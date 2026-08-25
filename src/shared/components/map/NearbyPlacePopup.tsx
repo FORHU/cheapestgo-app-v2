@@ -68,8 +68,8 @@ function poiImageUrl(place: NearbyPlace): string | null {
  * The preview that opens on a place of interest: a photo, what the place is,
  * and the two facts that decide whether it is worth the walk.
  *
- * Colours come from `--map-card-*` (globals.css), which invert against the app
- * theme like the markers do, so the card always contrasts the basemap. The
+ * Colours come from `--map-card-*` (globals.css), which follow the app theme
+ * directly, like the markers do, rather than contrasting the basemap. The
  * Mapbox popup chrome around it is stripped in the same stylesheet.
  */
 const NearbyPlacePopup = React.memo(function NearbyPlacePopup({

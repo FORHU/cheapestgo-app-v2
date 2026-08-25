@@ -243,15 +243,26 @@ body.map-immersive .app-shell-main {
  * instead of re-rendering fifty React roots — which is what made the switch
  * feel like it lagged.
  */
-/* Inverted against the theme, like the rest of the map's UI: the basemap
-   follows the theme, so markers take the opposite tone to stay legible.
-   POI discs are kept separate from the hotel pill so the two can diverge.
+/* The hotel pin and the POI disc/preview-card pair all follow the app theme
+   directly now — light in light mode, dark in dark mode — rather than
+   contrasting whatever the basemap happens to be showing. POI discs are kept
+   as their own variables rather than sharing the pin's, so the two can still
+   diverge if a future design wants them to.
 
    The POI disc and the preview it opens share one pair: they are the same
-   object at two sizes, and a disc in pure black beside a card in near-black
-   read as two different marks rather than one. The hotel preview draws from
-   the same pair — one surface for everything the map opens over itself. */
+   object at two sizes, and a disc in one tone beside a card in a different
+   one read as two different marks rather than one. The hotel preview draws
+   from the same pair — one surface for everything the map opens over itself. */
 :root {
+  --pin-bg: #FFFFFF;
+  --pin-fg: #1C1C1C;
+  --pin-line: rgba(255, 255, 255, 0.16);
+  --map-card-bg: #FFFFFF;
+  --map-card-fg: #111111;
+  --map-card-muted: rgba(17, 17, 17, 0.55);
+  --map-card-well: rgba(0, 0, 0, 0.06);
+}
+:root.dark {
   --pin-bg: #1C1C1C;
   --pin-fg: #FFFFFF;
   --pin-line: rgba(255, 255, 255, 0.16);
@@ -259,15 +270,6 @@ body.map-immersive .app-shell-main {
   --map-card-fg: #FFFFFF;
   --map-card-muted: rgba(255, 255, 255, 0.55);
   --map-card-well: rgba(255, 255, 255, 0.08);
-}
-:root.dark {
-  --pin-bg: #FFFFFF;
-  --pin-fg: #111111;
-  --pin-line: rgba(0, 0, 0, 0.08);
-  --map-card-bg: #FFFFFF;
-  --map-card-fg: #111111;
-  --map-card-muted: rgba(17, 17, 17, 0.55);
-  --map-card-well: rgba(0, 0, 0, 0.06);
 }
 
 /*

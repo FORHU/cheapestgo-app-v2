@@ -40,4 +40,4 @@ export const SHELL_CAP    = 'max-w-350 mx-auto';
  * spelling out initials.
  */
 export const SECTION_HEADING =
-    'text-[24px] font-bold tracking-[-0.01em] capitalize sm:text-[29px]';
+    'text-[34px] font-bold tracking-[-0.01em] capitalize sm:text-[41px]';

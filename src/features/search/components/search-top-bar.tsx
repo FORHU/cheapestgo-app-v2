@@ -5,6 +5,8 @@ import { ArrowLeft, Compass, List, Map as MapIcon, Moon, SlidersHorizontal, Sun 
 import { cn } from '@/shared/lib/cn';
 import { SearchBar } from './search-bar';
 import { ACCENT, ICON_BTN, sortPalette } from './search-chrome';
+import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
+import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 
 /**
  * The search page's toolbar, for both of its views.
@@ -61,6 +63,21 @@ export interface SearchTopBarProps {
      */
     filters?: { open: boolean; activeCount?: number; onToggle: () => void; mobileOnly?: boolean };
     pois?: { on: boolean; onToggle: () => void };
+
+    /**
+     * Currency and language, drawn on the bar itself.
+     *
+     * A flag rather than the optional objects above because neither control
+     * needs anything from this bar: both own their own value — the store for
+     * currency, a cookie for locale — so there is no handler to withhold and
+     * nothing for a caller to get half-right. Both views pass it: this page
+     * renders no app header of its own in either mode, so this bar is the
+     * only place these two are reachable from at all.
+     *
+     * Both take the bar's palette rather than a variant, since this tone is the
+     * app theme inverted — see `SelectorChrome`.
+     */
+    showRegionControls?: boolean;
 }
 
 export function SearchTopBar({
@@ -70,6 +87,7 @@ export function SearchTopBar({
     theme, onToggleTheme,
     view, onViewChange,
     filters, pois,
+    showRegionControls = false,
 }: SearchTopBarProps) {
     const chrome = sortPalette(tone);
 
@@ -165,6 +183,26 @@ export function SearchTopBar({
                     </button>
                 )}
 
+                {/* Currency and language.
+
+                    Ahead of the theme and view toggles because those two act on
+                    the page in front of you, while these two set what the whole
+                    session is priced and written in — the same order the app
+                    header runs them in.
+
+                    Drawn as the same icon circle as the buttons either side of
+                    them: the active symbol and the active flag carry the state,
+                    so the codes beside them ("USD", "EN") were the only labels
+                    on a bar of glyphs and the only two controls with a
+                    different silhouette. The value each one holds is in its
+                    `aria-label` for anyone not reading the glyph. */}
+                {showRegionControls && (
+                    <>
+                        <CurrencySelector chrome={chrome} iconOnly />
+                        <LocaleSelector chrome={chrome} iconOnly />
+                    </>
+                )}
+
                 {/* Theme */}
                 <button
                     onClick={onToggleTheme}
@@ -179,11 +217,17 @@ export function SearchTopBar({
 
                 {/* View toggle — a circle on a phone, the labelled pill above it.
                     One button rather than one per view: they were mirrors of each
-                    other, and mirrors are what drift. */}
+                    other, and mirrors are what drift.
+
+                    The pill stands at the icon buttons' own height rather than the
+                    40px it used to: it is the only labelled control on the bar, and
+                    at 40 beside a row of 28px circles it read as a different tier of
+                    control instead of the last item in the same row. Width still
+                    follows the label. */}
                 <button
                     onClick={() => onViewChange(view === 'map' ? 'list' : 'map')}
                     aria-label={view === 'map' ? 'List view' : 'Map view'}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-auto md:px-4"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-7 md:w-auto md:px-3.5"
                     style={{ ...rest, fontSize: 13, fontWeight: 600 }}>
                     {view === 'map'
                         ? <List size={13} className="md:size-[15px]" />

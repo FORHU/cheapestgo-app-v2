@@ -27,8 +27,10 @@ interface SelectedPropertyPopupProps {
 const CARD_W = 234;
 const CARD_H = 268;
 /**
- * The card's ink. Always white: it sits on photography under a scrim, never on
- * `--map-card-bg`, so unlike the POI discs it does not invert with the theme.
+ * The card's ink. Always white: it sits on photography under a scrim, not on
+ * a flat `--map-card-bg` surface, so unlike the POI discs it has no theme of
+ * its own to follow — a photo can be any tone, so the ink stays fixed rather
+ * than chasing it.
  */
 const ON_PHOTO       = '#FFFFFF';
 const ON_PHOTO_MUTED = 'rgba(255,255,255,0.72)';
