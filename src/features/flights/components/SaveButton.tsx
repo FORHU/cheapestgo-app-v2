@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Heart, Heart as HeartFill, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { useAuthStore } from '@/shared/auth/store';
 import { http } from '@/shared/lib/http';

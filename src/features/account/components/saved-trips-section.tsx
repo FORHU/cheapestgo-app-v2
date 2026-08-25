@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Heart, Plane, Hotel as HotelIcon, Trash2, ExternalLink, ArrowRight } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';

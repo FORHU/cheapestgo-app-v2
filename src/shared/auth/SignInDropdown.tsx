@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Settings, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/shared/stores/auth.store';
-import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 
 function getInitials(firstName?: string | null, lastName?: string | null, email?: string | null): string {

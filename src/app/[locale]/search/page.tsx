@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState, Suspense, useMemo, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -159,6 +160,7 @@ const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
  * the window's.
  */
 const RAIL_GUTTER_MOBILE = 20;
+const RAIL_GUTTER        = 24;
 
 /**
  * The card's box, at the two sizes it is drawn.
@@ -1084,12 +1086,6 @@ function HotelSearchContent() {
                                         onReset={() => setListFilters(EMPTY_FILTERS)}
                                         priceRange={priceRange}
                                         currency={currency}
-                                        // This view does follow the theme, but
-                                        // says so rather than leaving it to the
-                                        // default — the map's panel below reads
-                                        // as the deliberate exception then, not
-                                        // as the only one of the two that was
-                                        // thought about.
                                         tone={theme}
                                     />
                                 </motion.div>
@@ -1156,7 +1152,7 @@ function HotelSearchContent() {
         );
     }
 
-    // ── Full-screen map view ──────────────────────────────────────────────────
+    // Full-screen map view
     return (
         <div className="dark relative w-full overflow-hidden" style={{ height: '100dvh', background: BG }}>
 
@@ -1282,19 +1278,7 @@ function HotelSearchContent() {
                                     onReset={() => { setMapFilters(EMPTY_FILTERS); setSortBy('recommended'); }}
                                     priceRange={priceRange}
                                     currency={currency}
-                                    // The tone the rest of this view's chrome
-                                    // runs on, which is the app theme inverted.
-                                    // Without it the panel took the `dark` class
-                                    // this view hardcodes on its root and was
-                                    // the one control on the map with no light
-                                    // form at all — a dark panel hanging off a
-                                    // light toolbar over a light basemap.
                                     tone={uiTone}
-                                    // The toolbar's own sort, in the panel. Same list,
-                                    // same state as the sort pill, so the two read as
-                                    // one control in two places rather than disagreeing
-                                    // — and on a phone, where the pill is off the
-                                    // toolbar, this is the only way to sort the map.
                                     sort={{
                                         value: sortBy,
                                         options: SORT_OPTIONS,
@@ -1304,8 +1288,6 @@ function HotelSearchContent() {
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
-            </div>
 
             {/* Looking. The skeleton rail that used to sit along the bottom is
                 gone: it promised a card layout the results may not fill, and it
@@ -1325,7 +1307,7 @@ function HotelSearchContent() {
                     theme={uiTone}
                     title="No accommodations found"
                     lines={[
-                        destination ? `We couldn’t find hotels in ${destination}` : 'We couldn’t find any hotels',
+                        destination ? `We couldn’t find hotels in ${destination}` : "We couldn’t find any hotels",
                         'Try adjusting your dates or destination',
                     ]}
                     action={{ label: 'Search Again', onClick: () => router.back() }}
@@ -1389,9 +1371,6 @@ function HotelSearchContent() {
                                         {districtBbox && !showAllCityOverride && mapZoom >= DISTRICT_MARKER_THRESHOLD && districtName && (
                                             <button
                                                 onClick={() => setShowAllCityOverride(true)}
-                                                // Truncates rather than pushing the row wide:
-                                                // on a phone this label is longer than the
-                                                // screen it has to share with the count chip.
                                                 className="max-w-[60vw] truncate md:max-w-none"
                                                 style={{
                                                     background: 'rgba(255,107,75,0.15)',
@@ -1433,6 +1412,8 @@ function HotelSearchContent() {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
                         {/* Horizontal scroll cards — wheel handler converts vertical
                             scroll to horizontal. The bottom inset clears the app's
@@ -1441,11 +1422,6 @@ function HotelSearchContent() {
                             <div
                                 ref={railScrollRef}
                                 className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
-                                // `overflow-x: auto` forces overflow-y to auto too, so a
-                                // selected card scaling up would be clipped. The headroom
-                                // gives it somewhere to grow; the whole rail is
-                                // pointer-transparent so that headroom doesn't swallow
-                                // clicks meant for the map.
                                 style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
                             >
                                 {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
@@ -1486,10 +1462,6 @@ function HotelSearchContent() {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 60, opacity: 0 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 200 }}
-                        // Rides the same bottom inset as the rail it restores, so
-                        // it clears the app's bottom nav too, and the same box, so
-                        // it comes back on the right edge the Hide button it
-                        // replaces sat on rather than out at the window's.
                         className={cn('pointer-events-none absolute inset-x-0 z-20', SHELL_GUTTER, RAIL_BOTTOM_MOBILE)}
                     >
                         <div className={cn('flex justify-end', SHELL_CAP)}>

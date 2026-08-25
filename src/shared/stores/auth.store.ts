@@ -109,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         socialLogin: async (provider) => {
             if (provider === 'google') {
-                window.location.href = '/api/auth/oauth/google';
+                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
                 return;
             }
             throw new Error(`OAuth provider "${provider}" is not configured yet.`);

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
@@ -11,6 +12,8 @@ import type { RoomOption, RateRow } from '@/features/hotels/types/property.types
 import { useUserCurrency } from '@/stores/searchStore';
 import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
+import { cn } from '@/shared/lib/cn';
+import { SHELL_GUTTER, SHELL_CAP, SECTION_HEADING } from '@/shared/lib/layout';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -513,8 +516,7 @@ function PropertyContent() {
                             </span>
                             <span style={{ fontSize: 13, color: 'rgba(245,239,228,.5)' }}> /night</span>
                         </div>
-                    </section>
-                )}
+                    )}
                 </div>
 
                 {/* Photo gallery — thumb is images[1], lightbox shows all hotel images */}

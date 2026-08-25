@@ -1,55 +1,43 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
 import { FlagIcon, type FlagCode } from '@/shared/components/common/FlagIcon';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import type { Locale } from '@/i18n/routing';
 
 /**
  * Menu order and labels follow the design: flag on the left, the two-letter
- * label on the right. The labels are the country the language is shown for
- * (KR, JP, CN), not the ISO language code stored in the cookie — `cn` and `ja`
- * are what `src/i18n/request.ts` reads, so those values stay as they are.
+ * label on the right. The labels name the country the language is shown for
+ * (KR, JP, CN); `code` is the BCP-47 language subtag, which is what the URL and
+ * `src/i18n/request.ts` use — Chinese is `zh`, not the country code `cn`.
  */
 const LOCALES = [
     { code: 'en', label: 'EN', flag: 'US' },
     { code: 'ko', label: 'KR', flag: 'KR' },
     { code: 'ja', label: 'JP', flag: 'JP' },
-    { code: 'cn', label: 'CN', flag: 'CN' },
-] as const satisfies ReadonlyArray<{ code: string; label: string; flag: FlagCode }>;
-
-type Locale = (typeof LOCALES)[number]['code'];
-
-const LOCALE_COOKIE = 'locale';
-
-function getLocaleCookie(): Locale | undefined {
-    if (typeof document === 'undefined') return undefined;
-    const match = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`));
-    const value = match ? decodeURIComponent(match[1]) : undefined;
-    return LOCALES.some((l) => l.code === value) ? (value as Locale) : undefined;
-}
-
-function setLocaleCookie(locale: Locale) {
-    document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-}
+    { code: 'zh', label: 'CN', flag: 'CN' },
+] as const satisfies ReadonlyArray<{ code: Locale; label: string; flag: FlagCode }>;
 
 export function LocaleSelector({ variant = 'default' }: { variant?: SelectorVariant } = {}) {
     const tone = SELECTOR_TONES[variant];
     const [mounted, setMounted] = useState(false);
-    const [locale, setLocale] = useState<Locale>('en');
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    // The URL is the source of truth for language (ADR-0015), so the current
+    // locale is read from the route rather than from a cookie this component
+    // owns. `pathname` here is already locale-stripped, which is what lets the
+    // same path be re-rendered under a different prefix below.
+    const locale = useLocale() as Locale;
+    const pathname = usePathname();
 
     useEffect(() => {
         setMounted(true);
-        const cookieLocale = getLocaleCookie();
-        if (cookieLocale) {
-            setLocale(cookieLocale);
-        }
     }, []);
 
     useEffect(() => {
@@ -63,9 +51,10 @@ export function LocaleSelector({ variant = 'default' }: { variant?: SelectorVari
     const handleLocaleSelect = (next: Locale) => {
         setOpen(false);
         if (next === locale) return;
-        setLocale(next);
-        setLocaleCookie(next);
-        router.refresh();
+        // Re-render the page the visitor is on under the new prefix, so the
+        // language is in the address bar and survives being shared. `replace`
+        // rather than `push`: switching language is not a place in history.
+        router.replace(pathname, { locale: next });
     };
 
     if (!mounted) return null;

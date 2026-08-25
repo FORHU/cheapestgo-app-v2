@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { LoginForm } from '@/features/auth/components/login-form';
 import { PlaneTakeoff } from 'lucide-react';
 

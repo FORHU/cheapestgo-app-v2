@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { Send, Sparkles, Loader2, Plus, Globe, PanelLeftClose, PanelLeft, Home, MessageSquare } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';

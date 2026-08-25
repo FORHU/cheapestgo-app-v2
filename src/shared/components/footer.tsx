@@ -1,8 +1,9 @@
 "use client";
 
 import React, { Suspense } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import { PlaneTakeoff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

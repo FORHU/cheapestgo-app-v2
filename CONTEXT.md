@@ -1,13 +1,23 @@
 # CheapestGo Domain Glossary
 
 ## cheapest-go-app (V1)
-The original monolithic Next.js frontend. Source of truth for all UI, styling, and feature decisions. Uses Tailwind v4, next-intl (en/ko/ja/cn), Lucia auth, and a rich landing page. V2 is being made a pixel-perfect clone of this.
+The original monolithic Next.js frontend. Source of truth for **feature behaviour**, not for design. Uses Tailwind v4, next-intl (en/ko/ja/zh), Lucia auth, and a rich landing page. V2 reproduces what V1 *does*; it does not reproduce how V1 looks.
+_Avoid_: "pixel-perfect clone", "visual clone" — V2 owns its own design (see **Design Independence**).
 
 ## cheapestgo-app-v2 (V2)
-The refactored frontend using a feature-based folder structure (`src/features/`, `src/shared/`). Currently being migrated to be a full visual and feature clone of V1, while preserving V2's cleaner architecture. Connects to `cheapestgo-api-v2` (separate backend).
+The refactored frontend using a feature-based folder structure (`src/features/`, `src/shared/`). Owns its own design, and is being brought to **Functional Parity** with V1 through the Feature Port. Connects to `cheapestgo-api-v2` (separate backend).
 
-## UI Migration (V1 → V2)
-The process of making V2 look and work identically to V1. Scope: Tailwind v4, next-intl i18n, all landing sections, all providers (Auth, PWA, Theme, Exchange Rate), MobileBottomNav, GlobalSparkle, and every page. V2-unique AI features (ChatWonder, Voice Layer) are deferred in favor of Phase 1 parity first.
+## Design Independence
+V2 has its own design and keeps it. The **Feature Port** carries capabilities across — search, quote, prebook, book, cancel, refund, amend, policies — and leaves V1's layout, components, and styling behind. V1's landing sections, RoomCard, checkout components and legal pages are read as *specifications of behaviour*, never copied as markup.
+_Avoid_: "UI Migration" — the port is not a UI migration. _Avoid_: judging a slice by whether it resembles V1 on screen; judge it by whether it does the same thing.
+
+## Locale Segment
+Every visitor-facing page lives under `app/[locale]`, so the language is part of the URL: `/ko/property/123`. English is unprefixed. The locale is never read from a cookie — a cookie that outranked the prefix would make a link someone shares render in the recipient's language rather than the sender's. `/admin` sits outside the segment: it is staff-facing and English-only.
+_Avoid_: `next/link` and `next/navigation` for `Link`, `useRouter`, `usePathname` or `redirect` — those come from `@/i18n/navigation` and carry the prefix. `useSearchParams`, `useParams` and `notFound` are not locale-aware and stay on `next/navigation`.
+
+## Functional Parity
+The bar the Feature Port is held to: every capability V1 has, V2 has, behaving the same way. It is parity of behaviour and API surface, not of appearance. V2-unique AI features (ChatWonder, Voice Layer) remain Phase 2 and are outside it.
+_Avoid_: treating parity as finished because the endpoint exists — it is parity of behaviour, and an endpoint that is a version behind is not at parity.
 
 ## ChatWonder AI
 Third-party AI chat engine provided by **forhu.ai**. Powers the conversational interface in Phase 2. Exposes a WebSocket endpoint for real-time streaming (`wss://chat-dev.forhu.ai/chat-stream`) and a REST API (`https://chat-dev.forhu.ai`). The frontend connects directly via WebSocket; the backend also calls it via REST for server-side orchestration. Not to be confused with an in-house model — CheapestGo does not train or fine-tune this model.

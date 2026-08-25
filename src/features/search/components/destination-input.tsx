@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { MapPin, History, Plane, Building2, Globe, X, Hotel } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import type { Destination } from '@/shared/types';
+import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import {
     useSearchStore,
     useDestinationQuery,
@@ -64,7 +65,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     const { data: trendingData } = useQuery<TrendingDestination[]>({
         queryKey: ['trending-destinations'],
         queryFn: () =>
-            fetch('/api/trending-destinations')
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/hotels/trending`)
                 .then(r => r.json())
                 .then((res: { success: boolean; data: TrendingDestination[] }) => res.success ? res.data : []),
         staleTime: 30 * 60 * 1000,
@@ -79,12 +80,10 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
 
     const { data: suggestions = [], isFetching } = useQuery<Destination[]>({
         queryKey: ['autocomplete', isFlightField ? 'flights' : 'destinations', debouncedQuery],
-        queryFn: () => {
-            const mode = isFlightField ? 'flights' : 'hotels';
-            return fetch(`/api/autocomplete?query=${encodeURIComponent(debouncedQuery)}&mode=${mode}`)
-                .then(r => r.json())
-                .then((res: { success: boolean; data: Destination[] }) => res.success ? res.data : []);
-        },
+        queryFn: () => autocompleteDestinations(
+            debouncedQuery,
+            isFlightField ? 'flights' : 'hotels',
+        ),
         enabled: debouncedQuery.length >= 2,
         staleTime: 5 * 60 * 1000,
         placeholderData: (prev) => prev,

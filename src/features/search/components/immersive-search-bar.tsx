@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
+import { http } from '@/shared/lib/http';
+import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,7 +14,9 @@ type PanelType = 'origin' | 'destination' | 'dates' | 'travelers' | null;
 type CtaState = 'idle' | 'searching' | 'done';
 
 interface DestSuggestion {
-    type: 'city' | 'country';
+    // 'airport' is what flights mode actually returns. It was missing here and
+    // went unnoticed only because the suggestions arrived as untyped JSON.
+    type: 'city' | 'country' | 'airport';
     title: string;
     subtitle: string;
     countryCode: string;
@@ -453,9 +457,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
         const acMode = mode === 'flights' ? 'flights' : 'hotels';
         origSugT.current = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/autocomplete?query=${encodeURIComponent(q)}&mode=${acMode}`);
-                const json = await res.json();
-                setOriginSugs(json.success ? json.data.slice(0, 6) : []);
+                setOriginSugs((await autocompleteDestinations(q, acMode)).slice(0, 6));
             } catch { setOriginSugs([]); }
             finally { setOriginSugLoading(false); }
         }, 280);
@@ -469,9 +471,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
         const acMode = mode === 'flights' ? 'flights' : 'hotels';
         destSugT.current = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/autocomplete?query=${encodeURIComponent(q)}&mode=${acMode}`);
-                const json = await res.json();
-                setDestSugs(json.success ? json.data.slice(0, 6) : []);
+                setDestSugs((await autocompleteDestinations(q, acMode)).slice(0, 6));
             } catch { setDestSugs([]); }
             finally { setDestSugLoading(false); }
         }, 280);
@@ -597,8 +597,10 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
         setPanelOpen(null);
 
         void (async () => {
-            const countUrl     = `/api/hotels/count?city=${encodeURIComponent(pickedDest.name)}`;
-            const countPromise = fetch(countUrl).then(r => r.json()).then((d: { count: number }) => d.count).catch(() => null);
+            const countPromise = http
+                .get<{ count: number }>(`/hotels/count?city=${encodeURIComponent(pickedDest.name)}`)
+                .then(d => d.count)
+                .catch(() => null);
             const delayPromise = new Promise<void>(resolve => { ctaT1.current = setTimeout(resolve, 1200); });
             const [count]      = await Promise.all([countPromise, delayPromise]);
             setResultsCount(count ?? null);

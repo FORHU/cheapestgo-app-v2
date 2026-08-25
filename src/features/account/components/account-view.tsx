@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { User, Settings, Heart, Bell } from 'lucide-react';
 import { Header } from '@/shared/components/header';
 import { useAuthStore } from '@/shared/stores/auth.store';

@@ -6,7 +6,7 @@ import { Footer } from '@/shared/components/footer';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
 import { http } from '@/shared/lib/http';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { MapPin } from 'lucide-react';
 
 interface HotelSearchResponse {

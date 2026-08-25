@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Plane, Hotel, ChevronRight, MapPin, Calendar } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatDate } from '@/shared/lib/format';
@@ -188,7 +188,7 @@ function _FlightCard({ booking }: { booking: FlightBooking }) {
     );
 }
 
-import { FlightBookingCard } from '@/app/trips/components/FlightBookingCard';
+import { FlightBookingCard } from '@/app/[locale]/trips/components/FlightBookingCard';
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 

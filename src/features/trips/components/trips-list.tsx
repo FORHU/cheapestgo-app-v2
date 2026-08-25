@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Luggage, ArrowRight, Hotel, Plane } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
