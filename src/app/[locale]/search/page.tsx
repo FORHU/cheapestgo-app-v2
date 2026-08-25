@@ -65,7 +65,7 @@ interface PriceUpdate {
     currency?: string;
 }
 
-/** A row from `/hotels/suggest`, narrowed by the caller to the `city` kind. */
+/** A row from `/hotels/destinations`, narrowed by the caller to the `city` kind. */
 interface SuggestDestination {
     type?: string;
     lat?: number;
@@ -694,7 +694,9 @@ function HotelSearchContent() {
     }, [searchKey]);
 
     // Resolve destination → coordinates when URL has no lat/lng.
-    // Uses /hotels/suggest which hits Mapbox and is proven to return city coords.
+    // /hotels/destinations, not the older /hotels/suggest: same Mapbox coords, but
+    // resolved through the city-alias dictionary and ranked by whether we actually
+    // stock the place, so "gangnam" lands on Seoul.
     useEffect(() => {
         setGeocodedCoords(null);
         if (lat && lng) return;
@@ -702,14 +704,14 @@ function HotelSearchContent() {
         const apiBase = env.NEXT_PUBLIC_API_URL;
         if (!apiBase) return;
         let cancelled = false;
-        fetch(`${apiBase}/hotels/suggest?q=${encodeURIComponent(destination)}`)
+        fetch(`${apiBase}/hotels/destinations?query=${encodeURIComponent(destination)}`)
             .then(r => r.json())
-            .then((data: { destinations?: SuggestDestination[] }) => {
+            .then((data: { data?: SuggestDestination[] }) => {
                 if (cancelled) return;
                 // A type predicate, not a plain boolean: `find` carries the
                 // narrowing out to `city` only if the callback declares it, and
                 // the two `typeof` checks are what make it true.
-                const city = (data?.destinations ?? []).find(
+                const city = (data?.data ?? []).find(
                     (d): d is SuggestDestination & { lat: number; lng: number } =>
                         d.type === 'city' && typeof d.lat === 'number' && typeof d.lng === 'number'
                 );
