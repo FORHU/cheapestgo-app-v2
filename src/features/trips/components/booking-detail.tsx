@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
 import {
     ArrowLeft, Calendar, Users, Plane, Hotel,
     CreditCard, Shield, CheckCircle, XCircle,
@@ -13,7 +13,7 @@ import { formatCurrency } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 import type { AnyBooking, HotelBooking, FlightBooking } from '@/shared/types';
 
-import { CancellationModal } from '@/app/trips/components/CancellationModal';
+import { CancellationModal } from '@/app/[locale]/trips/components/CancellationModal';
 
 // ─── Status maps ──────────────────────────────────────────────────────────────
 

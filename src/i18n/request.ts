@@ -1,15 +1,55 @@
 import { getRequestConfig } from 'next-intl/server';
-import { cookies } from 'next/headers';
+import { routing, isLocale } from './routing';
 
-const locales = ['en', 'ko', 'cn', 'ja'];
+/**
+ * Merge a locale's messages over English so a missing key falls back to the
+ * English string rather than rendering as a raw key. This matters more here than
+ * it does in v1: v2's locale files are still a fraction of v1's, so most keys are
+ * absent from ko/ja/zh and would otherwise show up as `nav.search` on screen.
+ */
+function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+    const result = { ...target };
+    for (const key of Object.keys(source) as (keyof T)[]) {
+        const srcVal = source[key];
+        if (srcVal && typeof srcVal === 'object' && !Array.isArray(srcVal)) {
+            result[key] = deepMerge(
+                (result[key] as Record<string, unknown>) || {},
+                srcVal as Record<string, unknown>,
+            ) as T[keyof T];
+        } else if (srcVal !== undefined) {
+            result[key] = srcVal as T[keyof T];
+        }
+    }
+    return result;
+}
 
-export default getRequestConfig(async () => {
-  const cookieStore = await cookies();
-  const locale = cookieStore.get('locale')?.value ?? 'en';
-  const validLocale = locales.includes(locale) ? locale : 'en';
+export default getRequestConfig(async ({ requestLocale }) => {
+    // Priority: brand lock > the [locale] route segment > default.
+    //
+    // The brand lock is how GeomeeGo is served in Korean only (ADR-0005). There
+    // is deliberately no cookie in this chain: a cookie that outranked the URL
+    // would make a shared /ko/... link render in the recipient's language.
+    const locked = process.env.NEXT_PUBLIC_LOCALE;
 
-  return {
-    locale: validLocale,
-    messages: (await import(`../locales/${validLocale}.json`)).default,
-  };
+    let locale: string;
+    if (locked && isLocale(locked)) {
+        locale = locked;
+    } else {
+        const fromSegment = await requestLocale;
+        // Routes outside app/[locale] - /admin - have no segment and get the default.
+        locale = fromSegment && isLocale(fromSegment) ? fromSegment : routing.defaultLocale;
+    }
+
+    const enMessages = (await import('../locales/en.json')).default;
+
+    if (locale === routing.defaultLocale) {
+        return { locale, messages: enMessages };
+    }
+
+    const localeMessages = (await import(`../locales/${locale}.json`)).default;
+
+    return {
+        locale,
+        messages: deepMerge(enMessages, localeMessages),
+    };
 });

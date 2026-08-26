@@ -11,7 +11,7 @@ const LANGUAGES = [
     { code: 'en', label: 'English' },
     { code: 'ko', label: '한국어' },
     { code: 'ja', label: '日本語' },
-    { code: 'cn', label: '中文' },
+    { code: 'zh', label: '中文' },
 ] as const;
 
 export function PreferencesSection() {

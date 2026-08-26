@@ -1,8 +1,8 @@
 "use client";
 
 import React, { Suspense, useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import { Moon, Sun, Download } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
 import SignInDropdown from '@/shared/auth/SignInDropdown';

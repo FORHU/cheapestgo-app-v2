@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Search, Plane, BedDouble, Sparkles, Calendar, Users, ChevronDown, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';

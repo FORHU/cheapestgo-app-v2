@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, List, ChevronDown, ChevronUp, Sun, Moon } from 'lucide-react';
@@ -164,11 +165,14 @@ export function SearchView() {
         const apiBase = env.NEXT_PUBLIC_API_URL;
         if (!apiBase) return;
         let cancelled = false;
-        fetch(`${apiBase}/hotels/suggest?q=${encodeURIComponent(destination)}`)
+        // /hotels/destinations, not the older /hotels/suggest: same Mapbox coords,
+        // but resolved through the city-alias dictionary and ranked by whether we
+        // actually stock the place, so "gangnam" lands on Seoul.
+        fetch(`${apiBase}/hotels/destinations?query=${encodeURIComponent(destination)}`)
             .then((r) => r.json())
-            .then((data: Record<string, unknown>) => {
+            .then((res: Record<string, unknown>) => {
                 if (cancelled) return;
-                const city = ((data.destinations as Record<string, unknown>[]) ?? []).find(
+                const city = ((res.data as Record<string, unknown>[]) ?? []).find(
                     (d) => d.type === 'city' && typeof d.lat === 'number' && typeof d.lng === 'number'
                 );
                 if (city) setGeocodedCoords({ lat: city.lat as number, lng: city.lng as number });

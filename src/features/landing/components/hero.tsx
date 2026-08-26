@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Check, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useHydrated } from '@/shared/hooks/useHydrated';

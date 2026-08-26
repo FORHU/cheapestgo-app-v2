@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { LogoWordmark } from './logo-wordmark';
 import { CHROME_LINK, FOOTER_LINKS } from '@/features/landing/lib/chrome-links';
 

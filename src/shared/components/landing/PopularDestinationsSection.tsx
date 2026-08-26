@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { POPULAR_DESTINATIONS } from '@/shared/lib/destinations';
 import { useDragScroll } from '@/shared/hooks/useDragScroll';
 

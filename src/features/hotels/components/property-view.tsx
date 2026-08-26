@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { useUserCurrency } from '@/shared/stores/search.store';

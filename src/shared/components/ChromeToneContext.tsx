@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { useTheme } from '@/shared/components/ThemeContext';
 
 type Tone = 'light' | 'dark';

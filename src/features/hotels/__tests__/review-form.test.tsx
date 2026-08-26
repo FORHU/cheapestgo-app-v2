@@ -73,7 +73,7 @@ describe('ReviewForm', () => {
         await userEvent.click(screen.getByRole('button', { name: /post review/i }));
         await waitFor(() => expect(mockFetch).toHaveBeenCalled());
         const [url, opts] = mockFetch.mock.calls[0];
-        expect(url).toBe('/api/hotels/hotel-42/review');
+        expect(url).toBe('http://localhost:4000/api/v2/hotels/property/hotel-42/reviews');
         const body = JSON.parse(opts.body);
         expect(body.stars).toBe(2);
         expect(body.body).toBe('Decent');

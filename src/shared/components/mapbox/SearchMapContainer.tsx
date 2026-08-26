@@ -11,7 +11,7 @@ import { SelectedPropertyPopup } from './components/SelectedPropertyPopup';
 import { Source, Layer, Marker } from 'react-map-gl/mapbox';
 import { PoiPopup } from './components/PoiPopup';
 import { MapSearchOverlay } from './components/MapSearchOverlay';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertCurrency } from '@/shared/lib/currency';
 import { useMapDetails } from './hooks/useMapDetails';

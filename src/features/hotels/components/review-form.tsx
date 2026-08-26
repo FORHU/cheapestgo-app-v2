@@ -20,7 +20,7 @@ export function ReviewForm({ hotelId }: ReviewFormProps) {
     async function handleSubmit() {
         setStatus('loading');
         try {
-            const res = await fetch(`/api/hotels/${hotelId}/review`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hotels/property/${hotelId}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ stars, body }),

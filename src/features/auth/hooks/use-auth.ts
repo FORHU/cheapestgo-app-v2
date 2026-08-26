@@ -2,7 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { authApi } from '../api/auth.api';
 import { useAuthStore } from '@/shared/auth/store';
 
@@ -56,7 +56,7 @@ export function useLogout() {
 
 export function useResetPassword() {
     return useMutation({
-        mutationFn: (email: string) => authApi.resetPassword(email),
+        mutationFn: (email: string) => authApi.requestReset(email),
         onSuccess: () => {
             toast.success('Password reset link sent! Check your inbox.');
         },

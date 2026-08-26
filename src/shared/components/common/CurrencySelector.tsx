@@ -7,7 +7,8 @@ import { cn } from '@/shared/lib/cn';
 import { useUserCurrency, useSearchActions } from '@/shared/stores/search.store';
 import { SELECTOR_TONES, type SelectorChrome, type SelectorVariant } from '@/shared/components/common/selector-tone';
 import { getCurrencySymbol } from '@/shared/lib/currency';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 
 /** Menu order follows the design: code on the left, symbol on the right. */
 export const CURRENCIES = [

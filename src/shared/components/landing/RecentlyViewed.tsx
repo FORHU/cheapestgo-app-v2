@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { History, Clock, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { Badge } from '@/shared/components/ui/badge';
 import { useRecentSearches, useSearchStore } from '@/shared/stores/search.store';

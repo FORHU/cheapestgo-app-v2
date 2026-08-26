@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { SaveButton } from './save-button';
 import { useMoney } from '@/features/landing/lib/money';
 import {

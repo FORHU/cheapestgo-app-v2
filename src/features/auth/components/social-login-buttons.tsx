@@ -15,7 +15,7 @@ export function SocialLoginButtons({ label = 'Sign in with Google' }: Props) {
     return (
         <div className="space-y-3">
             <a
-                href="/api/auth/oauth/google"
+                href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-slate-50 dark:hover:bg-white/10 transition-colors font-medium text-slate-700 dark:text-white"
             >
                 <GoogleIcon />
