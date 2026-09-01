@@ -674,6 +674,8 @@ function PropertyContent() {
                     checkIn={checkIn}
                     occupancy={{ adults, children }}
                     currency={currency}
+                    propertySections={content.roomPolicySections}
+                    additionalInfo={content.additionalInfo}
                     selectedOfferId={selectedRate?.offerId ?? null}
                     onSelect={(offer) => setSelectedOffer(
                         prev => prev?.rate.offerId === offer.rate.offerId ? null : offer,
