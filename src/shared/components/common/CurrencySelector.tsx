@@ -40,6 +40,12 @@ interface CurrencySelectorProps {
    * costing a character more than an icon would.
    */
   iconOnly?: boolean;
+  /**
+   * Extra classes merged onto the trigger button, last — so a caller on a
+   * toolbar of larger icon circles (e.g. the property hero's 44px controls)
+   * can size the trigger to match without the component knowing the geometry.
+   */
+  triggerClassName?: string;
 }
 
 export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
@@ -48,6 +54,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   variant = 'default',
   chrome,
   iconOnly = false,
+  triggerClassName,
 }) => {
   const tone = SELECTOR_TONES[variant];
   /**
@@ -104,6 +111,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
               ? "h-6 w-6 shrink-0 justify-center rounded-full hover:opacity-80 md:h-7 md:w-7"
               : "h-6 gap-1 rounded-full px-2 hover:opacity-80 md:h-7 md:px-2.5"
             : cn("gap-1 px-1 py-1 rounded-lg", tone.trigger),
+          triggerClassName,
         )}
         style={chrome ? { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text } : undefined}
         aria-expanded={isOpen}

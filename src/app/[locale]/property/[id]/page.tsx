@@ -3,9 +3,10 @@
 import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
+import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { Map } from '@/shared/components/ui/map';
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
@@ -332,8 +333,13 @@ function PropertyContent() {
      * the `offerId` that checkout books against.
      */
     const [selectedOffer, setSelectedOffer] = useState<SelectedOffer | null>(null);
-    /** Which of the banner images is showing. */
+    /** Which of the banner images is showing, and which way the last page went
+     *  (−1 prev, +1 next) so the crossfade can lean that direction. */
     const [heroIndex, setHeroIndex] = useState(0);
+    const [heroDir, setHeroDir] = useState(1);
+    /** The banner src that has finished decoding — anything else shows the
+     *  loading shimmer until its own `onLoad`. */
+    const [loadedHeroSrc, setLoadedHeroSrc] = useState<string | null>(null);
 
     useEffect(() => {
         if (!hotelId) return;
@@ -384,6 +390,7 @@ function PropertyContent() {
     // Clamped rather than trusted: the rooms arrive after the content does, so
     // the set grows under an index that has already been moved.
     const heroShown = heroImages[Math.min(heroIndex, Math.max(0, heroCount - 1))] ?? heroImage;
+    const heroLoaded = !!heroShown && loadedHeroSrc === heroShown;
     const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
     // Whole list, not the first five: the description panel draws the row the
     // design shows and keeps the rest behind its own "See all amenities".
@@ -484,15 +491,43 @@ function PropertyContent() {
 
             {/* ── Hero ──────────────────────────────────────────────────────── */}
             <div style={{ position: 'relative', height: '100vh', minHeight: 320, overflow: 'hidden' }}>
-                {heroShown ? (
-                    <img
-                        key={heroShown}
-                        src={heroShown}
-                        alt={content.name ?? ''}
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                ) : (
-                    <div style={{ position: 'absolute', inset: 0, background: '#22383A' }} />
+                {/* The plate every image sits on: a dark ground, and while the
+                    current src is still decoding, a slow shimmer over it so a
+                    blank banner never reads as "broken". */}
+                <div style={{ position: 'absolute', inset: 0, background: '#22383A' }}>
+                    {heroShown && !heroLoaded && (
+                        <motion.div
+                            style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.05)' }}
+                            initial={{ opacity: 0.25 }}
+                            animate={{ opacity: [0.25, 0.75, 0.25] }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                    )}
+                </div>
+
+                {/* One image at a time, keyed by src. The incoming photo fades up
+                    from a slight over-scale once it has decoded; the outgoing one
+                    fades and drifts a touch opposite the paging direction. The
+                    over-scale on both keeps the drift from baring the dark plate
+                    at the edge. */}
+                {heroShown && (
+                    <AnimatePresence initial={false}>
+                        <motion.img
+                            key={heroShown}
+                            src={heroShown}
+                            alt={content.name ?? ''}
+                            onLoad={() => setLoadedHeroSrc(heroShown)}
+                            initial={{ opacity: 0, scale: 1.06, x: heroDir * 18 }}
+                            animate={{ opacity: heroLoaded ? 1 : 0, scale: heroLoaded ? 1 : 1.06, x: 0 }}
+                            exit={{ opacity: 0, scale: 1.04, x: heroDir * -18 }}
+                            transition={{
+                                opacity: { duration: 0.5, ease: 'easeInOut' },
+                                scale:   { duration: 0.7, ease: 'easeOut' },
+                                x:       { duration: 0.5, ease: 'easeOut' },
+                            }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                    </AnimatePresence>
                 )}
                 {/* Deeper and reaching further up than before — the name and
                     address below are now twice their old size, and need more
@@ -517,26 +552,43 @@ function PropertyContent() {
                     <ArrowLeft size={20} />
                 </button>
 
-                {/* Theme toggle, mirroring the back button on the opposite
-                    corner — same size, same treatment, same row. This flips
-                    the real app-wide theme (see `propertyPalette` above): the
-                    Hero itself stays as drawn regardless, but everything
-                    below it switches. */}
-                <button
-                    onClick={toggleTheme}
-                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                {/* Top-right controls: the currency picker, then the theme
+                    toggle — both drawn as the same 44px circle as the back
+                    button on the opposite corner. The theme toggle flips the
+                    real app-wide theme (see `propertyPalette` above): the Hero
+                    itself stays as drawn regardless, everything below it
+                    switches. */}
+                <div
                     className="right-5 sm:right-8 lg:right-12"
-                    style={{
-                        position: 'absolute', top: 20, zIndex: 2,
-                        width: 44, height: 44, borderRadius: '50%',
-                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
-                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer',
-                    }}
+                    style={{ position: 'absolute', top: 20, zIndex: 3, display: 'flex', alignItems: 'center', gap: 10 }}
                 >
-                    {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
-                </button>
+                    <CurrencySelector
+                        align="right"
+                        iconOnly
+                        triggerClassName="h-11 w-11 md:h-11 md:w-11 backdrop-blur-md"
+                        chrome={{
+                            surface: 'rgba(20,20,20,.45)',
+                            border:  'transparent',
+                            text:    '#fff',
+                            menu:    'rgba(18,18,20,.96)',
+                            hover:   'rgba(255,255,255,.12)',
+                            shadow:  '0 24px 55px -18px rgba(0,0,0,.7)',
+                        }}
+                    />
+                    <button
+                        onClick={toggleTheme}
+                        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                        style={{
+                            width: 44, height: 44, borderRadius: '50%', border: 'none',
+                            background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+                    </button>
+                </div>
 
                 {/* Pagination arrows. Only once there is more than one
                     photograph to page through — a single-image banner with
@@ -548,7 +600,7 @@ function PropertyContent() {
                 {heroCount > 1 && (
                     <>
                         <motion.button
-                            onClick={() => setHeroIndex(i => (i - 1 + heroCount) % heroCount)}
+                            onClick={() => { setHeroDir(-1); setHeroIndex(i => (i - 1 + heroCount) % heroCount); }}
                             aria-label="Previous photo"
                             className="left-5 sm:left-8 lg:left-12"
                             style={HERO_ARROW}
@@ -558,7 +610,7 @@ function PropertyContent() {
                             <ChevronLeft size={34} strokeWidth={2.25} />
                         </motion.button>
                         <motion.button
-                            onClick={() => setHeroIndex(i => (i + 1) % heroCount)}
+                            onClick={() => { setHeroDir(1); setHeroIndex(i => (i + 1) % heroCount); }}
                             aria-label="Next photo"
                             className="right-5 sm:right-8 lg:right-12"
                             style={HERO_ARROW}
@@ -576,7 +628,7 @@ function PropertyContent() {
                     The dots sit under the address rather than floating mid-photo,
                     centered on the whole banner rather than the column, which is
                     why they sit outside PageColumn. */}
-                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(16px,3vw,28px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(28px,4.5vw,52px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <PageColumn>
                         {/* Twice the previous size on both — clamp bounds
                             doubled, not just the fluid step between them, so
@@ -600,7 +652,7 @@ function PropertyContent() {
                             {heroImages.map((src, i) => (
                                 <button
                                     key={src}
-                                    onClick={() => setHeroIndex(i)}
+                                    onClick={() => { setHeroDir(i >= heroIndex ? 1 : -1); setHeroIndex(i); }}
                                     aria-label={`Photo ${i + 1} of ${heroCount}`}
                                     aria-current={i === heroIndex || undefined}
                                     style={{
