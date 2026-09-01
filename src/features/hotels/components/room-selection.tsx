@@ -512,6 +512,25 @@ function RoomDetailDialog({
 
     const sectionLabel = cn('text-[12px] font-bold tracking-[0.12em] uppercase', palette.modalLabel);
 
+    /**
+     * The room-group match can miss even when the hotel has ETG content — the
+     * API still attaches a `content` object, but an empty one. Treat that as no
+     * match and fall back to the legacy amenity list, the same as when the hotel
+     * has no ETG content at all.
+     */
+    const roomContent = card.content;
+    const hasRoomContent = !!roomContent
+        && (roomContent.gallery.length > 0 || roomContent.keyFacts.length > 0 || roomContent.sections.length > 0);
+    /** Room sections (only when matched) then hotel-scoped policy sections (always). */
+    const modalSections = [
+        ...(hasRoomContent ? roomContent!.sections : []),
+        ...(propertySections ?? []),
+    ];
+    /** The bed line and cribs summary don't need a room-group match — the first
+     *  comes off the room name, the second off the hotel's metapolicy. */
+    const bedLine = roomContent?.bedLine;
+    const bedsExtraSummary = roomContent?.bedsExtraSummary;
+
     return createPortal(
         <div
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -541,21 +560,21 @@ function RoomDetailDialog({
                     <Pill palette={palette}>{card.refundable ? 'Refundable' : 'Non-refundable'}</Pill>
                 </div>
 
-                {card.content ? (
-                    <>
-                        {card.content.bedLine && (
-                            <p className={cn('mt-4 flex items-center gap-2 text-[15px]', palette.feature)}>
-                                <Bed size={17} strokeWidth={1.75} className="shrink-0" />
-                                {card.content.bedLine}
-                            </p>
-                        )}
-                        {card.content.bedsExtraSummary && (
-                            <p className={cn('mt-1 text-[13px]', palette.empty)}>{card.content.bedsExtraSummary}</p>
-                        )}
+                {bedLine && (
+                    <p className={cn('mt-4 flex items-center gap-2 text-[15px]', palette.feature)}>
+                        <Bed size={17} strokeWidth={1.75} className="shrink-0" />
+                        {bedLine}
+                    </p>
+                )}
+                {bedsExtraSummary && (
+                    <p className={cn('mt-1 text-[13px]', palette.empty)}>{bedsExtraSummary}</p>
+                )}
 
-                        {card.content.gallery.length > 0 && (
+                {hasRoomContent ? (
+                    <>
+                        {roomContent!.gallery.length > 0 && (
                             <div className="mt-4 flex gap-2 overflow-x-auto">
-                                {card.content.gallery.map((src, i) => (
+                                {roomContent!.gallery.map((src, i) => (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                         key={src}
@@ -567,7 +586,7 @@ function RoomDetailDialog({
                                 ))}
                             </div>
                         )}
-                        {card.content.gallery.length === 0 && galleryFallback && (
+                        {roomContent!.gallery.length === 0 && galleryFallback && (
                             <div className="mt-4">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
@@ -575,18 +594,9 @@ function RoomDetailDialog({
                             </div>
                         )}
 
-                        {card.content.keyFacts.length > 0 && (
+                        {roomContent!.keyFacts.length > 0 && (
                             <section className="mt-5">
-                                <KeyFactsRow facts={card.content.keyFacts} palette={palette} />
-                            </section>
-                        )}
-
-                        {(card.content.sections.length > 0 || (propertySections?.length ?? 0) > 0) && (
-                            <section className="mt-6">
-                                <DetailSectionGrid
-                                    sections={[...card.content.sections, ...(propertySections ?? [])]}
-                                    palette={palette}
-                                />
+                                <KeyFactsRow facts={roomContent!.keyFacts} palette={palette} />
                             </section>
                         )}
                     </>
@@ -601,6 +611,12 @@ function RoomDetailDialog({
                             </ul>
                         </section>
                     )
+                )}
+
+                {modalSections.length > 0 && (
+                    <section className="mt-6">
+                        <DetailSectionGrid sections={modalSections} palette={palette} />
+                    </section>
                 )}
 
                 {card.boardName && (

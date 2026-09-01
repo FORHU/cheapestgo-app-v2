@@ -200,6 +200,25 @@ describe('RoomSelection — categorised modal', () => {
         expect(within(dialog).queryByText('Bathroom')).not.toBeInTheDocument();
     });
 
+    it('falls back to the legacy list when content is present but the room did not match', () => {
+        const room = makeRoom({ amenities: ['Sea view'] });
+        // hollow content — the shape the API attaches when matchEtgRoomGroup misses
+        room.content = {
+            gallery: [], keyFacts: [], sections: [],
+            bedLine: 'Double bed',
+            bedsExtraSummary: 'Extra beds and cribs are unavailable for this room type',
+        };
+        render(<RoomSelection {...baseProps} rooms={[room]} hotelAmenities={[]} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        const dialog = screen.getByRole('dialog');
+        // legacy amenity list is back…
+        expect(within(dialog).getByText('Sea view')).toBeInTheDocument();
+        expect(within(dialog).getByText('Room')).toBeInTheDocument();
+        // …but the name-derived bed line and metapolicy cribs line still show.
+        expect(within(dialog).getByText('Double bed')).toBeInTheDocument();
+        expect(within(dialog).getByText('Extra beds and cribs are unavailable for this room type')).toBeInTheDocument();
+    });
+
     it('opens the photo viewer from a thumbnail without closing the modal', () => {
         const room = makeRoom();
         room.content = { ...content, gallery: ['/a.jpg', '/b.jpg'] };
