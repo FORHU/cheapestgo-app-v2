@@ -953,10 +953,12 @@ export function RoomSelection({
                     // Keyed by the page, so each turn is a fresh mount that
                     // runs `initial`. `pageDir === 0` on the very first render —
                     // no slide then, the section's own reveal handles that.
+                    // Next page enters from the left and travels right; prev
+                    // page comes the other way.
                     key={safePage}
-                    initial={pageDir === 0 ? false : { x: pageDir > 0 ? 36 : -36, opacity: 0 }}
+                    initial={pageDir === 0 ? false : { x: pageDir > 0 ? -48 : 48, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.3, ease: PAGE_EASE }}
+                    transition={{ duration: 0.34, ease: PAGE_EASE }}
                     className="flex flex-col gap-3"
                 >
                     {paged.map((card) => (
