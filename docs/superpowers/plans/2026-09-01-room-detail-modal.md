@@ -1241,18 +1241,35 @@ beforeEach(() => {
 });
 
 describe('ensureEtgContent', () => {
-  it('uses the DB row without fetching when content is fresh', async () => {
+  // hotel_content stores the RAW ETG blobs; ensureEtgContent parses on every read.
+  it('parses the cached DB row without fetching when content is fresh', async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     const row = {
       hotel_id: 'H1', ratehawk_hid: 'slug_1', etg_content_seeded_at: FRESH,
-      room_groups: [{ name: 'Std Room', images: [], roomAmenities: ['wi-fi'] }],
-      amenity_groups: [], metapolicy_struct: null,
-      metapolicy_extra_info: null, important_information: null,
+      room_groups: [{ name: 'Std Room', images: [], room_amenities: ['wi-fi'],
+                      name_struct: { bedding_type: 'double bed' } }],
+      amenity_groups: [{ group_name: 'Internet', amenities: ['Free WiFi'] }],
+      metapolicy_struct: null, metapolicy_extra_info: null, important_information: null,
     };
     const out = await ensureEtgContent('H1', row as any);
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(out?.roomGroups[0].name).toBe('Std Room');
+    expect(out?.roomGroups[0]).toMatchObject({
+      name: 'Std Room', roomAmenities: ['wi-fi'], beddingType: 'double bed',
+    });
+    expect(out?.amenityGroups[0].groupName).toBe('Internet');
+  });
+
+  it('re-fetches when the cache is fresh but room_groups was never seeded', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ data: { room_groups: [], amenity_groups: [] } }),
+    }));
+    const row = {
+      hotel_id: 'H1', ratehawk_hid: 'slug_1', etg_content_seeded_at: FRESH,
+      room_groups: null, amenity_groups: null, metapolicy_struct: null,
+    };
+    await ensureEtgContent('H1', row as any);
+    expect(fetch).toHaveBeenCalled();
   });
 
   it('returns null when there is no ratehawk_hid to fetch with', async () => {
@@ -1260,7 +1277,8 @@ describe('ensureEtgContent', () => {
     expect(await ensureEtgContent('H1', row as any)).toBeNull();
   });
 
-  it('fetches hotel/info when stale, then upserts and returns parsed content', async () => {
+  it('fetches hotel/info when stale, then stores RAW blobs and returns parsed content', async () => {
+    const update = vi.mocked(prisma.hotel_content.update);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: {
@@ -1273,10 +1291,13 @@ describe('ensureEtgContent', () => {
     const row = { hotel_id: 'H1', ratehawk_hid: 'slug_1', etg_content_seeded_at: STALE };
     const out = await ensureEtgContent('H1', row as any);
     expect(out?.roomGroups[0].images[0]).toBe('1024x768/a.jpg');
+    expect(out?.roomGroups[0].roomAmenities).toEqual(['tv']);
     expect(out?.amenityGroups[0].groupName).toBe('General');
-    expect(prisma.hotel_content.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { hotel_id: 'H1' },
-    }));
+    expect(out?.metapolicy?.cot?.[0].price).toBe(10);
+    // stored raw, not parsed
+    const stored = update.mock.calls[0][0].data as any;
+    expect(stored.room_groups[0].room_amenities).toEqual(['tv']);
+    expect(stored.metapolicy_extra_info).toBe('ID required.');
   });
 
   it('returns null (no throw) when the fetch fails', async () => {
@@ -1306,7 +1327,8 @@ this file (Task 2) — call them directly. Then append at the bottom:
 ```ts
 const FRESH_MS = 30 * 24 * 3600 * 1000;
 
-/** The subset of hotel_content ensureEtgContent reads. */
+/** The subset of hotel_content ensureEtgContent reads. Blobs hold the RAW ETG
+ *  `hotel/info` shape (snake_case) — `fromRow` parses them on every read. */
 export interface EtgContentRow {
   hotel_id: string;
   ratehawk_hid: string | null;
@@ -1324,7 +1346,10 @@ function etgToken(): string {
   return Buffer.from(`${keyId}:${apiKey}`).toString('base64');
 }
 
-function fromRow(row: EtgContentRow): EtgContent {
+function fromRow(row: {
+  room_groups?: unknown; amenity_groups?: unknown; metapolicy_struct?: unknown;
+  metapolicy_extra_info?: string | null; important_information?: string | null;
+}): EtgContent {
   return {
     roomGroups: parseRoomGroups(row.room_groups),
     amenityGroups: parseAmenityGroups(row.amenity_groups),
@@ -1336,9 +1361,10 @@ function fromRow(row: EtgContentRow): EtgContent {
 
 /**
  * Returns parsed ETG content for a hotel, fetching hotel/info and caching it to
- * hotel_content when the stored copy is missing or older than 30 days. Best
- * effort: any failure (no slug, network, non-2xx) returns null and the caller
- * falls back to the legacy modal body.
+ * hotel_content when the stored copy is missing or older than 30 days. The RAW
+ * ETG blobs are what's stored; parsing happens on read, so a parser change takes
+ * effect without a re-fetch. Best effort: any failure (no slug, network, non-2xx,
+ * timeout) returns null and the caller falls back to the legacy modal body.
  */
 export async function ensureEtgContent(
   hotelId: string,
@@ -1362,16 +1388,14 @@ export async function ensureEtgContent(
     const d = json?.data;
     if (!d) return null;
 
-    const roomGroups   = parseRoomGroups(d.room_groups);
-    const amenityGroups = parseAmenityGroups(d.amenity_groups);
-    const metapolicy   = parseMetapolicy(d.metapolicy_struct);
-    const metapolicyExtraInfo = typeof d.metapolicy_extra_info === 'string' ? d.metapolicy_extra_info : null;
+    const metapolicyExtraInfo =
+      typeof d.metapolicy_extra_info === 'string' ? d.metapolicy_extra_info : null;
 
     await prisma.hotel_content.update({
       where: { hotel_id: hotelId },
       data: {
-        room_groups: roomGroups as any,
-        amenity_groups: amenityGroups as any,
+        room_groups: (d.room_groups ?? []) as any,
+        amenity_groups: (d.amenity_groups ?? []) as any,
         metapolicy_struct: (d.metapolicy_struct ?? null) as any,
         metapolicy_extra_info: metapolicyExtraInfo,
         etg_content_seeded_at: new Date(),
@@ -1380,10 +1404,13 @@ export async function ensureEtgContent(
       },
     }).catch(() => {});
 
-    return {
-      roomGroups, amenityGroups, metapolicy, metapolicyExtraInfo,
-      importantInformation: row.important_information ?? null,
-    };
+    return fromRow({
+      room_groups: d.room_groups,
+      amenity_groups: d.amenity_groups,
+      metapolicy_struct: d.metapolicy_struct,
+      metapolicy_extra_info: metapolicyExtraInfo,
+      important_information: row.important_information ?? null,
+    });
   } catch {
     return null;
   }
