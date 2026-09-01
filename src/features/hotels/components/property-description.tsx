@@ -508,13 +508,13 @@ export function PropertyDescription({
                         <dl className={cn('shrink-0 text-[18px] leading-[1.5]', palette.soft)}>
                             {inTime && (
                                 <div className="flex gap-2">
-                                    <dt className={cn('font-bold', palette.title)}>IN</dt>
+                                    <dt className={cn('font-bold', palette.title)}>CHECK-IN</dt>
                                     <dd>{inTime}</dd>
                                 </div>
                             )}
                             {outTime && (
                                 <div className="flex gap-2">
-                                    <dt className={cn('font-bold', palette.title)}>OUT</dt>
+                                    <dt className={cn('font-bold', palette.title)}>CHECK-OUT</dt>
                                     <dd>{outTime}</dd>
                                 </div>
                             )}

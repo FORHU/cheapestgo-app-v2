@@ -222,10 +222,13 @@ function roomPalette(tone: 'light' | 'dark') {
     return {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
-         * The card's plate. Cool rather than neutral, as drawn — it is what
-         * separates the stack from the black page behind it without a border.
+         * The card's plate. Cool rather than neutral, as drawn. Lifted off the
+         * page with a soft drop shadow; in dark, where a shadow on near-black
+         * reads as nothing, a hairline ring and a faint glow do the lifting.
          */
-        card:     dark ? 'bg-[#131A24]' : 'bg-white shadow-sm',
+        card:     dark
+            ? 'bg-[#151C28] ring-1 ring-white/[0.06] shadow-[0_14px_40px_-14px_rgba(0,0,0,0.8)]'
+            : 'bg-white shadow-[0_14px_36px_-12px_rgba(15,23,42,0.20)] ring-1 ring-slate-900/[0.04]',
         /** Selection, as a ring rather than a fill: the card carries a photo,
          *  and a fill would have to fight it. */
         cardOn:   dark ? 'ring-1 ring-white/45' : 'ring-1 ring-slate-900',
@@ -406,9 +409,9 @@ function Pill({ palette, children }: { palette: Palette; children: React.ReactNo
 function FeatureRow({ feature, palette }: { feature: Feature; palette: Palette }) {
     const Icon = feature.icon;
     return (
-        <li className={cn('flex items-center gap-2 text-[15px]', palette.feature)}>
-            <Icon size={17} strokeWidth={1.75} className="shrink-0" />
-            <span className="min-w-0 truncate">{feature.label}</span>
+        <li className={cn('flex items-start gap-2 text-[15px]', palette.feature)}>
+            <Icon size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
+            <span className="min-w-0">{feature.label}</span>
         </li>
     );
 }
@@ -435,9 +438,9 @@ function DetailColumn({
                 {rows.map((row, i) => {
                     const Icon = row.icon;
                     return (
-                        <li key={`${row.label}-${i}`} className={cn('flex items-center gap-2 text-[13px]', palette.feature)}>
-                            <Icon size={14} strokeWidth={1.75} className="shrink-0" />
-                            <span className="min-w-0 truncate">{row.label}</span>
+                        <li key={`${row.label}-${i}`} className={cn('flex items-start gap-2 text-[13px]', palette.feature)}>
+                            <Icon size={14} strokeWidth={1.75} className="mt-[3px] shrink-0" />
+                            <span className="min-w-0">{row.label}</span>
                         </li>
                     );
                 })}
@@ -728,11 +731,11 @@ function RoomRateCard({
 
     return (
         <div
-            onClick={pick}
             className={cn(
-                // The selected rate is called out by its "Selected" button
-                // alone — no ring on the card itself.
-                'flex min-h-[132px] cursor-pointer overflow-hidden rounded-[14px] transition-shadow',
+                // Only the Select button picks the room — the card body is not
+                // clickable — and the selected state lives on that button, not
+                // as a ring on the card.
+                'flex min-h-[132px] overflow-hidden rounded-[14px]',
                 palette.card,
             )}
         >
@@ -787,7 +790,7 @@ function RoomRateCard({
 
                     <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); pick(); }}
+                        onClick={pick}
                         aria-pressed={selected}
                         className={cn(
                             'shrink-0 cursor-pointer self-end rounded-full px-5 py-2 text-[13px] font-medium whitespace-nowrap transition-colors sm:text-[14px]',
