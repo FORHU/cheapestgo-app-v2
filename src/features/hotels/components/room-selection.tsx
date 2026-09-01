@@ -428,15 +428,15 @@ function DetailColumn({
     return (
         <div className="min-w-0">
             {/* Larger than the rows it labels, no leading dot. */}
-            <p className={cn('text-[16px] font-semibold', palette.columnHeading)}>
+            <p className={cn('text-[15px] font-semibold', palette.columnHeading)}>
                 {title}
             </p>
-            <ul className="mt-2.5 flex flex-col gap-2">
+            <ul className="mt-2 flex flex-col gap-1.5">
                 {rows.map((row, i) => {
                     const Icon = row.icon;
                     return (
-                        <li key={`${row.label}-${i}`} className={cn('flex items-center gap-2 text-[14px]', palette.feature)}>
-                            <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+                        <li key={`${row.label}-${i}`} className={cn('flex items-center gap-2 text-[13px]', palette.feature)}>
+                            <Icon size={14} strokeWidth={1.75} className="shrink-0" />
                             <span className="min-w-0 truncate">{row.label}</span>
                         </li>
                     );
@@ -447,7 +447,7 @@ function DetailColumn({
                     type="button"
                     aria-haspopup="dialog"
                     onClick={(e) => { e.stopPropagation(); onViewMore(); }}
-                    className={cn('mt-2.5 cursor-pointer text-[13px] font-bold transition-colors', palette.viewMore)}
+                    className={cn('mt-2 cursor-pointer text-[12px] font-bold transition-colors', palette.viewMore)}
                 >
                     View more
                 </button>
@@ -732,7 +732,7 @@ function RoomRateCard({
             className={cn(
                 // The selected rate is called out by its "Selected" button
                 // alone — no ring on the card itself.
-                'flex min-h-[176px] cursor-pointer overflow-hidden rounded-[16px] transition-shadow',
+                'flex min-h-[132px] cursor-pointer overflow-hidden rounded-[14px] transition-shadow',
                 palette.card,
             )}
         >
@@ -740,7 +740,7 @@ function RoomRateCard({
                 account; `overflow-hidden` on the card clips it to the left
                 radius and leaves the right side straight, where the panel
                 carries on. */}
-            <div className={cn('relative w-[38%] max-w-[300px] min-w-[120px] shrink-0 self-stretch overflow-hidden', palette.imageBg)}>
+            <div className={cn('relative w-[34%] max-w-[260px] min-w-[104px] shrink-0 self-stretch overflow-hidden', palette.imageBg)}>
                 {photo && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photo} alt="" className="h-full w-full object-cover" />
@@ -748,28 +748,28 @@ function RoomRateCard({
             </div>
 
             {/* Content */}
-            <div className="flex min-w-0 flex-1 flex-col gap-4 p-5">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
 
                 {/* Name + pills, price held to the right edge */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2">
-                        <h4 className={cn('text-[19px] font-medium sm:text-[21px]', palette.name)}>{card.heading}</h4>
-                        <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
+                        <h4 className={cn('text-[16px] font-medium sm:text-[17px]', palette.name)}>{card.heading}</h4>
+                        <div className="flex flex-wrap items-center gap-1.5">
                             {card.boardPill && <Pill palette={palette}>{card.boardPill}</Pill>}
                             <Pill palette={palette}>{card.refundable ? 'Refundable' : 'Non-refundable'}</Pill>
                         </div>
                     </div>
                     <p className="shrink-0 whitespace-nowrap text-right">
-                        <span className={cn('text-[24px] font-bold sm:text-[27px]', palette.price)}>
+                        <span className={cn('text-[19px] font-bold sm:text-[21px]', palette.price)}>
                             {symbol}{Math.round(card.nightly).toLocaleString()}
                         </span>
-                        <span className={cn('text-[13px]', palette.unit)}>/night</span>
+                        <span className={cn('text-[12px]', palette.unit)}>/night</span>
                     </p>
                 </div>
 
                 {/* Detail columns + the Select action, bottom-aligned */}
-                <div className="flex flex-1 items-end justify-between gap-4">
-                    <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+                <div className="flex flex-1 items-end justify-between gap-3">
+                    <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
                         <DetailColumn
                             title="Room Details"
                             rows={card.roomDetails}
@@ -790,7 +790,7 @@ function RoomRateCard({
                         onClick={(e) => { e.stopPropagation(); pick(); }}
                         aria-pressed={selected}
                         className={cn(
-                            'shrink-0 cursor-pointer self-end rounded-full px-7 py-3 text-[14px] font-medium whitespace-nowrap transition-colors sm:text-[15px]',
+                            'shrink-0 cursor-pointer self-end rounded-full px-5 py-2 text-[13px] font-medium whitespace-nowrap transition-colors sm:text-[14px]',
                             selected ? palette.pillOn : palette.pillIdle,
                         )}
                     >
