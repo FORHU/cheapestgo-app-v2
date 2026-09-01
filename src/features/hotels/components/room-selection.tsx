@@ -839,8 +839,15 @@ function RoomRateCard({
 /** Cards per page — a long rate list is paged rather than scrolled past. */
 const ROOMS_PER_PAGE = 5;
 
-/** The eased curve the page-to-page slide runs on. */
-const PAGE_EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
+/**
+ * The page-to-page slide's curve and length. easeInOutSine rather than a
+ * decelerating curve on purpose: it keeps the column moving at a visible
+ * pace the whole way across instead of covering most of the distance in the
+ * first fifth of the time and then coasting, which reads as a snap however
+ * long the duration is set.
+ */
+const PAGE_EASE = [0.37, 0, 0.63, 1] as [number, number, number, number];
+const PAGE_SLIDE_SECONDS = 1;
 
 export function RoomSelection({
     rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
@@ -955,7 +962,7 @@ export function RoomSelection({
                     key={safePage}
                     initial={pageDir === 0 ? false : { x: pageDir > 0 ? -64 : 64, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.6, ease: PAGE_EASE }}
+                    transition={{ duration: PAGE_SLIDE_SECONDS, ease: PAGE_EASE }}
                     className="flex flex-col gap-3"
                 >
                     {paged.map((card) => (
