@@ -360,14 +360,16 @@ Extend `src/features/hotels/__tests__/room-selection.test.tsx`:
   modal. Acceptable, and consistent with how amenity enrichment already works in
   `search.ts`.
 
-## Open questions for review
+## Resolved decisions (were open questions)
 
-1. `ensureEtgContent` — **await with an 8s timeout** in `getProperty` (first
-   visitor may block ~1–2s on a cold cache, but gets full content), or
-   **fire-and-forget + serve stale** (first visitor never blocks, but gets the
-   legacy modal)? Spec currently assumes await-with-timeout.
-2. Responsive section grid: is a single wide modal with a `minmax(220px,1fr)`
-   auto-grid the right call for both the wide Figma and the narrow reference, or
-   should the modal have a fixed narrow width and always stack?
-3. `PropertyDescription` grouped-amenities upgrade — in scope for this work, or
-   split into a follow-up?
+1. **`ensureEtgContent` timing — await with an 8s timeout** inside `getProperty`'s
+   `Promise.all`. A cold-cache first view may block ~1–2s but gets full content;
+   a timeout/failure falls through to the legacy modal for that view and seeds
+   the cache for the next.
+2. **Section layout — one responsive modal.** `max-w-4xl`, sections in a
+   `repeat(auto-fill, minmax(220px, 1fr))` grid: several across when wide (the
+   first Figma), stacked when narrow (the second reference). No separate
+   fixed-narrow variant.
+3. **`PropertyDescription` grouped-amenities upgrade — in scope for this work.**
+   When `content.amenityGroups` is present, chips render grouped by `groupName`;
+   otherwise the current flat split stands.
