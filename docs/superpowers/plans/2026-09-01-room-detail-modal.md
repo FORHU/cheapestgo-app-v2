@@ -139,21 +139,15 @@ Transcribe the **Shared type contract** block from the top of this plan verbatim
 `src/lib/hotels/etgContent.types.ts`:
 
 ```ts
+export type { AmenityGroup } from './roomContent.types';
+
 export interface RoomGroupEntry {
   name: string;
   images: string[];
   roomAmenities: string[];   // raw ETG slugs, lowercase-hyphen
   beddingType?: string;      // name_struct.bedding_type, e.g. "double bed"
   bathroomType?: string;     // name_struct.bathroom, e.g. "private"
-  sizeSqm?: number;
-  floor?: string;            // e.g. "1-3"
   roomGroupId?: number;
-}
-
-export interface AmenityGroup {
-  groupName: string;
-  amenities: string[];
-  nonFree: string[];
 }
 
 export interface MetapolicyEntry {
@@ -216,16 +210,19 @@ describe('parseRoomGroups', () => {
     expect(out[0].images[0]).toBe('https://cdn/x/1024x768/0.jpg');
   });
 
-  it('extracts beddingType, bathroomType, floor from name_struct / rg_ext', () => {
+  it('extracts beddingType and bathroomType from name_struct, renames room_amenities', () => {
     const out = parseRoomGroups([{
       name: 'Deluxe Twin Room',
       images: [],
-      room_amenities: [],
+      room_amenities: ['wi-fi', 3, null, 'tv'],
+      room_group_id: 42,
       name_struct: { main_name: 'Deluxe Twin Room', bedding_type: 'twin beds', bathroom: 'private' },
-      rg_ext: { floor: 3 },
     }]);
     expect(out[0].beddingType).toBe('twin beds');
     expect(out[0].bathroomType).toBe('private');
+    expect(out[0].roomAmenities).toEqual(['wi-fi', 'tv']);
+    expect(out[0].roomGroupId).toBe(42);
+    expect(out[0]).not.toHaveProperty('floor');
   });
 
   it('drops entries with no name', () => {
@@ -234,9 +231,9 @@ describe('parseRoomGroups', () => {
 });
 
 describe('parseAmenityGroups', () => {
-  it('keeps group_name, amenities, non_free_amenities', () => {
+  it('keeps group_name, amenities, non_free_amenities; filters blanks and drops empty groups', () => {
     const out = parseAmenityGroups([
-      { group_name: 'Internet', amenities: ['Free WiFi'], non_free_amenities: [] },
+      { group_name: 'Internet', amenities: ['Free WiFi', ''], non_free_amenities: [] },
       { group_name: '', amenities: ['x'] },
     ]);
     expect(out).toEqual([{ groupName: 'Internet', amenities: ['Free WiFi'], nonFree: [] }]);
@@ -248,7 +245,10 @@ describe('parseMetapolicy', () => {
     expect(parseMetapolicy(null)).toBeNull();
     expect(parseMetapolicy('nope')).toBeNull();
   });
-  it('passes through known arrays', () => {
+  it('returns null when every known key is missing or an empty array', () => {
+    expect(parseMetapolicy({ cot: [], junk: 1 })).toBeNull();
+  });
+  it('passes through known non-empty arrays', () => {
     const mp = parseMetapolicy({ cot: [{ inclusion: 'paid', price: 20, currency: 'EUR' }], junk: 1 });
     expect(mp?.cot?.[0]).toMatchObject({ inclusion: 'paid', price: 20, currency: 'EUR' });
   });
@@ -269,6 +269,9 @@ import type {
   RoomGroupEntry, AmenityGroup, MetapolicyStruct, MetapolicyEntry,
 } from './etgContent.types';
 
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s.length > 0) : [];
+
 function resolveImageUrl(u: unknown): string | null {
   if (typeof u === 'string') return u.replace(/\{size\}/g, '1024x768');
   if (u && typeof u === 'object') {
@@ -288,17 +291,12 @@ export function parseRoomGroups(raw: unknown): RoomGroupEntry[] {
           .map(resolveImageUrl)
           .filter((s: string | null): s is string => !!s)
           .slice(0, 10),
-        roomAmenities: Array.isArray(rg?.room_amenities)
-          ? rg.room_amenities.filter((s: unknown) => typeof s === 'string' && s.length > 0)
-          : [],
+        roomAmenities: strings(rg?.room_amenities),
       };
       const bedding = rg?.name_struct?.bedding_type;
       if (typeof bedding === 'string' && bedding) entry.beddingType = bedding;
       const bathroom = rg?.name_struct?.bathroom;
       if (typeof bathroom === 'string' && bathroom) entry.bathroomType = bathroom;
-      const floor = rg?.rg_ext?.floor;
-      if (typeof floor === 'number' && floor > 0) entry.floor = String(floor);
-      else if (typeof floor === 'string' && floor) entry.floor = floor;
       if (typeof rg?.room_group_id === 'number') entry.roomGroupId = rg.room_group_id;
       return entry;
     })
@@ -310,8 +308,8 @@ export function parseAmenityGroups(raw: unknown): AmenityGroup[] {
   return raw
     .map((g: any): AmenityGroup => ({
       groupName: typeof g?.group_name === 'string' ? g.group_name : '',
-      amenities: Array.isArray(g?.amenities) ? g.amenities.filter((s: unknown) => typeof s === 'string') : [],
-      nonFree: Array.isArray(g?.non_free_amenities) ? g.non_free_amenities.filter((s: unknown) => typeof s === 'string') : [],
+      amenities: strings(g?.amenities),
+      nonFree: strings(g?.non_free_amenities),
     }))
     .filter((g) => g.groupName);
 }
@@ -327,7 +325,9 @@ export function parseMetapolicy(raw: unknown): MetapolicyStruct | null {
   const out: MetapolicyStruct = {};
   for (const key of MP_KEYS) {
     const v = src[key];
-    if (Array.isArray(v)) out[key] = v.filter((e) => e && typeof e === 'object') as MetapolicyEntry[];
+    if (!Array.isArray(v)) continue;
+    const entries = v.filter((e): e is MetapolicyEntry => !!e && typeof e === 'object' && !Array.isArray(e));
+    if (entries.length) out[key] = entries;
   }
   return Object.keys(out).length ? out : null;
 }
@@ -779,13 +779,12 @@ describe('buildRoomContent', () => {
     const c = buildRoomContent('Deluxe Room', etg({
       roomGroups: [{
         name: 'Deluxe Room', images: [], roomAmenities: ['air-conditioning', 'non-smoking'],
-        beddingType: 'double bed', bathroomType: 'private', floor: '1-3',
+        beddingType: 'double bed', bathroomType: 'private',
       }],
       metapolicy: { internet: [{ inclusion: 'not_available' }] },
     }));
     const labels = c.keyFacts.map((f) => f.label);
     expect(labels).toContain('Non-smoking');
-    expect(labels).toContain('Floor: 1-3');
     expect(labels).toContain('Air conditioning');
     expect(labels).toContain('Private bathroom');
     expect(labels).toContain('Internet: contact hotel');
@@ -846,11 +845,9 @@ function internetFact(mp: MetapolicyStruct | null): DetailItem | null {
 function buildKeyFacts(match: RoomGroupEntry | null, mp: MetapolicyStruct | null): DetailItem[] {
   const facts: DetailItem[] = [];
   const slugs = new Set(match?.roomAmenities ?? []);
-  if (match?.sizeSqm) facts.push({ label: `${match.sizeSqm} m\u00b2`, icon: 'size' });
   if (slugs.has('window') || slugs.has('has-window')) facts.push({ label: 'Has window(s)', icon: 'window' });
   if (slugs.has('non-smoking')) facts.push({ label: 'Non-smoking', icon: 'smoking' });
   else if (slugs.has('smoking')) facts.push({ label: 'Smoking allowed', icon: 'smoking' });
-  if (match?.floor) facts.push({ label: `Floor: ${match.floor}`, icon: 'size' });
   const net = internetFact(mp);
   if (net) facts.push(net);
   if (slugs.has('air-conditioning')) facts.push({ label: 'Air conditioning', icon: 'ac' });
