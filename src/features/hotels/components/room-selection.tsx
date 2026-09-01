@@ -943,12 +943,11 @@ export function RoomSelection({
                 ))}
             </div>
 
-            {/* `overflow-x-clip`, not `-hidden`: the page turns by sliding a
-                fresh column in from the side the paging went, and the offset
-                start would otherwise flash a horizontal scrollbar — but the
-                cards' own drop shadows still need to spill past the top and
-                bottom edges, which `-hidden` would crop. */}
-            <div className="mt-4 overflow-x-clip">
+            {/* No clip on this wrapper: `body` is already `overflow-x: clip`
+                (globals.css), so the page turn's off-screen start cannot flash
+                a scrollbar — and leaving this open lets each card's drop shadow
+                render in full instead of being cropped at a tight edge. */}
+            <div className="mt-4">
                 <motion.div
                     // Keyed by the page, so each turn is a fresh mount that
                     // runs `initial`. `pageDir === 0` on the very first render —
