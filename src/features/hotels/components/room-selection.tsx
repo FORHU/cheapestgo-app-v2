@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
@@ -854,7 +854,6 @@ export function RoomSelection({
      *  whenever the filter changes — see the filter buttons below. */
     const [page, setPage] = useState(0);
     const [pageDir, setPageDir] = useState(0);
-    const sectionRef = useRef<HTMLElement>(null);
 
     /**
      * Every rate on offer, one card each — the design draws the same room three
@@ -908,21 +907,20 @@ export function RoomSelection({
     const safePage = Math.min(page, pageCount - 1);
     const paged = filtered.slice(safePage * ROOMS_PER_PAGE, safePage * ROOMS_PER_PAGE + ROOMS_PER_PAGE);
 
-    /** Turn to a page and bring the section's top back into view, so the next
-     *  page does not start the reader halfway down a list they were at the end
-     *  of. Records the direction so the incoming page slides in from that side. */
+    /** Turn to a page, recording the direction so the incoming column slides
+     *  in from that side. The scroll position is left where it is — the pager
+     *  sits right under the list, so the next page is already in view. */
     const goToPage = (next: number) => {
         const clamped = Math.max(0, Math.min(pageCount - 1, next));
         if (clamped === safePage) return;
         setPageDir(clamped > safePage ? 1 : -1);
         setPage(clamped);
-        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     if (rooms.length === 0) return null;
 
     return (
-        <section ref={sectionRef} id={id} className={className}>
+        <section id={id} className={className}>
             <h2 className={cn(SECTION_HEADING, palette.heading)}>Available Rooms</h2>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -955,9 +953,9 @@ export function RoomSelection({
                     // Next page enters from the left and travels right; prev
                     // page comes the other way.
                     key={safePage}
-                    initial={pageDir === 0 ? false : { x: pageDir > 0 ? -48 : 48, opacity: 0 }}
+                    initial={pageDir === 0 ? false : { x: pageDir > 0 ? -64 : 64, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.34, ease: PAGE_EASE }}
+                    transition={{ duration: 0.6, ease: PAGE_EASE }}
                     className="flex flex-col gap-3"
                 >
                     {paged.map((card) => (
