@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { RoomSelection } from '@/features/hotels/components/room-selection';
-import type { RoomOption } from '@/features/hotels/types/property.types';
+import type { RoomOption, RoomContent } from '@/features/hotels/types/property.types';
 
 // The card reads the app theme; pin it so the palette is deterministic.
 vi.mock('@/shared/components/ThemeContext', () => ({
@@ -142,5 +142,80 @@ describe('RoomSelection', () => {
         expect(screen.getAllByRole('button', { name: /Select Room|Selected/ })).toHaveLength(2);
         expect(screen.getByText('$200')).toBeInTheDocument();
         expect(screen.getByText('$240')).toBeInTheDocument();
+    });
+});
+
+describe('RoomSelection — categorised modal', () => {
+    const content: RoomContent = {
+        gallery: [],
+        keyFacts: [{ label: 'Non-smoking' }, { label: 'Private bathroom' }],
+        bedLine: 'Double bed',
+        bedsExtraSummary: 'Extra beds and cribs are unavailable for this room type',
+        sections: [
+            { id: 'bathroom', title: 'Bathroom', scope: 'room', items: [{ label: 'Shower' }] },
+            { id: 'media-tech', title: 'Media and technology', scope: 'room', items: [{ label: 'Cable channels' }] },
+        ],
+    };
+
+    it('renders per-category headers, key facts and the bed / cribs lines', () => {
+        const room = makeRoom();
+        room.content = content;
+        render(<RoomSelection {...baseProps} rooms={[room]} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText('Bathroom')).toBeInTheDocument();
+        expect(within(dialog).getByText('Media and technology')).toBeInTheDocument();
+        expect(within(dialog).getByText('Shower')).toBeInTheDocument();
+        expect(within(dialog).getByText('Double bed')).toBeInTheDocument();
+        expect(within(dialog).getByText('Non-smoking')).toBeInTheDocument();
+        expect(within(dialog).getByText('Extra beds and cribs are unavailable for this room type')).toBeInTheDocument();
+    });
+
+    it('appends property-scoped sections and the additional-info block', () => {
+        const room = makeRoom();
+        room.content = content;
+        render(
+            <RoomSelection
+                {...baseProps}
+                rooms={[room]}
+                propertySections={[
+                    { id: 'child-policy', title: 'Child policies', scope: 'property', items: [{ label: 'Children 0–5 stay free' }] },
+                ]}
+                additionalInfo={'Photo ID required at check-in.'}
+            />,
+        );
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText('Child policies')).toBeInTheDocument();
+        expect(within(dialog).getByText('Children 0–5 stay free')).toBeInTheDocument();
+        expect(within(dialog).getByText('Additional information')).toBeInTheDocument();
+        expect(within(dialog).getByText('Photo ID required at check-in.')).toBeInTheDocument();
+    });
+
+    it('falls back to the legacy amenity list when content is absent', () => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom({ amenities: ['Sea view', 'Balcony'] })]} hotelAmenities={[]} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText('Sea view')).toBeInTheDocument();
+        expect(within(dialog).queryByText('Bathroom')).not.toBeInTheDocument();
+    });
+
+    it('opens the photo viewer from a thumbnail without closing the modal', () => {
+        const room = makeRoom();
+        room.content = { ...content, gallery: ['/a.jpg', '/b.jpg'] };
+        render(<RoomSelection {...baseProps} rooms={[room]} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        const dialog = screen.getByRole('dialog');
+
+        fireEvent.click(dialog.querySelectorAll('img')[0]);
+        // Viewer counter appears…
+        expect(screen.getByText('1 / 2')).toBeInTheDocument();
+        // …and the room-detail modal is still mounted behind it.
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+        // Dismissing the viewer (Escape) must not also close the modal.
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 });

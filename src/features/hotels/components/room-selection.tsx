@@ -12,7 +12,11 @@ import { useTheme } from '@/shared/components/ThemeContext';
 import { currencySymbol } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
 import { SECTION_HEADING } from '@/shared/lib/layout';
-import type { RateRow, RoomOption } from '@/features/hotels/types/property.types';
+import { DetailSectionGrid, KeyFactsRow } from './room-content';
+import { Lightbox } from './lightbox';
+import type {
+    RateRow, RoomOption, RoomContent, DetailSection,
+} from '@/features/hotels/types/property.types';
 
 /**
  * What each board code is called on the card.
@@ -202,6 +206,13 @@ interface RoomSelectionProps {
     /** Which palette to draw from. Defaults to the app theme; the property page
      *  passes its own in. */
     tone?: 'light' | 'dark';
+    /**
+     * Hotel-scoped policy sections (child policy, cribs/extra beds) and the
+     * free-text tail — both from the ETG content the API attaches. Shown inside
+     * every room's detail modal, after the room-scoped sections.
+     */
+    propertySections?: DetailSection[];
+    additionalInfo?: string;
     className?: string;
     id?: string;
 }
@@ -464,19 +475,35 @@ interface RateCard {
     cancellation: string;
     /** Per night, in the user's currency. */
     nightly: number;
+    /** ETG room-detail content, when the API matched this room to a room-group.
+     *  Absent → the modal falls back to `allFeatures`. */
+    content?: RoomContent;
 }
 
 function RoomDetailDialog({
     card, palette, currency, nights, selected, onClose, onSelect,
+    propertySections, additionalInfo, galleryFallback,
 }: {
     card: RateCard; palette: Palette; currency: string; nights?: number | null;
     selected: boolean; onClose: () => void; onSelect: (offer: SelectedOffer) => void;
+    /** Hotel-scoped sections (child policy, cribs/extra beds) — appended after the
+     *  room sections. */
+    propertySections?: DetailSection[];
+    additionalInfo?: string;
+    /** The hotel photo, shown when the matched room-group carried no images. */
+    galleryFallback?: string | null;
 }) {
+    const [lightboxStart, setLightboxStart] = useState<number | null>(null);
+
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        // While the photo viewer is open it owns Escape (and closes itself);
+        // the modal only takes Escape once the viewer is gone.
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && lightboxStart === null) onClose();
+        };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [onClose]);
+    }, [onClose, lightboxStart]);
 
     const symbol = currencySymbol(currency) || currency;
     const stayNights = Math.max(1, nights ?? 1);
@@ -496,7 +523,7 @@ function RoomDetailDialog({
                 aria-modal="true"
                 aria-label={`${card.heading} details`}
                 onClick={(e) => e.stopPropagation()}
-                className={cn('relative z-10 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-[18px] p-6', palette.modalBg)}
+                className={cn('relative z-10 max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-[18px] p-6', palette.modalBg)}
             >
                 <button
                     type="button"
@@ -514,15 +541,66 @@ function RoomDetailDialog({
                     <Pill palette={palette}>{card.refundable ? 'Refundable' : 'Non-refundable'}</Pill>
                 </div>
 
-                {card.allFeatures.length > 0 && (
-                    <section className="mt-6">
-                        <p className={sectionLabel}>Room</p>
-                        <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            {card.allFeatures.map((feature, i) => (
-                                <FeatureRow key={`${feature.label}-${i}`} feature={feature} palette={palette} />
-                            ))}
-                        </ul>
-                    </section>
+                {card.content ? (
+                    <>
+                        {card.content.bedLine && (
+                            <p className={cn('mt-4 flex items-center gap-2 text-[15px]', palette.feature)}>
+                                <Bed size={17} strokeWidth={1.75} className="shrink-0" />
+                                {card.content.bedLine}
+                            </p>
+                        )}
+                        {card.content.bedsExtraSummary && (
+                            <p className={cn('mt-1 text-[13px]', palette.empty)}>{card.content.bedsExtraSummary}</p>
+                        )}
+
+                        {card.content.gallery.length > 0 && (
+                            <div className="mt-4 flex gap-2 overflow-x-auto">
+                                {card.content.gallery.map((src, i) => (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        key={src}
+                                        src={src}
+                                        alt=""
+                                        onClick={() => setLightboxStart(i)}
+                                        className="h-28 w-40 shrink-0 cursor-pointer rounded-lg object-cover"
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        {card.content.gallery.length === 0 && galleryFallback && (
+                            <div className="mt-4">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
+                                <p className={cn('mt-1 text-[12px]', palette.empty)}>Photo of the property</p>
+                            </div>
+                        )}
+
+                        {card.content.keyFacts.length > 0 && (
+                            <section className="mt-5">
+                                <KeyFactsRow facts={card.content.keyFacts} palette={palette} />
+                            </section>
+                        )}
+
+                        {(card.content.sections.length > 0 || (propertySections?.length ?? 0) > 0) && (
+                            <section className="mt-6">
+                                <DetailSectionGrid
+                                    sections={[...card.content.sections, ...(propertySections ?? [])]}
+                                    palette={palette}
+                                />
+                            </section>
+                        )}
+                    </>
+                ) : (
+                    card.allFeatures.length > 0 && (
+                        <section className="mt-6">
+                            <p className={sectionLabel}>Room</p>
+                            <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {card.allFeatures.map((feature, i) => (
+                                    <FeatureRow key={`${feature.label}-${i}`} feature={feature} palette={palette} />
+                                ))}
+                            </ul>
+                        </section>
+                    )
                 )}
 
                 {card.boardName && (
@@ -555,6 +633,13 @@ function RoomDetailDialog({
                     )}
                 </section>
 
+                {additionalInfo && (
+                    <section className="mt-6">
+                        <p className={sectionLabel}>Additional information</p>
+                        <p className={cn('mt-2 whitespace-pre-line text-[14px]', palette.feature)}>{additionalInfo}</p>
+                    </section>
+                )}
+
                 <section className="mt-6">
                     <p className={sectionLabel}>Price</p>
                     <p className={cn('mt-2 text-[15px]', palette.feature)}>
@@ -586,6 +671,18 @@ function RoomDetailDialog({
                     </button>
                 </div>
             </div>
+
+            {/* Its own layer — clicks inside the viewer (backdrop, close, arrows)
+                must not bubble to the modal's `onClick={onClose}` behind it. */}
+            {lightboxStart !== null && card.content && card.content.gallery.length > 0 && (
+                <div onClick={(e) => e.stopPropagation()}>
+                    <Lightbox
+                        images={card.content.gallery}
+                        startIndex={lightboxStart}
+                        onClose={() => setLightboxStart(null)}
+                    />
+                </div>
+            )}
         </div>,
         document.body,
     );
@@ -593,10 +690,13 @@ function RoomDetailDialog({
 
 function RoomRateCard({
     card, image, selected, palette, currency, nights, onSelect,
+    propertySections, additionalInfo,
 }: {
     card: RateCard; image?: string | null; selected: boolean;
     palette: Palette; currency: string; nights?: number | null;
     onSelect: (offer: SelectedOffer) => void;
+    propertySections?: DetailSection[];
+    additionalInfo?: string;
 }) {
     const [modalOpen, setModalOpen] = useState(false);
 
@@ -686,6 +786,9 @@ function RoomRateCard({
                     selected={selected}
                     onClose={() => setModalOpen(false)}
                     onSelect={onSelect}
+                    propertySections={propertySections}
+                    additionalInfo={additionalInfo}
+                    galleryFallback={image}
                 />
             )}
         </div>
@@ -696,7 +799,7 @@ function RoomRateCard({
 
 export function RoomSelection({
     rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
-    selectedOfferId, onSelect, tone, className, id,
+    selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
 }: RoomSelectionProps) {
     const { theme } = useTheme();
     const palette = roomPalette(tone ?? theme);
@@ -731,6 +834,7 @@ export function RoomSelection({
                 cancellation: cancellationSummary(rate),
                 // Supplier prices cover the whole stay; the card prints a night.
                 nightly: convertCurrency(rate.price, rate.currency || 'USD', currency) / Math.max(1, nights ?? 1),
+                content: room.content,
             };
         });
     }), [rooms, hotelAmenities, occupancy, checkIn, currency, nights]);
@@ -781,6 +885,8 @@ export function RoomSelection({
                         selected={card.rate.offerId === selectedOfferId}
                         palette={palette}
                         onSelect={onSelect}
+                        propertySections={propertySections}
+                        additionalInfo={additionalInfo}
                     />
                 ))}
 
