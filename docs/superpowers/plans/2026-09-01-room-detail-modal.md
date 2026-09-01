@@ -1643,6 +1643,21 @@ Expected: `content` present, `sections` an array of `{id, count}`, `keyFacts` po
 
 - [ ] **Step 3: Note anything off** (wrong section for a slug, empty everything) in a scratch file; tune `roomAmenities.ts` `MAP`/`RULES` and re-run its test. Commit fixes as `fix(hotels): tune room-amenity classification`.
 
+> **Done (2026-09-01, commit `335de35`).** Smoke test against live ETG `hotel/info`
+> confirmed the pipeline end-to-end (fetch → parse → raw-blob cache → response). Four
+> real-data fixes were applied on top of Tasks 2/4/5/6 — so those files in the repo
+> are slightly ahead of the code blocks above:
+> - ETG `price` is a **string** (`"600"`, `"0"`) → `priceNum(e)` coercion everywhere.
+> - `inclusion` vocab is `included | not_included | not_available | unavailable | unspecified`
+>   (never `"paid"`) → `isOffered(e)` blocklist; `not_included` = offered-for-a-fee.
+> - `metapolicy_extra_info` / `important_information` can be **HTML** → `htmlToText()` in
+>   `buildAdditionalInfo`.
+> - `mini-bar` (hyphenated) added to the classifier.
+>
+> **Not verified:** per-room `content` (matching / sections / gallery / keyFacts) —
+> no hotel in the dev DB had both a live TGX room and a `ratehawk_hid`. Unit-tested
+> thoroughly; Task 16 (full-stack) must confirm against a real property page.
+
 ---
 
 # Phase 2 — Frontend (`cheapestgo-app-v2`)
