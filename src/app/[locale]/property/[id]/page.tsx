@@ -688,12 +688,14 @@ function PropertyContent() {
                     `tone={theme}` rather than a hardcoded `"dark"` — the page
                     ground now follows the app theme (`propertyPalette`
                     above), so the section it sits on does too. */}
-                {/* Rises and fades in as the hero scrolls away — a soft handoff
-                    from the full-bleed banner into the page's own column. */}
+                {/* Rises and fades as it enters the viewport — a soft handoff
+                    from the full-bleed banner into the page's own column. No
+                    `once`: it replays whether you scroll down into it or back
+                    up to it. */}
                 <motion.div
                     initial={{ opacity: 0, y: 32 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.15 }}
+                    viewport={{ amount: 0.15 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <PropertyDescription

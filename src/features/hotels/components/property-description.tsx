@@ -417,15 +417,18 @@ export function PropertyDescription({
         const allFlat = amenityGroups?.length
             ? Array.from(new Set(amenityGroups.flatMap((g) => g.amenities)))
             : amenities;
-        const { policies } = splitAmenities(allFlat);
 
         const general = amenityGroups?.find((g) => /general/i.test(g.groupName));
         const generalFlat = general?.amenities.length
             ? Array.from(new Set(general.amenities))
             : allFlat;
-        const facilities = splitAmenities(generalFlat).facilities.slice(0, 5);
 
-        return { facilities, policies };
+        // Both groups: capped at five, compact pills, no "View more" — see the
+        // ChipGroup props below.
+        return {
+            facilities: splitAmenities(generalFlat).facilities.slice(0, 5),
+            policies:   splitAmenities(allFlat).policies.slice(0, 5),
+        };
     }, [amenityGroups, amenities]);
 
     /**
@@ -552,6 +555,8 @@ export function PropertyDescription({
                         palette={palette}
                         reduceMotion={reduceMotion}
                         className="min-w-0"
+                        disclosure={false}
+                        compact
                     />
                 </div>
             )}
