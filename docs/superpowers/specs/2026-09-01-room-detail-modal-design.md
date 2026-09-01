@@ -76,7 +76,7 @@ board, price, cancellation terms, occupancy. Hotel-level: a flat uncategorised
 | Internet and communications | `room_amenities` (wi-fi, telephone) + `metapolicy.internet` | room | |
 | Room amenities | `room_amenities` (catch-all) | room | climate, bedding, soundproofing, iron |
 | Media and technology | `room_amenities` + `amenity_groups` "Media and technology" | room + hotel | |
-| Kitchen facilities | `room_amenities` (classifier) + `serp_filters` "kitchen" | room | |
+| Kitchen facilities | `room_amenities` (classifier) | room | |
 | General amenities | `room_amenities` leftovers (safe, alarm-clock) | room | |
 | Child policies | `metapolicy.children`, `children_meal` | hotel | |
 | Cribs & extra beds | `metapolicy.cot`, `metapolicy.extra_bed` | hotel | rendered as a summary sentence + optional priced rows |
@@ -142,7 +142,7 @@ getProperty(hotelId, stay)
  │    ├─ hotel_content.etg_content_seeded_at fresh (< 30d) & has room_groups → use DB
  │    └─ else POST worldota/hotel/info { id: ratehawk_hid }   (8s timeout, best-effort)
  │             parse → room_groups, amenity_groups, metapolicy_struct,
- │                     important_information, serp_filters, facts
+ │                     important_information, metapolicy_extra_info
  │             UPSERT hotel_content (+ new cols), stamp etg_content_seeded_at
  ├─ NEW per RoomOption:
  │        match  = matchEtgRoomGroup(room.name, room_groups)       ← ported from V1
@@ -167,11 +167,14 @@ and this call is user-initiated (a real property-page view).
 model hotel_content {
   // ...existing
   metapolicy_struct     Json?
-  serp_filters          String[]  @default([])
+  metapolicy_extra_info String?
   etg_content_seeded_at DateTime? @db.Timestamptz(6)
   // amenity_groups, room_groups, important_information already exist — start writing them
 }
 ```
+
+(`serp_filters` is deliberately **not** added — the classifier works off
+`room_amenities`; add it later if kitchen/internet detection needs the hint.)
 
 All nullable / defaulted; no backfill required; existing rows keep working.
 
@@ -224,10 +227,10 @@ interface AmenityGroup { groupName: string; amenities: string[]; nonFree: string
 | File | Change |
 |---|---|
 | `prisma/schema.prisma` + migration | 3 new nullable columns (above) |
-| `src/lib/hotels/etgContent.ts` *(new)* | `ensureEtgContent(hotelId)`, `parseRoomGroups`, `parseAmenityGroups`, `parseMetapolicy` — ported/adapted from V1 `etg/roomGroups.ts` + `etg-dump-sync.mjs` parse helpers |
+| `src/lib/hotels/etgContent.ts` *(new)* | `ensureEtgContent(hotelId, dbRow)`, `parseRoomGroups`, `parseAmenityGroups`, `parseMetapolicy` — ported/adapted from V1 `etg/roomGroups.ts` + `etg-dump-sync.mjs` parse helpers |
 | `src/lib/hotels/roomMatch.ts` *(new)* | `matchEtgRoomGroup(description, groups)` — ported verbatim from V1 `travelgatex/search.ts` (Pass 0 bedding-type → exact → prefix → bed-keyword; **no tier-word fallback**) |
-| `src/lib/hotels/roomContent.ts` *(new)* | `AMENITY_SECTION_MAP` (`slug → { label, section, icon }`), `buildRoomContent`, `buildPolicySections`, `buildAdditionalInfo`, `buildKeyFacts` |
-| `src/lib/hotels/amenityCodes.ts` | extend `ETG_ROOM_AMENITY_MAP` entries with `section` + `icon`; keep `etgRoomAmenityToLabel` |
+| `src/lib/hotels/roomAmenities.ts` *(new)* | `classifyRoomAmenity(slug) → { label, section, icon }` — the ETG slug map + regex fallback + `room-amenities` default |
+| `src/lib/hotels/roomContent.ts` *(new)* | `buildKeyFacts`, `buildRoomContent`, `buildPolicySections`, `buildAdditionalInfo`, `SECTION_TITLES`, `SECTION_ORDER` |
 | `src/services/hotels.service.ts` | `getProperty` calls `ensureEtgContent` in the `Promise.all`, then decorates each room + the content object |
 | `src/lib/hotels/property.ts` | `RoomOption` / response types gain the optional fields above |
 
