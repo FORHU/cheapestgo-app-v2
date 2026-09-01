@@ -27,7 +27,14 @@ type SectionId =
   | 'room-layout' | 'toiletries' | 'food-drink' | 'bathroom' | 'internet-comms'
   | 'room-amenities' | 'media-tech' | 'kitchen' | 'general' | 'child-policy' | 'beds-extra';
 
-interface DetailItem { label: string; icon?: string; note?: string }
+/** Icon vocabulary shared by the API (classifier / builders) and the FE renderer.
+ *  A member here MUST have an entry in the FE `SECTION_ICONS` map (Task 12). */
+type IconId =
+  | 'bath' | 'shower' | 'toiletries' | 'fridge' | 'coffee' | 'kitchen' | 'wifi'
+  | 'phone' | 'tv' | 'wardrobe' | 'desk' | 'window' | 'safe' | 'ac' | 'heating'
+  | 'smoking' | 'bed' | 'view' | 'child' | 'check';
+
+interface DetailItem { label: string; icon?: IconId; note?: string }
 
 interface DetailSection {
   id: SectionId;
@@ -131,8 +138,8 @@ Also creates `roomContent.types.ts` up front because Task 4 imports `SectionId` 
 - [ ] **Step 0: Write `src/lib/hotels/roomContent.types.ts`**
 
 Transcribe the **Shared type contract** block from the top of this plan verbatim —
-`SectionId`, `DetailItem`, `DetailSection`, `AmenityGroup`, `RoomContent`, plus the
-`SECTION_ORDER`, `SECTION_TITLES`, `ROOM_SCOPED` consts. `export` every name.
+`IconId`, `SectionId`, `DetailItem`, `DetailSection`, `AmenityGroup`, `RoomContent`,
+plus the `SECTION_ORDER`, `SECTION_TITLES`, `ROOM_SCOPED` consts. `export` every name.
 
 - [ ] **Step 1: Write the ETG types file**
 
@@ -607,6 +614,19 @@ describe('classifyRoomAmenity', () => {
       label: 'Rain dance floor', section: 'room-amenities', icon: 'check',
     });
   });
+  it('MAP wins over RULES (toilet-paper keeps its toiletries icon, not bath)', () => {
+    expect(classifyRoomAmenity('toilet-paper')).toEqual({
+      label: 'Toilet paper', section: 'bathroom', icon: 'toiletries',
+    });
+  });
+  it('normalises case and surrounding whitespace before lookup', () => {
+    expect(classifyRoomAmenity('  Wi-Fi  ').section).toBe('internet-comms');
+  });
+  it('a RULES hit for a non-layout section (walk-in-shower → bathroom)', () => {
+    expect(classifyRoomAmenity('walk-in-shower')).toEqual({
+      label: 'Walk in shower', section: 'bathroom', icon: 'bath',
+    });
+  });
 });
 ```
 
@@ -619,12 +639,12 @@ Run: `pnpm vitest run src/__tests__/roomAmenities.test.ts`
 `src/lib/hotels/roomAmenities.ts`:
 
 ```ts
-import type { SectionId } from './roomContent.types';
+import type { IconId, SectionId } from './roomContent.types';
 
-interface Classified { label: string; section: SectionId; icon: string }
+export interface Classified { label: string; section: SectionId; icon: IconId }
 
 function prettify(slug: string): string {
-  const s = slug.replace(/-/g, ' ').trim();
+  const s = slug.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
@@ -725,22 +745,26 @@ const MAP: Record<string, Classified> = {
   'smoking':         { label: 'Smoking allowed',  section: 'room-amenities', icon: 'smoking' },
 };
 
-// Regex fallbacks, evaluated in order before the room-amenities default.
-const RULES: [RegExp, SectionId, string][] = [
-  [/bathroom|shower|bath|bidet|toilet/i,        'bathroom',       'bath'],
-  [/toiletr|towel|slipper|bathrobe|shampoo|soap/i, 'toiletries',  'toiletries'],
-  [/coffee|\btea\b|kettle|minibar/i,            'food-drink',     'coffee'],
-  [/kitchen|fridge|refrigerat|microwave|oven|stove|dishwash/i, 'kitchen', 'kitchen'],
-  [/wi-?fi|internet|telephone|phone/i,          'internet-comms', 'wifi'],
-  [/\btv\b|television|channels|streaming|dvd/i, 'media-tech',     'tv'],
-  [/-view$|\bview\b|balcony|terrace|patio|wardrobe|closet|desk|curtain/i, 'room-layout', 'view'],
-  [/safe|deposit-box/i,                         'general',        'safe'],
-  [/air.?condition|heating|\bfan\b/i,           'room-amenities', 'ac'],
+// Regex fallbacks for slugs not in MAP, evaluated in order, before the
+// room-amenities default. Tokens are hyphen/boundary-anchored so a compound
+// slug ("desktop-computer", "bath-products") is not captured by a substring.
+// Toiletries runs before bathroom so "bathrobe" lands in toiletries.
+const RULES: [RegExp, SectionId, IconId][] = [
+  [/toiletr|towel|slipper|bathrobe|shampoo|soap/i,           'toiletries',     'toiletries'],
+  [/bathroom|shower|bidet|(^|-)(bath|bathtub|toilet)(-|$)/i, 'bathroom',       'bath'],
+  [/coffee-(maker|machine|pot)|\bkettle\b|minibar|\btea\b/i, 'food-drink',     'coffee'],
+  [/kitchen|fridge|refrigerat|microwave|oven|stove|dishwash/i, 'kitchen',      'kitchen'],
+  [/wi-?fi|internet|telephone|(^|-)phone(-|$)/i,             'internet-comms', 'wifi'],
+  [/\btv\b|television|channels|streaming|dvd/i,              'media-tech',     'tv'],
+  [/-view$|\bview\b|balcony|terrace|patio|wardrobe|(^|-)closet(-|$)|(^|-)desk(-|$)|curtain/i, 'room-layout', 'view'],
+  [/safe|deposit-box/i,                                      'general',        'safe'],
+  [/air.?condition|heating|\bfan\b/i,                        'room-amenities', 'ac'],
 ];
 
 export function classifyRoomAmenity(slug: string): Classified {
   const key = slug.toLowerCase().trim();
-  if (MAP[key]) return MAP[key];
+  // Spread so callers can never mutate the shared MAP entry.
+  if (MAP[key]) return { ...MAP[key] };
   for (const [re, section, icon] of RULES) {
     if (re.test(key)) return { label: prettify(key), section, icon };
   }
@@ -748,7 +772,7 @@ export function classifyRoomAmenity(slug: string): Classified {
 }
 ```
 
-- [ ] **Step 4: Run — expect PASS.** (Adjust the `icon` in the `-view` regex rule test if you rename keys; keep `label`/`section` as the test asserts.)
+- [ ] **Step 4: Run — expect PASS** (all 8).
 
 Run: `pnpm vitest run src/__tests__/roomAmenities.test.ts`
 
@@ -1527,7 +1551,15 @@ export type SectionId =
   | 'room-layout' | 'toiletries' | 'food-drink' | 'bathroom' | 'internet-comms'
   | 'room-amenities' | 'media-tech' | 'kitchen' | 'general' | 'child-policy' | 'beds-extra';
 
-export interface DetailItem { label: string; icon?: string; note?: string }
+/** Icon vocabulary shared with the API. Every member must have an entry in the
+ *  `SECTION_ICONS` map in room-content.tsx (Task 12). Keep in sync with the API's
+ *  `IconId` in cheapestgo-api-v2 src/lib/hotels/roomContent.types.ts. */
+export type IconId =
+  | 'bath' | 'shower' | 'toiletries' | 'fridge' | 'coffee' | 'kitchen' | 'wifi'
+  | 'phone' | 'tv' | 'wardrobe' | 'desk' | 'window' | 'safe' | 'ac' | 'heating'
+  | 'smoking' | 'bed' | 'view' | 'child' | 'check';
+
+export interface DetailItem { label: string; icon?: IconId; note?: string }
 
 export interface DetailSection {
   id: SectionId;
@@ -1767,21 +1799,22 @@ Run: `pnpm vitest run src/features/hotels/__tests__/room-content.test.tsx`
 
 import React from 'react';
 import {
-  AirVent, Baby, Bath, Bed, Building2, Check, Coffee, Lock, PanelTop, Phone,
-  Refrigerator, Shirt, Tv, UtensilsCrossed, Wifi, Wind, Maximize2, Cigarette,
+  AirVent, Baby, Bath, Bed, Building2, Check, Coffee, Droplets, Lock, PanelTop,
+  Phone, Refrigerator, Shirt, Tv, UtensilsCrossed, Wifi, Wind, Cigarette,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import type { DetailItem, DetailSection } from '@/features/hotels/types/property.types';
+import type { DetailItem, DetailSection, IconId } from '@/features/hotels/types/property.types';
 
-const SECTION_ICONS: Record<string, LucideIcon> = {
-  bed: Bed, bath: Bath, shower: Bath, toiletries: Check, wifi: Wifi, phone: Phone,
-  tv: Tv, kitchen: UtensilsCrossed, fridge: Refrigerator, ac: AirVent, heating: Wind,
-  safe: Lock, desk: PanelTop, wardrobe: Shirt, coffee: Coffee, child: Baby,
-  size: Maximize2, window: PanelTop, smoking: Cigarette, view: Building2, check: Check,
+// Every IconId must appear here — `Record<IconId, ...>` makes a gap a compile error.
+const SECTION_ICONS: Record<IconId, LucideIcon> = {
+  bath: Bath, shower: Bath, toiletries: Droplets, fridge: Refrigerator, coffee: Coffee,
+  kitchen: UtensilsCrossed, wifi: Wifi, phone: Phone, tv: Tv, wardrobe: Shirt,
+  desk: PanelTop, window: PanelTop, safe: Lock, ac: AirVent, heating: Wind,
+  smoking: Cigarette, bed: Bed, view: Building2, child: Baby, check: Check,
 };
 
-function iconFor(key?: string): LucideIcon {
+function iconFor(key?: IconId): LucideIcon {
   return (key && SECTION_ICONS[key]) || Check;
 }
 
