@@ -1077,14 +1077,27 @@ describe('buildPolicySections', () => {
     ]);
   });
 
-  it('builds a beds-extra section only when cot / extra bed is available', () => {
+  it('builds a beds-extra section only from an available cot / extra bed', () => {
     const mp: MetapolicyStruct = {
       cot: [{ inclusion: 'paid', price: 15, currency: 'EUR', price_unit: 'per_night' }],
       extra_bed: [{ inclusion: 'not_available' }],
     };
-    const secs = buildPolicySections(mp);
-    const beds = secs.find((s) => s.id === 'beds-extra')!;
-    expect(beds.items[0]).toEqual({ label: 'Cot: EUR 15 per night', icon: 'bed', note: undefined });
+    const beds = buildPolicySections(mp).find((s) => s.id === 'beds-extra')!;
+    expect(beds.scope).toBe('property');
+    expect(beds.items).toEqual([{ label: 'Cot: EUR 15 per night', icon: 'bed' }]);
+  });
+
+  it('emits no beds-extra section when cot and extra bed are both unavailable', () => {
+    const mp: MetapolicyStruct = {
+      cot: [{ inclusion: 'not_available' }],
+      extra_bed: [{ inclusion: 'not_available' }],
+    };
+    expect(buildPolicySections(mp).some((s) => s.id === 'beds-extra')).toBe(false);
+  });
+
+  it('a child entry with no price info reads as "welcome", not "stay free"', () => {
+    const mp: MetapolicyStruct = { children: [{ age_start: 0, age_end: 2 }] };
+    expect(buildPolicySections(mp)[0].items[0].label).toBe('Children 0–2 welcome');
   });
 });
 
@@ -1116,10 +1129,16 @@ Run: `pnpm vitest run src/__tests__/roomPolicy.test.ts`
 ```ts
 import type { MetapolicyEntry } from './etgContent.types';
 
+/** "EUR 20 per night" \u2014 currency + price + humanised unit, empty parts dropped. */
 function money(e: MetapolicyEntry): string {
   const unit = e.price_unit ? ` ${e.price_unit.replace(/_/g, ' ')}` : '';
-  return `${e.currency ?? ''} ${e.price ?? 0}${unit}`.trim();
+  return `${[e.currency, e.price].filter((v) => v != null && v !== '').join(' ')}${unit}`.trim();
 }
+
+const isAvailable = (e: MetapolicyEntry) => !!e.inclusion && e.inclusion !== 'not_available';
+
+// Decisions key off `inclusion`, never `price` \u2014 ETG sends `price: 0` as a
+// default on entries that are `not_available` or free, so a price test misreads.
 
 export function buildPolicySections(mp: MetapolicyStruct | null): DetailSection[] {
   if (!mp) return [];
@@ -1127,10 +1146,9 @@ export function buildPolicySections(mp: MetapolicyStruct | null): DetailSection[
 
   const childItems: DetailItem[] = (mp.children ?? []).map((e) => {
     const range = e.age_start != null && e.age_end != null ? `${e.age_start}\u2013${e.age_end}` : 'any age';
-    if (e.inclusion === 'included' || e.price === 0) {
-      return { label: `Children ${range} stay free`, icon: 'child' };
-    }
-    return { label: `Children ${range}: ${money(e)}`, icon: 'child' };
+    if (e.inclusion === 'included')          return { label: `Children ${range} stay free`, icon: 'child' };
+    if (e.inclusion === 'paid' && e.price)   return { label: `Children ${range}: ${money(e)}`, icon: 'child' };
+    return { label: `Children ${range} welcome`, icon: 'child' };
   });
   for (const e of mp.children_meal ?? []) {
     if (e.inclusion === 'included') childItems.push({ label: "Children's meals included", icon: 'child' });
@@ -1140,15 +1158,14 @@ export function buildPolicySections(mp: MetapolicyStruct | null): DetailSection[
   }
 
   const bedItems: DetailItem[] = [];
-  const avail = (e: MetapolicyEntry) => e.inclusion && e.inclusion !== 'not_available';
-  for (const e of mp.cot ?? []) {
-    if (!avail(e)) continue;
-    bedItems.push({ label: (e.inclusion === 'included' || e.price === 0) ? 'Cot available free' : `Cot: ${money(e)}`, icon: 'bed', note: undefined });
-  }
-  for (const e of mp.extra_bed ?? []) {
-    if (!avail(e)) continue;
-    bedItems.push({ label: (e.inclusion === 'included' || e.price === 0) ? 'Extra bed available free' : `Extra bed: ${money(e)}`, icon: 'bed', note: undefined });
-  }
+  const bedRow = (kind: 'Cot' | 'Extra bed', e: MetapolicyEntry): DetailItem => ({
+    label: e.inclusion === 'included' ? `${kind} available free`
+         : e.price                    ? `${kind}: ${money(e)}`
+         :                              `${kind} available on request`,
+    icon: 'bed',
+  });
+  for (const e of mp.cot ?? [])       if (isAvailable(e)) bedItems.push(bedRow('Cot', e));
+  for (const e of mp.extra_bed ?? []) if (isAvailable(e)) bedItems.push(bedRow('Extra bed', e));
   if (bedItems.length) {
     out.push({ id: 'beds-extra', title: SECTION_TITLES['beds-extra'], scope: 'property', items: bedItems });
   }
@@ -1172,11 +1189,11 @@ export function buildAdditionalInfo(
     else if (pet.inclusion === 'included') parts.push('Pets are allowed free of charge.');
   }
   const dep = mp?.deposit?.[0];
-  if (dep?.price) parts.push(`A deposit of ${dep.currency ?? ''} ${dep.price} may be required.`.replace(/\s+/g, ' '));
+  if (dep?.price) parts.push(`A deposit of ${[dep.currency, dep.price].filter(Boolean).join(' ')} may be required.`);
   const park = mp?.parking?.[0];
   if (park) {
-    if (park.inclusion === 'included' || park.price === 0) parts.push('Free parking is available.');
-    else if (park.price) parts.push(`Parking is available for ${money(park)}.`);
+    if (park.inclusion === 'included') parts.push('Free parking is available.');
+    else if (park.inclusion === 'paid' && park.price) parts.push(`Parking is available for ${money(park)}.`);
   }
   return parts.join('\n\n');
 }
