@@ -9,6 +9,42 @@ export interface RateRow {
     cancellationDeadline?: string;
 }
 
+// ─── Room-detail modal (mirrors cheapestgo-api-v2 src/lib/hotels/roomContent.types.ts) ──
+
+export type SectionId =
+    | 'room-layout' | 'toiletries' | 'food-drink' | 'bathroom' | 'internet-comms'
+    | 'room-amenities' | 'media-tech' | 'kitchen' | 'general' | 'child-policy' | 'beds-extra';
+
+/**
+ * Icon vocabulary shared with the API. Every member must have an entry in the
+ * `SECTION_ICONS` map in `room-content.tsx` — `Record<IconId, LucideIcon>` makes a
+ * gap a compile error. Keep in sync with the API's `IconId`.
+ */
+export type IconId =
+    | 'bath' | 'shower' | 'toiletries' | 'fridge' | 'coffee' | 'kitchen' | 'wifi'
+    | 'phone' | 'tv' | 'wardrobe' | 'desk' | 'window' | 'safe' | 'ac' | 'heating'
+    | 'smoking' | 'bed' | 'view' | 'child' | 'check';
+
+export interface DetailItem { label: string; icon?: IconId; note?: string }
+
+export interface DetailSection {
+    id: SectionId;
+    title: string;
+    scope: 'room' | 'property';
+    items: DetailItem[];
+}
+
+export interface AmenityGroup { groupName: string; amenities: string[]; nonFree: string[] }
+
+export interface RoomContent {
+    gallery: string[];
+    matchedRoomName?: string;
+    keyFacts: DetailItem[];
+    bedLine?: string;
+    bedsExtraSummary?: string;
+    sections: DetailSection[];
+}
+
 export interface RoomOption {
     id: string;
     offerId?: string;
@@ -29,6 +65,8 @@ export interface RoomOption {
         cancelPenalties?: Array<{ deadline?: string; amount?: number; currency?: string }>;
     };
     rates?: RateRow[];
+    /** ETG room-detail content — attached by the API when a room-group matches. */
+    content?: RoomContent;
 }
 
 export interface HotelContent {
@@ -45,6 +83,10 @@ export interface HotelContent {
     lng: number | null;
     check_in_time?: string | null;
     check_out_time?: string | null;
+    /** ETG-sourced extras — grouped hotel amenities + property policy sections + free-text tail. */
+    amenityGroups?: AmenityGroup[];
+    roomPolicySections?: DetailSection[];
+    additionalInfo?: string;
 }
 
 export interface PropertyReview {

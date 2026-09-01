@@ -16,7 +16,7 @@ import { useUserCurrency } from '@/stores/searchStore';
 import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
-import type { RoomOption } from '@/features/hotels/types/property.types';
+import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +43,10 @@ interface HotelContent {
     check_out_time?: string | null;
     check_in?: string | null;
     check_out?: string | null;
+    /** ETG-sourced extras for the room-detail modal + description panel. */
+    amenityGroups?: AmenityGroup[];
+    roomPolicySections?: DetailSection[];
+    additionalInfo?: string;
 }
 
 interface PropertyApiResponse {
