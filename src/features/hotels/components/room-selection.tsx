@@ -782,8 +782,9 @@ function RoomRateCard({
                     </p>
                 </div>
 
-                {/* Detail columns + the Select action, bottom-aligned */}
-                <div className="flex flex-1 items-end justify-between gap-3">
+                {/* Detail columns pulled up directly under the name; the Select
+                    action keeps its bottom-right corner via its own `self-end`. */}
+                <div className="flex flex-1 items-start justify-between gap-3">
                     <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
                         <DetailColumn
                             title="Room Details"
