@@ -387,22 +387,20 @@ export function PropertyDescription({
     const reduceMotion = useReducedMotion();
     const [expanded, setExpanded] = useState(false);
 
-    /** The lift and the smoking policy arrive in one list; they are not the
-     *  same kind of fact. See `splitAmenities`. */
-    const { facilities, policies } = useMemo(() => splitAmenities(amenities), [amenities]);
-
     /**
-     * The left column's chip groups: one per ETG amenity group when the API sent
-     * them, otherwise the single flat "Amenities" group from `splitAmenities`.
-     * Empty groups are dropped so a category with nothing in it draws no header.
+     * The panel draws one "Amenities" group and one "Rules & Policies" group —
+     * not a group per ETG category, which fragments into a dozen one-chip
+     * sections. When the API sent `amenityGroups`, its (richer, de-duplicated)
+     * amenities are the source; otherwise the flat `amenities` prop is. Either
+     * way `splitAmenities` peels house rules ("Pets not allowed", curfews) off
+     * into `policies`.
      */
-    const amenityChipGroups = useMemo(() => {
-        const grouped = (amenityGroups ?? [])
-            .map((g) => ({ label: g.groupName, items: g.amenities }))
-            .filter((g) => g.items.length);
-        if (grouped.length) return grouped;
-        return facilities.length ? [{ label: 'Amenities', items: facilities }] : [];
-    }, [amenityGroups, facilities]);
+    const { facilities, policies } = useMemo(() => {
+        const flat = amenityGroups?.length
+            ? Array.from(new Set(amenityGroups.flatMap((g) => g.amenities)))
+            : amenities;
+        return splitAmenities(flat);
+    }, [amenityGroups, amenities]);
 
     /**
      * Whether the clamp is actually cutting anything off.
@@ -433,7 +431,7 @@ export function PropertyDescription({
 
     const hasPrice = typeof price === 'number' && price > 0;
     const hasRating = typeof rating === 'number' && rating > 0;
-    const hasChips = amenityChipGroups.length > 0 || policies.length > 0;
+    const hasChips = facilities.length > 0 || policies.length > 0;
 
     // Nothing to say — no section, rather than an empty one.
     if (!hasPrice && !hasRating && !hasTimes && !hasChips && !body) return null;
@@ -509,20 +507,15 @@ export function PropertyDescription({
                 would each be too narrow to read a chip on. */}
             {hasChips && (
                 <div className={cn('grid grid-cols-1 gap-x-12 gap-y-6 sm:grid-cols-2', (hasTimes || hasPrice || hasRating) && 'mt-6')}>
-                    <div className="flex min-w-0 flex-col gap-6">
-                        {amenityChipGroups.map((g, gi) => (
-                            <ChipGroup
-                                key={`${g.label}-${gi}`}
-                                label={g.label}
-                                items={g.items}
-                                moreLabel="View more"
-                                lessLabel="View less"
-                                palette={palette}
-                                reduceMotion={reduceMotion}
-                                className="min-w-0"
-                            />
-                        ))}
-                    </div>
+                    <ChipGroup
+                        label="Amenities"
+                        items={facilities}
+                        moreLabel="View more"
+                        lessLabel="View less"
+                        palette={palette}
+                        reduceMotion={reduceMotion}
+                        className="min-w-0"
+                    />
                     <ChipGroup
                         label="Rules & Policies"
                         items={policies}
