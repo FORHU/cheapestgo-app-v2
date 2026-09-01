@@ -505,16 +505,16 @@ export function PropertyDescription({
                         // A description list, not two spans: these are
                         // labelled values, and that is what a screen reader
                         // should hear.
-                        <dl className={cn('shrink-0 text-[18px] leading-[1.5]', palette.soft)}>
+                        <dl className={cn('shrink-0 text-right text-[18px] leading-[1.5]', palette.soft)}>
                             {inTime && (
-                                <div className="flex gap-2">
+                                <div className="flex justify-end gap-2">
                                     <dt className={cn('font-bold', palette.title)}>CHECK-IN</dt>
                                     <dd>{inTime}</dd>
                                 </div>
                             )}
                             {outTime && (
-                                <div className="flex gap-2">
-                                    <dt className={cn('font-bold', palette.title)}>CHECK-OUT</dt>
+                                <div className="flex justify-end gap-2">
+                                    <dt className={cn('font-bold', palette.title)}>OUT</dt>
                                     <dd>{outTime}</dd>
                                 </div>
                             )}

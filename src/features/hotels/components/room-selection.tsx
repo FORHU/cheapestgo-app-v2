@@ -222,16 +222,15 @@ function roomPalette(tone: 'light' | 'dark') {
     return {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
-         * The card's plate. Cool rather than neutral, as drawn. Lifted off the
-         * page with a soft drop shadow; in dark, where a shadow on near-black
-         * reads as nothing, a hairline ring and a faint glow do the lifting.
+         * The card's plate. Cool rather than neutral, as drawn. No border —
+         * a layered drop shadow does the lifting. In light that shadow reads
+         * directly; in dark, against the page's black, the shadow is felt only
+         * at the near edge, so the plate is also set a shade lighter than it
+         * would otherwise be to hold its own outline by contrast alone.
          */
         card:     dark
-            ? 'bg-[#151C28] ring-1 ring-white/[0.06] shadow-[0_14px_40px_-14px_rgba(0,0,0,0.8)]'
-            : 'bg-white shadow-[0_14px_36px_-12px_rgba(15,23,42,0.20)] ring-1 ring-slate-900/[0.04]',
-        /** Selection, as a ring rather than a fill: the card carries a photo,
-         *  and a fill would have to fight it. */
-        cardOn:   dark ? 'ring-1 ring-white/45' : 'ring-1 ring-slate-900',
+            ? 'bg-[#1B2434] shadow-[0_20px_48px_-16px_rgba(0,0,0,0.9),0_6px_16px_-8px_rgba(0,0,0,0.7)]'
+            : 'bg-white shadow-[0_20px_44px_-16px_rgba(15,23,42,0.28),0_6px_14px_-8px_rgba(15,23,42,0.16)]',
         name:     dark ? 'text-white' : 'text-slate-900',
         feature:  dark ? 'text-white/60' : 'text-slate-500',
         price:    dark ? 'text-white' : 'text-slate-900',
