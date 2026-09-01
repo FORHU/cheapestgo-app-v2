@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { currencySymbol } from '@/shared/lib/format';
 import { cleanSupplierDescription } from '@/features/hotels/lib/clean-description';
+import type { AmenityGroup } from '@/features/hotels/types/property.types';
 
 /**
  * How many amenity chips the collapsed section draws — the row the design
@@ -67,7 +68,14 @@ interface PropertyDescriptionProps {
      */
     checkInTime?: string | null;
     checkOutTime?: string | null;
+    /** The supplier's flat amenity list — the fallback when `amenityGroups` is absent. */
     amenities?: string[];
+    /**
+     * ETG's amenities grouped by category ("Internet", "Parking", …). When present,
+     * the chip block draws one labelled `ChipGroup` per group instead of the single
+     * flat "Amenities" group.
+     */
+    amenityGroups?: AmenityGroup[];
     description?: string | null;
     /**
      * Which palette to draw from, for a page whose chrome does not follow the
@@ -361,7 +369,7 @@ function ChipGroup({
 
 export function PropertyDescription({
     price, currency = 'USD', rating, checkInTime, checkOutTime,
-    amenities = [], description, tone, className,
+    amenities = [], amenityGroups, description, tone, className,
 }: PropertyDescriptionProps) {
     const { theme } = useTheme();
     const palette = descriptionPalette(tone ?? theme);
@@ -382,6 +390,19 @@ export function PropertyDescription({
     /** The lift and the smoking policy arrive in one list; they are not the
      *  same kind of fact. See `splitAmenities`. */
     const { facilities, policies } = useMemo(() => splitAmenities(amenities), [amenities]);
+
+    /**
+     * The left column's chip groups: one per ETG amenity group when the API sent
+     * them, otherwise the single flat "Amenities" group from `splitAmenities`.
+     * Empty groups are dropped so a category with nothing in it draws no header.
+     */
+    const amenityChipGroups = useMemo(() => {
+        const grouped = (amenityGroups ?? [])
+            .map((g) => ({ label: g.groupName, items: g.amenities }))
+            .filter((g) => g.items.length);
+        if (grouped.length) return grouped;
+        return facilities.length ? [{ label: 'Amenities', items: facilities }] : [];
+    }, [amenityGroups, facilities]);
 
     /**
      * Whether the clamp is actually cutting anything off.
@@ -412,14 +433,13 @@ export function PropertyDescription({
 
     const hasPrice = typeof price === 'number' && price > 0;
     const hasRating = typeof rating === 'number' && rating > 0;
+    const hasChips = amenityChipGroups.length > 0 || policies.length > 0;
 
     // Nothing to say — no section, rather than an empty one.
-    if (!hasPrice && !hasRating && !hasTimes && amenities.length === 0 && !body) return null;
+    if (!hasPrice && !hasRating && !hasTimes && !hasChips && !body) return null;
 
     // An unknown code has no symbol, so it prints as the code itself.
     const symbol = currencySymbol(currency) || currency;
-
-    const hasChips = facilities.length > 0 || policies.length > 0;
 
     return (
         <section className={className}>
@@ -489,15 +509,20 @@ export function PropertyDescription({
                 would each be too narrow to read a chip on. */}
             {hasChips && (
                 <div className={cn('grid grid-cols-1 gap-x-12 gap-y-6 sm:grid-cols-2', (hasTimes || hasPrice || hasRating) && 'mt-6')}>
-                    <ChipGroup
-                        label="Amenities"
-                        items={facilities}
-                        moreLabel="View more"
-                        lessLabel="View less"
-                        palette={palette}
-                        reduceMotion={reduceMotion}
-                        className="min-w-0"
-                    />
+                    <div className="flex min-w-0 flex-col gap-6">
+                        {amenityChipGroups.map((g, gi) => (
+                            <ChipGroup
+                                key={`${g.label}-${gi}`}
+                                label={g.label}
+                                items={g.items}
+                                moreLabel="View more"
+                                lessLabel="View less"
+                                palette={palette}
+                                reduceMotion={reduceMotion}
+                                className="min-w-0"
+                            />
+                        ))}
+                    </div>
                     <ChipGroup
                         label="Rules & Policies"
                         items={policies}
@@ -517,7 +542,7 @@ export function PropertyDescription({
                         there is something above it to divide from — on a stay
                         with no rate, no hours and no amenities it would be a
                         line under nothing. */}
-                    {(hasPrice || hasRating || hasTimes || amenities.length > 0) && (
+                    {(hasPrice || hasRating || hasTimes || hasChips) && (
                         <div className={cn('mt-6 h-px w-full', palette.rule)} />
                     )}
                     <p

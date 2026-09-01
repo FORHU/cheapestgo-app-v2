@@ -642,6 +642,7 @@ function PropertyContent() {
                     checkInTime={content.check_in_time ?? content.check_in}
                     checkOutTime={content.check_out_time ?? content.check_out}
                     amenities={amenities}
+                    amenityGroups={content.amenityGroups}
                     description={content.description}
                 />
 
