@@ -841,19 +841,27 @@ describe('buildRoomContent', () => {
     expect(media.items).toHaveLength(1);
   });
 
-  it('builds key facts from bedding, bathroom type and metapolicy internet', () => {
+  it('builds key facts from bathroom type and a paid-internet policy', () => {
     const c = buildRoomContent('Deluxe Room', etg({
       roomGroups: [{
         name: 'Deluxe Room', images: [], roomAmenities: ['air-conditioning', 'non-smoking'],
         beddingType: 'double bed', bathroomType: 'private',
       }],
-      metapolicy: { internet: [{ inclusion: 'not_available' }] },
+      metapolicy: { internet: [{ inclusion: 'paid', price: 8, currency: 'USD' }] },
     }));
     const labels = c.keyFacts.map((f) => f.label);
     expect(labels).toContain('Non-smoking');
     expect(labels).toContain('Air conditioning');
     expect(labels).toContain('Private bathroom');
-    expect(labels).toContain('Internet: contact hotel');
+    expect(labels).toContain('Paid Wi-Fi (USD 8)');
+  });
+
+  it('does not emit an internet key fact when internet is included (the section shows it)', () => {
+    const c = buildRoomContent('Room I', etg({
+      roomGroups: [{ name: 'Room I', images: [], roomAmenities: ['wi-fi'] }],
+      metapolicy: { internet: [{ inclusion: 'included', price: 0 }] },
+    }));
+    expect(c.keyFacts.map((f) => f.label)).not.toContain('Free Wi-Fi');
   });
 
   it('passes a TGX noise bed string through as the bed line', () => {
@@ -861,6 +869,45 @@ describe('buildRoomContent', () => {
       roomGroups: [{ name: 'Twin Room', images: [], roomAmenities: [] }],
     }));
     expect(c.bedLine).toBe('Bed type is subject to availability');
+  });
+
+  it('reads a bed-count phrase from the name when ETG has no bedding type', () => {
+    const c = buildRoomContent('Family Room with 2 Queen Beds', etg({
+      roomGroups: [{ name: 'Family Room with 2 Queen Beds', images: [], roomAmenities: [] }],
+    }));
+    expect(c.bedLine).toBe('2 Queen Beds');
+  });
+
+  it('says nothing about cribs when metapolicy is absent', () => {
+    const c = buildRoomContent('Room X', etg({
+      roomGroups: [{ name: 'Room X', images: [], roomAmenities: [] }],
+    }));
+    expect(c.bedsExtraSummary).toBeUndefined();
+  });
+
+  it('reports cribs unavailable only when the policy explicitly says so', () => {
+    const c = buildRoomContent('Room Y', etg({
+      roomGroups: [{ name: 'Room Y', images: [], roomAmenities: [] }],
+      metapolicy: { cot: [{ inclusion: 'not_available' }], extra_bed: [{ inclusion: 'not_available' }] },
+    }));
+    expect(c.bedsExtraSummary).toBe('Extra beds and cribs are unavailable for this room type');
+  });
+
+  it('stays silent about the summary when a cot is actually available', () => {
+    const c = buildRoomContent('Room Z', etg({
+      roomGroups: [{ name: 'Room Z', images: [], roomAmenities: [] }],
+      metapolicy: { cot: [{ inclusion: 'paid', price: 15, currency: 'EUR' }] },
+    }));
+    expect(c.bedsExtraSummary).toBeUndefined();
+  });
+
+  it('never puts a property-scoped section in the room sections', () => {
+    const c = buildRoomContent('Standard Double Room', etg({
+      roomGroups: [{ name: 'Standard Double Room', images: [], roomAmenities: ['tv', 'wardrobe'] }],
+      metapolicy: { children: [{ age_start: 0, age_end: 5, inclusion: 'included' }] },
+    }));
+    expect(c.sections.every((s) => s.scope === 'room')).toBe(true);
+    expect(c.sections.map((s) => s.id)).not.toContain('child-policy');
   });
 });
 ```
@@ -898,12 +945,21 @@ function buildBedLine(roomName: string, match: RoomGroupEntry | null): string | 
   return undefined;
 }
 
+/**
+ * A key fact only when internet has a *catch* — the `internet-comms` section
+ * already lists free Wi-Fi, so `included` adds nothing here. Driven off
+ * `inclusion`, never `price`: ETG sends `price: 0` as a default even on
+ * `not_available`, so a price test would stamp "Free Wi-Fi" onto hotels with none.
+ */
 function internetFact(mp: MetapolicyStruct | null): DetailItem | null {
   const e = mp?.internet?.[0];
   if (!e) return null;
-  if (e.inclusion === 'included' || e.price === 0) return { label: 'Free Wi-Fi', icon: 'wifi' };
-  if (e.inclusion === 'paid' && e.price) {
-    return { label: `Wi-Fi: ${e.currency ?? ''} ${e.price}`.trim(), icon: 'wifi' };
+  if (e.inclusion === 'included') return null;
+  if (e.inclusion === 'not_available') return { label: 'No internet in the room', icon: 'wifi' };
+  if (e.inclusion === 'paid') {
+    const price = [e.currency, e.price].filter(Boolean).join(' ');
+    const unit  = e.price_unit ? ` ${e.price_unit.replace(/_/g, ' ')}` : '';
+    return { label: price ? `Paid Wi-Fi (${price}${unit})` : 'Paid Wi-Fi', icon: 'wifi' };
   }
   return { label: 'Internet: contact hotel', icon: 'wifi' };
 }
@@ -925,13 +981,22 @@ function buildKeyFacts(match: RoomGroupEntry | null, mp: MetapolicyStruct | null
   return facts;
 }
 
-/** "Extra beds and cribs are unavailable for this room type" when metapolicy says so. */
+/**
+ * "Extra beds and cribs are unavailable for this room type" — but ONLY when the
+ * policy explicitly carries cot/extra_bed entries that are all `not_available`.
+ * Absent metapolicy, or a policy that simply doesn't mention them, says nothing
+ * (a missing policy is not evidence of unavailability). When one IS available,
+ * this stays silent too — Task 6's `beds-extra` section renders the priced row.
+ */
 export function buildBedsExtraSummary(mp: MetapolicyStruct | null): string | undefined {
-  const cot = mp?.cot ?? [];
-  const extra = mp?.extra_bed ?? [];
-  const has = (arr: typeof cot) => arr.some((e) => e.inclusion && e.inclusion !== 'not_available');
-  if (!has(cot) && !has(extra)) return 'Extra beds and cribs are unavailable for this room type';
-  return undefined;
+  if (!mp) return undefined;
+  const cot = mp.cot ?? [];
+  const extra = mp.extra_bed ?? [];
+  if (!cot.length && !extra.length) return undefined;
+  const available = (arr: typeof cot) => arr.some((e) => e.inclusion && e.inclusion !== 'not_available');
+  return available(cot) || available(extra)
+    ? undefined
+    : 'Extra beds and cribs are unavailable for this room type';
 }
 
 export function buildRoomContent(roomName: string, etg: EtgContent): RoomContent {
@@ -945,9 +1010,12 @@ export function buildRoomContent(roomName: string, etg: EtgContent): RoomContent
     bySection.set(section, list);
   }
 
-  const sections: DetailSection[] = SECTION_ORDER
-    .filter((id) => ROOM_SCOPED.has(id) && (bySection.get(id)?.length ?? 0) > 0)
-    .map((id) => ({ id, title: SECTION_TITLES[id], scope: 'room' as const, items: bySection.get(id)! }));
+  const sections: DetailSection[] = SECTION_ORDER.flatMap((id) => {
+    const items = bySection.get(id);
+    return ROOM_SCOPED.has(id) && items?.length
+      ? [{ id, title: SECTION_TITLES[id], scope: 'room' as const, items }]
+      : [];
+  });
 
   return {
     gallery: match?.images ?? [],
