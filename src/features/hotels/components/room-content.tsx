@@ -43,7 +43,7 @@ export function KeyFactsRow({ facts, palette }: { facts: DetailItem[]; palette: 
                 return (
                     <li key={`${f.label}-${i}`} className={cn('flex items-center gap-2 text-[15px]', palette.feature)}>
                         <Icon size={17} strokeWidth={1.75} className="shrink-0" />
-                        <span className="min-w-0">{f.label}</span>
+                        <span className="min-w-0 capitalize">{f.label}</span>
                     </li>
                 );
             })}
@@ -70,7 +70,7 @@ export function DetailSectionGrid({ sections, palette }: { sections: DetailSecti
                                 <li key={`${item.label}-${i}`} className={cn('flex items-start gap-2 text-[14px]', palette.feature)}>
                                     <Icon size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
                                     <span className="min-w-0">
-                                        {item.label}
+                                        <span className="capitalize">{item.label}</span>
                                         {item.note && (
                                             <span className={cn('ml-1.5 text-[13px]', palette.empty)}>{item.note}</span>
                                         )}

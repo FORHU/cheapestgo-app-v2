@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import {
     AirVent, Bath, Bed, Building2, CalendarClock, Check, ChevronLeft, ChevronRight,
     Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, UtensilsCrossed,
@@ -421,7 +422,7 @@ function FeatureRow({ feature, palette }: { feature: Feature; palette: Palette }
     return (
         <li className={cn('flex items-start gap-2 text-[15px]', palette.feature)}>
             <Icon size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
-            <span className="min-w-0">{feature.label}</span>
+            <span className="min-w-0 capitalize">{feature.label}</span>
         </li>
     );
 }
@@ -450,7 +451,7 @@ function DetailColumn({
                     return (
                         <li key={`${row.label}-${i}`} className={cn('flex items-start gap-2 text-[13px]', palette.feature)}>
                             <Icon size={14} strokeWidth={1.75} className="mt-[3px] shrink-0" />
-                            <span className="min-w-0">{row.label}</span>
+                            <span className="min-w-0 capitalize">{row.label}</span>
                         </li>
                     );
                 })}
@@ -838,6 +839,9 @@ function RoomRateCard({
 /** Cards per page — a long rate list is paged rather than scrolled past. */
 const ROOMS_PER_PAGE = 5;
 
+/** The eased curve the page-to-page slide runs on. */
+const PAGE_EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
 export function RoomSelection({
     rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
     selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
@@ -845,9 +849,11 @@ export function RoomSelection({
     const { theme } = useTheme();
     const palette = roomPalette(tone ?? theme);
     const [filter, setFilter] = useState<RoomFilter>('all');
-    /** Which page of the filtered list is showing. Reset to 0 whenever the
-     *  filter changes — see the filter buttons below. */
+    /** Which page of the filtered list is showing, and which way the last move
+     *  went (1 next, −1 prev, 0 = first render, no slide). Page resets to 0
+     *  whenever the filter changes — see the filter buttons below. */
     const [page, setPage] = useState(0);
+    const [pageDir, setPageDir] = useState(0);
     const sectionRef = useRef<HTMLElement>(null);
 
     /**
@@ -902,10 +908,14 @@ export function RoomSelection({
     const safePage = Math.min(page, pageCount - 1);
     const paged = filtered.slice(safePage * ROOMS_PER_PAGE, safePage * ROOMS_PER_PAGE + ROOMS_PER_PAGE);
 
-    /** Turn to a page and bring the section's top back into view, so page 2
-     *  does not start the reader halfway down a list they were at the end of. */
+    /** Turn to a page and bring the section's top back into view, so the next
+     *  page does not start the reader halfway down a list they were at the end
+     *  of. Records the direction so the incoming page slides in from that side. */
     const goToPage = (next: number) => {
-        setPage(next);
+        const clamped = Math.max(0, Math.min(pageCount - 1, next));
+        if (clamped === safePage) return;
+        setPageDir(clamped > safePage ? 1 : -1);
+        setPage(clamped);
         sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
@@ -920,7 +930,7 @@ export function RoomSelection({
                     <button
                         key={f.value}
                         type="button"
-                        onClick={() => { setFilter(f.value); setPage(0); }}
+                        onClick={() => { setFilter(f.value); setPage(0); setPageDir(-1); }}
                         aria-pressed={filter === f.value}
                         // Same pill size as the header's amenity chips.
                         className={cn(
@@ -933,68 +943,74 @@ export function RoomSelection({
                 ))}
             </div>
 
-            <div className="mt-4 flex flex-col gap-3">
-                {paged.map((card) => (
-                    <RoomRateCard
-                        key={`${card.room.id}-${card.rate.offerId}`}
-                        card={card}
-                        image={image}
-                        currency={currency}
-                        nights={nights}
-                        selected={card.rate.offerId === selectedOfferId}
-                        palette={palette}
-                        onSelect={onSelect}
-                        propertySections={propertySections}
-                        additionalInfo={additionalInfo}
-                    />
-                ))}
-
-                {filtered.length === 0 && (
-                    <p className={cn('py-8 text-center text-[18px]', palette.empty)}>
-                        No rooms match that rate. Try another filter.
-                    </p>
-                )}
+            {/* `overflow-x-clip`, not `-hidden`: the page turns by sliding a
+                fresh column in from the side the paging went, and the offset
+                start would otherwise flash a horizontal scrollbar — but the
+                cards' own drop shadows still need to spill past the top and
+                bottom edges, which `-hidden` would crop. */}
+            <div className="mt-4 overflow-x-clip">
+                <motion.div
+                    // Keyed by the page, so each turn is a fresh mount that
+                    // runs `initial`. `pageDir === 0` on the very first render —
+                    // no slide then, the section's own reveal handles that.
+                    key={safePage}
+                    initial={pageDir === 0 ? false : { x: pageDir > 0 ? 36 : -36, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: PAGE_EASE }}
+                    className="flex flex-col gap-3"
+                >
+                    {paged.map((card) => (
+                        <RoomRateCard
+                            key={`${card.room.id}-${card.rate.offerId}`}
+                            card={card}
+                            image={image}
+                            currency={currency}
+                            nights={nights}
+                            selected={card.rate.offerId === selectedOfferId}
+                            palette={palette}
+                            onSelect={onSelect}
+                            propertySections={propertySections}
+                            additionalInfo={additionalInfo}
+                        />
+                    ))}
+                </motion.div>
             </div>
 
+            {filtered.length === 0 && (
+                <p className={cn('mt-4 py-8 text-center text-[18px]', palette.empty)}>
+                    No rooms match that rate. Try another filter.
+                </p>
+            )}
+
             {pageCount > 1 && (
-                <nav className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Room pages">
+                <nav className="mt-4 flex items-center justify-end gap-3" aria-label="Room pages">
                     <button
                         type="button"
-                        onClick={() => goToPage(Math.max(0, safePage - 1))}
+                        onClick={() => goToPage(safePage - 1)}
                         disabled={safePage === 0}
                         aria-label="Previous page"
                         className={cn(
-                            'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-35',
+                            'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-30',
                             palette.filterIdle,
                         )}
                     >
-                        <ChevronLeft size={16} />
+                        <ChevronLeft size={15} />
                     </button>
-                    {Array.from({ length: pageCount }, (_, i) => (
-                        <button
-                            key={i}
-                            type="button"
-                            onClick={() => goToPage(i)}
-                            aria-current={i === safePage || undefined}
-                            className={cn(
-                                'h-9 min-w-9 cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors',
-                                i === safePage ? palette.filterOn : palette.filterIdle,
-                            )}
-                        >
-                            {i + 1}
-                        </button>
-                    ))}
+                    <span className={cn('text-[13px] font-semibold tabular-nums', palette.heading)}>
+                        {safePage + 1}
+                        <span className={cn('font-normal', palette.empty)}> / {pageCount}</span>
+                    </span>
                     <button
                         type="button"
-                        onClick={() => goToPage(Math.min(pageCount - 1, safePage + 1))}
+                        onClick={() => goToPage(safePage + 1)}
                         disabled={safePage === pageCount - 1}
                         aria-label="Next page"
                         className={cn(
-                            'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-35',
+                            'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-30',
                             palette.filterIdle,
                         )}
                     >
-                        <ChevronRight size={16} />
+                        <ChevronRight size={15} />
                     </button>
                 </nav>
             )}
