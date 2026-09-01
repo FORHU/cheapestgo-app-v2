@@ -113,12 +113,20 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
             : cn("gap-1 px-1 py-1 rounded-lg", tone.trigger),
           triggerClassName,
         )}
-        style={chrome ? { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text } : undefined}
+        style={chrome ? {
+          background: chrome.surface,
+          // A transparent 1px border still eats 1px off every side under
+          // border-box, leaving the fill a hair smaller than a borderless
+          // neighbour of the same width (the property hero's theme toggle).
+          // Drop it entirely in that case so the two circles read as one size.
+          border: chrome.border === 'transparent' ? 'none' : `1px solid ${chrome.border}`,
+          color: chrome.text,
+        } : undefined}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={iconOnly ? `Currency: ${userCurrency}` : 'Select currency'}
       >
-        <span className={cn("leading-none", iconOnly ? "text-[13px] font-semibold md:text-sm" : "text-sm")}>
+        <span className={cn("leading-none", iconOnly ? "text-[17px] font-semibold md:text-[18px]" : "text-sm")}>
           {currentSymbol}
         </span>
         {!iconOnly && (

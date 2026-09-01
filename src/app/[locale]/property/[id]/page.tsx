@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
@@ -17,7 +17,6 @@ import { useUserCurrency } from '@/stores/searchStore';
 import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
-import { Lightbox } from '@/features/hotels/components/lightbox';
 import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -96,11 +95,6 @@ function propertyPalette(theme: 'light' | 'dark') {
         cardBg:      dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)',
         cardBorder:  dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)',
         iconBg:      dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)',
-        barBg:       dark ? 'rgba(21,17,30,.96)'    : 'rgba(255,255,255,.96)',
-        overlayBg:   dark ? 'rgba(0,0,0,.92)'       : 'rgba(255,255,255,.94)',
-        outlineBg:      dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.05)',
-        outlineBorder:  dark ? 'rgba(255,255,255,.2)'  : 'rgba(0,0,0,.15)',
-        outlineText:    dark ? '#FFFFFF' : '#111111',
         mapStyle:    dark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
     };
 }
@@ -283,50 +277,6 @@ function NearbySection({ coordinates, palette }: { coordinates: { lat: number; l
     );
 }
 
-// ─── PhotoGallery ─────────────────────────────────────────────────────────────
-// Shows one featured photo; clicking it opens the lightbox for all images.
-
-function PhotoGallery({ images }: { images: string[] }) {
-    const [lightbox, setLightbox] = useState<number | null>(null);
-    const [thumbFailed, setThumbFailed] = useState(false);
-
-    // images[0] = hero (shown above); use images[1] as featured thumbnail
-    const thumb = images[1];
-    if (!thumb || thumbFailed) return null;
-
-    return (
-        <>
-            <div
-                onClick={() => setLightbox(1)}
-                style={{ margin: '28px 0', borderRadius: 18, overflow: 'hidden', height: 280, position: 'relative', cursor: 'pointer' }}
-            >
-                <img
-                    src={thumb}
-                    alt=""
-                    onError={() => setThumbFailed(true)}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s' }}
-                    onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
-                    onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-                />
-                {/* "View all" badge */}
-                {images.length > 1 && (
-                    <div style={{ position: 'absolute', bottom: 14, right: 14, background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 17, fontWeight: 700, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', pointerEvents: 'none' }}>
-                        View all {images.length} photos
-                    </div>
-                )}
-            </div>
-
-            {lightbox !== null && (
-                <Lightbox
-                    images={images}
-                    startIndex={lightbox}
-                    onClose={() => setLightbox(null)}
-                />
-            )}
-        </>
-    );
-}
-
 // ─── PropertyContent ──────────────────────────────────────────────────────────
 
 function PropertyContent() {
@@ -414,7 +364,6 @@ function PropertyContent() {
     // the set grows under an index that has already been moved.
     const heroShown = heroImages[Math.min(heroIndex, Math.max(0, heroCount - 1))] ?? heroImage;
     const heroLoaded = !!heroShown && loadedHeroSrc === heroShown;
-    const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
     // Whole list, not the first five: the description panel draws the row the
     // design shows and keeps the rest behind its own "See all amenities".
     const amenities    = content?.amenities ?? [];
@@ -692,7 +641,7 @@ function PropertyContent() {
             </div>
 
             {/* ── Body ──────────────────────────────────────────────────────── */}
-            <PageColumn style={{ paddingTop: 'clamp(20px,4vw,40px)', paddingBottom: 140 }}>
+            <PageColumn style={{ paddingTop: 'clamp(20px,4vw,40px)', paddingBottom: 96 }}>
 
                 {/* ── Description ────────────────────────────────────────────
                     The rate, the desk's hours, what the stay comes with, and
@@ -773,9 +722,6 @@ function PropertyContent() {
                 )}
                 </Reveal>
 
-                {/* Photo gallery — thumb is images[1], lightbox shows all hotel images */}
-                {allImages.length > 1 && <PhotoGallery images={allImages} />}
-
                 {/* ── Guest reviews ──────────────────────────────────────────── */}
                 {reviewItems.length > 0 && (
                     <Reveal style={{ margin: '44px 0 0' }}>
@@ -808,52 +754,38 @@ function PropertyContent() {
                 )}
             </PageColumn>
 
-            {/* ── Fixed bottom bar ──────────────────────────────────────────── */}
-            {/* The bar itself still spans the window — it is the page's edge
-                the fill belongs to, not the column's — but what it holds takes
-                the column, so the price sits under the price above it and the
-                button under the right edge of everything else. */}
-            <div
-                className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-30"
-                style={{ background: palette.barBg, backdropFilter: 'blur(16px)', borderTop: `1px solid ${palette.hairline}`, padding: '14px 0' }}
-            >
-                <PageColumn>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                        <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 15, color: palette.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
-                                {selectedRoom ? 'Selected room' : 'Starting from'}
-                            </div>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: palette.title, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {/* The same figure the card shows: per night, in
-                                    the guest's currency. It used to print the
-                                    supplier's total-stay price against "/night",
-                                    which disagreed with the card above it and
-                                    overstated the rate by the length of the trip. */}
-                                {selectedRoom && selectedRate
-                                    ? `${selectedRoom.name} · ${formatCurrency(toNightly(selectedRate.price, selectedRate.currency), currency)}/night`
-                                    : lowestPrice !== null
-                                        ? `${formatCurrency(lowestPrice, currency)}/night`
-                                        : '—'}
-                            </div>
-                        </div>
-                        {selectedRoom ? (
-                            <button
-                                onClick={goCheckout}
-                                style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
-                            >
-                                Continue to checkout
-                            </button>
-                        ) : (
-                            <a
-                                href="#rooms-section"
-                                style={{ padding: '12px 22px', borderRadius: 100, border: `1px solid ${palette.outlineBorder}`, background: palette.outlineBg, color: palette.outlineText, fontWeight: 700, fontSize: 20, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
-                            >
-                                Check rooms ↓
-                            </a>
-                        )}
-                    </div>
-                </PageColumn>
-            </div>
+            {/* ── Floating checkout ─────────────────────────────────────────────
+                Only once a room is picked — a single pill held to the corner of
+                the window, not a bar docked across it. It slides up as the
+                selection lands and drops back out when it is cleared. The
+                persistent "starting from" price the old docked bar carried is
+                already at the top of the page, in the description panel. */}
+            <AnimatePresence>
+                {selectedRoom && selectedRate && (
+                    <motion.button
+                        key="checkout-fab"
+                        onClick={goCheckout}
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 24 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="fixed right-5 bottom-20 z-40 sm:right-8 lg:right-12 lg:bottom-8"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '15px 26px', borderRadius: 100, border: 'none',
+                            background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 18,
+                            cursor: 'pointer', whiteSpace: 'nowrap',
+                            boxShadow: '0 20px 46px -12px rgba(255,107,75,.55)',
+                        }}
+                    >
+                        Check out
+                        <span style={{ fontWeight: 600, opacity: 0.85 }}>
+                            {formatCurrency(toNightly(selectedRate.price, selectedRate.currency), currency)}/night
+                        </span>
+                        <ArrowRight size={18} />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

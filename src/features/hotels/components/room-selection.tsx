@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-    AirVent, Bath, Bed, Building2, CalendarClock, Check, Coffee, Dog,
-    Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, UtensilsCrossed, Users, Wifi,
-    Wind, X, type LucideIcon,
+    AirVent, Bath, Bed, Building2, CalendarClock, Check, ChevronLeft, ChevronRight,
+    Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, UtensilsCrossed,
+    Users, Wifi, Wind, X, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useTheme } from '@/shared/components/ThemeContext';
@@ -237,15 +237,26 @@ function roomPalette(tone: 'light' | 'dark') {
         unit:     dark ? 'text-white/45' : 'text-slate-400',
         imageBg:  dark ? 'bg-white/[0.06]' : 'bg-slate-100',
         /**
-         * The filter row and "Select Room" — the bright, pressable pills. They
-         * run the opposite way round to the rest of the app on purpose: white is
-         * the *available* state and dark is the *taken* one, so brightness reads
-         * as "you can press this", not as "this is on".
+         * "Select Room" — the bright, pressable pill. It runs the opposite way
+         * round to the rest of the app on purpose: white is the *available*
+         * state and dark is the *taken* one, so brightness reads as "you can
+         * press this", not as "this is on".
          */
         pillIdle: dark ? 'bg-white text-[#111111] hover:bg-white/85' : 'bg-slate-900 text-white hover:bg-slate-700',
         pillOn:   dark
             ? 'border border-white/45 bg-white/[0.04] text-white'
             : 'border border-slate-300 bg-white text-slate-900',
+        /**
+         * The room-card filter row and the pager under it — the conventional
+         * direction, unlike "Select Room" above: the active choice is the solid
+         * fill, the rest are quiet outlines. Dark mode can't fill with black on
+         * a black page, so its active pill is white — the same "this one is on"
+         * cue, inverted.
+         */
+        filterOn:   dark ? 'bg-white text-slate-900' : 'bg-slate-900 text-white',
+        filterIdle: dark
+            ? 'border border-white/25 bg-transparent text-white/70 hover:bg-white/[0.06]'
+            : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
         /** The recessive status pills beside the room name — a translucent fill,
          *  not the bright CTA treatment of the filter pills. */
         tag:      dark ? 'bg-white/[0.08] text-white/70' : 'bg-slate-100 text-slate-600',
@@ -733,8 +744,10 @@ function RoomRateCard({
             className={cn(
                 // Only the Select button picks the room — the card body is not
                 // clickable — and the selected state lives on that button, not
-                // as a ring on the card.
-                'flex min-h-[132px] overflow-hidden rounded-[14px]',
+                // as a ring on the card. The whole plate lifts a touch on hover
+                // as the one "this is a unit you act on" cue the borderless card
+                // otherwise lacks.
+                'flex min-h-[132px] overflow-hidden rounded-[14px] transition-transform duration-200 ease-out hover:scale-[1.015]',
                 palette.card,
             )}
         >
@@ -821,6 +834,9 @@ function RoomRateCard({
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
+/** Cards per page — a long rate list is paged rather than scrolled past. */
+const ROOMS_PER_PAGE = 5;
+
 export function RoomSelection({
     rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
     selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
@@ -828,6 +844,10 @@ export function RoomSelection({
     const { theme } = useTheme();
     const palette = roomPalette(tone ?? theme);
     const [filter, setFilter] = useState<RoomFilter>('all');
+    /** Which page of the filtered list is showing. Reset to 0 whenever the
+     *  filter changes — see the filter buttons below. */
+    const [page, setPage] = useState(0);
+    const sectionRef = useRef<HTMLElement>(null);
 
     /**
      * Every rate on offer, one card each — the design draws the same room three
@@ -875,10 +895,23 @@ export function RoomSelection({
         return cards.filter(c => !c.refundable);
     }, [cards, filter]);
 
+    const pageCount = Math.max(1, Math.ceil(filtered.length / ROOMS_PER_PAGE));
+    // Clamped, not trusted: the filter can shrink the list under a page index
+    // that has already been moved past the new end.
+    const safePage = Math.min(page, pageCount - 1);
+    const paged = filtered.slice(safePage * ROOMS_PER_PAGE, safePage * ROOMS_PER_PAGE + ROOMS_PER_PAGE);
+
+    /** Turn to a page and bring the section's top back into view, so page 2
+     *  does not start the reader halfway down a list they were at the end of. */
+    const goToPage = (next: number) => {
+        setPage(next);
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     if (rooms.length === 0) return null;
 
     return (
-        <section id={id} className={className}>
+        <section ref={sectionRef} id={id} className={className}>
             <h2 className={cn(SECTION_HEADING, palette.heading)}>Available Rooms</h2>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -886,12 +919,12 @@ export function RoomSelection({
                     <button
                         key={f.value}
                         type="button"
-                        onClick={() => setFilter(f.value)}
+                        onClick={() => { setFilter(f.value); setPage(0); }}
                         aria-pressed={filter === f.value}
                         // Same pill size as the header's amenity chips.
                         className={cn(
                             'cursor-pointer rounded-full px-3.5 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors sm:text-[13.5px]',
-                            filter === f.value ? palette.pillOn : palette.pillIdle,
+                            filter === f.value ? palette.filterOn : palette.filterIdle,
                         )}
                     >
                         {f.label}
@@ -900,7 +933,7 @@ export function RoomSelection({
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
-                {filtered.map((card) => (
+                {paged.map((card) => (
                     <RoomRateCard
                         key={`${card.room.id}-${card.rate.offerId}`}
                         card={card}
@@ -921,6 +954,49 @@ export function RoomSelection({
                     </p>
                 )}
             </div>
+
+            {pageCount > 1 && (
+                <nav className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Room pages">
+                    <button
+                        type="button"
+                        onClick={() => goToPage(Math.max(0, safePage - 1))}
+                        disabled={safePage === 0}
+                        aria-label="Previous page"
+                        className={cn(
+                            'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-35',
+                            palette.filterIdle,
+                        )}
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    {Array.from({ length: pageCount }, (_, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => goToPage(i)}
+                            aria-current={i === safePage || undefined}
+                            className={cn(
+                                'h-9 min-w-9 cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors',
+                                i === safePage ? palette.filterOn : palette.filterIdle,
+                            )}
+                        >
+                            {i + 1}
+                        </button>
+                    ))}
+                    <button
+                        type="button"
+                        onClick={() => goToPage(Math.min(pageCount - 1, safePage + 1))}
+                        disabled={safePage === pageCount - 1}
+                        aria-label="Next page"
+                        className={cn(
+                            'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-35',
+                            palette.filterIdle,
+                        )}
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                </nav>
+            )}
         </section>
     );
 }

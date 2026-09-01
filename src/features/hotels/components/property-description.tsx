@@ -214,6 +214,19 @@ function Disclosure({
 const POLICY_AMENITY =
     /\bsmok|\bpets?\b|\bchild|\binfant|\bage\b|deposit|passport|cancellation|\bpolic|\brules?\b|curfew|quiet hours|\bpart(y|ies)\b|\bevents?\b|\ballowed\b|not permitted|prohibit|\brequired\b|on request|surcharge|extra bed|minimum stay/i;
 
+/**
+ * The amenities nearly every hotel has — Wi-Fi, air conditioning, a private
+ * bathroom with toiletries, a TV.
+ *
+ * The "General Amenities" row shows the ones of these the hotel actually
+ * lists, drawn from the *whole* amenity set rather than from any one ETG
+ * category. It leads with what a guest already assumes is there, and leaves
+ * the hotel's more particular facilities — a garden, a terrace, a ski room —
+ * to the room-detail modal.
+ */
+const GENERAL_AMENITY =
+    /wi-?fi|internet|broadband|air ?condition|\ba\/?c\b|climate control|heating|toiletr|toilet paper|\bshower\b|\bbath\b|bathroom|hair ?dry|\btowels?\b|\btv\b|television|\bdesk\b|wardrobe|closet|\bsafe\b|telephone|\blinens?\b|\bsoap\b|shampoo|slippers?|bathrobe|non-?smoking/i;
+
 function splitAmenities(list: string[]): { facilities: string[]; policies: string[] } {
     const facilities: string[] = [];
     const policies: string[] = [];
@@ -404,11 +417,14 @@ export function PropertyDescription({
     const [expanded, setExpanded] = useState(false);
 
     /**
-     * The panel draws one short "Amenities" group and one "Rules & Policies"
-     * group.
+     * The panel draws one short "General Amenities" group and one
+     * "Rules & Policies" group.
      *
-     * Amenities: only the hotel-wide **General** ETG category, capped at five —
-     * the full per-category list belongs in the room-detail modal, not here.
+     * General Amenities: the near-universal comforts — Wi-Fi, air conditioning,
+     * a bathroom with toiletries — picked out of the whole amenity set by
+     * `GENERAL_AMENITY`, capped at five. If the supplier's wording matches none
+     * of them, fall back to the hotel's ETG "General" category so the row is
+     * never empty. The full per-category list belongs in the room-detail modal.
      * Rules & Policies: house rules ("Pets not allowed", curfews) peeled by
      * `splitAmenities` off the *whole* amenity set, since ETG files those under
      * category groups of their own (Pets, Kids, …), not under General.
@@ -418,15 +434,18 @@ export function PropertyDescription({
             ? Array.from(new Set(amenityGroups.flatMap((g) => g.amenities)))
             : amenities;
 
+        const nonPolicy = splitAmenities(allFlat).facilities;
+        const universal = nonPolicy.filter((a) => GENERAL_AMENITY.test(a));
+
         const general = amenityGroups?.find((g) => /general/i.test(g.groupName));
-        const generalFlat = general?.amenities.length
-            ? Array.from(new Set(general.amenities))
-            : allFlat;
+        const fallback = general?.amenities.length
+            ? splitAmenities(Array.from(new Set(general.amenities))).facilities
+            : nonPolicy;
 
         // Both groups: capped at five, compact pills, no "View more" — see the
         // ChipGroup props below.
         return {
-            facilities: splitAmenities(generalFlat).facilities.slice(0, 5),
+            facilities: (universal.length ? universal : fallback).slice(0, 5),
             policies:   splitAmenities(allFlat).policies.slice(0, 5),
         };
     }, [amenityGroups, amenities]);
@@ -537,7 +556,7 @@ export function PropertyDescription({
             {hasChips && (
                 <div className={cn('grid grid-cols-1 gap-x-12 gap-y-6 sm:grid-cols-2', (hasTimes || hasPrice || hasRating) && 'mt-6')}>
                     <ChipGroup
-                        label="Amenities"
+                        label="General Amenities"
                         items={facilities}
                         moreLabel="View more"
                         lessLabel="View less"
