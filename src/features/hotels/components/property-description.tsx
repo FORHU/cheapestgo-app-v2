@@ -232,6 +232,7 @@ function splitAmenities(list: string[]): { facilities: string[]; policies: strin
  */
 function ChipGroup({
     label, items, moreLabel, lessLabel, palette, reduceMotion, className,
+    disclosure = true, compact = false,
 }: {
     /** Omitted for the amenities/rules row, which the design draws as two
      *  unlabelled pill groups rather than two labelled sections. */
@@ -242,6 +243,12 @@ function ChipGroup({
     palette: Palette;
     reduceMotion: boolean | null;
     className?: string;
+    /** `false` for a short, fixed list (the hotel's general amenities): every
+     *  chip always shown, no measurement, no "View more". */
+    disclosure?: boolean;
+    /** Smaller pills that keep each label on one line — for a capped list that
+     *  needs to sit tight. */
+    compact?: boolean;
 }) {
     const [showAll, setShowAll] = useState(false);
 
@@ -263,7 +270,7 @@ function ChipGroup({
 
     useIsomorphicLayoutEffect(() => {
         const el = listRef.current;
-        if (!el) return;
+        if (!el || !disclosure) return;
 
         const measure = () => {
             const chips = Array.from(el.children) as HTMLElement[];
@@ -318,15 +325,15 @@ function ChipGroup({
                 // `relative`, so a chip's `offsetTop` is measured against this
                 // list rather than against whatever happens to be positioned
                 // above it.
-                className="relative flex flex-wrap gap-2 overflow-hidden"
-                style={{
+                className={cn('relative flex flex-wrap gap-2', disclosure && 'overflow-hidden')}
+                style={disclosure ? {
                     height: heights ? (showAll ? heights.full : heights.collapsed) : undefined,
                     transition: reduceMotion ? 'none' : `height ${CHIP_REVEAL.duration}s cubic-bezier(${EASE.join(',')})`,
-                }}
+                } : undefined}
             >
                 {items.map((item, i) => {
                     const Icon = amenityIcon(item);
-                    const clipped = !showAll && i >= COLLAPSED_AMENITIES;
+                    const clipped = disclosure && !showAll && i >= COLLAPSED_AMENITIES;
                     return (
                         <motion.li
                             key={item}
@@ -340,18 +347,27 @@ function ChipGroup({
                                 ? { duration: 0 }
                                 : (clipped ? CHIP_FADE_OUT : CHIP_FADE_IN)}
                             className={cn(
-                                'inline-flex items-center gap-3 rounded-full px-6 py-3 text-[16px] sm:text-[17px]',
+                                'inline-flex items-center rounded-full',
                                 palette.chip,
+                                compact
+                                    ? 'gap-2 px-3.5 py-1.5 text-[13px] whitespace-nowrap sm:text-[13.5px]'
+                                    : 'gap-3 px-6 py-3 text-[16px] sm:text-[17px]',
                             )}
                         >
-                            {Icon && <Icon size={17} strokeWidth={1.75} className={cn('shrink-0', palette.chipIcon)} />}
+                            {Icon && (
+                                <Icon
+                                    size={compact ? 14 : 17}
+                                    strokeWidth={1.75}
+                                    className={cn('shrink-0', palette.chipIcon)}
+                                />
+                            )}
                             {item}
                         </motion.li>
                     );
                 })}
             </ul>
 
-            {items.length > COLLAPSED_AMENITIES && (
+            {disclosure && items.length > COLLAPSED_AMENITIES && (
                 <div className="mt-3">
                     <Disclosure
                         label={showAll ? lessLabel : moreLabel}
@@ -388,18 +404,28 @@ export function PropertyDescription({
     const [expanded, setExpanded] = useState(false);
 
     /**
-     * The panel draws one "Amenities" group and one "Rules & Policies" group —
-     * not a group per ETG category, which fragments into a dozen one-chip
-     * sections. When the API sent `amenityGroups`, its (richer, de-duplicated)
-     * amenities are the source; otherwise the flat `amenities` prop is. Either
-     * way `splitAmenities` peels house rules ("Pets not allowed", curfews) off
-     * into `policies`.
+     * The panel draws one short "Amenities" group and one "Rules & Policies"
+     * group.
+     *
+     * Amenities: only the hotel-wide **General** ETG category, capped at five —
+     * the full per-category list belongs in the room-detail modal, not here.
+     * Rules & Policies: house rules ("Pets not allowed", curfews) peeled by
+     * `splitAmenities` off the *whole* amenity set, since ETG files those under
+     * category groups of their own (Pets, Kids, …), not under General.
      */
     const { facilities, policies } = useMemo(() => {
-        const flat = amenityGroups?.length
+        const allFlat = amenityGroups?.length
             ? Array.from(new Set(amenityGroups.flatMap((g) => g.amenities)))
             : amenities;
-        return splitAmenities(flat);
+        const { policies } = splitAmenities(allFlat);
+
+        const general = amenityGroups?.find((g) => /general/i.test(g.groupName));
+        const generalFlat = general?.amenities.length
+            ? Array.from(new Set(general.amenities))
+            : allFlat;
+        const facilities = splitAmenities(generalFlat).facilities.slice(0, 5);
+
+        return { facilities, policies };
     }, [amenityGroups, amenities]);
 
     /**
@@ -515,6 +541,8 @@ export function PropertyDescription({
                         palette={palette}
                         reduceMotion={reduceMotion}
                         className="min-w-0"
+                        disclosure={false}
+                        compact
                     />
                     <ChipGroup
                         label="Rules & Policies"

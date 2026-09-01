@@ -54,6 +54,31 @@ describe('PropertyDescription — amenities', () => {
         expect(screen.getAllByText('Free Wi-Fi')).toHaveLength(1);
     });
 
+    it('shows only the "General" ETG group, capped at five, with no "View more"', () => {
+        render(
+            <PropertyDescription
+                tone="dark"
+                amenities={[]}
+                amenityGroups={[
+                    {
+                        groupName: 'General',
+                        amenities: ['Elevator', 'Air conditioning', '24 hour reception', 'Safe', 'Terrace', 'Garden', 'Soundproofing'],
+                        nonFree: [],
+                    },
+                    { groupName: 'Internet', amenities: ['Free Wi-Fi'], nonFree: [] },
+                ]}
+            />,
+        );
+        expect(screen.getByText('Elevator')).toBeInTheDocument();
+        expect(screen.getByText('Terrace')).toBeInTheDocument();
+        // 6th/7th General entries dropped, and the Internet group entirely
+        expect(screen.queryByText('Garden')).not.toBeInTheDocument();
+        expect(screen.queryByText('Soundproofing')).not.toBeInTheDocument();
+        expect(screen.queryByText('Free Wi-Fi')).not.toBeInTheDocument();
+        // no disclosure toggle on the amenities group
+        expect(screen.queryByRole('button', { name: /view more/i })).not.toBeInTheDocument();
+    });
+
     it('falls back to the flat amenities list when amenityGroups is absent', () => {
         render(<PropertyDescription tone="dark" amenities={['24 hour reception', 'Elevator']} />);
         expect(screen.getByText('Amenities')).toBeInTheDocument();

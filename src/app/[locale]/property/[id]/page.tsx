@@ -121,7 +121,10 @@ type PropertyPalette = ReturnType<typeof propertyPalette>;
  */
 function PageColumn({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
     return (
-        <div className={SHELL_GUTTER} style={style}>
+        // A wider gutter than the shared shell — this page reads better with more
+        // air down its sides. `cn` lets the wider `sm:`/`lg:` steps win over
+        // `SHELL_GUTTER`'s while its `px-5` mobile value stays.
+        <div className={cn(SHELL_GUTTER, 'sm:px-12 lg:px-20 xl:px-28')} style={style}>
             <div className={SHELL_CAP}>{children}</div>
         </div>
     );
@@ -685,18 +688,27 @@ function PropertyContent() {
                     `tone={theme}` rather than a hardcoded `"dark"` — the page
                     ground now follows the app theme (`propertyPalette`
                     above), so the section it sits on does too. */}
-                <PropertyDescription
-                    className="mb-8"
-                    tone={theme}
-                    price={lowestPrice}
-                    currency={currency}
-                    rating={reviewScore}
-                    checkInTime={content.check_in_time ?? content.check_in}
-                    checkOutTime={content.check_out_time ?? content.check_out}
-                    amenities={amenities}
-                    amenityGroups={content.amenityGroups}
-                    description={content.description}
-                />
+                {/* Rises and fades in as the hero scrolls away — a soft handoff
+                    from the full-bleed banner into the page's own column. */}
+                <motion.div
+                    initial={{ opacity: 0, y: 32 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.15 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <PropertyDescription
+                        className="mb-8"
+                        tone={theme}
+                        price={lowestPrice}
+                        currency={currency}
+                        rating={reviewScore}
+                        checkInTime={content.check_in_time ?? content.check_in}
+                        checkOutTime={content.check_out_time ?? content.check_out}
+                        amenities={amenities}
+                        amenityGroups={content.amenityGroups}
+                        description={content.description}
+                    />
+                </motion.div>
 
                 {/* ── Rooms, and what is around them ─────────────────────────
                     One row of two columns, as the design lays it out: the rate
