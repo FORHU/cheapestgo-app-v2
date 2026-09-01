@@ -1983,7 +1983,7 @@ export function DetailSectionGrid({ sections, palette }: { sections: DetailSecti
                   <Icon size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
                   <span className="min-w-0">
                     {item.label}
-                    {item.note && <span className={cn('ml-1', palette.empty)}>— {item.note}</span>}
+                    {item.note && <span className={cn('ml-1.5 text-[13px]', palette.empty)}>{item.note}</span>}
                   </span>
                 </li>
               );
