@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, X, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
 import { Map } from '@/shared/components/ui/map';
@@ -14,6 +15,7 @@ import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/co
 import { useUserCurrency } from '@/stores/searchStore';
 import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
+import { useTheme } from '@/shared/components/ThemeContext';
 import type { RoomOption } from '@/features/hotels/types/property.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,8 +64,42 @@ interface PropertyApiResponse {
 
 const ACCENT = '#FF6B4B';
 const GREEN  = '#2FB67F';
-const TEXT   = '#F5EFE4';
-const BG     = '#000000';
+
+/**
+ * Every colour the page below the Hero paints with, picked by theme rather
+ * than a `dark:` variant — same reasoning as `descriptionPalette` next door
+ * in `property-description.tsx`, which this now matches instead of
+ * overriding with a hardcoded `tone="dark"`.
+ *
+ * The Hero itself is deliberately not in here. It draws on top of a
+ * photograph of unknown brightness behind a fixed dark gradient, not on the
+ * page ground — white text and dark-translucent chrome is the legibility
+ * choice for that, independent of which theme the rest of the page is in,
+ * the same way a photo app's overlay controls don't invert with the system
+ * theme either.
+ */
+function propertyPalette(theme: 'light' | 'dark') {
+    const dark = theme === 'dark';
+    return {
+        bg:          dark ? '#000000' : '#FFFFFF',
+        title:       dark ? '#FFFFFF' : '#111111',
+        text:        dark ? '#F5EFE4' : '#111111',
+        muted:       dark ? 'rgba(245,239,228,.5)'  : 'rgba(17,17,17,.5)',
+        soft:        dark ? 'rgba(245,239,228,.7)'  : 'rgba(17,17,17,.65)',
+        hairline:    dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.1)',
+        cardBg:      dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)',
+        cardBorder:  dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)',
+        iconBg:      dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)',
+        barBg:       dark ? 'rgba(21,17,30,.96)'    : 'rgba(255,255,255,.96)',
+        overlayBg:   dark ? 'rgba(0,0,0,.92)'       : 'rgba(255,255,255,.94)',
+        outlineBg:      dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.05)',
+        outlineBorder:  dark ? 'rgba(255,255,255,.2)'  : 'rgba(0,0,0,.15)',
+        outlineText:    dark ? '#FFFFFF' : '#111111',
+        mapStyle:    dark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
+    };
+}
+
+type PropertyPalette = ReturnType<typeof propertyPalette>;
 
 /**
  * The page's column — one edge for every section on it, so the hero's name, the
@@ -85,18 +121,22 @@ function PageColumn({ children, style }: { children: React.ReactNode; style?: Re
     );
 }
 
-/** The banner's prev/next buttons, which differ only in which edge they sit on. */
+/**
+ * The banner's prev/next buttons, which differ only in which edge they sit on.
+ *
+ * A bare chevron over the photo, not a button — the design's arrows carry no
+ * circular backdrop or blur, so the plate the earlier version drew behind them
+ * is dropped in favor of a drop-shadow that keeps the glyph legible on a light
+ * patch of sky the same way the badge/pill chrome elsewhere on the page does.
+ */
 const HERO_ARROW: React.CSSProperties = {
     position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 2,
     width: 44, height: 44, borderRadius: '50%',
-    // border: '1px solid rgba(255,255,255,.25)',
-    background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+    background: 'transparent', border: 'none',
     color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer',
+    filter: 'drop-shadow(0 1px 6px rgba(0,0,0,.6))',
 };
-
-/** Past this many photographs the dots become a counter — see the banner. */
-const HERO_DOTS_MAX = 8;
 
 function ratingInfo(score: number): { label: string; color: string } {
     if (score >= 9) return { label: 'Exceptional', color: GREEN };
@@ -106,11 +146,11 @@ function ratingInfo(score: number): { label: string; color: string } {
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 
-function Spinner({ size = 32 }: { size?: number }) {
+function Spinner({ size = 32, accent = 'rgba(255,255,255,.2)' }: { size?: number; accent?: string }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-            <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="3" />
+            <circle cx="12" cy="12" r="9" fill="none" stroke={accent} strokeWidth="3" />
             <circle cx="12" cy="12" r="9" fill="none" stroke={ACCENT} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
         </svg>
     );
@@ -139,7 +179,7 @@ function categoryDotColor(cat: string): string {
 
 // ─── NearbySection ────────────────────────────────────────────────────────────
 
-function NearbySection({ coordinates }: { coordinates: { lat: number; lng: number } }) {
+function NearbySection({ coordinates, palette }: { coordinates: { lat: number; lng: number }; palette: PropertyPalette }) {
     const { gems } = useNearbyGems({ coordinates, category: 'all', radiusMeters: 2000 });
     const topGems  = gems.slice(0, 5);
 
@@ -151,7 +191,7 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
             {/* Map — the column's full width, at the placeholder's proportions */}
             <div style={{ width: '100%', height: 360, borderRadius: 12, overflow: 'hidden', background: '#1e293b' }}>
                 <Map
-                    mapStyle="mapbox://styles/mapbox/dark-v11"
+                    mapStyle={palette.mapStyle}
                     initialViewState={{ longitude: coordinates.lng, latitude: coordinates.lat, zoom: 14 }}
                     interactive={false}
                     className="rounded-2xl"
@@ -175,7 +215,7 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
                 names and distances stay under it. */}
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
                 {topGems.length === 0 && (
-                    <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 18 }}>Loading nearby places…</p>
+                    <p style={{ color: palette.muted, fontSize: 18 }}>Loading nearby places…</p>
                 )}
                 {topGems.map((gem, i) => {
                     const dist = haversine(coordinates.lat, coordinates.lng, gem.coordinates.lat, gem.coordinates.lng);
@@ -189,21 +229,21 @@ function NearbySection({ coordinates }: { coordinates: { lat: number; lng: numbe
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 padding: '11px 0',
-                                borderBottom: i < topGems.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none',
+                                borderBottom: i < topGems.length - 1 ? `1px solid ${palette.hairline}` : 'none',
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <div style={{ width: 34, height: 34, borderRadius: 10, background: palette.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     <Icon size={21} color={dot} />
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: 18, color: '#fff', lineHeight: 1.25 }}>{gem.name}</div>
-                                    <div style={{ fontSize: 15, color: 'rgba(245,239,228,.45)', marginTop: 2, textTransform: 'capitalize' }}>
+                                    <div style={{ fontWeight: 600, fontSize: 18, color: palette.title, lineHeight: 1.25 }}>{gem.name}</div>
+                                    <div style={{ fontSize: 15, color: palette.muted, marginTop: 2, textTransform: 'capitalize' }}>
                                         {gem.displayCategory || gem.category}
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ fontSize: 17, color: 'rgba(245,239,228,.55)', fontWeight: 600, paddingLeft: 12, flexShrink: 0 }}>
+                            <div style={{ fontSize: 17, color: palette.soft, fontWeight: 600, paddingLeft: 12, flexShrink: 0 }}>
                                 {dist.toFixed(1)} mi
                             </div>
                         </div>
@@ -344,6 +384,8 @@ function PropertyContent() {
     const params       = useParams();
     const searchParams = useSearchParams();
     const router       = useRouter();
+    const { theme, toggleTheme } = useTheme();
+    const palette = propertyPalette(theme);
 
     const hotelId  = params.id as string;
     const checkIn  = searchParams.get('checkIn')  ?? '';
@@ -486,14 +528,14 @@ function PropertyContent() {
      */
     const rootStyle: React.CSSProperties = {
         minHeight: '100vh',
-        background: BG,
-        color: TEXT,
+        background: palette.bg,
+        color: palette.text,
     };
 
     if (loading) {
         return (
             <div style={{ ...rootStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Spinner />
+                <Spinner accent={palette.hairline} />
             </div>
         );
     }
@@ -501,7 +543,7 @@ function PropertyContent() {
     if (error || !content) {
         return (
             <div style={{ ...rootStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-                <p style={{ color: 'rgba(245,239,228,.6)', textAlign: 'center' }}>{error ?? 'Property not found.'}</p>
+                <p style={{ color: palette.muted, textAlign: 'center' }}>{error ?? 'Property not found.'}</p>
                 <button
                     onClick={() => router.back()}
                     style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
@@ -516,7 +558,7 @@ function PropertyContent() {
         <div style={rootStyle}>
 
             {/* ── Hero ──────────────────────────────────────────────────────── */}
-            <div style={{ position: 'relative', height: '84vh', minHeight: 320, overflow: 'hidden' }}>
+            <div style={{ position: 'relative', height: '100vh', minHeight: 320, overflow: 'hidden' }}>
                 {heroShown ? (
                     <img
                         key={heroShown}
@@ -527,7 +569,10 @@ function PropertyContent() {
                 ) : (
                     <div style={{ position: 'absolute', inset: 0, background: '#22383A' }} />
                 )}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.15) 0%,rgba(10,8,14,.25) 45%,rgba(10,8,14,.85) 100%)' }} />
+                {/* Deeper and reaching further up than before — the name and
+                    address below are now twice their old size, and need more
+                    of the photo's bottom darkened to stay legible over it. */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.18) 0%,rgba(10,8,14,.42) 35%,rgba(10,8,14,.96) 100%)' }} />
 
                 {/* Back. Over the photo rather than in the page below it — the
                     banner is the first thing on screen, and a control to leave
@@ -535,8 +580,9 @@ function PropertyContent() {
                 <button
                     onClick={() => router.back()}
                     aria-label="Go back"
+                    className="left-5 sm:left-8 lg:left-12"
                     style={{
-                        position: 'absolute', top: 20, left: 20, zIndex: 2,
+                        position: 'absolute', top: 20, zIndex: 2,
                         width: 44, height: 44, borderRadius: '50%',
                         background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
                         color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -546,64 +592,71 @@ function PropertyContent() {
                     <ArrowLeft size={20} />
                 </button>
 
-                {/* Pagination. Only once there is more than one photograph to
-                    page through — a single-image banner with arrows and a lone
-                    dot is chrome promising something it cannot do. */}
+                {/* Theme toggle, mirroring the back button on the opposite
+                    corner — same size, same treatment, same row. This flips
+                    the real app-wide theme (see `propertyPalette` above): the
+                    Hero itself stays as drawn regardless, but everything
+                    below it switches. */}
+                <button
+                    onClick={toggleTheme}
+                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                    className="right-5 sm:right-8 lg:right-12"
+                    style={{
+                        position: 'absolute', top: 20, zIndex: 2,
+                        width: 44, height: 44, borderRadius: '50%',
+                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                    }}
+                >
+                    {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+                </button>
+
+                {/* Pagination arrows. Only once there is more than one
+                    photograph to page through — a single-image banner with
+                    arrows and a lone dot is chrome promising something it
+                    cannot do. The idle pulse is a continuous, gentle scale
+                    loop rather than a hover/press-only cue — it's the one
+                    place on the page drawing the eye to "there's more here"
+                    before any interaction at all. */}
                 {heroCount > 1 && (
                     <>
-                        <button
+                        <motion.button
                             onClick={() => setHeroIndex(i => (i - 1 + heroCount) % heroCount)}
                             aria-label="Previous photo"
-                            style={{ ...HERO_ARROW, left: 20 }}
+                            className="left-5 sm:left-8 lg:left-12"
+                            style={HERO_ARROW}
+                            animate={{ scale: [1, 1.12, 1] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
                         >
-                            <ChevronLeft size={22} />
-                        </button>
-                        <button
+                            <ChevronLeft size={34} strokeWidth={2.25} />
+                        </motion.button>
+                        <motion.button
                             onClick={() => setHeroIndex(i => (i + 1) % heroCount)}
                             aria-label="Next photo"
-                            style={{ ...HERO_ARROW, right: 20 }}
+                            className="right-5 sm:right-8 lg:right-12"
+                            style={HERO_ARROW}
+                            animate={{ scale: [1, 1.12, 1] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.15 }}
                         >
-                            <ChevronRight size={22} />
-                        </button>
-
-                        {/* Dots. Capped: a hotel with forty photographs would
-                            otherwise draw forty targets too small to hit, so
-                            past the cap the strip becomes a counter. */}
-                        <div style={{ position: 'absolute', bottom: 'clamp(96px,12vw,150px)', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8, zIndex: 2 }}>
-                            {heroCount <= HERO_DOTS_MAX ? (
-                                heroImages.map((src, i) => (
-                                    <button
-                                        key={src}
-                                        onClick={() => setHeroIndex(i)}
-                                        aria-label={`Photo ${i + 1} of ${heroCount}`}
-                                        aria-current={i === heroIndex || undefined}
-                                        style={{
-                                            width: i === heroIndex ? 26 : 8, height: 8, borderRadius: 4,
-                                            border: 'none', padding: 0, cursor: 'pointer',
-                                            background: i === heroIndex ? '#fff' : 'rgba(255,255,255,.45)',
-                                            transition: 'width .2s ease, background .2s ease',
-                                        }}
-                                    />
-                                ))
-                            ) : (
-                                <span style={{
-                                    fontSize: 14, fontWeight: 600, color: '#fff',
-                                    background: 'rgba(20,20,20,.5)', backdropFilter: 'blur(8px)',
-                                    borderRadius: 100, padding: '4px 12px',
-                                }}>
-                                    {Math.min(heroIndex, heroCount - 1) + 1} / {heroCount}
-                                </span>
-                            )}
-                        </div>
+                            <ChevronRight size={34} strokeWidth={2.25} />
+                        </motion.button>
                     </>
                 )}
 
-                {/* Name + location. The photo stays full-bleed; only the type
-                    over it takes the column, so the hotel's name starts on the
-                    same line as the price under it. */}
-                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(20px,4vw,40px)' }}>
+                {/* Name + location, and the dots under them. The photo stays
+                    full-bleed; only the type over it takes the column, so the
+                    hotel's name starts on the same line as the price under it.
+                    The dots sit under the address rather than floating mid-photo,
+                    centered on the whole banner rather than the column, which is
+                    why they sit outside PageColumn. */}
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(16px,3vw,28px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <PageColumn>
-                        <div style={{ fontWeight: 500, fontSize: 'clamp(36px,4.8vw,53px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
+                        {/* Twice the previous size on both — clamp bounds
+                            doubled, not just the fluid step between them, so
+                            the floor and ceiling grow with it too. */}
+                        <div style={{ fontWeight: 500, fontSize: 'clamp(44px,5.2vw,60px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
                             {content.name}
                         </div>
                         {/* The street address, as the design has it, and only
@@ -611,10 +664,30 @@ function PropertyContent() {
                             no address at all — the two together read as a
                             duplicate whenever the address already names the
                             city, which it usually does. */}
-                        <div style={{ fontSize: 21, color: 'rgba(255,255,255,.9)', marginTop: 6, textShadow: '0 2px 12px rgba(0,0,0,.45)' }}>
+                        <div style={{ fontSize: 28, color: 'rgba(255,255,255,.9)', marginTop: 4, textShadow: '0 2px 12px rgba(0,0,0,.45)' }}>
                             {content.address || [content.city, content.country].filter(Boolean).join(', ')}
                         </div>
                     </PageColumn>
+
+                    {/* Dots — one per photograph, however many there are. */}
+                    {heroCount > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, zIndex: 2 }}>
+                            {heroImages.map((src, i) => (
+                                <button
+                                    key={src}
+                                    onClick={() => setHeroIndex(i)}
+                                    aria-label={`Photo ${i + 1} of ${heroCount}`}
+                                    aria-current={i === heroIndex || undefined}
+                                    style={{
+                                        width: 8, height: 8, borderRadius: '50%',
+                                        border: 'none', padding: 0, cursor: 'pointer',
+                                        background: i === heroIndex ? '#fff' : 'rgba(255,255,255,.45)',
+                                        transition: 'background .2s ease',
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -632,13 +705,12 @@ function PropertyContent() {
                     a paragraph cut at 300 characters with an ellipsis and no
                     way to open it. Both now disclose in place.
 
-                    `tone="dark"` because this page paints itself dark from
-                    `rootStyle` rather than from the app theme — the section
-                    would otherwise come up light under a light theme, on a
-                    black ground, with cream text around it. */}
+                    `tone={theme}` rather than a hardcoded `"dark"` — the page
+                    ground now follows the app theme (`propertyPalette`
+                    above), so the section it sits on does too. */}
                 <PropertyDescription
                     className="mb-8"
-                    tone="dark"
+                    tone={theme}
                     price={lowestPrice}
                     currency={currency}
                     rating={reviewScore}
@@ -669,11 +741,13 @@ function PropertyContent() {
                 <RoomSelection
                     id="rooms-section"
                     className="min-w-0"
-                    tone="dark"
+                    tone={theme}
                     rooms={rooms}
                     image={heroImage}
                     hotelAmenities={amenities}
                     nights={nights}
+                    checkIn={checkIn}
+                    occupancy={{ adults, children }}
                     currency={currency}
                     selectedOfferId={selectedRate?.offerId ?? null}
                     onSelect={(offer) => setSelectedOffer(
@@ -684,11 +758,12 @@ function PropertyContent() {
                 {/* ── Nearby places ────────────────────────────────────────── */}
                 {coordinates && (
                     <section className="min-w-0">
-                        <h2 className={cn(SECTION_HEADING, 'text-white')}>Nearby Places</h2>
+                        <h2 className={SECTION_HEADING} style={{ color: palette.title }}>Nearby Places</h2>
                         <div className="mt-4">
-                            <NearbySection coordinates={coordinates} />
+                            <NearbySection coordinates={coordinates} palette={palette} />
                         </div>
-                    )}
+                    </section>
+                )}
                 </div>
 
                 {/* Photo gallery — thumb is images[1], lightbox shows all hotel images */}
@@ -697,7 +772,7 @@ function PropertyContent() {
                 {/* ── Guest reviews ──────────────────────────────────────────── */}
                 {reviewItems.length > 0 && (
                     <div style={{ margin: '44px 0 0' }}>
-                        <h2 className={cn(SECTION_HEADING, 'mb-4 text-white')}>What guests say</h2>
+                        <h2 className={cn(SECTION_HEADING, 'mb-4')} style={{ color: palette.title }}>What guests say</h2>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                             {reviewItems.map((rev, i) => {
                                 const score = Number(rev.score ?? 0);
@@ -706,18 +781,18 @@ function PropertyContent() {
                                 return (
                                     <div
                                         key={i}
-                                        style={{ flex: '1 1 260px', background: 'rgba(255,255,255,.04)', borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: '1px solid rgba(255,255,255,.08)' }}
+                                        style={{ flex: '1 1 260px', background: palette.cardBg, borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
                                     >
                                         {score > 0 && (
                                             <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 17, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
                                                 {score.toFixed(1)}
                                             </div>
                                         )}
-                                        <p style={{ fontSize: 20, lineHeight: 1.55, color: 'rgba(245,239,228,.85)', margin: '0 0 12px' }}>
+                                        <p style={{ fontSize: 20, lineHeight: 1.55, color: palette.soft, margin: '0 0 12px' }}>
                                             &ldquo;{blurb}&rdquo;
                                         </p>
-                                        <div style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}>{rev.reviewer_name ?? 'Guest'}</div>
-                                        {rev.country && <div style={{ fontSize: 15, color: 'rgba(245,239,228,.5)' }}>{rev.country}</div>}
+                                        <div style={{ fontSize: 17, fontWeight: 700, color: palette.title }}>{rev.reviewer_name ?? 'Guest'}</div>
+                                        {rev.country && <div style={{ fontSize: 15, color: palette.muted }}>{rev.country}</div>}
                                     </div>
                                 );
                             })}
@@ -733,15 +808,15 @@ function PropertyContent() {
                 button under the right edge of everything else. */}
             <div
                 className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-30"
-                style={{ background: 'rgba(21,17,30,.96)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,.1)', padding: '14px 0' }}
+                style={{ background: palette.barBg, backdropFilter: 'blur(16px)', borderTop: `1px solid ${palette.hairline}`, padding: '14px 0' }}
             >
                 <PageColumn>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
                         <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 15, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
+                            <div style={{ fontSize: 15, color: palette.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
                                 {selectedRoom ? 'Selected room' : 'Starting from'}
                             </div>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: palette.title, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {/* The same figure the card shows: per night, in
                                     the guest's currency. It used to print the
                                     supplier's total-stay price against "/night",
@@ -764,7 +839,7 @@ function PropertyContent() {
                         ) : (
                             <a
                                 href="#rooms-section"
-                                style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 20, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
+                                style={{ padding: '12px 22px', borderRadius: 100, border: `1px solid ${palette.outlineBorder}`, background: palette.outlineBg, color: palette.outlineText, fontWeight: 700, fontSize: 20, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
                             >
                                 Check rooms ↓
                             </a>
@@ -779,11 +854,12 @@ function PropertyContent() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HotelPropertyPage() {
+    const { theme } = useTheme();
     return (
         <Suspense
             fallback={
-                <div style={{ minHeight: '100vh', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Spinner />
+                <div style={{ minHeight: '100vh', background: propertyPalette(theme).bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Spinner accent={propertyPalette(theme).hairline} />
                 </div>
             }
         >

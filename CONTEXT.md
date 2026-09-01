@@ -42,6 +42,7 @@ The set of user parameters collected before a ChatWonder chat session begins. Pa
 ### In scope — must ship before V2 launch
 - All admin panels fully implemented (Duffel dashboard, TGX admin, Stripe admin, communication, user promote/ban). V1 `/api/internal/auto-recover` and `/api/fn/` function runner folded into admin panel actions — no generic function runner in V2.
 - Mapbox map on search page (clustering, markers, click-to-filter) and property page sidebar
+- SSE streaming hotel search (progressive results + per-hotel price resolution) — see ADR-0003, supersedes the earlier blocking-response deferral
 - POI discovery on property page (Google Places)
 - ETG hotel reviews on property page
 - PWA: service worker + install prompt
@@ -55,7 +56,6 @@ The set of user parameters collected before a ChatWonder chat session begins. Pa
 
 ### Deferred — not in Phase 1
 - PDF invoice generation (print-friendly HTML page is acceptable fallback)
-- SSE streaming hotel search (single provider, blocking response is fine)
 - Weather widget on property page
 - Push notifications / Expo device token registration
 - AI search bar (ChatWonder, Voice Layer) — Phase 2

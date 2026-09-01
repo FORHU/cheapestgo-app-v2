@@ -225,7 +225,9 @@ function splitAmenities(list: string[]): { facilities: string[]; policies: strin
 function ChipGroup({
     label, items, moreLabel, lessLabel, palette, reduceMotion, className,
 }: {
-    label: string;
+    /** Omitted for the amenities/rules row, which the design draws as two
+     *  unlabelled pill groups rather than two labelled sections. */
+    label?: string;
     items: string[];
     moreLabel: string;
     lessLabel: string;
@@ -280,9 +282,11 @@ function ChipGroup({
 
     return (
         <div className={className}>
-            <p className={cn('mb-3 text-[13px] font-bold tracking-[0.12em] uppercase', palette.muted)}>
-                {label}
-            </p>
+            {label && (
+                <p className={cn('mb-3 text-[13px] font-bold tracking-[0.12em] uppercase', palette.muted)}>
+                    {label}
+                </p>
+            )}
 
             {/* The disclosure is a height, not a reflow. Every chip is always in
                 the list and the extras are clipped, so the four already on
@@ -291,16 +295,26 @@ function ChipGroup({
 
                 That the height is real matters as much as that it is animated: a
                 `layout` transform would slide the list's own box while whatever
-                follows snapped straight to its new place. */}
-            <motion.ul
+                follows snapped straight to its new place.
+
+                A plain element with a CSS transition, not `motion.ul` with
+                `animate` — framer-motion's `animate` silently never wrote a
+                `height` to this element (verified: the identical value applied
+                via `style` takes immediately, `animate` never did), so the list
+                sat at its full, unclamped content height forever while only the
+                chips' own opacity fade — a separate `motion.li` below — actually
+                worked. The chips still get their fade from framer-motion; only
+                the list's own height moved off it. */}
+            <ul
                 ref={listRef}
                 // `relative`, so a chip's `offsetTop` is measured against this
                 // list rather than against whatever happens to be positioned
                 // above it.
                 className="relative flex flex-wrap gap-2 overflow-hidden"
-                initial={false}
-                animate={heights ? { height: showAll ? heights.full : heights.collapsed } : undefined}
-                transition={reduceMotion ? { duration: 0 } : CHIP_REVEAL}
+                style={{
+                    height: heights ? (showAll ? heights.full : heights.collapsed) : undefined,
+                    transition: reduceMotion ? 'none' : `height ${CHIP_REVEAL.duration}s cubic-bezier(${EASE.join(',')})`,
+                }}
             >
                 {items.map((item, i) => {
                     const Icon = amenityIcon(item);
@@ -327,7 +341,7 @@ function ChipGroup({
                         </motion.li>
                     );
                 })}
-            </motion.ul>
+            </ul>
 
             {items.length > COLLAPSED_AMENITIES && (
                 <div className="mt-3">
@@ -405,87 +419,46 @@ export function PropertyDescription({
     // An unknown code has no symbol, so it prints as the code itself.
     const symbol = currencySymbol(currency) || currency;
 
+    const hasChips = facilities.length > 0 || policies.length > 0;
+
     return (
         <section className={className}>
             {/* ── Head ─────────────────────────────────────────────────────────
-                The rate on its own line, the chips under it, and the desk's
-                hours held against the right edge alongside the chips.
-
-                A grid rather than a flex row, and that is the whole point: the
-                hours get a cell of their own in the chips' row and sit at the
-                *top* of it. The chips can then wrap to three rows, or open from
-                four to forty, and grow downward into their own cell without
-                shifting the hours by a pixel. Bottom-aligning them in a flex row
-                — which is what this was — tied them to the height of the chips,
-                so opening the list dragged IN and OUT down the page with it. */}
-            {(hasPrice || hasRating || hasTimes || amenities.length > 0) && (
-                <div className="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-                    <div className="min-w-0 sm:col-start-1 sm:row-start-1">
-                        {(hasPrice || hasRating) && (
-                            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                {hasPrice && (
-                                    <>
-                                        {/* Symbol and digits are separate type,
-                                            as drawn: the symbol a size down, so
-                                            the number carries the line alone. */}
-                                        <span className={cn('text-[36px] font-bold sm:text-[42px]', palette.title)}>
-                                            {symbol}
-                                        </span>
-                                        <span className={cn('-ml-1.5 text-[42px] font-bold tracking-[-0.02em] sm:text-[50px]', palette.title)}>
-                                            {Math.round(price).toLocaleString()}
-                                        </span>
-                                        <span className={cn('text-[21px] sm:text-[24px]', palette.muted)}>/night</span>
-                                    </>
-                                )}
-                                {hasRating && (
-                                    <span className={cn('text-[22px] sm:text-[25px]', palette.soft)}>
-                                        <b className={cn('font-bold', palette.title)}>{rating.toFixed(1)}</b> rating
+                The rate on the left, IN / OUT held against the right edge of
+                the same line, and the amenities/rules pair sharing one row
+                beneath both — the wireframe's layout exactly: hours share the
+                rate's own line rather than sitting above or beside the chips. */}
+            {(hasPrice || hasRating || hasTimes) && (
+                <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
+                    {(hasPrice || hasRating) && (
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                            {hasPrice && (
+                                <>
+                                    {/* Symbol and digits are separate type, as
+                                        drawn: the symbol a size down, so the
+                                        number carries the line alone. */}
+                                    <span className={cn('text-[36px] font-bold sm:text-[42px]', palette.title)}>
+                                        {symbol}
                                     </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* The chips, in the row under the price and beside the
-                        hours.
-
-                        The disclosure is a height, not a reflow. Every chip is
-                        always in the list and the extras are clipped, so the
-                        four already on screen do not move at all — opening it
-                        only uncovers what was behind the edge.
-
-                        That the height is real matters as much as that it is
-                        animated: a `layout` transform would slide the list's
-                        own box while the rule and the description below it
-                        snapped straight to their new places, which is exactly
-                        the jump this is meant to remove. */}
-                    {/* Facilities, in the row under the price and beside the
-                        hours — the group the design draws. Policies get their
-                        own below, out of the grid. */}
-                    <ChipGroup
-                        label="Amenities"
-                        items={facilities}
-                        moreLabel="See all amenities"
-                        lessLabel="Show fewer amenities"
-                        palette={palette}
-                        reduceMotion={reduceMotion}
-                        className="sm:col-start-1 sm:row-start-2"
-                    />
+                                    <span className={cn('-ml-1.5 text-[42px] font-bold tracking-[-0.02em] sm:text-[50px]', palette.title)}>
+                                        {Math.round(price).toLocaleString()}
+                                    </span>
+                                    <span className={cn('text-[21px] sm:text-[24px]', palette.muted)}>/night</span>
+                                </>
+                            )}
+                            {hasRating && (
+                                <span className={cn('text-[22px] sm:text-[25px]', palette.soft)}>
+                                    <b className={cn('font-bold', palette.title)}>{rating.toFixed(1)}</b> rating
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     {hasTimes && (
-                        // A description list, not two rows of spans: these are
+                        // A description list, not two spans: these are
                         // labelled values, and that is what a screen reader
-                        // should hear. Left-aligned inside its own box and the
-                        // box held right — the labels line up with each other,
-                        // which is what the design draws; right-aligning the
-                        // text instead would stagger `IN` off `OUT`.
-                        //
-                        // `self-start` in the chips' row is what holds it still
-                        // while they open: the row grows under it, not around it.
-                        <dl className={cn(
-                            'shrink-0 text-[21px] leading-[1.5] sm:col-start-2 sm:row-start-2 sm:self-start sm:justify-self-end sm:text-[24px]',
-                            palette.soft,
-                        )}>
+                        // should hear.
+                        <dl className={cn('shrink-0 text-[18px] leading-[1.5]', palette.soft)}>
                             {inTime && (
                                 <div className="flex gap-2">
                                     <dt className={cn('font-bold', palette.title)}>IN</dt>
@@ -503,20 +476,39 @@ export function PropertyDescription({
                 </div>
             )}
 
-            {/* House rules, kept apart from the facilities above. An amenity is
-                something the stay gives you; a policy is something it asks of
-                you, and a smoking rule sitting between the lift and the Wi-Fi
-                reads as neither. Below the head rather than in it, so the grid
-                keeps the shape the design draws. */}
-            <ChipGroup
-                label="Policies &amp; rules"
-                items={policies}
-                moreLabel="See all policies"
-                lessLabel="Show fewer policies"
-                palette={palette}
-                reduceMotion={reduceMotion}
-                className="mt-6"
-            />
+            {/* Amenities and rules, side by side in one row, each under its
+                own label — the wireframe's two labelled pill groups.
+
+                A grid, not a flex row: amenities routinely runs to twenty-odd
+                chips against three or four rules, and a flex row sizes each
+                item off its own content first — the long list claims the
+                whole line before the short one is ever considered, so it
+                wraps to a line of its own beneath instead of sitting beside
+                it. A grid hands each side a fixed half regardless of how much
+                either is carrying. Single column below `sm`, where two halves
+                would each be too narrow to read a chip on. */}
+            {hasChips && (
+                <div className={cn('grid grid-cols-1 gap-x-12 gap-y-6 sm:grid-cols-2', (hasTimes || hasPrice || hasRating) && 'mt-6')}>
+                    <ChipGroup
+                        label="Amenities"
+                        items={facilities}
+                        moreLabel="View more"
+                        lessLabel="View less"
+                        palette={palette}
+                        reduceMotion={reduceMotion}
+                        className="min-w-0"
+                    />
+                    <ChipGroup
+                        label="Rules & Policies"
+                        items={policies}
+                        moreLabel="View more"
+                        lessLabel="View less"
+                        palette={palette}
+                        reduceMotion={reduceMotion}
+                        className="min-w-0"
+                    />
+                </div>
+            )}
 
             {/* ── Description ──────────────────────────────────────────────── */}
             {body && (
@@ -536,7 +528,7 @@ export function PropertyDescription({
                         // of a single element — split into three paragraphs it
                         // would clamp each of them to five lines instead of the
                         // description as a whole.
-                        className={cn('mt-6 whitespace-pre-line text-[18px] leading-[1.6]', palette.body)}
+                        className={cn('mt-6 text-[18px] leading-[1.6]', palette.body)}
                         // The clamp as a style rather than a `line-clamp-*`
                         // utility: it has to come off entirely when expanded,
                         // and toggling between two utilities leaves whichever

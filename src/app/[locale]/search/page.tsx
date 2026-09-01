@@ -144,23 +144,19 @@ const TYPE_SCALE = Math.max(SCALE, 0.9);
 const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
 
 /**
- * The rail's inset, as a number, for the one thing that needs it as one: the
- * phone card's own width.
+ * The phone card's own width cap, as a number — the one place along this
+ * rail that still needs the inset as a raw pixel value rather than a class.
  *
- * Everywhere else the rail sits in `SHELL_GUTTER` / `SHELL_CAP` — the toolbar's
- * box — so the strip begins under the bar's left edge and ends under its right
- * one at every width. It used to be measured on its own, in JS, off an
- * `isMobile` that flips at 768 where the shell's gutter steps at 640; between
- * those two widths the first card started 8px inside the tally chip above it,
- * and past 1448 the whole strip sat a couple of hundred pixels left of the bar.
- *
- * The cap costs the strip nothing it was using: it still runs off its box's
- * right edge, so the card after the last visible one still shows and the strip
- * still reads as something to swipe — that edge is now the bar's rather than
- * the window's.
+ * Everywhere else the rail sits in the same `px-4 sm:px-8 lg:px-12` box the
+ * top bar does — `MAP_CHROME_GUTTER` — so the strip begins under the bar's
+ * left edge at every width. The scroller's own inset used to be measured on
+ * its own, in JS, off an `isMobile` that flips at 768 where the bar's gutter
+ * steps at 640; between those two widths the first card started 8px inside
+ * the tally chip above it, and past 1448 the whole strip sat a couple of
+ * hundred pixels left of the bar. It now uses the same classes the bar does
+ * rather than a second, JS-driven measurement of the same thing.
  */
 const RAIL_GUTTER_MOBILE = 20;
-const RAIL_GUTTER        = 24;
 
 /**
  * The card's box, at the two sizes it is drawn.
@@ -1383,13 +1379,18 @@ function HotelSearchContent() {
                         />
                     </div>
                 </div>
-            </div>
-        );
-    }
-
-    // ── Full-screen map view ──────────────────────────────────────────────────
-    return (
-        <div className="dark relative w-full overflow-hidden" style={{ height: '100dvh', background: BG }}>
+            </motion.div>
+        ) : (
+        // ── Full-screen map view ──────────────────────────────────────────────
+        <motion.div
+            key="map"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+            className="dark relative w-full overflow-hidden"
+            style={{ height: '100dvh', background: BG }}
+        >
 
             {/* Full-bleed: the side gutters were page background showing through,
                 which read as a dark frame behind the card rail.
@@ -1619,42 +1620,81 @@ function HotelSearchContent() {
                         {/* Horizontal scroll cards — wheel handler converts vertical
                             scroll to horizontal. The bottom inset clears the app's
                             bottom nav wherever that nav is on screen. */}
-                        <div className={cn('relative', RAIL_PAD_B_MOBILE)} style={{ paddingLeft: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER }}>
-                            <div
-                                ref={railScrollRef}
-                                className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
-                                // `overflow-x: auto` forces overflow-y to auto too, so a
-                                // selected card scaling up would be clipped. The headroom
-                                // gives it somewhere to grow; the whole rail is
-                                // pointer-transparent so that headroom doesn't swallow
-                                // clicks meant for the map.
-                                style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
-                            >
-                                {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
-                                    <RailCard
-                                        key={property.id}
-                                        property={property}
-                                        isSelected={isSelected}
-                                        isHovered={isHovered}
-                                        shiftLeft={shiftLeft}
-                                        shiftRight={shiftRight}
-                                        onSelect={handleSelect}
-                                        onHover={setHoveredId}
-                                        onViewDetails={handleViewDetails}
-                                        currency={currency}
-                                        nights={nights}
-                                        theme={uiTone}
-                                        mobile={isMobile}
-                                        elementRef={(el) => {
-                                            if (el) railCardEls.current.set(property.id, el);
-                                            else railCardEls.current.delete(property.id);
-                                        }}
-                                    />
-                                ))}
-                                {/* Mirrors the strip's left inset so the last card
-                                    doesn't butt against the window edge */}
-                                <div style={{ minWidth: isMobile ? RAIL_GUTTER_MOBILE : RAIL_GUTTER, flexShrink: 0 }} />
+                        <div className={cn('relative', RAIL_PAD_B_MOBILE)}>
+                            <div className="pl-4 sm:pl-8 lg:pl-12">
+                                <div
+                                    ref={attachRailScroll}
+                                    className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
+                                    // `overflow-x: auto` forces overflow-y to auto too, so a
+                                    // selected card scaling up would be clipped. The headroom
+                                    // gives it somewhere to grow; the whole rail is
+                                    // pointer-transparent so that headroom doesn't swallow
+                                    // clicks meant for the map.
+                                    style={{ overscrollBehaviorX: 'contain', paddingTop: railHeadroom }}
+                                >
+                                    {railCards.map(({ property, isSelected, isHovered, shiftLeft, shiftRight }) => (
+                                        <RailCard
+                                            key={property.id}
+                                            property={property}
+                                            isSelected={isSelected}
+                                            isHovered={isHovered}
+                                            shiftLeft={shiftLeft}
+                                            shiftRight={shiftRight}
+                                            onSelect={handleSelect}
+                                            onHover={setHoveredId}
+                                            onViewDetails={handleViewDetails}
+                                            currency={currency}
+                                            nights={nights}
+                                            theme={uiTone}
+                                            mobile={isMobile}
+                                            elementRef={(el) => {
+                                                if (el) railCardEls.current.set(property.id, el);
+                                                else railCardEls.current.delete(property.id);
+                                            }}
+                                        />
+                                    ))}
+                                    {/* Mirrors the strip's left inset so the last card
+                                        doesn't butt against the window edge */}
+                                    <div className="w-4 shrink-0 sm:w-8 lg:w-12" />
+                                </div>
                             </div>
+
+                            {/* Pagination dots — one per page, the strip's own
+                                paging state (`railPage`/`goToRailPage`) already
+                                drives the wheel and pin-click travel; this is
+                                just the first visible control for it. Inside the
+                                same bottom-nav-clearing wrapper as the scroller
+                                above it, so the safe-area padding still applies
+                                below whichever of the two is now the last
+                                visible thing.
+
+                                Its own symmetric gutter, not the scroller's: the
+                                scroller's is left-only on purpose, so a card can
+                                scroll past the visual right edge — nested under
+                                that same box, a centered row would land 24px
+                                right of where the bar itself centers. This row
+                                needs both edges to land where the bar's do. Only
+                                drawn once there's more than one page to move
+                                between. */}
+                            {railPageCount > 1 && (
+                                <div className="mt-3 flex justify-center gap-1.5 px-4 sm:px-8 lg:px-12">
+                                    {Array.from({ length: railPageCount }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => goToRailPage(i)}
+                                            aria-label={`Page ${i + 1} of ${railPageCount}`}
+                                            aria-current={i === railPage || undefined}
+                                            style={{
+                                                width: i === railPage ? 20 : 6, height: 6, borderRadius: 3,
+                                                border: 'none', padding: 0, cursor: 'pointer',
+                                                background: i === railPage ? chrome.text : chrome.border,
+                                                transition: 'width .2s ease, background .2s ease',
+                                                pointerEvents: 'auto',
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
