@@ -131,6 +131,26 @@ function PageColumn({ children, style }: { children: React.ReactNode; style?: Re
 }
 
 /**
+ * A body section that fades and rises 32px as it enters the viewport. No
+ * `once` — it replays whichever way you scroll across it, and resets to
+ * hidden when it leaves.
+ */
+function Reveal({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+    return (
+        <motion.div
+            className={className}
+            style={style}
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ amount: 0.15 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+/**
  * The banner's prev/next buttons, which differ only in which edge they sit on.
  *
  * A bare chevron over the photo, not a button — the design's arrows carry no
@@ -688,16 +708,9 @@ function PropertyContent() {
                     `tone={theme}` rather than a hardcoded `"dark"` — the page
                     ground now follows the app theme (`propertyPalette`
                     above), so the section it sits on does too. */}
-                {/* Rises and fades as it enters the viewport — a soft handoff
-                    from the full-bleed banner into the page's own column. No
-                    `once`: it replays whether you scroll down into it or back
-                    up to it. */}
-                <motion.div
-                    initial={{ opacity: 0, y: 32 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ amount: 0.15 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                >
+                {/* A soft handoff from the full-bleed banner into the page's
+                    own column. */}
+                <Reveal>
                     <PropertyDescription
                         className="mb-8"
                         tone={theme}
@@ -710,14 +723,14 @@ function PropertyContent() {
                         amenityGroups={content.amenityGroups}
                         description={content.description}
                     />
-                </motion.div>
+                </Reveal>
 
                 {/* ── Rooms, and what is around them ─────────────────────────
                     One row of two columns, as the design lays it out: the rate
                     stack on the left at roughly five parts to the map's four,
                     stacking under it below `lg` where neither half has the
                     width to be half of anything. */}
-                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1fr] lg:gap-12">
+                <Reveal className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1fr] lg:gap-12">
 
                 {/* ── Room selection ─────────────────────────────────────────
                     The design's own section: a filter row over a stack of
@@ -758,14 +771,14 @@ function PropertyContent() {
                         </div>
                     </section>
                 )}
-                </div>
+                </Reveal>
 
                 {/* Photo gallery — thumb is images[1], lightbox shows all hotel images */}
                 {allImages.length > 1 && <PhotoGallery images={allImages} />}
 
                 {/* ── Guest reviews ──────────────────────────────────────────── */}
                 {reviewItems.length > 0 && (
-                    <div style={{ margin: '44px 0 0' }}>
+                    <Reveal style={{ margin: '44px 0 0' }}>
                         <h2 className={cn(SECTION_HEADING, 'mb-4')} style={{ color: palette.title }}>What guests say</h2>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                             {reviewItems.map((rev, i) => {
@@ -791,7 +804,7 @@ function PropertyContent() {
                                 );
                             })}
                         </div>
-                    </div>
+                    </Reveal>
                 )}
             </PageColumn>
 

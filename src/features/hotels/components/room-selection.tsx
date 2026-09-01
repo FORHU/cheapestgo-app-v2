@@ -418,15 +418,17 @@ function FeatureRow({ feature, palette }: { feature: Feature; palette: Palette }
  * no rows — a heading over an empty list is worse than an uneven card.
  */
 function DetailColumn({
-    title, rows, palette, onViewMore,
+    title, rows, palette, onViewMore, showViewMore = true,
 }: {
     title: string; rows: Feature[]; palette: Palette; onViewMore: () => void;
+    /** `false` drops the "View more" link (the Payment Terms column). */
+    showViewMore?: boolean;
 }) {
     if (rows.length === 0) return null;
     return (
         <div className="min-w-0">
-            <p className={cn('flex items-center gap-2 text-[13px] font-medium', palette.columnHeading)}>
-                <span className={cn('size-1 shrink-0 rounded-full', palette.columnDot)} />
+            {/* Larger than the rows it labels, no leading dot. */}
+            <p className={cn('text-[16px] font-semibold', palette.columnHeading)}>
                 {title}
             </p>
             <ul className="mt-2.5 flex flex-col gap-2">
@@ -440,14 +442,16 @@ function DetailColumn({
                     );
                 })}
             </ul>
-            <button
-                type="button"
-                aria-haspopup="dialog"
-                onClick={(e) => { e.stopPropagation(); onViewMore(); }}
-                className={cn('mt-2.5 cursor-pointer text-[13px] underline underline-offset-2 transition-colors', palette.viewMore)}
-            >
-                View more
-            </button>
+            {showViewMore && (
+                <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    onClick={(e) => { e.stopPropagation(); onViewMore(); }}
+                    className={cn('mt-2.5 cursor-pointer text-[13px] font-bold transition-colors', palette.viewMore)}
+                >
+                    View more
+                </button>
+            )}
         </div>
     );
 }
@@ -726,16 +730,17 @@ function RoomRateCard({
         <div
             onClick={pick}
             className={cn(
+                // The selected rate is called out by its "Selected" button
+                // alone — no ring on the card itself.
                 'flex min-h-[176px] cursor-pointer overflow-hidden rounded-[16px] transition-shadow',
                 palette.card,
-                selected && palette.cardOn,
             )}
         >
             {/* Photo — flush into the card's own corners. Square on its own
                 account; `overflow-hidden` on the card clips it to the left
                 radius and leaves the right side straight, where the panel
                 carries on. */}
-            <div className={cn('relative w-[26%] max-w-[210px] min-w-[96px] shrink-0 self-stretch overflow-hidden', palette.imageBg)}>
+            <div className={cn('relative w-[38%] max-w-[300px] min-w-[120px] shrink-0 self-stretch overflow-hidden', palette.imageBg)}>
                 {photo && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photo} alt="" className="h-full w-full object-cover" />
@@ -776,6 +781,7 @@ function RoomRateCard({
                             rows={card.paymentTerms}
                             palette={palette}
                             onViewMore={() => setModalOpen(true)}
+                            showViewMore={false}
                         />
                     </div>
 
@@ -880,8 +886,9 @@ export function RoomSelection({
                         type="button"
                         onClick={() => setFilter(f.value)}
                         aria-pressed={filter === f.value}
+                        // Same pill size as the header's amenity chips.
                         className={cn(
-                            'cursor-pointer rounded-full px-8 py-3 text-[16px] font-medium transition-colors',
+                            'cursor-pointer rounded-full px-3.5 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors sm:text-[13.5px]',
                             filter === f.value ? palette.pillOn : palette.pillIdle,
                         )}
                     >
