@@ -30,7 +30,7 @@ const StandardFooter = () => {
                         <span className="text-slate-900 dark:text-white font-bold uppercase tracking-wider text-[9px] lg:text-xs">{t('module')}</span>
                         <div className="flex flex-col gap-1.5 lg:gap-3">
                             <Link href="/flights/search" className="text-slate-500 hover:text-blue-500 transition-colors">{t('flights')}</Link>
-                            <a href="/hotels/search" className="text-slate-500 hover:text-blue-500 transition-colors">{t('hotels')}</a>
+                            <Link href="/search" className="text-slate-500 hover:text-blue-500 transition-colors">{t('hotels')}</Link>
                             <a href="#" className="text-slate-500 hover:text-blue-500 transition-colors">{t('cars')}</a>
                         </div>
                     </div>
@@ -61,9 +61,9 @@ const StandardFooter = () => {
             <div className="border-t border-slate-100 dark:border-white/5 px-5 py-6 lg:py-4 flex flex-col lg:flex-row items-center justify-between gap-4 text-[10px] lg:text-xs text-slate-400 dark:text-slate-500">
                 <span className="order-2 lg:order-1 opacity-70">{t('copyright')}</span>
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 order-1 lg:order-2">
-                    <a href="/terms-of-service" className="hover:text-blue-500 transition-colors">{t('terms')}</a>
-                    <a href="/privacy-policy" className="hover:text-blue-500 transition-colors">{t('privacy')}</a>
-                    <a href="/cookie-policy" className="hover:text-blue-500 transition-colors">{t('cookies')}</a>
+                    <Link href="/terms" className="hover:text-blue-500 transition-colors">{t('terms')}</Link>
+                    <Link href="/privacy" className="hover:text-blue-500 transition-colors">{t('privacy')}</Link>
+                    <Link href="/cookies" className="hover:text-blue-500 transition-colors">{t('cookies')}</Link>
                     <a href="mailto:support@cheapestgo.com" className="hover:text-blue-500 transition-colors">{t('contact')}</a>
                 </div>
             </div>

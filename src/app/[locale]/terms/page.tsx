@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
@@ -124,9 +125,9 @@ export default function TermsPage() {
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Cancellations and Refunds</h2>
                             <p className="text-sm leading-relaxed">
                                 Cancellations and refunds are governed by our{' '}
-                                <a href="/refund" className="text-blue-600 dark:text-blue-400 hover:underline">
+                                <Link href="/refund" className="text-blue-600 dark:text-blue-400 hover:underline">
                                     Refund &amp; Cancellation Policy
-                                </a>
+                                </Link>
                                 , which is incorporated into these Terms by reference. Please review it carefully before
                                 making a booking, as policies vary by hotel and rate type.
                             </p>
