@@ -523,6 +523,13 @@ function HotelSearchContent() {
 
     const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
     const [status, setStatus]                   = useState<StreamStatus>('idle');
+    /**
+     * The supplier never answered — see "Unanswered Search" in cheapest-go-app's
+     * CONTEXT.md. The catalog stays on the map because nothing has been learned about
+     * availability, but every card is priceless, and a card with no price reads as free.
+     * Distinct from `status === 'error'`, which means we have nothing at all to show.
+     */
+    const [pricesUnavailable, setPricesUnavailable] = useState(false);
     const [viewMode, setViewMode]               = useState<ViewMode>('map');
     const [sortBy, setSortBy]                   = useState<SortValue>('recommended');
     const [selectedId, setSelectedId]           = useState<string | null>(null);
@@ -614,6 +621,7 @@ function HotelSearchContent() {
         const ctrl = new AbortController();
         setStatus('loading');
         setHotels([]);
+        setPricesUnavailable(false);
         setSelectedId(null);
         setMapCenter(lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined);
 
@@ -678,7 +686,7 @@ function HotelSearchContent() {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
                         } else if (chunk.type === 'done' || chunk.type === 'error') {
-                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setStatus(accumulated > 0 ? 'done' : 'error'); } return;
+                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setPricesUnavailable(Boolean(chunk.tgxUnanswered)); setStatus(accumulated > 0 ? 'done' : 'error'); } return;
                         }
                     } catch { /* skip */ }
                 }
@@ -1245,6 +1253,60 @@ function HotelSearchContent() {
                             <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
                                 {count > 0 ? `${count}+ stays found · still searching…` : 'Fetching results…'}
                             </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── Prices unavailable ───────────────────────────── */}
+            {/* The supplier never answered, so the catalog stays on the map —
+                nothing has been learned about availability and removing it would
+                claim the destination is empty. But every card is priceless, and a
+                card with no price reads as free, so say what happened.
+
+                Takes the streaming toast's slot and geometry: the two never
+                coexist, since this is set when the stream ends and that is only
+                shown while it runs. Unlike that one it is persistent and
+                interactive, so the inner box takes pointer events back. */}
+            <AnimatePresence>
+                {pricesUnavailable && hotels.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        style={{ pointerEvents: 'none' }}
+                        role="status"
+                    >
+                        <div
+                            className="flex items-center gap-2.5 rounded-full px-4 py-2"
+                            style={{
+                                background: chrome.surface,
+                                border: `1px solid ${chrome.border}`,
+                                boxShadow: chrome.shadow,
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                                pointerEvents: 'auto',
+                            }}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="shrink-0 rounded-full"
+                                style={{ width: 8, height: 8, background: '#D97706' }}
+                            />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                                Live prices didn’t load
+                                {destination ? ` · showing stays in ${destination}` : ' · showing stays in this area'}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => window.location.reload()}
+                                className="shrink-0 cursor-pointer rounded-full px-3 py-1 transition-opacity hover:opacity-85"
+                                style={{ background: '#D97706', color: '#FFFFFF', fontSize: 11, fontWeight: 700 }}
+                            >
+                                Retry
+                            </button>
                         </div>
                     </motion.div>
                 )}

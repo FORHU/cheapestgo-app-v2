@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { ArrowLeft, Check, Download, Calendar, MapPin, Users, CreditCard, Lock } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -787,7 +787,7 @@ function CheckoutContent() {
                                 Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </PrimaryBtn>
                             <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
-                                By continuing you agree to our <a href="/terms" style={{ color: ACCENT }}>Terms</a> and <a href="/privacy" style={{ color: ACCENT }}>Privacy Policy</a>.
+                                By continuing you agree to our <Link href="/terms" style={{ color: ACCENT }}>Terms</Link> and <Link href="/privacy" style={{ color: ACCENT }}>Privacy Policy</Link>.
                             </p>
                         </div>
                         <SummaryCard />
@@ -880,7 +880,7 @@ function CheckoutContent() {
                         )}
 
                         <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
-                            By continuing you agree to our <a href="/terms" style={{ color: ACCENT }}>Terms</a> and <a href="/privacy" style={{ color: ACCENT }}>Privacy Policy</a>.
+                            By continuing you agree to our <Link href="/terms" style={{ color: ACCENT }}>Terms</Link> and <Link href="/privacy" style={{ color: ACCENT }}>Privacy Policy</Link>.
                         </p>
                     </div>
 

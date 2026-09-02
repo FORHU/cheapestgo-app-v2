@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
+import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
@@ -104,7 +105,7 @@ export function DestinationView({ params }: Props) {
 
             <main className="flex-1 px-4 py-8 max-w-[1200px] mx-auto w-full">
                 <nav className="text-xs text-slate-400 dark:text-slate-500 mb-6">
-                    <a href="/" className="hover:text-blue-500 transition-colors">Home</a>
+                    <Link href="/" className="hover:text-blue-500 transition-colors">Home</Link>
                     <span className="mx-1.5">›</span>
                     <span>Destinations</span>
                     <span className="mx-1.5">›</span>

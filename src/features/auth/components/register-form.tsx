@@ -143,9 +143,9 @@ export function RegisterForm() {
 
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
                 By signing up you agree to our{' '}
-                <a href="/terms-of-service" className="text-blue-600 hover:underline">Terms</a>
+                <Link href="/terms" className="text-blue-600 hover:underline">Terms</Link>
                 {' '}and{' '}
-                <a href="/privacy-policy" className="text-blue-600 hover:underline">Privacy Policy</a>.
+                <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
             </p>
 
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">

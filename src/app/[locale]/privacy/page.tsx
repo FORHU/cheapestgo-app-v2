@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
@@ -106,7 +107,7 @@ export default function PrivacyPage() {
                             <p className="text-sm leading-relaxed">
                                 We use cookies and similar technologies to operate our platform and improve your experience.
                                 Please see our{' '}
-                                <a href="/cookies" className="text-blue-600 dark:text-blue-400 hover:underline">Cookie Policy</a>
+                                <Link href="/cookies" className="text-blue-600 dark:text-blue-400 hover:underline">Cookie Policy</Link>
                                 {' '}for full details on what cookies we use and how to manage your preferences.
                             </p>
                         </section>
