@@ -18,6 +18,9 @@ import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
 import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
+import { cn } from '@/shared/lib/cn';
+import { SHELL_GUTTER, SHELL_CAP, SECTION_HEADING } from '@/shared/lib/layout';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -369,9 +372,10 @@ function PropertyContent() {
     const amenities    = content?.amenities ?? [];
 
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
-    const nights       = (checkIn && checkOut)
-        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
-        : null;
+    // One derivation of the stay, shared with whatever restates the price per
+    // night — an inline copy of the same arithmetic is what produced the doubled
+    // nightly rate in v1 (ADR-0020).
+    const nights       = nightsBetween(checkIn, checkOut);
 
     /**
      * A supplier price, as the page shows it: the whole stay converted into

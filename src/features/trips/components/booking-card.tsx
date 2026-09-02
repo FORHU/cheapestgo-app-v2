@@ -48,7 +48,7 @@ function StatusBadge({ status, isHotel }: { status: string; isHotel: boolean }) 
 function HotelCard({ booking }: { booking: HotelBooking }) {
     const checkIn = new Date(booking.check_in);
     const checkOut = new Date(booking.check_out);
-    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = nightsBetween(checkIn, checkOut) ?? 1;
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
@@ -189,6 +189,7 @@ function _FlightCard({ booking }: { booking: FlightBooking }) {
 }
 
 import { FlightBookingCard } from '@/app/[locale]/trips/components/FlightBookingCard';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Calendar, MapPin, Plane, Hotel, Users, Star } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,12 +50,6 @@ function formatDate(dateStr: string): string {
     }
 }
 
-function nightsBetween(checkIn: string, checkOut: string): number {
-    const ci = new Date(checkIn).getTime();
-    const co = new Date(checkOut).getTime();
-    return Math.max(1, Math.round((co - ci) / (1000 * 60 * 60 * 24)));
-}
-
 const CARD =
     'rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm';
 
@@ -64,7 +59,7 @@ const ROW = 'flex items-center justify-between text-sm';
 
 export function BookingSummary({ data }: BookingSummaryProps) {
     if (data.mode === 'hotel') {
-        const nights = nightsBetween(data.checkIn, data.checkOut);
+        const nights = nightsBetween(data.checkIn, data.checkOut) ?? 1;
         const perNight = nights > 0 ? data.totalPrice / nights : data.totalPrice;
 
         return (

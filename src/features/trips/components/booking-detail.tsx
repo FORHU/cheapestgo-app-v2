@@ -14,6 +14,7 @@ import { cn } from '@/shared/lib/cn';
 import type { AnyBooking, HotelBooking, FlightBooking } from '@/shared/types';
 
 import { CancellationModal } from '@/app/[locale]/trips/components/CancellationModal';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Status maps ──────────────────────────────────────────────────────────────
 
@@ -92,7 +93,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
 
     const checkIn = new Date(booking.check_in);
     const checkOut = new Date(booking.check_out);
-    const nights = Math.round((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = nightsBetween(checkIn, checkOut) ?? 1;
     const policy = booking.cancellation_policy;
     const refundable = policy?.refundableTag === 'RFN';
     const freeCancelDeadline = policy?.cancelPolicyInfos?.[0]?.cancelTime;

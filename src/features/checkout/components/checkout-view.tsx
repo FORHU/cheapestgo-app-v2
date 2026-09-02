@@ -10,6 +10,7 @@ import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
 import { env } from '@/shared/lib/env';
 import type { GuestInfo, PassengerInfo } from '@/features/checkout/components/guest-form';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
 
@@ -416,9 +417,7 @@ function CheckoutContent() {
     const departureDate  = searchParams.get('departureDate')  ?? checkIn;
     const cabin          = searchParams.get('cabin')          ?? undefined;
 
-    const nights = (checkIn && checkOut)
-        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
-        : null;
+    const nights = nightsBetween(checkIn, checkOut);
     const fmtDate = (d: string) => d
         ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : '';

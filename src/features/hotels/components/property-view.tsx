@@ -13,6 +13,7 @@ import { PropertyHero } from '@/features/hotels/components/property-hero';
 import { ReviewSection } from '@/features/hotels/components/review-section';
 import { RoomSelector } from '@/features/hotels/components/room-selector';
 import { NearbySection } from '@/features/hotels/components/nearby-section';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 
@@ -147,9 +148,7 @@ export function PropertyView() {
     const amenities    = (Array.isArray(content?.amenities) ? content!.amenities as string[] : []).slice(0, 5);
     const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map((r) => r.price)) : null;
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
-    const nights       = (checkIn && checkOut)
-        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
-        : null;
+    const nights       = nightsBetween(checkIn, checkOut);
 
     const fmt = (amount: number, fromCurrency: string): string => {
         const to    = userCurrency || 'USD';

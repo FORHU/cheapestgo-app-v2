@@ -22,6 +22,7 @@ import { cn } from '@/shared/lib/cn';
 import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
+import { nightsBetween } from '@/shared/lib/stay';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
@@ -587,13 +588,10 @@ function HotelSearchContent() {
     const canonicalCity = searchParams.get('canonicalCity') ?? '';
     const searchQs    = searchParams.toString();
 
-    const nights = useMemo(() => {
-        const ci = new Date(checkIn);
-        const co = new Date(checkOut);
-        if (isNaN(ci.getTime()) || isNaN(co.getTime())) return 1;
-        const n = Math.round((co.getTime() - ci.getTime()) / 86_400_000);
-        return n > 0 ? n : 1;
-    }, [checkIn, checkOut]);
+    // Falls back to one night so the cards still show a figure when the URL carries
+    // no dates. Safe here because search is a browse surface, not a quote — the
+    // property page refuses to price a stay it cannot read rather than assuming one.
+    const nights = useMemo(() => nightsBetween(checkIn, checkOut) ?? 1, [checkIn, checkOut]);
 
     const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
     const [status, setStatus]                   = useState<StreamStatus>('idle');
