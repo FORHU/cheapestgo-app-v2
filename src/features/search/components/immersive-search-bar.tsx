@@ -5,6 +5,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
 import { http } from '@/shared/lib/http';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -680,7 +681,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
         ? (isOneway ? 'When are you flying?' : 'Pick your dates')
         : (flexible ? "How long's the trip?" : 'Pick your dates');
 
-    const nights = (checkIn && checkOut) ? Math.round((checkOut.getTime() - checkIn.getTime()) / 86400000) : null;
+    const nights = nightsBetween(checkIn, checkOut);
 
     const filteredTrending = destQuery.trim()
         ? activeTrending.filter(t => `${t.name}${t.country}`.toLowerCase().includes(destQuery.trim().toLowerCase()))

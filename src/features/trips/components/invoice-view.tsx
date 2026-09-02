@@ -6,13 +6,16 @@ import { useAuthStore } from '@/shared/auth/store';
 import { http } from '@/shared/lib/http';
 import { formatCurrency } from '@/shared/lib/format';
 import type { HotelBooking, FlightBooking } from '@/shared/types';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Kept as a name local to the invoice, but the arithmetic is shared. This used to
+// round up where every other copy rounded — identical for the pure dates the app
+// stores, and a night apart the moment one carried a time. An invoice states what
+// someone was charged, so it is the last place that should count differently.
 function calculateNights(checkIn: string, checkOut: string): number {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    return nightsBetween(checkIn, checkOut) ?? 1;
 }
 
 function fmtDate(dateStr: string): string {

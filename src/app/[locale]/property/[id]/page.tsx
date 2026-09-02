@@ -14,6 +14,7 @@ import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 import { SHELL_GUTTER, SHELL_CAP, SECTION_HEADING } from '@/shared/lib/layout';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -377,9 +378,7 @@ function PropertyContent() {
     const allImages     = content?.images ?? [];
     const _galleryImages = allImages.slice(1); // images[0] is hero; lightbox gets all
     const amenities    = (content?.amenities ?? []).slice(0, 5);
-    const nights       = (checkIn && checkOut)
-        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
-        : null;
+    const nights       = nightsBetween(checkIn, checkOut);
     // TGX returns total-stay price; divide by nights for per-night display
     const toNightly = (price: number, fromCurrency: string) =>
         convertCurrency(price, fromCurrency || 'USD', currency) / (nights ?? 1);

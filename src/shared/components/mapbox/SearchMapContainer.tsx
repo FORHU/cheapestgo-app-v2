@@ -3,6 +3,8 @@
 import React, { useMemo, useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { MappableProperty } from '@/shared/components/map/types';
+import { useHotelClusters, isCluster, type ViewBounds } from '@/shared/components/map/useHotelClusters';
+import { ClusterPin } from '@/shared/components/map/ClusterPin';
 import { useMapboxInstance } from './hooks/useMapboxInstance';
 import { useMapInteractions, PoiData } from './hooks/useMapInteractions';
 import { useMapViewport } from './hooks/useMapViewport';
@@ -231,6 +233,54 @@ export const SearchMapContainer = React.memo(({
         );
     }, [mappableProperties, districtBbox, currentZoom, showAllProperties]);
 
+    // ── Viewport bounds ──────────────────────────────────────────────────────
+    // Read back from the map rather than derived from state, so it describes where
+    // the map actually is after a programmatic move as well as a user gesture.
+    // Refreshed on idle, which fires once the map settles from either.
+    const [viewBounds, setViewBounds] = React.useState<ViewBounds | null>(null);
+
+    const updateViewBounds = useCallback(() => {
+        const map = mapRef.current?.getMap?.();
+        const b = map?.getBounds?.();
+        if (!b) return;
+        // Padded by 50% so markers just off-screen are already mounted and do not
+        // pop in as the user pans onto them.
+        const padX = (b.getEast() - b.getWest()) * 0.5;
+        const padY = (b.getNorth() - b.getSouth()) * 0.5;
+        const next: ViewBounds = {
+            minLng: b.getWest()  - padX,
+            maxLng: b.getEast()  + padX,
+            minLat: b.getSouth() - padY,
+            maxLat: b.getNorth() + padY,
+        };
+        setViewBounds(prev =>
+            prev
+            && prev.minLng === next.minLng && prev.maxLng === next.maxLng
+            && prev.minLat === next.minLat && prev.maxLat === next.maxLat
+                ? prev
+                : next,
+        );
+    }, [mapRef]);
+
+    // Clusters carry only ids, so drawing a lone hotel needs its property back.
+    const propertyById = useMemo(() => {
+        const map = new Map<string, MappableProperty>();
+        for (const p of markerProperties) map.set(p.id, p);
+        return map;
+    }, [markerProperties]);
+
+    // ── Clustering ───────────────────────────────────────────────────────────
+    // Without this the map mounts one Mapbox marker per hotel — around 1,100 for a
+    // Seoul search — and every one is re-transformed on each frame of a pan. Grouping
+    // bounds that count without hiding anything: a cluster says how many it stands
+    // for and the cheapest price among them.
+    const { clusters, getExpansionZoom, getLeaves } = useHotelClusters(
+        markerProperties,
+        viewBounds,
+        currentZoom,
+        markerPrices,
+    );
+
     const [selectedPoi, setSelectedPoi] = React.useState<PoiData | null>(null);
     const [hoveredPoi, setHoveredPoi] = React.useState<PoiData | null>(null);
 
@@ -333,7 +383,22 @@ export const SearchMapContainer = React.memo(({
             );
         };
 
-        const currentIds = new Set(markerProperties.map(p => p.id));
+        const renderCluster = (root: Root, count: number, minPrice: number) => {
+            let priceLabel = '';
+            try { priceLabel = minPrice > 0 ? formatCurrency(minPrice, targetCurrency) : ''; } catch { /* noop */ }
+            root.render(
+                <div style={{ pointerEvents: 'none' }}>
+                    <ClusterPin count={count} priceLabel={priceLabel} />
+                </div>
+            );
+        };
+
+        // Markers are keyed by cluster id or property id in one namespace, so the
+        // existing diff below removes a cluster when it breaks apart into its hotels
+        // and vice versa, without either kind leaking across a zoom change.
+        const currentIds = new Set(
+            clusters.map(f => (isCluster(f) ? `cluster-${f.properties.cluster_id}` : f.properties.propertyId))
+        );
 
         // Remove markers for hotels no longer in results.
         // Defer root.unmount() — calling it synchronously inside a useEffect body
@@ -351,7 +416,63 @@ export const SearchMapContainer = React.memo(({
             setTimeout(() => roots.forEach(r => { try { r.unmount(); } catch { /* noop */ } }), 0);
         }
 
-        for (const p of markerProperties) {
+        // ── Clusters ──
+        // Their own pass: a cluster has no property to select or hover, and clicking
+        // one moves the camera instead.
+        for (const feature of clusters) {
+            if (!isCluster(feature)) continue;
+
+            const { cluster_id, point_count, price } = feature.properties;
+            const key = `cluster-${cluster_id}`;
+            const [lng, lat] = feature.geometry.coordinates;
+            const existing = imperativeMarkersRef.current.get(key);
+
+            if (!existing) {
+                const el = document.createElement('div');
+                el.style.cursor = 'pointer';
+                el.style.zIndex = '1';
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const expansionZoom = getExpansionZoom(cluster_id);
+
+                    if (expansionZoom !== null) {
+                        mapInstance.easeTo({ center: [lng, lat], zoom: expansionZoom, duration: 500 });
+                        return;
+                    }
+
+                    // Every hotel here shares one coordinate, so zooming never
+                    // separates them. v1 opens a carousel of the stack; app-v2 has no
+                    // such component yet, so the cheapest is selected to open its
+                    // popup — actionable rather than a dead end, but it does leave the
+                    // rest of the stack unreachable until that carousel is ported.
+                    const leaves = getLeaves(cluster_id);
+                    const cheapest = leaves.reduce<MappableProperty | null>(
+                        (best, l) => (!best || (markerPrices[l.id] ?? Infinity) < (markerPrices[best.id] ?? Infinity) ? l : best),
+                        null,
+                    );
+                    if (cheapest) onSelectIdRef.current(cheapest.id);
+                    else mapInstance.easeTo({ center: [lng, lat], zoom: mapInstance.getZoom() + 2, duration: 500 });
+                });
+
+                const root = createRoot(el);
+                renderCluster(root, point_count, price);
+
+                const marker = new MapboxMarker({ element: el, anchor: 'bottom' }).setLngLat([lng, lat]);
+                marker.addTo(mapInstance);
+
+                imperativeMarkersRef.current.set(key, { marker, root, el, visible: true });
+            } else {
+                existing.marker.setLngLat([lng, lat]);
+                renderCluster(existing.root, point_count, price);
+            }
+        }
+
+        // ── Lone hotels ──
+        for (const feature of clusters) {
+            if (isCluster(feature)) continue;
+            const p = propertyById.get(feature.properties.propertyId);
+            if (!p) continue;
+
             const isSelected = p.id === selectedId;
             const isHov     = p.id === hoveredId;
             const existing  = imperativeMarkersRef.current.get(p.id);
@@ -400,7 +521,7 @@ export const SearchMapContainer = React.memo(({
                 existing.el.style.zIndex = isHov ? '10' : '1';
             }
         }
-    }, [isMapLoaded, isMapIdle, MapboxMarkerClass, markerProperties, selectedId, hoveredId, markerPrices, targetCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isMapLoaded, isMapIdle, MapboxMarkerClass, clusters, propertyById, getExpansionZoom, getLeaves, selectedId, hoveredId, markerPrices, targetCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Cleanup all imperative markers on unmount
     React.useEffect(() => {
@@ -464,8 +585,21 @@ export const SearchMapContainer = React.memo(({
     const handleMoveEnd = useCallback(() => {
         const zoom = mapRef.current?.getMap?.()?.getZoom?.() ?? currentZoom;
         setCurrentZoom(zoom);
+        updateViewBounds();
         onZoomChange?.(zoom);
-    }, [onZoomChange]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [onZoomChange, updateViewBounds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // `moveend` covers gestures; `idle` also covers the camera moves the code makes
+    // itself — fitBounds to a district, flyTo a selection, useMapViewport. Without
+    // it the marker set can end up filtered against a viewport the map has left.
+    React.useEffect(() => {
+        const map = mapRef.current?.getMap?.();
+        if (!isMapLoaded || !map) return;
+        const onIdle = () => updateViewBounds();
+        map.on('idle', onIdle);
+        updateViewBounds();
+        return () => { map.off('idle', onIdle); };
+    }, [isMapLoaded, updateViewBounds]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const selectedProperty = useMemo(
         () => mappableProperties.find((p: MappableProperty) => p.id === selectedId) ?? null,
