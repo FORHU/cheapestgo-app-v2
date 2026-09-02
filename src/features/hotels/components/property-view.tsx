@@ -129,7 +129,7 @@ export function PropertyView() {
         if (adults)    qs.set('adults',    String(adults));
         if (children)  qs.set('children',  String(children));
 
-        http.get<PropertyApiResponse>(`/api/hotels/property/${hotelId}?${qs.toString()}`)
+        http.get<PropertyApiResponse>(`/hotels/property/${hotelId}?${qs.toString()}`)
             .then((res)  => { if (!cancelled) setData(res); })
             .catch((err) => { if (!cancelled) setError(err.message ?? 'Failed to load property'); })
             .finally(()  => { if (!cancelled) setLoading(false); });

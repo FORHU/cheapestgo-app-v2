@@ -18,8 +18,6 @@ import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
 import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
-import { cn } from '@/shared/lib/cn';
-import { SHELL_GUTTER, SHELL_CAP, SECTION_HEADING } from '@/shared/lib/layout';
 import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -329,7 +327,7 @@ function PropertyContent() {
         if (adults)    qs.set('adults',    String(adults));
         if (children)  qs.set('children',  String(children));
 
-        http.get<PropertyApiResponse>(`/api/hotels/property/${hotelId}?${qs.toString()}`)
+        http.get<PropertyApiResponse>(`/hotels/property/${hotelId}?${qs.toString()}`)
             .then(res  => { if (!cancelled) setData(res); })
             .catch(err => { if (!cancelled) setError(err.message ?? 'Failed to load property'); })
             .finally(()=> { if (!cancelled) setLoading(false); });
