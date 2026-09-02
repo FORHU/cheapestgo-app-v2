@@ -1138,6 +1138,23 @@ function HotelSearchContent() {
         setRailPage(Math.max(0, Math.min(railPageCount - 1, page)));
     }, [railPageCount, railPageW]);
 
+    /**
+     * The handler above was never attached to anything, so the counter only moved
+     * when a page step moved it — a swipe, a drag, or the scroll that centres the
+     * card behind a clicked pin all left it reading the old page.
+     *
+     * Attached from an effect rather than inside `attachRailScroll`: that callback
+     * ref is deliberately `[]`-dep and would capture a stale handler, since this one
+     * changes identity with the page geometry. `railScrollEpoch` is the signal the
+     * callback ref already publishes for "the scroller genuinely exists now".
+     */
+    useEffect(() => {
+        const el = railScrollRef.current;
+        if (!el) return;
+        el.addEventListener('scroll', handleRailScroll, { passive: true });
+        return () => el.removeEventListener('scroll', handleRailScroll);
+    }, [handleRailScroll, railScrollEpoch]);
+
     // A narrowed filter or a new search can leave the counter past the end.
     useEffect(() => {
         setRailPage(p => Math.min(p, railPageCount - 1));
