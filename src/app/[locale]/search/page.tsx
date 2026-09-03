@@ -147,9 +147,9 @@ const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
  * The phone card's own width cap, as a number — the one place along this
  * rail that still needs the inset as a raw pixel value rather than a class.
  *
- * Everywhere else the rail sits in the same `px-4 sm:px-8 lg:px-12` box the
- * top bar does — `MAP_CHROME_GUTTER` — so the strip begins under the bar's
- * left edge at every width. The scroller's own inset used to be measured on
+ * Everywhere else the rail sits in the same `px-20` box the top bar does —
+ * `MAP_CHROME_GUTTER` — so the strip begins under the bar's left edge at every
+ * width. The scroller's own inset used to be measured on
  * its own, in JS, off an `isMobile` that flips at 768 where the bar's gutter
  * steps at 640; between those two widths the first card started 8px inside
  * the tally chip above it, and past 1448 the whole strip sat a couple of
@@ -218,21 +218,13 @@ const CARD_GEOM_MOBILE = {
  * from under it.
  */
 /**
- * The map view's floating chrome sits on the bottom nav's box, not the shell's.
+ * The map view's floating chrome — the toolbar and the card rail — sits a flat
+ * 80px off both window edges at every width.
  *
- * `SHELL_GUTTER` opens at 20px and the nav's own fixed wrapper at 16px, so on a
- * phone the toolbar floated 4px inside the nav below it and the two pills — the
- * only two things on the screen with a hard left and right edge — did not line
- * up. The nav is the one that cannot move: it is every screen's, while this
- * gutter is this view's alone.
- *
- * Only the first step changes. Past `sm` the shell's own 32/48 take over again,
- * which is where the nav stops being the thing the eye compares against — it
- * still carries its 16px to `lg`, so between those two widths the bar is wider
- * than the nav rather than narrower. If that reads wrong on a tablet, the fix
- * is `px-4 lg:px-12` here, and it is a design call rather than a bug.
+ * The rail reads this same constant (see below), so the strip under the bar
+ * always starts and ends on the bar's edge.
  */
-const MAP_CHROME_GUTTER = 'px-4 sm:px-8 lg:px-12';
+const MAP_CHROME_GUTTER = 'px-20';
 
 const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:pb-7';
 /** The same clearance as an offset, for anything that floats rather than pads. */
@@ -1430,7 +1422,7 @@ function HotelSearchContent() {
                 was desktop-only anyway, so the panel is the only surface both
                 breakpoints reach. */}
             <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-30 pt-4', MAP_CHROME_GUTTER)}>
-                <div className={cn('relative', SHELL_CAP)}>
+                <div className="relative">
                     <SearchTopBar
                         className="pointer-events-auto"
                         tone={uiTone}
@@ -1527,14 +1519,12 @@ function HotelSearchContent() {
                         className="absolute left-0 right-0 bottom-0 z-20"
                         style={{ pointerEvents: 'none' }}
                     >
-                        {/* The toolbar's box, again: the gutter outside, the cap
-                            inside. Everything the rail draws — the tally, the
-                            controls opposite it, and the strip under both —
-                            then starts on the bar's left edge and ends on its
-                            right one, instead of the rail running to the window
-                            while the bar stopped at 1400. */}
+                        {/* The toolbar's gutter, again: the tally and the controls
+                            opposite it start on the bar's left edge and end on its
+                            right one, and the strip below is drawn in the same box,
+                            so all three line up down the view's two edges. */}
                         <div className={MAP_CHROME_GUTTER}>
-                            <div className={SHELL_CAP}>
+                            <div className="contents">
                                 {/* Count + rail controls */}
                                 <div className="mb-1.5 flex items-end justify-between md:mb-0.5 md:items-center">
                                     {/* The tally, in the slider's top-left corner.
@@ -1621,7 +1611,7 @@ function HotelSearchContent() {
                             scroll to horizontal. The bottom inset clears the app's
                             bottom nav wherever that nav is on screen. */}
                         <div className={cn('relative', RAIL_PAD_B_MOBILE)}>
-                            <div className="pl-4 sm:pl-8 lg:pl-12">
+                            <div className="pl-20">
                                 <div
                                     ref={attachRailScroll}
                                     className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
@@ -1655,7 +1645,7 @@ function HotelSearchContent() {
                                     ))}
                                     {/* Mirrors the strip's left inset so the last card
                                         doesn't butt against the window edge */}
-                                    <div className="w-4 shrink-0 sm:w-8 lg:w-12" />
+                                    <div className="w-20 shrink-0" />
                                 </div>
                             </div>
 
@@ -1670,14 +1660,12 @@ function HotelSearchContent() {
 
                                 Its own symmetric gutter, not the scroller's: the
                                 scroller's is left-only on purpose, so a card can
-                                scroll past the visual right edge — nested under
-                                that same box, a centered row would land 24px
-                                right of where the bar itself centers. This row
+                                scroll past the visual right edge, while this row
                                 needs both edges to land where the bar's do. Only
                                 drawn once there's more than one page to move
                                 between. */}
                             {railPageCount > 1 && (
-                                <div className="mt-3 flex justify-center gap-1.5 px-4 sm:px-8 lg:px-12">
+                                <div className="mt-3 flex justify-center gap-1.5 px-20">
                                     {Array.from({ length: railPageCount }).map((_, i) => (
                                         <button
                                             key={i}
@@ -1709,12 +1697,12 @@ function HotelSearchContent() {
                         exit={{ y: 60, opacity: 0 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 200 }}
                         // Rides the same bottom inset as the rail it restores, so
-                        // it clears the app's bottom nav too, and the same box, so
-                        // it comes back on the right edge the Hide button it
+                        // it clears the app's bottom nav too, and the same gutter,
+                        // so it comes back on the right edge the Hide button it
                         // replaces sat on rather than out at the window's.
-                        className={cn('pointer-events-none absolute inset-x-0 z-20', SHELL_GUTTER, RAIL_BOTTOM_MOBILE)}
+                        className={cn('pointer-events-none absolute inset-x-0 z-20 px-20', RAIL_BOTTOM_MOBILE)}
                     >
-                        <div className={cn('flex justify-end', SHELL_CAP)}>
+                        <div className="flex justify-end">
                             <button
                                 onClick={() => setRailHidden(false)}
                                 className="pointer-events-auto flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"

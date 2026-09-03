@@ -11,7 +11,7 @@ import { Map } from '@/shared/components/ui/map';
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 import { cn } from '@/shared/lib/cn';
-import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
+import { SECTION_HEADING } from '@/shared/lib/layout';
 import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
 import { useUserCurrency } from '@/stores/searchStore';
 import { convertCurrency } from '@/shared/lib/currency';
@@ -105,21 +105,15 @@ type PropertyPalette = ReturnType<typeof propertyPalette>;
  * The page's column — one edge for every section on it, so the hero's name, the
  * description, the rooms and the bar at the bottom all start on the same line.
  *
- * It is the app shell's, shared with the search page: 16/24px of gutter, capped
- * at 1400px. A stay therefore occupies the same column in the results as it
- * does on its own page, and does not slide sideways when it is opened.
- *
- * A pair of nested elements rather than one, because the cap has to land inside
- * the padding — see `SHELL_GUTTER`. Held here as a component so the four places
- * that need it do not each write the nesting out and get it half right.
+ * A flat 160px gutter down both sides from `lg` up, tapering to 48/20px on
+ * smaller screens, and no max-width cap — the page runs full-bleed to that
+ * gutter at every width. Held here as a component so the places that need it do
+ * not each write the classes out and get them half right.
  */
 function PageColumn({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
     return (
-        // A wider gutter than the shared shell — this page reads better with more
-        // air down its sides. `cn` lets the wider `sm:`/`lg:` steps win over
-        // `SHELL_GUTTER`'s while its `px-5` mobile value stays.
-        <div className={cn(SHELL_GUTTER, 'sm:px-12 lg:px-20 xl:px-28')} style={style}>
-            <div className={SHELL_CAP}>{children}</div>
+        <div className="px-5 sm:px-12 lg:px-[160px]" style={style}>
+            {children}
         </div>
     );
 }
@@ -153,7 +147,7 @@ function Reveal({ children, className, style }: { children: React.ReactNode; cla
  * patch of sky the same way the badge/pill chrome elsewhere on the page does.
  */
 const HERO_ARROW: React.CSSProperties = {
-    position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 2,
+    pointerEvents: 'auto',
     width: 44, height: 44, borderRadius: '50%',
     background: 'transparent', border: 'none',
     color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -506,60 +500,64 @@ function PropertyContent() {
                     of the photo's bottom darkened to stay legible over it. */}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.18) 0%,rgba(10,8,14,.42) 35%,rgba(10,8,14,.96) 100%)' }} />
 
-                {/* Back. Over the photo rather than in the page below it — the
-                    banner is the first thing on screen, and a control to leave
-                    should not be something you scroll to find. */}
-                <button
-                    onClick={() => router.back()}
-                    aria-label="Go back"
-                    className="left-5 sm:left-8 lg:left-12"
-                    style={{
-                        position: 'absolute', top: 20, zIndex: 2,
-                        width: 44, height: 44, borderRadius: '50%',
-                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
-                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer',
-                    }}
-                >
-                    <ArrowLeft size={20} />
-                </button>
-
-                {/* Top-right controls: the currency picker, then the theme
-                    toggle — both drawn as the same 44px circle as the back
-                    button on the opposite corner. The theme toggle flips the
-                    real app-wide theme (see `propertyPalette` above): the Hero
-                    itself stays as drawn regardless, everything below it
+                {/* Back, currency and theme — laid on the same column the name
+                    and address below use (`PageColumn`), so the back button
+                    starts on the banner text's left edge rather than hanging out
+                    at the window's. Over the photo rather than in the page below:
+                    the banner is the first thing on screen, and a control to
+                    leave should not be something you scroll to find. The theme
+                    toggle flips the real app-wide theme (see `propertyPalette`
+                    above) — the Hero stays as drawn, everything below it
                     switches. */}
-                <div
-                    className="right-5 sm:right-8 lg:right-12"
-                    style={{ position: 'absolute', top: 20, zIndex: 3, display: 'flex', alignItems: 'center', gap: 10 }}
-                >
-                    <CurrencySelector
-                        align="right"
-                        iconOnly
-                        triggerClassName="h-11 w-11 md:h-11 md:w-11 backdrop-blur-md"
-                        chrome={{
-                            surface: 'rgba(20,20,20,.45)',
-                            border:  'transparent',
-                            text:    '#fff',
-                            menu:    'rgba(18,18,20,.96)',
-                            hover:   'rgba(255,255,255,.12)',
-                            shadow:  '0 24px 55px -18px rgba(0,0,0,.7)',
-                        }}
-                    />
-                    <button
-                        onClick={toggleTheme}
-                        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                        style={{
-                            width: 44, height: 44, borderRadius: '50%', border: 'none',
-                            background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
-                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
-                    </button>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: 20, zIndex: 3, pointerEvents: 'none' }}>
+                    <PageColumn>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <button
+                                onClick={() => router.back()}
+                                aria-label="Go back"
+                                style={{
+                                    pointerEvents: 'auto',
+                                    width: 44, height: 44, borderRadius: '50%', border: 'none',
+                                    background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
+
+                            {/* Both drawn as the same 44px circle as the back
+                                button on the opposite corner. */}
+                            <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <CurrencySelector
+                                    align="right"
+                                    iconOnly
+                                    triggerClassName="h-11 w-11 md:h-11 md:w-11 backdrop-blur-md"
+                                    chrome={{
+                                        surface: 'rgba(20,20,20,.45)',
+                                        border:  'transparent',
+                                        text:    '#fff',
+                                        menu:    'rgba(18,18,20,.96)',
+                                        hover:   'rgba(255,255,255,.12)',
+                                        shadow:  '0 24px 55px -18px rgba(0,0,0,.7)',
+                                    }}
+                                />
+                                <button
+                                    onClick={toggleTheme}
+                                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                                    style={{
+                                        width: 44, height: 44, borderRadius: '50%', border: 'none',
+                                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+                                </button>
+                            </div>
+                        </div>
+                    </PageColumn>
                 </div>
 
                 {/* Pagination arrows. Only once there is more than one
@@ -568,30 +566,36 @@ function PropertyContent() {
                     cannot do. The idle pulse is a continuous, gentle scale
                     loop rather than a hover/press-only cue — it's the one
                     place on the page drawing the eye to "there's more here"
-                    before any interaction at all. */}
+                    before any interaction at all.
+
+                    Laid on the same `PageColumn` as the name and the corner
+                    buttons, so the arrows land on the banner's edges rather
+                    than the window's. */}
                 {heroCount > 1 && (
-                    <>
-                        <motion.button
-                            onClick={() => { setHeroDir(-1); setHeroIndex(i => (i - 1 + heroCount) % heroCount); }}
-                            aria-label="Previous photo"
-                            className="left-5 sm:left-8 lg:left-12"
-                            style={HERO_ARROW}
-                            animate={{ scale: [1, 1.12, 1] }}
-                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                        >
-                            <ChevronLeft size={34} strokeWidth={2.25} />
-                        </motion.button>
-                        <motion.button
-                            onClick={() => { setHeroDir(1); setHeroIndex(i => (i + 1) % heroCount); }}
-                            aria-label="Next photo"
-                            className="right-5 sm:right-8 lg:right-12"
-                            style={HERO_ARROW}
-                            animate={{ scale: [1, 1.12, 1] }}
-                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.15 }}
-                        >
-                            <ChevronRight size={34} strokeWidth={2.25} />
-                        </motion.button>
-                    </>
+                    <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none' }}>
+                        <PageColumn>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <motion.button
+                                    onClick={() => { setHeroDir(-1); setHeroIndex(i => (i - 1 + heroCount) % heroCount); }}
+                                    aria-label="Previous photo"
+                                    style={HERO_ARROW}
+                                    animate={{ scale: [1, 1.12, 1] }}
+                                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                                >
+                                    <ChevronLeft size={34} strokeWidth={2.25} />
+                                </motion.button>
+                                <motion.button
+                                    onClick={() => { setHeroDir(1); setHeroIndex(i => (i + 1) % heroCount); }}
+                                    aria-label="Next photo"
+                                    style={HERO_ARROW}
+                                    animate={{ scale: [1, 1.12, 1] }}
+                                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.15 }}
+                                >
+                                    <ChevronRight size={34} strokeWidth={2.25} />
+                                </motion.button>
+                            </div>
+                        </PageColumn>
+                    </div>
                 )}
 
                 {/* Name + location, and the dots under them. The photo stays

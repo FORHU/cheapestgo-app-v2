@@ -41,14 +41,14 @@ export function sortPalette(theme: 'light' | 'dark') {
 /**
  * The map toolbar's circular icon buttons — back, nearby places, theme.
  *
- * 28px on desktop, down from 40. Small enough to read as chrome beside the
- * search field rather than competing with it, and still clear of the 24px
- * minimum target size WCAG 2.5.8 asks for. Shared as a constant because three
- * buttons carrying the same geometry inline is how they drift apart.
+ * 40px on desktop — the size they were before the map and list toolbars were
+ * merged — and 24px on the phone bar, where the row has to fit more controls in
+ * less width. Shared as a constant because several buttons carrying the same
+ * geometry inline is how they drift apart.
  */
 export const ICON_BTN =
     'flex h-6 w-6 shrink-0 items-center justify-center rounded-full cursor-pointer ' +
-    'transition-opacity hover:opacity-80 md:h-7 md:w-7';
+    'transition-opacity hover:opacity-80 md:h-10 md:w-10';
 
 /** The one accent the search page paints with. */
 export const ACCENT = '#FF6B4B';

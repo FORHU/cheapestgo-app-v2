@@ -223,14 +223,15 @@ function roomPalette(tone: 'light' | 'dark') {
     return {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
-         * The card's plate. Cool rather than neutral, as drawn. No border —
-         * a layered drop shadow does the lifting. In light that shadow reads
-         * directly; in dark, against the page's black, the shadow is felt only
-         * at the near edge, so the plate is also set a shade lighter than it
-         * would otherwise be to hold its own outline by contrast alone.
+         * The card's plate — a fixed #17181F in dark, matched to the detail
+         * modal below so a card and the modal it opens read as one surface.
+         * No border; a layered drop shadow does the lifting. In light that
+         * shadow reads directly; in dark, against the page's black, it is felt
+         * only at the near edge, and the hover lift carries the rest of the
+         * "this is a unit you act on" cue.
          */
         card:     dark
-            ? 'bg-[#1B2434] shadow-[0_20px_48px_-16px_rgba(0,0,0,0.9),0_6px_16px_-8px_rgba(0,0,0,0.7)]'
+            ? 'bg-[#17181F] shadow-[0_20px_48px_-16px_rgba(0,0,0,0.9),0_6px_16px_-8px_rgba(0,0,0,0.7)]'
             : 'bg-white shadow-[0_20px_44px_-16px_rgba(15,23,42,0.28),0_6px_14px_-8px_rgba(15,23,42,0.16)]',
         name:     dark ? 'text-white' : 'text-slate-900',
         feature:  dark ? 'text-white/60' : 'text-slate-500',
@@ -266,8 +267,8 @@ function roomPalette(tone: 'light' | 'dark') {
         columnDot:     dark ? 'bg-white/40' : 'bg-slate-400',
         /** The two "View more" links under the columns. */
         viewMore: dark ? 'text-white/55 hover:text-white/85' : 'text-slate-500 hover:text-slate-800',
-        /** The detail modal. */
-        modalBg:      dark ? 'bg-[#131A24]' : 'bg-white',
+        /** The detail modal — same #17181F as the room card that opens it. */
+        modalBg:      dark ? 'bg-[#17181F]' : 'bg-white',
         modalTitle:   dark ? 'text-white' : 'text-slate-900',
         modalLabel:   dark ? 'text-white/45' : 'text-slate-400',
         modalClose:   dark ? 'text-white/50 hover:text-white/85' : 'text-slate-400 hover:text-slate-700',

@@ -97,19 +97,18 @@ export function SearchTopBar({
 
     return (
         <div
-            // Desktop takes 8px of padding on a height that follows its content.
-            // The 60px it used to be fixed at was taller than the tallest
-            // control plus any padding, so the padding never showed — it was
-            // 20px of dead space either way. The phone keeps its own fixed 48px,
-            // where the bar is already as tight as it goes.
+            // Desktop holds the bar at a fixed 60px — the size it was before the
+            // map and list toolbars were merged into this component — with 8px of
+            // padding inside it. The phone keeps its own tighter 48px, where the
+            // bar is already as small as it goes and the desktop controls step
+            // down to fit.
             className={cn(
-                'flex h-12 items-center gap-1.5 rounded-[16px] px-2',
-                'md:h-auto md:gap-2 md:rounded-[20px] md:p-2',
+                'flex h-12 items-center gap-1.5 rounded-[16px] p-8',
+                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
                 className,
             )}
             style={{
                 background: barBackground ?? chrome.bar,
-                border: `1px solid ${chrome.border}`,
                 boxShadow: chrome.shadow,
             }}
         >
@@ -119,7 +118,7 @@ export function SearchTopBar({
                 aria-label="Go back"
                 className={ICON_BTN}
                 style={rest}>
-                <ArrowLeft size={13} className="md:size-[15px]" style={{ color: chrome.text }} />
+                <ArrowLeft size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
             </button>
 
             {/* Search */}
@@ -152,7 +151,7 @@ export function SearchTopBar({
                         title="Filters"
                         className={cn(ICON_BTN, 'relative transition-colors', filters.mobileOnly && 'lg:hidden')}
                         style={filters.open || (filters.activeCount ?? 0) > 0 ? lit : rest}>
-                        <SlidersHorizontal size={13} className="md:size-[15px]" />
+                        <SlidersHorizontal size={13} className="md:size-[17px]" />
                         {(filters.activeCount ?? 0) > 0 && !filters.open && (
                             <span
                                 aria-hidden="true"
@@ -179,7 +178,7 @@ export function SearchTopBar({
                         title={pois.on ? 'Hide nearby places' : 'Show nearby places'}
                         className={cn(ICON_BTN, 'transition-colors')}
                         style={pois.on ? lit : rest}>
-                        <Compass size={13} className="md:size-[15px]" />
+                        <Compass size={13} className="md:size-[17px]" />
                     </button>
                 )}
 
@@ -211,27 +210,24 @@ export function SearchTopBar({
                     className={ICON_BTN}
                     style={rest}>
                     {theme === 'dark'
-                        ? <Sun size={13} className="md:size-[15px]" style={{ color: chrome.text }} />
-                        : <Moon size={13} className="md:size-[15px]" style={{ color: chrome.text }} />}
+                        ? <Sun size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
+                        : <Moon size={13} className="md:size-[17px]" style={{ color: chrome.text }} />}
                 </button>
 
                 {/* View toggle — a circle on a phone, the labelled pill above it.
                     One button rather than one per view: they were mirrors of each
                     other, and mirrors are what drift.
 
-                    The pill stands at the icon buttons' own height rather than the
-                    40px it used to: it is the only labelled control on the bar, and
-                    at 40 beside a row of 28px circles it read as a different tier of
-                    control instead of the last item in the same row. Width still
-                    follows the label. */}
+                    The pill stands at the icon buttons' own height — 40px on
+                    desktop — with its width following the label. */}
                 <button
                     onClick={() => onViewChange(view === 'map' ? 'list' : 'map')}
                     aria-label={view === 'map' ? 'List view' : 'Map view'}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-7 md:w-auto md:px-3.5"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-auto md:px-4"
                     style={{ ...rest, fontSize: 13, fontWeight: 600 }}>
                     {view === 'map'
-                        ? <List size={13} className="md:size-[15px]" />
-                        : <MapIcon size={13} className="md:size-[15px]" />}
+                        ? <List size={13} className="md:size-[17px]" />
+                        : <MapIcon size={13} className="md:size-[17px]" />}
                     <span className="hidden md:inline">{view === 'map' ? 'List View' : 'Map View'}</span>
                 </button>
             </div>
