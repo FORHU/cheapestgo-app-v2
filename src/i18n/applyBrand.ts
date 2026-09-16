@@ -17,8 +17,15 @@
  * mailboxes and hosts, not prose: rewriting them invents an address that may not exist.
  * Contact details are configuration and belong in their own setting.
  */
+import { canonicalBrandName } from '@/shared/lib/brand';
+
 export function applyBrand<T>(messages: T): T {
-    const brand = process.env.NEXT_PUBLIC_BRAND_NAME ?? 'CheapestGo';
+    // Canonical, not raw: the Korean instance is still started with the pre-rebrand
+    // NEXT_PUBLIC_BRAND_NAME until it is redeployed, and the copy has to name the brand
+    // the header already shows. Reading the raw value would print "GeomeeGo" through the
+    // privacy and cookie policies — the pages that state which site collects the reader's
+    // data — under a header reading AirangGo.
+    const brand = canonicalBrandName(process.env.NEXT_PUBLIC_BRAND_NAME);
     if (brand === 'CheapestGo') return messages;
 
     const rewrite = (node: unknown): unknown => {

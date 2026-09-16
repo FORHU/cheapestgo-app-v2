@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Suspense } from 'react';
 import { FlightSearchClient } from './flight-search-client';
 import { Header } from '@/shared/components/header';
@@ -15,12 +16,12 @@ export async function generateMetadata({
     const destination = (sp.destination as string) ?? '';
 
     const title = origin && destination
-        ? `Flights ${origin} → ${destination} | CheapestGo`
-        : 'Flight Search Results | CheapestGo';
+        ? `Flights ${origin} → ${destination} | ${BRAND_NAME}`
+        : `Flight Search Results | ${BRAND_NAME}`;
 
     const description = origin && destination
-        ? `Compare and book the cheapest flights from ${origin} to ${destination}. Find the best deals on CheapestGo.`
-        : 'Compare and book cheap flights worldwide. Find the best deals on CheapestGo.';
+        ? `Compare and book the cheapest flights from ${origin} to ${destination}. Find the best deals on ${BRAND_NAME}.`
+        : `Compare and book cheap flights worldwide. Find the best deals on ${BRAND_NAME}.`;
 
     return {
         title,

@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
@@ -144,7 +145,7 @@ export function ResetPasswordView() {
                 <div className="text-center space-y-2">
                     <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
                         <PlaneTakeoff size={22} className="text-blue-600" />
-                        CheapestGo
+                        {BRAND_NAME}
                     </Link>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Reset your account password</p>
                 </div>

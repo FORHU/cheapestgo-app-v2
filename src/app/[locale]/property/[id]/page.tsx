@@ -18,7 +18,7 @@ import { convertCurrency } from '@/shared/lib/currency';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
 import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
-import { nightsBetween } from '@/shared/lib/stay';
+import { resolveStayDates } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -288,8 +288,13 @@ function PropertyContent() {
     const palette = propertyPalette(theme);
 
     const hotelId  = params.id as string;
-    const checkIn  = searchParams.get('checkIn')  ?? '';
-    const checkOut = searchParams.get('checkOut') ?? '';
+    // One derivation of the stay for the whole page: the dates the supplier is asked
+    // for, and the night count anything restating the price per night divides by. A
+    // link that has been sitting in a chat window names dates in the past, which the
+    // supplier simply rejects — so those fall back to a stay that can be booked.
+    const { checkIn, checkOut, nights } = resolveStayDates(
+        searchParams.get('checkIn'), searchParams.get('checkOut'),
+    );
     const adults   = Number(searchParams.get('adults')   ?? 2);
     const children = Number(searchParams.get('children') ?? 0);
 
@@ -322,8 +327,8 @@ function PropertyContent() {
         setError(null);
 
         const qs = new URLSearchParams();
-        if (checkIn)   qs.set('checkIn',   checkIn);
-        if (checkOut)  qs.set('checkOut',  checkOut);
+        qs.set('checkIn',  checkIn);
+        qs.set('checkOut', checkOut);
         if (adults)    qs.set('adults',    String(adults));
         if (children)  qs.set('children',  String(children));
 
@@ -370,10 +375,7 @@ function PropertyContent() {
     const amenities    = content?.amenities ?? [];
 
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
-    // One derivation of the stay, shared with whatever restates the price per
-    // night — an inline copy of the same arithmetic is what produced the doubled
-    // nightly rate in v1 (ADR-0020).
-    const nights       = nightsBetween(checkIn, checkOut);
+
 
     /**
      * A supplier price, as the page shows it: the whole stay converted into
@@ -383,7 +385,7 @@ function PropertyContent() {
      * "/night" was overstating every rate by the length of the trip.
      */
     const toNightly = (price: number, from: string) =>
-        convertCurrency(price, from || 'USD', currency) / Math.max(1, nights ?? 1);
+        convertCurrency(price, from || 'USD', currency) / nights;
 
     /**
      * The cheapest night on offer, across every rate of every room — off

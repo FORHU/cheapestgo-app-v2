@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import { LogoWordmark } from './logo-wordmark';
 import { CHROME_LINK, FOOTER_LINKS } from '@/features/landing/lib/chrome-links';
+import { BRAND_NAME } from '@/shared/lib/brand';
 
 /**
  * The landing page's own footer: one row of wordmark, links and the legal line,
@@ -28,7 +29,7 @@ export function LandingFooter() {
                     </nav>
 
                     <span className="text-xs text-[#64748b]">
-                        © {new Date().getFullYear()} CheapestGo · Manila
+                        © {new Date().getFullYear()} {BRAND_NAME} · Manila
                     </span>
                 </div>
             </div>

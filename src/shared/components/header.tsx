@@ -12,7 +12,12 @@ import { usePWAInstall } from '@/contexts/PWAInstallContext';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { cn } from '@/shared/lib/cn';
+import { brandWordmark } from '@/shared/lib/brand';
 import { useTranslations } from 'next-intl';
+
+// Split once at module scope: the brand cannot change between renders, and the
+// split is what keeps the trailing "Go" accented for a brand that is not ours.
+const wordmark = brandWordmark(process.env.NEXT_PUBLIC_BRAND_NAME);
 
 const HeaderContent = () => {
   const { theme, toggleTheme } = useTheme();
@@ -52,7 +57,7 @@ const HeaderContent = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
             <h1 className="text-base sm:text-lg md:text-xl text-slate-900 dark:text-white font-display font-bold tracking-tight truncate max-w-[120px] sm:max-w-none">
-              Cheapest<span className="text-alabaster-accent dark:text-obsidian-accent">Go</span>
+              {wordmark.head}<span className="text-alabaster-accent dark:text-obsidian-accent">{wordmark.tail}</span>
             </h1>
           </Link>
 

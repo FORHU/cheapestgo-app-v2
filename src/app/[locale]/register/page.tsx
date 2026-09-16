@@ -1,8 +1,9 @@
 import { Link } from '@/i18n/navigation';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { RegisterForm } from '@/features/auth/components/register-form';
 import { PlaneTakeoff } from 'lucide-react';
 
-export const metadata = { title: 'Create account — CheapestGo' };
+export const metadata = { title: `Create account — ${BRAND_NAME}` };
 
 export default function RegisterPage() {
     return (
@@ -12,7 +13,7 @@ export default function RegisterPage() {
                 <div className="text-center space-y-2">
                     <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
                         <PlaneTakeoff size={22} className="text-blue-600" />
-                        CheapestGo
+                        {BRAND_NAME}
                     </Link>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Create your account</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Start finding the cheapest fares worldwide</p>

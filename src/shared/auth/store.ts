@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { http } from '@/shared/lib/http';
+import { claimRecentSearches, stashRecentSearches } from '@/shared/lib/recentSearchHandoff';
+import { clearBookingInProgress } from '@/shared/lib/bookingInProgress';
 
 interface User {
     id:         string;
@@ -32,9 +34,31 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     logout: async () => {
-        await http.post('/auth/logout');
-        set({ user: null });
+        try {
+            await http.post('/auth/logout');
+            set({ user: null });
+            // Filed under this account, not thrown away: signing back in brings it back,
+            // and nobody else at this browser sees where they had been looking (BG-12).
+            stashRecentSearches();
+        } finally {
+            // Even if the request failed: the person clicked sign out, and the next one at
+            // this browser must not pick up their half-finished booking (BG-1).
+            clearBookingInProgress();
+        }
     },
 
     setUser: (user) => set({ user }),
 }));
+
+// Whichever way an account becomes the signed-in one — password, sign-up, the OAuth
+// return, or a session restored on load — the recent searches on screen must belong to
+// it. One subscription covers every path that sets `user`.
+//
+// app-v2 carries two auth stores today and a sign-in through either one has to do this,
+// so both subscribe. Consolidating them is its own job.
+if (typeof window !== 'undefined') {
+    useAuthStore.subscribe((state, prev) => {
+        const id = state.user?.id;
+        if (id && id !== prev.user?.id) claimRecentSearches(id);
+    });
+}

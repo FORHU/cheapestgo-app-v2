@@ -1,6 +1,7 @@
 export const revalidate = 300;
 
 import type { CSSProperties } from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
 import { ImmersiveSearchBar, type TrendingDest } from '@/features/search/components/immersive-search-bar';
@@ -62,7 +63,7 @@ export default async function HomePage() {
     const organizationJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Organization',
-        name: 'CheapestGo',
+        name: `${BRAND_NAME}`,
         url: 'https://cheapestgo.com',
         logo: 'https://cheapestgo.com/icon-192.png',
         sameAs: [],

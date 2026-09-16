@@ -1,8 +1,9 @@
 import { Link } from '@/i18n/navigation';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { LoginForm } from '@/features/auth/components/login-form';
 import { PlaneTakeoff } from 'lucide-react';
 
-export const metadata = { title: 'Sign in — CheapestGo' };
+export const metadata = { title: `Sign in — ${BRAND_NAME}` };
 
 export default function LoginPage() {
     return (
@@ -12,7 +13,7 @@ export default function LoginPage() {
                 <div className="text-center space-y-2">
                     <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
                         <PlaneTakeoff size={22} className="text-blue-600" />
-                        CheapestGo
+                        {BRAND_NAME}
                     </Link>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome back</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Sign in to your account to continue</p>

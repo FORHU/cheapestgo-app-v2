@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
 export const metadata: Metadata = {
-    title: 'Refund & Cancellation Policy — CheapestGo',
-    description: 'Understand how cancellations, refunds, and amendments work on CheapestGo.',
+    title: `Refund & Cancellation Policy — ${BRAND_NAME}`,
+    description: `Understand how cancellations, refunds, and amendments work on ${BRAND_NAME}.`,
 };
 
 export default function RefundPage() {
@@ -28,7 +29,7 @@ export default function RefundPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Overview</h2>
                             <p className="text-sm leading-relaxed">
-                                CheapestGo acts as an intermediary between you and travel suppliers (hotels, airlines,
+                                {BRAND_NAME} acts as an intermediary between you and travel suppliers (hotels, airlines,
                                 and package providers). Cancellation and refund rights are primarily governed by the
                                 individual supplier&apos;s policies, which vary by property, rate type, and booking dates.
                                 This policy explains how we facilitate cancellations and refunds on your behalf.
@@ -37,7 +38,7 @@ export default function RefundPage() {
 
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Hotel Cancellation Types</h2>
-                            <p className="text-sm mb-3">When you book a hotel through CheapestGo, you will see one of the following rate types:</p>
+                            <p className="text-sm mb-3">When you book a hotel through {BRAND_NAME}, you will see one of the following rate types:</p>
                             <div className="space-y-3">
                                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
                                     <p className="font-semibold text-green-800 dark:text-green-300 mb-1 text-sm">Free Cancellation</p>
@@ -68,7 +69,7 @@ export default function RefundPage() {
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">How to Cancel a Booking</h2>
                             <p className="text-sm mb-2">To cancel a booking:</p>
                             <ol className="list-decimal pl-5 space-y-1.5 text-sm">
-                                <li>Log in to your CheapestGo account and go to <strong>My Bookings</strong>.</li>
+                                <li>Log in to your {BRAND_NAME} account and go to <strong>My Bookings</strong>.</li>
                                 <li>Select the booking you wish to cancel and click <strong>Cancel Booking</strong>.</li>
                                 <li>Review the cancellation policy and any applicable fees shown on screen.</li>
                                 <li>Confirm the cancellation. You will receive a cancellation confirmation email.</li>
@@ -94,13 +95,13 @@ export default function RefundPage() {
                                     5–10 business days to appear on your statement, depending on your bank or card issuer.
                                 </li>
                                 <li>
-                                    <strong>CheapestGo service fee:</strong> Our platform service markup (currently 12%)
-                                    is non-refundable unless the cancellation is due to a supplier error or CheapestGo
+                                    <strong>{BRAND_NAME} service fee:</strong> Our platform service markup (currently 12%)
+                                    is non-refundable unless the cancellation is due to a supplier error or {BRAND_NAME}
                                     system fault.
                                 </li>
                                 <li>
                                     <strong>Stripe processing fees:</strong> Payment processing fees charged by Stripe
-                                    are non-refundable by CheapestGo, in line with Stripe&apos;s standard policy.
+                                    are non-refundable by {BRAND_NAME}, in line with Stripe&apos;s standard policy.
                                 </li>
                                 <li>
                                     <strong>Currency:</strong> Refunds are issued in the same currency as the original
@@ -114,7 +115,7 @@ export default function RefundPage() {
                             <p className="text-sm leading-relaxed">
                                 If you fail to check in on the scheduled arrival date without cancelling in advance,
                                 the booking will be treated as a no-show. No-show policies vary by hotel — most hotels
-                                will charge the full booking amount. CheapestGo cannot override hotel no-show policies.
+                                will charge the full booking amount. {BRAND_NAME} cannot override hotel no-show policies.
                                 We strongly recommend cancelling ahead of time if your plans change.
                             </p>
                         </section>
@@ -144,12 +145,12 @@ export default function RefundPage() {
                                 closure, natural disaster, or force majeure events. If this occurs:
                             </p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
-                                <li>CheapestGo will notify you as soon as we are informed by the supplier</li>
-                                <li>We will process a full refund of the amount paid to CheapestGo, including our service fee</li>
+                                <li>{BRAND_NAME} will notify you as soon as we are informed by the supplier</li>
+                                <li>We will process a full refund of the amount paid to {BRAND_NAME}, including our service fee</li>
                                 <li>We will assist you in finding alternative accommodation where possible, though we cannot guarantee a replacement</li>
                             </ul>
                             <p className="text-sm mt-2">
-                                CheapestGo is not liable for losses arising from supplier cancellations, including
+                                {BRAND_NAME} is not liable for losses arising from supplier cancellations, including
                                 transportation costs, additional hotel nights booked elsewhere, or consequential losses.
                                 We recommend purchasing travel insurance to cover such events.
                             </p>
@@ -160,8 +161,8 @@ export default function RefundPage() {
                             <p className="text-sm leading-relaxed">
                                 If you have a concern about a charge, please contact us at support@cheapestgo.com
                                 before initiating a chargeback with your bank. Most issues can be resolved quickly.
-                                Chargebacks initiated without first contacting CheapestGo may result in account
-                                suspension. CheapestGo reserves the right to contest chargebacks that are made in bad
+                                Chargebacks initiated without first contacting {BRAND_NAME} may result in account
+                                suspension. {BRAND_NAME} reserves the right to contest chargebacks that are made in bad
                                 faith or that do not comply with our cancellation policy.
                             </p>
                         </section>

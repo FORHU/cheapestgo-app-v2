@@ -3,7 +3,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 /**
  * The translations name CheapestGo outright — the sign-in prompt, the footer, and the
  * privacy and cookie policies, which state which site collects the reader's data. Served
- * from GeomeeGo's domain those sentences name the wrong site, so the brand is substituted
+ * from AirangGo's domain those sentences name the wrong site, so the brand is substituted
  * as the messages load.
  *
  * Addresses are deliberately left alone: `support@cheapestgo.com` is a mailbox that
@@ -26,19 +26,28 @@ describe('applyBrand', () => {
     });
 
     it('renames the brand in prose', async () => {
-        const applyBrand = await load('GeomeeGo');
+        const applyBrand = await load('AirangGo');
         expect(applyBrand({ title: 'Sign in to CheapestGo' }))
-            .toEqual({ title: 'Sign in to GeomeeGo' });
+            .toEqual({ title: 'Sign in to AirangGo' });
     });
 
     it('renames it in a policy that says who collects the data', async () => {
+        const applyBrand = await load('AirangGo');
+        expect(applyBrand({ p: 'How CheapestGo collects, uses, and protects your personal information.' }))
+            .toEqual({ p: 'How AirangGo collects, uses, and protects your personal information.' });
+    });
+
+    it('uses the new brand name while the deployment still says the old one', async () => {
+        // The Korean instance is still started with NEXT_PUBLIC_BRAND_NAME=GeomeeGo and
+        // will be until it is rebuilt. The policies have to name AirangGo meanwhile —
+        // they are the pages that state which site collects the reader's data.
         const applyBrand = await load('GeomeeGo');
         expect(applyBrand({ p: 'How CheapestGo collects, uses, and protects your personal information.' }))
-            .toEqual({ p: 'How GeomeeGo collects, uses, and protects your personal information.' });
+            .toEqual({ p: 'How AirangGo collects, uses, and protects your personal information.' });
     });
 
     it('leaves email addresses and hosts untouched', async () => {
-        const applyBrand = await load('GeomeeGo');
+        const applyBrand = await load('AirangGo');
         expect(applyBrand({
             email: 'support@cheapestgo.com',
             site:  'https://www.cheapestgo.com/terms',
@@ -49,14 +58,14 @@ describe('applyBrand', () => {
     });
 
     it('renames every occurrence in one string', async () => {
-        const applyBrand = await load('GeomeeGo');
-        expect(applyBrand({ s: 'CheapestGo and CheapestGo' })).toEqual({ s: 'GeomeeGo and GeomeeGo' });
+        const applyBrand = await load('AirangGo');
+        expect(applyBrand({ s: 'CheapestGo and CheapestGo' })).toEqual({ s: 'AirangGo and AirangGo' });
     });
 
     it('walks nested objects and arrays', async () => {
-        const applyBrand = await load('GeomeeGo');
+        const applyBrand = await load('AirangGo');
         expect(applyBrand({ a: { b: ['Book with CheapestGo', 'x'] }, n: 3, z: null }))
-            .toEqual({ a: { b: ['Book with GeomeeGo', 'x'] }, n: 3, z: null });
+            .toEqual({ a: { b: ['Book with AirangGo', 'x'] }, n: 3, z: null });
     });
 
     it('is a no-op for the primary brand, including its ICU placeholders', async () => {
@@ -66,8 +75,8 @@ describe('applyBrand', () => {
     });
 
     it('preserves ICU placeholders when rebranding', async () => {
-        const applyBrand = await load('GeomeeGo');
+        const applyBrand = await load('AirangGo');
         expect(applyBrand({ t: 'Hotels in {city}, {country} — Cheapest Rates | CheapestGo' }))
-            .toEqual({ t: 'Hotels in {city}, {country} — Cheapest Rates | GeomeeGo' });
+            .toEqual({ t: 'Hotels in {city}, {country} — Cheapest Rates | AirangGo' });
     });
 });

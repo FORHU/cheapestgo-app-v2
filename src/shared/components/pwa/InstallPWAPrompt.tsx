@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Share, Plus, ArrowDownToLine } from 'lucide-react';
 import Image from 'next/image';
@@ -28,7 +29,7 @@ const IOS_STEPS = [
   {
     number: 4,
     title: 'Tap "Add" to confirm',
-    description: 'CheapestGo will appear on your home screen',
+    description: `${BRAND_NAME} will appear on your home screen`,
     Icon: Download,
   },
 ] as const;
@@ -70,7 +71,7 @@ export default function InstallPWAPrompt() {
                   <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm ring-1 ring-black/5">
                     <Image
                       src="/cheapestgo.png"
-                      alt="CheapestGo"
+                      alt={BRAND_NAME}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
@@ -80,7 +81,7 @@ export default function InstallPWAPrompt() {
                     <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
                       Add to Home Screen
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">CheapestGo · iOS Safari</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{BRAND_NAME} · iOS Safari</p>
                   </div>
                 </div>
                 <button

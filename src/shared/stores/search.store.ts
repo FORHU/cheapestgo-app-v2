@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
+/** How many recent destinations the search bar offers. Shared with the sign-in handoff,
+ *  which merges two lists and must cap the result the same way. */
+export const MAX_RECENT_SEARCHES = 5;
 import { useShallow } from 'zustand/react/shallow';
 import type {
     Destination,
@@ -165,7 +169,7 @@ export const useSearchStore = create<SearchState>()(
 
             addRecentSearch: (destination) => set((s) => {
                 const filtered = s.recentSearches.filter((d) => d.title !== destination.title);
-                return { recentSearches: [destination, ...filtered].slice(0, 5) };
+                return { recentSearches: [destination, ...filtered].slice(0, MAX_RECENT_SEARCHES) };
             }),
             removeRecentSearch: (title) => set((s) => ({
                 recentSearches: s.recentSearches.filter((d) => d.title !== title),

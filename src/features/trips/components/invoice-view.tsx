@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/shared/auth/store';
 import { http } from '@/shared/lib/http';
@@ -63,7 +64,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
             {/* Header */}
             <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">CheapestGo</h1>
+                    <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">{BRAND_NAME}</h1>
                     <p className="text-xs text-slate-400 mt-0.5">Your Travel Partner</p>
                 </div>
                 <div className="text-right">
@@ -217,7 +218,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
             {/* Footer */}
             <div className="px-8 pb-8">
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-xl px-5 py-4 text-xs text-slate-400 text-center">
-                    Thank you for booking with CheapestGo. For support, contact{' '}
+                    Thank you for booking with {BRAND_NAME}. For support, contact{' '}
                     <span className="text-indigo-500">crm@myfarebox.com</span>
                 </div>
             </div>

@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
 export const metadata: Metadata = {
-    title: 'Privacy Policy — CheapestGo',
-    description: 'How CheapestGo collects, uses, and protects your personal information.',
+    title: `Privacy Policy — ${BRAND_NAME}`,
+    description: `How ${BRAND_NAME} collects, uses, and protects your personal information.`,
 };
 
 export default function PrivacyPage() {
@@ -29,7 +30,7 @@ export default function PrivacyPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Who We Are</h2>
                             <p className="text-sm leading-relaxed">
-                                CheapestGo (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is an online travel agency operated by JTP Partners,
+                                {BRAND_NAME} (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is an online travel agency operated by JTP Partners,
                                 located at 30 Wall Street, 8th Floor, New York, NY 10005, United States. We provide hotel
                                 booking, flight package, and travel deal services primarily to travelers in Southeast Asia
                                 through our website and mobile platform.
@@ -71,7 +72,7 @@ export default function PrivacyPage() {
                             <ul className="list-disc pl-5 space-y-1.5 text-sm">
                                 <li>To process and confirm your travel bookings and send booking confirmations</li>
                                 <li>To process payments and prevent fraud through Stripe</li>
-                                <li>To create and manage your CheapestGo account</li>
+                                <li>To create and manage your {BRAND_NAME} account</li>
                                 <li>To send transactional emails (booking confirmations, receipts, itinerary updates)</li>
                                 <li>To send promotional emails and deal alerts — only with your consent, and you may opt out at any time</li>
                                 <li>To improve our platform, personalize content, and analyze usage patterns</li>
@@ -97,7 +98,7 @@ export default function PrivacyPage() {
                                 </li>
                                 <li>
                                     <strong>Legal requirements:</strong> We may disclose information when required by law,
-                                    court order, or to protect the rights, property, or safety of CheapestGo or others.
+                                    court order, or to protect the rights, property, or safety of {BRAND_NAME} or others.
                                 </li>
                             </ul>
                         </section>
@@ -129,7 +130,7 @@ export default function PrivacyPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">International Data Transfers</h2>
                             <p className="text-sm leading-relaxed">
-                                CheapestGo is headquartered in the United States. When you use our services from
+                                {BRAND_NAME} is headquartered in the United States. When you use our services from
                                 Southeast Asia or other regions, your data is transferred to and processed in the United
                                 States. We ensure appropriate safeguards are in place for international transfers,
                                 including standard contractual clauses where required under applicable law (including
@@ -160,7 +161,7 @@ export default function PrivacyPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Children&apos;s Privacy</h2>
                             <p className="text-sm leading-relaxed">
-                                CheapestGo is not intended for children under the age of 18. We do not knowingly collect
+                                {BRAND_NAME} is not intended for children under the age of 18. We do not knowingly collect
                                 personal information from children. If you believe we have inadvertently collected
                                 information from a child, please contact us immediately at support@cheapestgo.com
                                 and we will delete such information promptly.
@@ -183,7 +184,7 @@ export default function PrivacyPage() {
                             <p className="text-sm leading-relaxed">
                                 We may update this Privacy Policy from time to time. When we make material changes, we
                                 will notify you by email (if you have an account) or by posting a prominent notice on our
-                                website. Your continued use of CheapestGo after the effective date of the revised policy
+                                website. Your continued use of {BRAND_NAME} after the effective date of the revised policy
                                 constitutes your acceptance of the changes.
                             </p>
                         </section>

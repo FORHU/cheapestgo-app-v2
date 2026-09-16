@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
 export const metadata: Metadata = {
-    title: 'Cookie Policy — CheapestGo',
-    description: 'How CheapestGo uses cookies and similar tracking technologies.',
+    title: `Cookie Policy — ${BRAND_NAME}`,
+    description: `How ${BRAND_NAME} uses cookies and similar tracking technologies.`,
 };
 
 export default function CookiesPage() {
@@ -16,7 +17,7 @@ export default function CookiesPage() {
                 <div className="max-w-3xl mx-auto px-4 py-12">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Cookie Policy</h1>
-                        <p className="text-slate-500 dark:text-slate-400">How we use cookies and similar technologies on CheapestGo.</p>
+                        <p className="text-slate-500 dark:text-slate-400">How we use cookies and similar technologies on {BRAND_NAME}.</p>
                         <div className="flex gap-4 mt-3 text-xs text-slate-400 dark:text-slate-500">
                             <span>Effective: May 1, 2025</span>
                             <span>Last updated: April 1, 2025</span>
@@ -38,7 +39,7 @@ export default function CookiesPage() {
 
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Why We Use Cookies</h2>
-                            <p className="text-sm mb-2">CheapestGo uses cookies to:</p>
+                            <p className="text-sm mb-2">{BRAND_NAME} uses cookies to:</p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
                                 <li>Keep you signed in and maintain your session securely</li>
                                 <li>Remember your preferences (currency, language, dark/light mode)</li>
@@ -123,7 +124,7 @@ export default function CookiesPage() {
 
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Cookie Duration</h2>
-                            <p className="text-sm mb-2">Cookies on CheapestGo are either:</p>
+                            <p className="text-sm mb-2">Cookies on {BRAND_NAME} are either:</p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
                                 <li>
                                     <strong>Session cookies</strong> — deleted automatically when you close your browser.
@@ -146,7 +147,7 @@ export default function CookiesPage() {
                                     necessary cookies will break core functionality such as login and checkout.
                                 </li>
                                 <li>
-                                    <strong>Cookie banner:</strong> When you first visit CheapestGo, you may be presented
+                                    <strong>Cookie banner:</strong> When you first visit {BRAND_NAME}, you may be presented
                                     with a cookie consent banner where you can accept or decline non-essential cookies.
                                 </li>
                                 <li>
@@ -156,14 +157,14 @@ export default function CookiesPage() {
                             </ul>
                             <p className="text-sm mt-2">
                                 Adjusting your cookie settings may affect the functionality of the Platform. Essential
-                                cookies cannot be disabled without impacting your ability to use CheapestGo.
+                                cookies cannot be disabled without impacting your ability to use {BRAND_NAME}.
                             </p>
                         </section>
 
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Do Not Track</h2>
                             <p className="text-sm leading-relaxed">
-                                Some browsers send a &quot;Do Not Track&quot; (DNT) signal. CheapestGo does not currently respond
+                                Some browsers send a &quot;Do Not Track&quot; (DNT) signal. {BRAND_NAME} does not currently respond
                                 to DNT signals, as there is no universal standard for how websites should react to them.
                                 We continue to evaluate this area as standards evolve.
                             </p>

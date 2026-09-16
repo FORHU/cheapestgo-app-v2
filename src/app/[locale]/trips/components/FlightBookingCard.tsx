@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -58,7 +59,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
         toast.success('Downloading E-Ticket...');
         
         // Trigger download of mock e-ticket text
-        const text = `CHEAPESTGO FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with CheapestGo!`;
+        const text = `${BRAND_NAME.toUpperCase()} FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with ${BRAND_NAME}!`;
         const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');

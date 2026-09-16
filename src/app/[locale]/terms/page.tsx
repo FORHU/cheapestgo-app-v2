@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
 export const metadata: Metadata = {
-    title: 'Terms of Service — CheapestGo',
-    description: 'The terms and conditions governing your use of CheapestGo.',
+    title: `Terms of Service — ${BRAND_NAME}`,
+    description: `The terms and conditions governing your use of ${BRAND_NAME}.`,
 };
 
 export default function TermsPage() {
@@ -17,7 +18,7 @@ export default function TermsPage() {
                 <div className="max-w-3xl mx-auto px-4 py-12">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Terms of Service</h1>
-                        <p className="text-slate-500 dark:text-slate-400">Please read these terms carefully before using CheapestGo.</p>
+                        <p className="text-slate-500 dark:text-slate-400">Please read these terms carefully before using {BRAND_NAME}.</p>
                         <div className="flex gap-4 mt-3 text-xs text-slate-400 dark:text-slate-500">
                             <span>Effective: May 1, 2025</span>
                             <span>Last updated: April 1, 2025</span>
@@ -29,17 +30,17 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Acceptance of Terms</h2>
                             <p className="text-sm leading-relaxed">
-                                By accessing or using the CheapestGo website and services (the &quot;Platform&quot;), you agree to
+                                By accessing or using the {BRAND_NAME} website and services (the &quot;Platform&quot;), you agree to
                                 be bound by these Terms of Service (&quot;Terms&quot;) and all applicable laws and regulations. If
-                                you do not agree to these Terms, you may not use the Platform. CheapestGo is operated by
+                                you do not agree to these Terms, you may not use the Platform. {BRAND_NAME} is operated by
                                 JTP Partners, 30 Wall Street, 8th Floor, New York, NY 10005, United States. These Terms
-                                constitute a legally binding agreement between you and CheapestGo.
+                                constitute a legally binding agreement between you and {BRAND_NAME}.
                             </p>
                         </section>
 
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Eligibility</h2>
-                            <p className="text-sm mb-2">To use CheapestGo, you must:</p>
+                            <p className="text-sm mb-2">To use {BRAND_NAME}, you must:</p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
                                 <li>Be at least 18 years of age</li>
                                 <li>Have the legal capacity to enter into a binding contract</li>
@@ -60,7 +61,7 @@ export default function TermsPage() {
                                 <li>Be responsible for all activity that occurs under your account</li>
                             </ul>
                             <p className="text-sm mt-2">
-                                CheapestGo reserves the right to suspend or terminate accounts that violate these Terms
+                                {BRAND_NAME} reserves the right to suspend or terminate accounts that violate these Terms
                                 or that are inactive for an extended period.
                             </p>
                         </section>
@@ -68,14 +69,14 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Booking Process and Confirmation</h2>
                             <p className="text-sm mb-2">
-                                When you make a booking through CheapestGo, you are entering into a contract with the
-                                travel supplier (hotel, airline, or package provider), not with CheapestGo. CheapestGo
+                                When you make a booking through {BRAND_NAME}, you are entering into a contract with the
+                                travel supplier (hotel, airline, or package provider), not with {BRAND_NAME}. {BRAND_NAME}
                                 acts as an intermediary facilitating the booking.
                             </p>
                             <ul className="list-disc pl-5 space-y-1.5 text-sm">
                                 <li>
                                     <strong>Booking confirmation:</strong> A booking is confirmed only when you receive a
-                                    written confirmation email from CheapestGo with a booking reference number.
+                                    written confirmation email from {BRAND_NAME} with a booking reference number.
                                 </li>
                                 <li>
                                     <strong>Accuracy:</strong> You are responsible for ensuring all booking details
@@ -96,7 +97,7 @@ export default function TermsPage() {
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Pricing and Payments</h2>
                             <ul className="list-disc pl-5 space-y-1.5 text-sm">
                                 <li>
-                                    <strong>Markup:</strong> CheapestGo applies a transparent service markup (currently
+                                    <strong>Markup:</strong> {BRAND_NAME} applies a transparent service markup (currently
                                     12%) to wholesale hotel and travel rates. This markup is included in the price shown
                                     to you — there are no hidden fees.
                                 </li>
@@ -106,7 +107,7 @@ export default function TermsPage() {
                                 </li>
                                 <li>
                                     <strong>Payment processing:</strong> All payments are processed securely by Stripe,
-                                    Inc. By making a payment, you also agree to Stripe&apos;s terms of service. CheapestGo
+                                    Inc. By making a payment, you also agree to Stripe&apos;s terms of service. {BRAND_NAME}
                                     does not store your card details.
                                 </li>
                                 <li>
@@ -144,15 +145,15 @@ export default function TermsPage() {
                                 <li>Resell or redistribute bookings for commercial purposes without our written consent</li>
                                 <li>Post false or misleading information, reviews, or impersonate any person or entity</li>
                                 <li>Interfere with the security, integrity, or performance of the Platform</li>
-                                <li>Harass, threaten, or harm other users or CheapestGo staff</li>
+                                <li>Harass, threaten, or harm other users or {BRAND_NAME} staff</li>
                             </ul>
                         </section>
 
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Intellectual Property</h2>
                             <p className="text-sm leading-relaxed">
-                                All content on the CheapestGo Platform — including logos, text, graphics, software, and
-                                design — is the property of CheapestGo or its licensors and is protected by applicable
+                                All content on the {BRAND_NAME} Platform — including logos, text, graphics, software, and
+                                design — is the property of {BRAND_NAME} or its licensors and is protected by applicable
                                 intellectual property laws. You may not reproduce, distribute, or create derivative works
                                 from our content without prior written consent. Hotel and flight images and descriptions are provided
                                 by our partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten) and respective suppliers under license.
@@ -162,7 +163,7 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Disclaimers</h2>
                             <p className="text-sm mb-2">
-                                CheapestGo provides its services on an &quot;as is&quot; and &quot;as available&quot; basis. We do not
+                                {BRAND_NAME} provides its services on an &quot;as is&quot; and &quot;as available&quot; basis. We do not
                                 guarantee that:
                             </p>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -172,7 +173,7 @@ export default function TermsPage() {
                                 <li>All bookings will be honored by the travel supplier in the event of supplier insolvency or overbooking</li>
                             </ul>
                             <p className="text-sm mt-2">
-                                CheapestGo is not responsible for the acts, errors, omissions, representations,
+                                {BRAND_NAME} is not responsible for the acts, errors, omissions, representations,
                                 warranties, or negligence of any travel supplier.
                             </p>
                         </section>
@@ -180,7 +181,7 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Limitation of Liability</h2>
                             <p className="text-sm leading-relaxed">
-                                To the maximum extent permitted by applicable law, CheapestGo, its officers, directors,
+                                To the maximum extent permitted by applicable law, {BRAND_NAME}, its officers, directors,
                                 employees, and affiliates shall not be liable for any indirect, incidental, special,
                                 consequential, or punitive damages, including loss of profits, data, or goodwill, arising
                                 out of or in connection with your use of the Platform or any booking made through it. Our
@@ -192,7 +193,7 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Indemnification</h2>
                             <p className="text-sm leading-relaxed">
-                                You agree to indemnify, defend, and hold harmless CheapestGo and JTP Partners from and
+                                You agree to indemnify, defend, and hold harmless {BRAND_NAME} and JTP Partners from and
                                 against any claims, liabilities, damages, losses, and expenses (including legal fees)
                                 arising out of or in any way connected with your use of the Platform, your violation of
                                 these Terms, or your violation of any rights of another person.
@@ -206,7 +207,7 @@ export default function TermsPage() {
                                 regard to its conflict of law provisions.
                             </p>
                             <p className="text-sm leading-relaxed mt-2">
-                                Any dispute arising from or relating to these Terms or your use of CheapestGo shall
+                                Any dispute arising from or relating to these Terms or your use of {BRAND_NAME} shall
                                 first be attempted to be resolved through good-faith negotiation. If unresolved within
                                 30 days, disputes shall be submitted to binding arbitration in New York City, New York,
                                 under the rules of the American Arbitration Association (AAA). You waive any right to
@@ -217,7 +218,7 @@ export default function TermsPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">Changes to These Terms</h2>
                             <p className="text-sm leading-relaxed">
-                                CheapestGo reserves the right to modify these Terms at any time. We will notify registered
+                                {BRAND_NAME} reserves the right to modify these Terms at any time. We will notify registered
                                 users of material changes via email and by posting an updated version on the Platform with
                                 a revised &quot;Last Updated&quot; date. Your continued use of the Platform after changes take effect
                                 constitutes your acceptance of the revised Terms.

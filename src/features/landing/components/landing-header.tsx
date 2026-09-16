@@ -5,6 +5,7 @@ import { useAuthStore } from '@/shared/stores/auth.store';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { LogoWordmark } from './logo-wordmark';
+import { BRAND_NAME } from '@/shared/lib/brand';
 
 /**
  * The landing page's own header: transparent over the dark canvas, carrying the
@@ -20,7 +21,7 @@ export function LandingHeader() {
     return (
         <header className="relative z-[5]">
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">
-                <Link href="/" aria-label="CheapestGo home" className="flex shrink-0 items-center">
+                <Link href="/" aria-label={`${BRAND_NAME} home`} className="flex shrink-0 items-center">
                     <LogoWordmark height={24} />
                 </Link>
 

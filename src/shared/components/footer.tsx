@@ -6,6 +6,7 @@ import { usePathname } from '@/i18n/navigation';
 import { Link } from '@/i18n/navigation';
 import { PlaneTakeoff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { BRAND_NAME } from '@/shared/lib/brand';
 
 const StandardFooter = () => {
     const t = useTranslations('footer');
@@ -17,7 +18,7 @@ const StandardFooter = () => {
                         <div className="p-1.5 bg-slate-100 dark:bg-white/5 rounded-lg lg:bg-transparent lg:p-0">
                             <PlaneTakeoff className="w-4 h-4 lg:w-6 lg:h-6 text-blue-500 lg:text-slate-400" />
                         </div>
-                        <span className="text-slate-900 dark:text-white font-bold text-[15px] lg:text-xl tracking-tight">CheapestGo</span>
+                        <span className="text-slate-900 dark:text-white font-bold text-[15px] lg:text-xl tracking-tight">{BRAND_NAME}</span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 text-[10px] lg:text-sm max-w-xs leading-relaxed opacity-80 lg:opacity-100">
                         {t('tagline')} <br className="hidden lg:block" />{t('taglinePrecision')}
