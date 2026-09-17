@@ -1,7 +1,20 @@
 export const revalidate = 300;
 
+import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import { BRAND_NAME } from '@/shared/lib/brand';
+import { hreflangAlternates } from '@/shared/lib/seo';
+
+/**
+ * The homepage names itself, per locale.
+ *
+ * Without this every language declared no canonical at all and the root layout could not
+ * supply one — a canonical set there would name `/` for every page beneath it, so each
+ * page carries its own.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+    return { alternates: await hreflangAlternates('/') };
+}
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
 import { ImmersiveSearchBar, type TrendingDest } from '@/features/search/components/immersive-search-bar';

@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatDate } from '@/shared/lib/format';
+import { formatBookingTime as formatTime } from '@/features/flights/lib/flight-utils';
 import type { FlightBooking } from '@/shared/types';
 import { toast } from 'sonner';
 
@@ -47,11 +48,8 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
     const departDate = first?.departure ? formatDate(new Date(first.departure), { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
     const tripTypeLabel = booking.trip_type === 'round-trip' ? 'Round-trip' : booking.trip_type === 'multi-city' ? 'Multi-city' : 'One-way';
 
-    // Format times
-    const formatTime = (iso?: string) => {
-        if (!iso) return '';
-        return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
+    // formatBookingTime, not the flights one: these come out of a timestamptz column as real
+    // instants, where an offer's times are Local Airport Time digits that must not meet a Date.
 
     const handleDownloadTicket = (e: React.MouseEvent) => {
         e.preventDefault();

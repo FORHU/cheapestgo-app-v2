@@ -219,15 +219,54 @@ export function FlightSearchClient() {
     const isLoading = state.status === 'loading' || state.status === 'loading_slow';
     const isSlowSearch = state.status === 'loading_slow';
 
-    const handleSelect = useCallback((offer: FlightOffer) => {
-        sessionStorage.setItem('selectedFlight', JSON.stringify(offer));
+    /**
+     * Check the fare is still what it says before sending anyone to pay for it.
+     *
+     * An airline fare moves between the search and the booking. Without this the traveller
+     * finds out at the moment the order is placed — card details in, nothing to decide.
+     * Asking first turns it into a question: this fare went up, still want it? A fare that
+     * has gone *down* is taken silently at the lower price, and a provider that cannot
+     * answer never blocks the booking.
+     */
+    const [revalidating, setRevalidating] = useState<string | null>(null);
+
+    const handleSelect = useCallback(async (offer: FlightOffer) => {
+        let chosen = offer;
+        try {
+            setRevalidating(offer.offerId);
+            const check = await http.post<{ priceChanged?: boolean; newPrice?: number }>(
+                '/api/flights/revalidate',
+                { provider: offer.provider, flightPayload: offer },
+            );
+
+            if (check.priceChanged && typeof check.newPrice === 'number') {
+                const currency = offer.price?.currency ?? '';
+                const ok = window.confirm(
+                    `The price for this flight has changed to ${currency} ${check.newPrice.toLocaleString()}.`
+                    + '\n\nContinue at the new price?',
+                );
+                if (!ok) return;
+            }
+            if (typeof check.newPrice === 'number' && check.newPrice > 0) {
+                // Including a drop: the booking charges what the supplier now quotes, so the
+                // checkout has to show that rather than the figure from the search.
+                chosen = { ...offer, price: { ...offer.price, total: check.newPrice } };
+            }
+        } catch {
+            // The order path re-quotes and surfaces the real error; a failed check here is
+            // not a reason to stop someone booking.
+        } finally {
+            setRevalidating(null);
+        }
+
+        sessionStorage.setItem('selectedFlight', JSON.stringify(chosen));
         sessionStorage.setItem('flightSearchPassengers', JSON.stringify({
             adults: params.adults,
             children: params.children,
             infants: params.infants,
         }));
         const qs = new URLSearchParams();
-        qs.set('offerId', offer.offerId);
+        qs.set('offerId', chosen.offerId);
         if (bundleHotelId) {
             qs.set('bundleHotelId', bundleHotelId);
         }
@@ -275,7 +314,7 @@ export function FlightSearchClient() {
                     tripType: params.tripType,
                 };
 
-                const data = await http.post<{ offers: FlightOffer[] }>(
+                const data = await http.post<{ offers: FlightOffer[]; providersFailed?: boolean; failedProviders?: string[] }>(
                     '/api/flights/search',
                     body,
                     { signal: controller.signal }
@@ -291,7 +330,18 @@ export function FlightSearchClient() {
 
                 const offers = data.offers ?? [];
                 setAllOffers(offers);
-                setState(offers.length > 0 ? { status: 'success', offers } : { status: 'empty' });
+                // No offers because an airline's system could not answer is not the same as no
+                // flights on the route. Shown as "no flights found", an outage reads as a fact
+                // about the route and leaves the traveller nothing to do; the error state has a
+                // retry.
+                if (offers.length === 0 && data.providersFailed) {
+                    setState({
+                        status: 'error',
+                        message: 'We could not reach the airlines just now. Your search has not been run — please try again.',
+                    });
+                } else {
+                    setState(offers.length > 0 ? { status: 'success', offers } : { status: 'empty' });
+                }
             } catch (err: unknown) {
                 clearTimeout(timeoutId);
                 clearTimeout(slowId);
@@ -496,6 +546,7 @@ export function FlightSearchClient() {
                                     offers={filteredOffers}
                                     loading={isLoading}
                                     onSelect={handleSelect}
+                                    checkingOfferId={revalidating}
                                     skeletonCount={8}
                                 />
                             )}

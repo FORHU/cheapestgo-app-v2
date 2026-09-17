@@ -15,6 +15,18 @@ import { nightsBetween } from '@/shared/lib/stay';
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+/** The server's figures for a hotel checkout — see api-v2 `preBook`. */
+interface HotelDisplay {
+    currency:     string;
+    subtotal:     number;
+    taxes:        number;
+    total:        number;
+    serviceFee:   number;
+    chargedTotal: number;
+    converted:    boolean;
+}
+
 function getStripe() {
     if (!stripePromise) {
         stripePromise = loadStripe(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -447,6 +459,13 @@ function CheckoutContent() {
 
     // Booking state
     const [prebookId, setPrebookId]         = useState<string | null>(null);
+    /**
+     * What the customer is shown, as the server worked it out — room total, service fee and
+     * the total they pay, in their own currency. This page used to add a hardcoded 6% itself
+     * while the server charged 5.9%, so the figure on the Pay button was never the one
+     * billed. Null until prebook answers.
+     */
+    const [display, setDisplay] = useState<HotelDisplay | null>(null);
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
     const [bookingId, setBookingId]         = useState<string | null>(null);
 
@@ -480,7 +499,30 @@ function CheckoutContent() {
         setPassengerErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
     }, []);
 
-    // ── Hotel step 1: guest → prebook → payment intent ──
+    /**
+     * Prebook as soon as the page opens, so the summary shows the server's figures before the
+     * customer types anything. A quote is a valuation, not a reservation (ADR-0021), so
+     * asking for one on arrival costs nothing at the supplier — and a room that has gone
+     * is better learned now than after the form is filled in.
+     */
+    const runPrebook = useCallback(async () => {
+        const pbRes = await http.post<{ success: boolean; data: { prebookId: string; display?: HotelDisplay } }>(
+            '/api/hotels/prebook',
+            { offerId: rateKey, roomName, adults, children, currency },
+        );
+        setPrebookId(pbRes.data.prebookId);
+        setDisplay(pbRes.data.display ?? null);
+        return pbRes.data;
+    }, [rateKey, roomName, adults, children, currency]);
+
+    useEffect(() => {
+        if (mode !== 'hotel' || !rateKey) return;
+        runPrebook().catch((err) => {
+            setErrorMsg(err instanceof Error ? err.message : 'This room is no longer available.');
+        });
+    }, [mode, rateKey, runPrebook]);
+
+    // ── Hotel step 1: guest → payment intent ──
     const handleHotelSubmitForm = useCallback(async () => {
         const gErr = validateGuest(guest);
         if (Object.keys(gErr).length > 0) { setGuestErrors(gErr); return; }
@@ -492,36 +534,51 @@ function CheckoutContent() {
 
         setSubmitting(true); setErrorMsg(null);
         try {
-            // Step 1: Prebook — validate the offer and get a confirmed book token
-            const pbRes = await http.post<{ success: boolean; data: { prebookId: string; price?: number } }>(
-                '/api/hotels/prebook',
-                { offerId: rateKey, roomName, adults, children, currency }
-            );
-            const prebook = pbRes.data;
-            setPrebookId(prebook.prebookId);
+            // The quote may have lapsed while the form was being filled in, or never arrived.
+            const quoted = prebookId && display ? { prebookId, display } : await runPrebook();
+            const shown = quoted.display;
+            if (!shown) {
+                setErrorMsg('We could not confirm the price in your currency just now. Please try again in a moment.');
+                return;
+            }
 
-            // Step 2: Create Stripe payment intent
-            const payRes = await http.post<{ success: boolean; data: { clientSecret: string; paymentIntentId: string } }>(
+            const payRes = await http.post<{ success: boolean; data: { clientSecret: string; paymentIntentId: string; chargedTotal?: number; serviceFee?: number; currency?: string } }>(
                 '/api/hotels/create-payment',
                 {
-                    prebookId:    prebook.prebookId,
-                    amount:       totalPrice,
-                    currency,
-                    holderEmail:  guest.email,
-                    propertyName: hotelName,
+                    prebookId:      quoted.prebookId,
+                    amount:         shown.total,
+                    currency:       shown.currency,
+                    // What the summary showed, fee included — nothing is billed above it.
+                    displayedTotal: shown.chargedTotal,
+                    holderEmail:    guest.email,
+                    propertyName:   hotelName,
                     roomName,
                     checkIn,
                     checkOut,
                 }
             );
+            // The payment step shows what this intent is actually for.
+            if (typeof payRes.data.chargedTotal === 'number') {
+                setDisplay({ ...shown, chargedTotal: payRes.data.chargedTotal, serviceFee: payRes.data.serviceFee ?? shown.serviceFee });
+            }
             setClientSecret(payRes.data.clientSecret);
             setStep('payment');
         } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
+            const body = (err as { body?: { error?: string; serverPrice?: number; currency?: string } })?.body;
+            if (body?.error === 'PRICE_CHANGED' && typeof body.serverPrice === 'number') {
+                // The total moved beyond what can be absorbed. Show the new one and let the
+                // customer decide, rather than billing it or failing without a figure.
+                setDisplay(null);
+                setPrebookId(null);
+                setErrorMsg(`The price has changed to ${body.currency ?? currency} ${body.serverPrice.toLocaleString()}. Please review it before paying.`);
+                runPrebook().catch(() => {});
+            } else {
+                setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
+            }
         } finally {
             setSubmitting(false);
         }
-    }, [guest, user, router, rateKey, roomName, adults, children, currency, totalPrice, hotelName, checkIn, checkOut]);
+    }, [guest, user, router, prebookId, display, runPrebook, currency, hotelName, roomName, checkIn, checkOut]);
 
     // ── Hotel step 2: Stripe confirms → then call /confirm ──
     const handleStripeSuccess = useCallback(async (stripePaymentIntentId: string) => {
@@ -581,9 +638,15 @@ function CheckoutContent() {
     }, [passengers, user, router, offerId, flightCurrency]);
 
     // ── Price helpers ──
-    const nightlyPrice = nights && totalPrice ? totalPrice / nights : totalPrice;
-    const fee          = Math.round(totalPrice * 0.06);
-    const total        = totalPrice + fee;
+    //
+    // Rendered from the server's display block, never worked out here. Until prebook answers
+    // the page shows the room price it arrived with and no fee — a fee line computed in the
+    // browser is exactly what drifted from the charge before.
+    const shownCurrency = display?.currency ?? currency;
+    const roomTotal     = display?.total ?? totalPrice;
+    const nightlyPrice  = nights && roomTotal ? roomTotal / nights : roomTotal;
+    const fee           = display?.serviceFee ?? 0;
+    const total         = display?.chargedTotal ?? roomTotal;
 
     // ── Back handler ──
     function handleBack() {
@@ -622,7 +685,7 @@ function CheckoutContent() {
                 guestEmail={guest.email}
                 adults={adults}
                 roomName={roomName}
-                currency={currency}
+                currency={shownCurrency}
                 nightlyPrice={nightlyPrice}
                 nights={nights}
                 fee={fee}
@@ -692,17 +755,21 @@ function CheckoutContent() {
 
                             {nights && nightlyPrice > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
-                                    <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
-                                    <span style={{ fontWeight: 600 }}>{currency} {totalPrice.toLocaleString()}</span>
+                                    <span>{shownCurrency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
+                                    <span style={{ fontWeight: 600 }}>{shownCurrency} {roomTotal.toLocaleString()}</span>
                                 </div>
                             )}
-                            {fee > 0 && (
+                            {display ? (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 10 }}>
-                                    <span>Service fee</span><span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
+                                    <span>Service fee</span><span style={{ fontWeight: 600 }}>{shownCurrency} {fee.toLocaleString()}</span>
+                                </div>
+                            ) : (
+                                <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginBottom: 10 }}>
+                                    Confirming the final price…
                                 </div>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff', paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
-                                <span>Total</span><span>{currency} {total.toLocaleString()}</span>
+                                <span>Total</span><span>{shownCurrency} {total.toLocaleString()}</span>
                             </div>
                         </>
                     ) : (
@@ -872,7 +939,7 @@ function CheckoutContent() {
                                     onSuccess={handleStripeSuccess}
                                     onError={msg => setErrorMsg(msg)}
                                     total={total}
-                                    currency={currency}
+                                    currency={shownCurrency}
                                     submitting={submitting}
                                     setSubmitting={setSubmitting}
                                 />

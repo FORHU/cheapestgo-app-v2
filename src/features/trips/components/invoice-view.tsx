@@ -1,8 +1,10 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { Download, Loader2, Printer } from 'lucide-react';
 import { BRAND_NAME } from '@/shared/lib/brand';
 import { useParams, useSearchParams } from 'next/navigation';
+import { env } from '@/shared/lib/env';
 import { useAuthStore } from '@/shared/auth/store';
 import { http } from '@/shared/lib/http';
 import { formatCurrency } from '@/shared/lib/format';
@@ -23,16 +25,79 @@ function fmtDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// ─── Print button ─────────────────────────────────────────────────────────────
+// ─── Receipt actions ──────────────────────────────────────────────────────────
 
-function PrintButton() {
+/**
+ * Print, and a real PDF.
+ *
+ * The browser's own "save as PDF" prints what is on screen — a screenshot of a web page,
+ * with whatever the printer decides about page breaks and colours. The API renders a laid-out
+ * receipt instead, which is the file someone attaches to an expense claim. The request is
+ * plain fetch rather than the http helper because the response is a PDF, not JSON, but it
+ * still carries the session cookie so a signed-in reader is recognised.
+ */
+function ReceiptActions() {
+    const params       = useParams<{ id: string }>();
+    const searchParams = useSearchParams();
+    const bookingId    = params?.id ?? '';
+    const type         = searchParams.get('type') ?? 'flight';
+
+    const [downloading, setDownloading] = useState(false);
+    const [failed, setFailed]           = useState(false);
+
+    const handleDownload = async () => {
+        if (!bookingId) return;
+        setDownloading(true);
+        setFailed(false);
+        try {
+            const res = await fetch(
+                `${env.NEXT_PUBLIC_API_URL}/invoices/${bookingId}/pdf?type=${encodeURIComponent(type)}`,
+                { credentials: 'include' },
+            );
+            if (!res.ok) throw new Error(`PDF request failed (${res.status})`);
+
+            const url = URL.createObjectURL(await res.blob());
+            const a   = document.createElement('a');
+            a.href     = url;
+            a.download = `${BRAND_NAME}-Receipt-INV-${bookingId.slice(0, 8).toUpperCase()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch {
+            // Printing still works, so this is a note next to the button rather than an alert
+            // that takes over the page.
+            setFailed(true);
+        } finally {
+            setDownloading(false);
+        }
+    };
+
     return (
-        <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors shadow-sm"
-        >
-            Print / Save PDF
-        </button>
+        <div className="flex items-center gap-2">
+            {failed && (
+                <span className="text-sm text-rose-600 dark:text-rose-400">
+                    Could not build the PDF. You can still print this page.
+                </span>
+            )}
+            <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-wait transition-colors shadow-sm"
+            >
+                {downloading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Download className="w-4 h-4" />}
+                {downloading ? 'Preparing…' : 'Download PDF'}
+            </button>
+            <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-white px-4 py-2 text-sm font-semibold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
+            >
+                <Printer className="w-4 h-4" />
+                Print
+            </button>
+        </div>
     );
 }
 
@@ -295,7 +360,9 @@ export function InvoiceView() {
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-slate-950 py-8 px-4">
             <div className="max-w-3xl mx-auto mb-4 flex justify-end print:hidden">
-                <PrintButton />
+                <Suspense fallback={null}>
+                    <ReceiptActions />
+                </Suspense>
             </div>
 
             <Suspense fallback={

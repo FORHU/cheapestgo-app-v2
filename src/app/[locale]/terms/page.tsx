@@ -1,13 +1,22 @@
 import type { Metadata } from 'next';
+import { hreflangAlternates } from '@/shared/lib/seo';
 import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
-export const metadata: Metadata = {
-    title: `Terms of Service — ${BRAND_NAME}`,
-    description: `The terms and conditions governing your use of ${BRAND_NAME}.`,
-};
+/**
+ * Async so the canonical can name the URL this page is actually served at. A static
+ * `metadata` object cannot: it is evaluated without a request, so every locale would
+ * declare the English path as its canonical and tell Google they are the same page.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+    return {
+        title: `Terms of Service — ${BRAND_NAME}`,
+        description: `The terms and conditions governing your use of ${BRAND_NAME}.`,
+        alternates: await hreflangAlternates('/terms'),
+    };
+}
 
 export default function TermsPage() {
     return (

@@ -53,12 +53,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
         closeAuthModal: () => set({ isAuthModalOpen: false, redirectTo: null }),
         setUser: (user) => set({ user, isLoading: false }),
 
+        /**
+         * Bounded for the same reason as the other store's `fetchUser`: every sign-in screen
+         * disables itself on `isLoading`, which starts `true` and clears only here, so a stalled
+         * request left them disabled with no way out (QA BG-15). Ten seconds, then "not signed
+         * in" — the server still decides on every real request.
+         */
         initSession: async () => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10_000);
             try {
-                const res = await http.get<{ user: User }>('/auth/me');
+                const res = await http.get<{ user: User }>('/auth/me', { signal: controller.signal });
                 set({ user: res.user ?? null, isLoading: false });
             } catch {
                 set({ user: null, isLoading: false });
+            } finally {
+                clearTimeout(timer);
             }
         },
 

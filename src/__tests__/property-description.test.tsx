@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
-import { render as rtlRender, screen, cleanup, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 import { ThemeProvider } from '@/shared/components/ThemeContext';

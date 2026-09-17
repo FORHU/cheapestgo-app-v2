@@ -7,22 +7,10 @@ import { Plane, ArrowRight, Luggage, ChevronDown, ChevronUp, Shield, XCircle, Ba
 import type { FlightOffer, NormalizedSegment } from '@/shared/types';
 import { cn } from '@/shared/lib/cn';
 import { SaveButton } from './SaveButton';
+import { formatTime } from '../lib/flight-utils';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatTime(iso?: string): string {
-    if (!iso) return '--:--';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '--:--';
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
-function _formatDate(iso?: string): string {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 function formatDuration(minutes?: number): string {
     if (!minutes) return '';
@@ -148,9 +136,11 @@ export interface FlightCardProps {
     index?: number;
     onSelect?: (offer: FlightOffer) => void;
     isSelected?: boolean;
+    /** The fare is being checked with the airline before checkout — see handleSelect. */
+    checkingPrice?: boolean;
 }
 
-export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false }: FlightCardProps) {
+export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false, checkingPrice = false }: FlightCardProps) {
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
 
@@ -479,10 +469,11 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                     <div className="flex items-center gap-2 lg:mt-auto">
                         <button
                             onClick={() => handleSelect(offer)}
-                            className="px-4 lg:px-6 py-1 lg:py-2 rounded-full lg:rounded-lg lg:w-auto bg-blue-600 hover:bg-blue-700 text-white font-normal text-[10px] lg:text-sm transition-colors flex items-center justify-center gap-1 shrink-0"
+                            disabled={checkingPrice}
+                            className="px-4 lg:px-6 py-1 lg:py-2 rounded-full lg:rounded-lg lg:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-normal text-[10px] lg:text-sm transition-colors flex items-center justify-center gap-1 shrink-0"
                         >
-                            Select
-                            <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
+                            {checkingPrice ? 'Checking price…' : 'Select'}
+                            {!checkingPrice && <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />}
                         </button>
                     </div>
                 </div>

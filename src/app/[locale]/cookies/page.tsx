@@ -1,12 +1,21 @@
 import type { Metadata } from 'next';
+import { hreflangAlternates } from '@/shared/lib/seo';
 import { BRAND_NAME } from '@/shared/lib/brand';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
 
-export const metadata: Metadata = {
-    title: `Cookie Policy — ${BRAND_NAME}`,
-    description: `How ${BRAND_NAME} uses cookies and similar tracking technologies.`,
-};
+/**
+ * Async so the canonical can name the URL this page is actually served at. A static
+ * `metadata` object cannot: it is evaluated without a request, so every locale would
+ * declare the English path as its canonical and tell Google they are the same page.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+    return {
+        title: `Cookie Policy — ${BRAND_NAME}`,
+        description: `How ${BRAND_NAME} uses cookies and similar tracking technologies.`,
+        alternates: await hreflangAlternates('/cookies'),
+    };
+}
 
 export default function CookiesPage() {
     return (

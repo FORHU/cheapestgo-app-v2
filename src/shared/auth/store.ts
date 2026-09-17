@@ -24,12 +24,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     user:      null,
     isLoading: true,
 
+    /**
+     * Who is signed in, asked once on boot.
+     *
+     * Bounded on purpose. Every sign-in screen disables itself on `isLoading`, which starts
+     * `true` and clears only here, so a request stalled on a poor connection left those
+     * screens disabled with no way out (QA BG-15). A check that has not answered in 10s is
+     * treated as "not signed in" — the server still decides on every real request, so the
+     * worst case is one extra sign-in, not a wrong answer.
+     */
     fetchUser: async () => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10_000);
         try {
-            const { user } = await http.get<{ user: User }>('/auth/me');
+            const { user } = await http.get<{ user: User }>('/auth/me', { signal: controller.signal });
             set({ user, isLoading: false });
         } catch {
             set({ user: null, isLoading: false });
+        } finally {
+            clearTimeout(timer);
         }
     },
 

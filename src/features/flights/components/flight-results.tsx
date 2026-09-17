@@ -72,6 +72,8 @@ interface FlightResultsProps {
     skeletonCount?: number;
     emptyMessage?: string;
     className?: string;
+    /** The offer whose fare is being checked with the airline right now. */
+    checkingOfferId?: string | null;
 }
 
 export function FlightResults({
@@ -83,6 +85,7 @@ export function FlightResults({
     skeletonCount = 5,
     emptyMessage,
     className,
+    checkingOfferId = null,
 }: FlightResultsProps) {
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [isAutoLoading, setIsAutoLoading] = useState(false);
@@ -190,6 +193,7 @@ export function FlightResults({
                         offer={offer}
                         index={idx}
                         onSelect={onSelect}
+                        checkingPrice={checkingOfferId === offer.offerId}
                     />
                 ))}
             </AnimatePresence>
