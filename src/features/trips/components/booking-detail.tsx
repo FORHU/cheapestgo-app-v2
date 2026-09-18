@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
@@ -246,6 +248,7 @@ interface FlightDetailProps {
 }
 
 function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
+    const t = useTranslations('trips');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     const segments = booking.flight_segments ?? [];
@@ -361,7 +364,7 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
                         Cancel Booking
                     </button>
                     <p className="mt-2 text-[10px] text-slate-400 text-center">
-                        Refund eligibility is subject to airline fare rules.
+                        {t('v2.refundNotice')}
                     </p>
                 </div>
             )}
@@ -386,6 +389,7 @@ interface BookingDetailProps {
 }
 
 export function BookingDetail({ id }: BookingDetailProps) {
+    const t = useTranslations('trips');
     const router = useRouter();
     const [booking, setBooking] = useState<AnyBooking | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -440,7 +444,7 @@ export function BookingDetail({ id }: BookingDetailProps) {
                             className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
                         >
                             <ArrowLeft size={14} />
-                            Back to My Trips
+                            {t('v2.backToMyTrips')}
                         </Link>
                     </div>
                 )}

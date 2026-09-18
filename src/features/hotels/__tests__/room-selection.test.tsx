@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { screen, fireEvent, within } from '@testing-library/react';
+import { renderWithIntl as render } from '@/shared/testing/renderWithIntl';
 import { describe, it, expect, vi } from 'vitest';
 import { RoomSelection } from '@/features/hotels/components/room-selection';
 import type { RoomOption, RoomContent } from '@/features/hotels/types/property.types';

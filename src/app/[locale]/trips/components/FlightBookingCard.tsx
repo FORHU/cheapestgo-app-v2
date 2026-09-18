@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatDate } from '@/shared/lib/format';
+import { useTranslations } from 'next-intl';
 import { formatBookingTime as formatTime } from '@/features/flights/lib/flight-utils';
 import type { FlightBooking } from '@/shared/types';
 import { toast } from 'sonner';
@@ -39,6 +40,7 @@ interface FlightBookingCardProps {
 }
 
 export function FlightBookingCard({ booking }: FlightBookingCardProps) {
+    const tTrips = useTranslations('trips');
     const segments = booking.flight_segments ?? [];
     const first = segments[0];
     const last = segments[segments.length - 1];
@@ -141,7 +143,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                                 <button
                                     onClick={handleDownloadTicket}
                                     className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-xl"
-                                    title="Download E-Ticket"
+                                    title={tTrips('v2.downloadETicket')}
                                 >
                                     <Download size={13} />
                                     <span>E-Ticket</span>

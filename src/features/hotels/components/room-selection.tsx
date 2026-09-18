@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
@@ -511,6 +513,7 @@ function RoomDetailDialog({
     /** The hotel photo, shown when the matched room-group carried no images. */
     galleryFallback?: string | null;
 }) {
+    const t = useTranslations('property');
     const [lightboxStart, setLightboxStart] = useState<number | null>(null);
 
     useEffect(() => {
@@ -608,7 +611,7 @@ function RoomDetailDialog({
                             <div className="mt-4">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
-                                <p className={cn('mt-1 text-[12px]', palette.empty)}>Photo of the property</p>
+                                <p className={cn('mt-1 text-[12px]', palette.empty)}>{t('v2.photoOfProperty')}</p>
                             </div>
                         )}
 
@@ -639,7 +642,7 @@ function RoomDetailDialog({
 
                 {card.boardName && (
                     <section className="mt-6">
-                        <p className={sectionLabel}>Meal plan</p>
+                        <p className={sectionLabel}>{t('v2.mealPlan')}</p>
                         <p className={cn('mt-2 flex items-center gap-2 text-[15px]', palette.feature)}>
                             <UtensilsCrossed size={17} strokeWidth={1.75} className="shrink-0" />
                             {card.boardName}
@@ -648,7 +651,7 @@ function RoomDetailDialog({
                 )}
 
                 <section className="mt-6">
-                    <p className={sectionLabel}>Cancellation policy</p>
+                    <p className={sectionLabel}>{t('v2.cancellationPolicy')}</p>
                     <p className={cn('mt-2 flex items-start gap-2 text-[15px]', palette.feature)}>
                         <ShieldCheck size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
                         <span>{card.cancellation}</span>
@@ -669,13 +672,13 @@ function RoomDetailDialog({
 
                 {additionalInfo && (
                     <section className="mt-6">
-                        <p className={sectionLabel}>Additional information</p>
+                        <p className={sectionLabel}>{t('v2.additionalInfo')}</p>
                         <p className={cn('mt-2 whitespace-pre-line text-[14px]', palette.feature)}>{additionalInfo}</p>
                     </section>
                 )}
 
                 <section className="mt-6">
-                    <p className={sectionLabel}>Price</p>
+                    <p className={sectionLabel}>{t('v2.price')}</p>
                     <p className={cn('mt-2 text-[15px]', palette.feature)}>
                         {`${symbol}${Math.round(card.nightly).toLocaleString()} / night × ${stayNights} night${stayNights === 1 ? '' : 's'}`}
                     </p>
@@ -853,6 +856,7 @@ export function RoomSelection({
     rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
     selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
 }: RoomSelectionProps) {
+    const t = useTranslations('property');
     const { theme } = useTheme();
     const palette = roomPalette(tone ?? theme);
     const [filter, setFilter] = useState<RoomFilter>('all');
@@ -928,7 +932,7 @@ export function RoomSelection({
 
     return (
         <section id={id} className={className}>
-            <h2 className={cn(SECTION_HEADING, palette.heading)}>Available Rooms</h2>
+            <h2 className={cn(SECTION_HEADING, palette.heading)}>{t('v2.availableRooms')}</h2>
 
             <div className="mt-4 flex flex-wrap gap-2">
                 {FILTERS.map((f) => (

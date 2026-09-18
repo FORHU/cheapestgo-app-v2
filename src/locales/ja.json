@@ -1,324 +1,1879 @@
 {
-    "nav": {
-        "support": "サポート",
-        "openApp": "アプリを開く",
-        "signIn": "ログイン",
-        "signOut": "ログアウト",
-        "myTrips": "マイトリップ",
-        "account": "アカウント",
-        "trips": "旅行",
-        "createAccount": "アカウントを作成",
-        "accountSettings": "アカウント設定",
-        "membersSave": "会員は10%以上割引",
-        "membersSaveSubtitle": "ログイン中の対象宿泊が対象",
-        "accountWorks": "アカウントはCheapestGoおよびすべてのパートナーサイトで利用できます"
+  "ai": {
+    "prompts": {
+      "bali": "バリ島のビーチフロントリゾート、大人2名、2月14〜21日...",
+      "tokyo": "東京の高級ホテル、1泊200ドル以下、プール付き...",
+      "cebu": "来月、セブでカップルの週末旅行...",
+      "manila": "マニラ近郊のファミリーリゾート、大人2名・子ども2名..."
+    }
+  },
+  "appBanner": {
+    "badge": "モバイルアプリ",
+    "title": "アプリでもっとスマートに旅行",
+    "subtitle": "アプリ限定セール、インスタント通知、外出先での旅行管理機能をご利用ください。",
+    "downloads": "ダウンロード",
+    "rating": "アプリ評価",
+    "savings": "特別割引",
+    "installBtn": "アプリをインストール",
+    "downloadBtn": "アプリをダウンロード",
+    "learnMore": "詳細はこちら"
+  },
+  "auth": {
+    "signIn": {
+      "title": "CheapestGo にログイン",
+      "emailLabel": "メールアドレス",
+      "emailPlaceholder": "your@email.com",
+      "continueWithEmail": "メールで続ける",
+      "continueWithGoogle": "Google で続ける",
+      "continueWithApple": "Apple で続ける",
+      "orDivider": "または",
+      "terms": "ログインすることで{terms}と{privacy}に同意したものとみなされます。",
+      "termsLink": "利用規約",
+      "privacyLink": "プライバシーポリシー"
+    }
+  },
+  "checkout": {
+    "back": "戻る",
+    "backToBookingDetails": "予約詳細に戻る",
+    "bookingErrorTitle": "予約エラー",
+    "bookingFor": {
+      "guestFirstName": "ゲスト名（名） *",
+      "guestLastName": "ゲスト名（姓） *",
+      "myself": "自分",
+      "someoneElse": "他の人",
+      "whoIsBooking": "どなたのご予約ですか？"
     },
-    "languagePicker": {
-        "label": "言語を選択",
-        "en": "English",
-        "ko": "한국어",
-        "cn": "中文",
-        "ja": "日本語"
+    "cancellation": {
+      "cancelAfter": "以降のキャンセル",
+      "cancelBy": "までにキャンセル",
+      "description": "客室のキャンセルにはいくらかかりますか？",
+      "earlyDepartureFee": "早期出発料金：{amount} — 予定日より前にチェックアウトした場合。",
+      "footer": "キャンセル料は予約総額に基づきます。日時はすべてGMT表示です。",
+      "freeCancellation": "無料キャンセル可能 — 期限は以下をご確認ください",
+      "freeCancellationLabel": "無料キャンセル",
+      "fullRefund": "（全額返金）",
+      "noShowPenalty": "ノーショーペナルティ：{amount} — キャンセルせずにチェックインしなかった場合。",
+      "nonRefundable": "返金不可 — この予約は返金目的でキャンセルできません",
+      "refund": "{amount}返金",
+      "title": "キャンセルポリシー"
     },
-    "currencyPicker": {
-        "label": "通貨を選択"
+    "checkIn": "チェックイン",
+    "checkOut": "チェックアウト",
+    "chooseYourDates": "日程を選択",
+    "completeYourBooking": "予約を完了する",
+    "confirmingBooking": "予約を確認中",
+    "confirmingWithHotel": "ホテルと確認中...",
+    "continue": "続ける",
+    "dontClosePage": "このページを閉じないでください",
+    "duplicateBookingDesc": "既存の予約をキャンセルするか、戻ってそのまま維持してください。",
+    "duplicateBookingTitle": "{hotel}に重複する日程の予約が既にあります",
+    "finalizingDetails": "予約詳細を確定中...",
+    "goBack": "← 戻る",
+    "goBackBtn": "戻る",
+    "keepExistingBooking": "既存の予約を維持",
+    "loadingPaymentForm": "支払いフォームを読み込み中...",
+    "modifyBooking": "予約を変更",
+    "payment": {
+      "card": "カード",
+      "cardNumber": "カード番号",
+      "countries": {
+        "ID": "インドネシア",
+        "JP": "日本",
+        "KR": "韓国",
+        "MY": "マレーシア",
+        "PH": "フィリピン",
+        "SG": "シンガポール",
+        "TH": "タイ",
+        "US": "米国",
+        "VN": "ベトナム"
+      },
+      "country": "国",
+      "mmYY": "月 / 年",
+      "payeeFirstName": "受取人名（名）",
+      "payeeLastName": "受取人名（姓）",
+      "paymentInformation": "お支払い情報",
+      "securedMessage": "お支払い情報は暗号化されて保護されています。",
+      "securityCode": "セキュリティコード"
     },
-    "theme": {
-        "switchToDark": "ダークモードに切り替え",
-        "switchToLight": "ライトモードに切り替え"
+    "pickDatesDescription": "チェックインとチェックアウトの日付を選択してください。",
+    "promos": {
+      "applied": "適用済み",
+      "apply": "適用",
+      "availableForBooking": "この予約に使えるプロモ",
+      "availablePromos": "利用可能なプロモ",
+      "failedToApply": "プロモの適用に失敗しました。もう一度お試しください。",
+      "hotelDeal": "ホテル特典",
+      "loadingPromos": "プロモを読み込み中...",
+      "location": "ロケーション",
+      "minAmount": "最低{amount}",
+      "newUser": "新規ユーザー",
+      "off": "割引",
+      "promo": "プロモ",
+      "seasonal": "季節限定",
+      "until": "{date}まで",
+      "upTo": "最大{amount}"
     },
-    "landing": {
-        "hero": {
-            "title": "最安値の航空券",
-            "titleLine1": "精密な旅。",
-            "titleLine2": "あなた専用に設計。",
-            "subtitle": "現代の旅行者のためのオペレーティングシステム。",
-            "monoSubtext": "何でも尋ねて、すべてを予約。",
-            "cta": "フライトを検索"
-        },
-        "search": {
-            "from": "出発地",
-            "to": "目的地",
-            "depart": "出発日",
-            "return": "帰国日",
-            "rooms": "部屋",
-            "placeholder": {
-                "airport": "都市または空港",
-                "date": "日付を選択"
-            },
-            "tripType": {
-                "roundTrip": "往復",
-                "oneWay": "片道",
-                "multiCity": "マルチシティ"
-            },
-            "cabinClass": {
-                "economy": "エコノミー",
-                "premiumEconomy": "プレミアムエコノミー",
-                "business": "ビジネス",
-                "first": "ファースト"
-            },
-            "submit": "検索",
-            "anywhere": "どこでも",
-            "anyWeek": "いつでも",
-            "addGuests": "人数を追加",
-            "guests": "{count}名",
-            "guestsPlural": "{count}名",
-            "clearAll": "すべてクリア",
-            "findDeals": "最安値を探す",
-            "comingSoon": "近日公開",
-            "aiDevelopment": "AI検索は現在開発中です。お楽しみに！",
-            "askAi": "AIに聞く",
-            "aiGreeting": "今朝は何をお手伝いしますか？",
-            "results": "検索結果",
-            "findingFlights": "航空便を検索中…",
-            "searchFlightsHeader": "フライト検索",
-            "bundle": {
-                "hotelBooked": "ホテル予約済み！",
-                "instructions": "{from}と{to}の空港を入力し、日程を選んで検索すると最大8%お得になります。"
-            },
-            "whereTo": "どこへ？",
-            "searchDestination": "目的地を検索",
-            "checkIn": "チェックイン",
-            "checkOut": "チェックアウト",
-            "travelers": "旅行者",
-            "guest": "{count}名",
-            "guestPlural": "{count}名",
-            "guestsRooms": "ゲストと部屋",
-            "adults": "大人",
-            "children": "子ども",
-            "childrenAges": "0〜17歳",
-            "roomsNote": "1予約につき1室。追加の部屋は別途予約してください。",
-            "done": "完了",
-            "calendar": "カレンダー",
-            "flexibleDates": "柔軟な日程",
-            "whenTravel": "いつ旅行しますか？",
-            "childLabel": "子ども{index}：{age}歳",
-            "yearsOld": "{age}歳",
-            "month": "月",
-            "year": "年",
-            "searchDestinationsPlaceholder": "目的地を検索...",
-            "recentSearches": "最近の検索",
-            "searching": "検索中...",
-            "noResults": "結果が見つかりません",
-            "countries": "国",
-            "cities": "都市",
-            "typeToSearch": "都市名または空港コードを入力...",
-            "noAirportsFound": "「{query}」の空港が見つかりません",
-            "typeToSearchPrompt": "都市名または空港コードを入力して検索",
-            "cabinClassLabel": "座席クラス",
-            "passengers": "乗客",
-            "infants": "幼児",
-            "adultAge": "12歳以上",
-            "childAge": "2〜11歳",
-            "infantAge": "2歳未満（膝上）",
-            "selectDate": "選択",
-            "months": [
-                "１月",
-                "２月",
-                "３月",
-                "４月",
-                "５月",
-                "６月",
-                "７月",
-                "８月",
-                "９月",
-                "１０月",
-                "１１月",
-                "１２月"
-            ],
-            "days": [
-                "日",
-                "月",
-                "火",
-                "水",
-                "木",
-                "金",
-                "土"
-            ],
-            "flexOptions": [
-                "正確な日付",
-                "±1日",
-                "±2日",
-                "±3日",
-                "±7日"
-            ],
-            "searchMode": {
-                "stays": "宿泊",
-                "flights": "フライト",
-                "aiSearch": "AI 検索"
-            }
-        },
-        "recentlyViewed": {
-            "title": "検索を再開",
-            "subtitle": "前回の続きから",
-            "viewAll": "すべて見る",
-            "recentlySearched": "最近の検索",
-            "from": "から",
-            "stay": "宿泊",
-            "flight": "フライト",
-            "showLess": "折りたたむ"
-        }
+    "rating": {
+      "average": "普通",
+      "exceptional": "素晴らしい",
+      "fabulous": "大変良い",
+      "good": "良い",
+      "pleasant": "快適",
+      "veryGood": "とても良い"
     },
-    "flights": {
-        "results": {
-            "loading": "最安値を探しています…",
-            "empty": "この日程のフライトは見つかりませんでした。",
-            "sortBy": "並び替え",
-            "filters": "絞り込み",
-            "price": "料金",
-            "duration": "所要時間",
-            "stops": {
-                "any": "すべて",
-                "direct": "直行便",
-                "oneStop": "乗り継ぎ1回",
-                "twoPlus": "乗り継ぎ2回以上"
-            }
-        },
-        "card": {
-            "direct": "直行便",
-            "stop": "回乗り継ぎ",
-            "stops": "回乗り継ぎ",
-            "viewDeal": "料金を見る",
-            "perPerson": "1人あたり"
-        }
+    "retry": "再試行",
+    "searchAvailableRooms": "空室を検索 →",
+    "secureYourBooking": "予約を確定する",
+    "securingReservation": "予約を確定中...",
+    "selectYourDates": "日程を選択",
+    "signIn": "ログイン",
+    "signInBannerDesc": "予約確認や最新情報をメールでお受け取りいただけます。",
+    "signInToComplete": "ログインして予約を完了",
+    "specialRequests": {
+      "placeholder": "ホテルが可能な限り対応いたします。",
+      "title": "リクエストはありますか？"
     },
-    "auth": {
-        "signIn": {
-            "title": "CheapestGo にログイン",
-            "emailLabel": "メールアドレス",
-            "emailPlaceholder": "your@email.com",
-            "continueWithEmail": "メールで続ける",
-            "continueWithGoogle": "Google で続ける",
-            "continueWithApple": "Apple で続ける",
-            "orDivider": "または",
-            "terms": "ログインすることで{terms}と{privacy}に同意したものとみなされます。",
-            "termsLink": "利用規約",
-            "privacyLink": "プライバシーポリシー"
-        }
+    "stripe": {
+      "completePayment": "お支払いを完了",
+      "loadError": "支払いフォームの読み込みに失敗しました。更新してやり直してください。",
+      "payNow": "今すぐ支払う",
+      "processing": "お支払いを処理中...",
+      "unexpectedError": "予期しないエラーが発生しました。"
+    },
+    "submit": {
+      "continueToPayment": "お支払いに進む • {amount}",
+      "goBackDifferentHotel": "戻って別のホテルを選ぶ",
+      "goBackReselect": "戻って客室を選び直す",
+      "hotelUnavailable": "ホテルが一時的に利用不可",
+      "hotelUnavailableDesc": "このホテルは現在予約できません。戻って別のホテルをお選びください。",
+      "processingBooking": "予約を処理中...",
+      "sessionExpired": "客室セッションの有効期限切れ",
+      "sessionExpiredDesc": "客室の保留が期限切れになりました。戻って客室を選び直してください — 同じ客室を再度選択できます。",
+      "signInToComplete": "ログインして予約を完了",
+      "verificationFailed": "確認に失敗しました — 上記のエラーをご確認ください",
+      "verifyingPrice": "料金を確認中...",
+      "verifyingRoom": "客室を確認中...",
+      "waitingMessage": "ホテルとの予約確認をお待ちください...",
+      "waitingWarning": "最大30秒かかる場合があります。このページを閉じないでください。"
+    },
+    "success": {
+      "bookFlightBundle": "今すぐフライトを予約して、合計金額からバンドル割引を受けましょう。",
+      "bookingConfirmed": "予約確定！🎉",
+      "bookingId": "予約ID",
+      "bundleDeal": "✦ バンドル特典",
+      "bundleDiscountApplied": "バンドル割引が適用されました",
+      "checkEmail": "予約詳細と最新情報はメールをご確認ください",
+      "confirmationSentTo": "確認メールの送信先",
+      "flightHotelBundle": "フライト + ホテルバンドル",
+      "needFlight": "{destination}へのフライトが必要ですか？",
+      "reservationComplete": "<strong>{name}</strong>でのご予約が完了しました。",
+      "returnToHome": "ホームに戻る",
+      "saveUpTo": "最大8%割引",
+      "saved": "{amount}お得",
+      "searchFlightsAndBundle": "フライト & バンドルを検索",
+      "sent": "送信済み",
+      "stayDuration": "滞在期間",
+      "viewMyTrips": "マイトリップを見る",
+      "openingDestination": "目的地ページを開いています…",
+      "checkIn": "チェックイン",
+      "checkOut": "チェックアウト",
+      "emailInfo": "ご予約確認書は数分以内にメールでお送りします。",
+      "freeCancellationInfo": "無料キャンセル対象のご予約は、マイトリップからキャンセル・変更できます。",
+      "hotel": "ホテル",
+      "hotelCheckInInfo": "ご到着時にホテルのフロントで予約IDをご提示ください。",
+      "hotelSuccess": "ホテルのご予約が完了しました。",
+      "room": "客室",
+      "total": "合計",
+      "whatsNext": "次のステップ"
+    },
+    "summary": {
+      "adult": "名",
+      "adults": "名",
+      "averagePerNight": "1泊あたりの平均",
+      "calculatingPerNight": "1泊あたりの料金を計算中...",
+      "checkInAndOut": "チェックイン & チェックアウト",
+      "checkInLabel": "チェックイン",
+      "checkOutLabel": "チェックアウト",
+      "child": "名（子ども）",
+      "children": "名（子ども）",
+      "edit": "編集",
+      "night": "泊",
+      "nights": "泊",
+      "priceDetails": "料金詳細",
+      "promoCode": "プロモコード：{code}",
+      "roomConfirmed": "客室確定",
+      "roomNights": "1室 × {nights}{count}",
+      "included": "含む",
+      "taxes": "税金",
+      "includedInPrice": "含む",
+      "serviceFee": "プラットフォームサービス料",
+      "total": "合計",
+      "updateDates": "日程を更新",
+      "youSave": "このプロモで{amount}お得",
+      "yourRoom": "客室",
+      "freeCancellationBefore": "{date} まで無料キャンセル",
+      "freeCancellationShort": "無料キャンセル",
+      "nonRefundable": "返金不可",
+      "termsNotProvided": "サプライヤーからキャンセル条件の提供がありません — 予約前に施設にご確認ください",
+      "fetchingPolicy": "キャンセルポリシーを取得中…"
+    },
+    "title": "チェックアウト | {brand}",
+    "userDetails": {
+      "age": "年齢 *",
+      "agePlaceholder": "0–17",
+      "childN": "子供 {n}",
+      "email": "メールアドレス *",
+      "emailPlaceholder": "メールアドレス",
+      "firstName": "名 *",
+      "firstNamePlaceholder": "名",
+      "guest1": "ゲスト 1（ご本人）",
+      "guestN": "ゲスト {n}",
+      "lastName": "姓 *",
+      "lastNamePlaceholder": "姓",
+      "no": "いいえ",
+      "phone": "電話番号",
+      "phonePlaceholder": "番号",
+      "title": "お客様情報",
+      "travelingForWork": "出張ですか？",
+      "yes": "はい",
+      "phoneNumber": "電話番号",
+      "passportNumber": "パスポート番号",
+      "dateOfBirth": "生年月日"
+    },
+    "validation": {
+      "bookingFailed": "予約確認に失敗しました：{message}。お支払いは自動的に返金されます。",
+      "fieldRequired": "この項目は必須です",
+      "firstNameRequired": "名を入力してください",
+      "fixHighlighted": "ハイライトされた項目を修正してください。",
+      "invalidPrice": "予約価格が無効です。もう一度お試しください。",
+      "lastNameRequired": "姓を入力してください",
+      "nameInvalid": "お名前には文字のみ使用できます",
+      "paymentSetupFailed": "支払い設定に失敗しました",
+      "phoneDigitsOnly": "電話番号は数字のみ入力してください",
+      "phoneRequired": "電話番号を入力してください",
+      "priceVerifying": "価格を確認中です — しばらく待ってからもう一度お試しください。",
+      "requiresAuth": "認証が必要です",
+      "sessionExpired": "予約セッションの有効期限が切れました。戻って部屋を選び直してください。",
+      "sessionExpiredCharge": "支払い中にセッションの有効期限が切れました。カードは請求されています — サポートまでお問い合わせください（支払い参照番号：{id}）",
+      "refreshingSession": "料金を更新中です…",
+      "quoteExpiringSoon": "料金の保証は5分後に終了します — 早めにご予約を完了してください。",
+      "required": "必須"
+    },
+    "priceChanged": {
+      "title": "料金が変更されました",
+      "description": "お選びいただいた時点と予約を確定しようとした時点の間に、この客室の料金が変更されました。",
+      "originalPrice": "元の料金",
+      "newPrice": "新しい料金",
+      "refundNotice": "{amount}のお支払いは自動的に返金されました。明細書への反映には3〜5営業日かかる場合があります。",
+      "backToSearch": "検索に戻る"
+    },
+    "verifyingPayment": "支払いを確認中...",
+    "viewExistingBooking": "既存の予約を確認",
+    "voucher": {
+      "apply": "適用",
+      "enterPromoCode": "プロモコードを入力",
+      "failedToValidate": "プロモコードの検証に失敗しました。もう一度お試しください。",
+      "havePromoCode": "プロモコードをお持ちですか？",
+      "promoCode": "プロモコード",
+      "removeVoucher": "プロモコードを削除",
+      "saved": "{amount}お得",
+      "off": "OFF"
+    },
+    "booked": "予約完了",
+    "bookingReference": "予約番号",
+    "guestLabel": "ご宿泊者",
+    "priceBreakdown": "料金内訳",
+    "serviceFee": "サービス料",
+    "totalPaid": "お支払い総額",
+    "whosCheckingIn": "ご宿泊者はどなたですか？",
+    "steps": {
+      "details": "お客様情報",
+      "payment": "お支払い",
+      "confirmed": "予約完了"
     },
     "errors": {
-        "generic": "エラーが発生しました。もう一度お試しください。",
-        "notFound": "ページが見つかりません。",
-        "searchFailed": "検索に失敗しました。接続を確認してもう一度お試しください。"
+      "paymentFailed": "お支払いに失敗しました。もう一度お試しください。",
+      "paymentProcessing": "お支払いを処理しています。しばらくしてからマイトリップでご確認ください。"
     },
-    "pwa": {
-        "installPrompt": {
-            "title": "CheapestGo アプリを入手",
-            "body": "ホーム画面に追加すると、より素早くアクセスできます。",
-            "install": "インストール",
-            "dismiss": "後で"
-        }
+    "allSet": "ご予約が完了しました！",
+    "receiptSent": "ご予約が確定しました。領収書を {email} にお送りしました。",
+    "nightsCount": "{count}泊",
+    "guestsCount": "{count}名",
+    "roomFallback": "スタンダードルーム",
+    "confirmingFinalPrice": "最終料金を確認しています…"
+  },
+  "currencyPicker": {
+    "label": "通貨を選択"
+  },
+  "deals": {
+    "popularRoute": "人気路線",
+    "searchFlights": "フライトを検索",
+    "all": "すべて",
+    "oneWay": "片道",
+    "roundTrip": "往復",
+    "headerDefault": "特別セール＆オファー",
+    "headerPersonalized": "{city} 出発の格安航空券",
+    "subtitleDefault": "人気路線の最安値",
+    "subtitlePersonalized": "{city} 出発の最安値フライト",
+    "allDealsCount": "すべてのオファー（{count}件）",
+    "collapse": "折りたたむ ↑"
+  },
+  "errors": {
+    "generic": "エラーが発生しました。もう一度お試しください。",
+    "notFound": "ページが見つかりません。",
+    "searchFailed": "検索に失敗しました。接続を確認してもう一度お試しください。"
+  },
+  "flights": {
+    "results": {
+      "loading": "最安値を探しています…",
+      "empty": "この日程のフライトは見つかりませんでした。",
+      "sortBy": "並び替え",
+      "filters": "絞り込み",
+      "price": "料金",
+      "duration": "所要時間",
+      "stops": {
+        "any": "すべて",
+        "direct": "直行便",
+        "oneStop": "乗り継ぎ1回",
+        "twoPlus": "乗り継ぎ2回以上"
+      }
     },
-    "footer": {
-        "tagline": "目の肥えた旅行者のために設計。",
-        "taglinePrecision": "正確なデータ。妥協なし。",
-        "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
-        "module": "サービス",
-        "flights": "フライト",
-        "hotels": "ホテル",
-        "cars": "レンタカー",
-        "company": "会社情報",
-        "aboutUs": "会社概要",
-        "enterprise": "法人向け",
-        "support": "サポート",
-        "network": "接続状況",
-        "flightsApi": "フライト API",
-        "paymentGateway": "決済ゲートウェイ",
-        "copyright": "© 2026 JTP Partners. All rights reserved.",
-        "terms": "利用規約",
-        "privacy": "プライバシー",
-        "cookies": "クッキー",
-        "contact": "お問い合わせ",
-        "copyrightMinimal": "CheapestGo © 2026",
-        "termsMinimal": "利用規約と条件",
-        "privacyMinimal": "プライバシーポリシー",
-        "cookiesMinimal": "Cookie 設定",
-        "contactMinimal": "お問い合わせ",
-        "reportBug": "バグを報告"
-    },
-    "appBanner": {
-        "badge": "モバイルアプリ",
-        "title": "アプリでもっとスマートに旅行",
-        "subtitle": "アプリ限定セール、インスタント通知、外出先での旅行管理機能をご利用ください。",
-        "downloads": "ダウンロード",
-        "rating": "アプリ評価",
-        "savings": "特別割引",
-        "installBtn": "アプリをインストール",
-        "downloadBtn": "アプリをダウンロード",
-        "learnMore": "詳細はこちら"
-    },
-    "deals": {
-        "popularRoute": "人気路線",
-        "searchFlights": "フライトを検索",
-        "all": "すべて",
-        "oneWay": "片道",
-        "roundTrip": "往復",
-        "headerDefault": "特別セール＆オファー",
-        "headerPersonalized": "{city} 出発の格安航空券",
-        "subtitleDefault": "人気路線の最安値",
-        "subtitlePersonalized": "{city} 出発の最安値フライト",
-        "allDealsCount": "すべてのオファー（{count}件）",
-        "collapse": "折りたたむ ↑"
-    },
-    "hotels": {
-        "ratings": {
-            "exceptional": "素晴らしい",
-            "excellent": "大変良い",
-            "superb": "素晴らしい",
-            "veryGood": "とても良い",
-            "good": "良い",
-            "average": "普通"
-        },
-        "fromPrice": "{price}〜",
-        "perNight": "/泊",
-        "pricesMayVary": "価格は変動する場合があります",
-        "guestFavorite": "ゲストのお気に入り",
-        "bookNow": "今すぐ予約",
-        "headerDefault": "人気のホテルセール",
-        "headerPersonalized": "{country} のホテルセール",
-        "subtitleDefault": "厳選されたホテルをお得な価格で",
-        "subtitlePersonalized": "{country} の高評価ホテル · 毎日更新",
-        "allHotelsCount": "すべてのホテル（{count}軒）",
-        "collapse": "折りたたむ ↑"
-    },
-    "topCities": {
-        "headerMain": "人気の都市",
-        "headerHighlight": "世界中",
-        "subtitle": "最も人気の目的地 · すぐにホテルを検索",
-        "exploreHotels": "ホテルを検索"
-    },
-    "topDestinations": {
-        "headerMain": "人気の目的地",
-        "headerHighlight": "世界中",
-        "subtitle": "世界中から集めたアイコニックな体験",
-        "findHotels": "ホテルを検索"
-    },
-    "guestFavorites": {
-        "headerMain": "お気に入り",
-        "headerHighlight": "ホテル",
-        "subtitle": "旅行者に愛される高評価ホテル · 毎日更新",
-        "allFavoritesCount": "すべてのお気に入り（{count}件）",
-        "collapse": "折りたたむ ↑"
-    },
-    "seo": {
-        "orgDescription": "CheapestGo は、世界中で最安値の航空券とホテルを見つける現代的な旅行予約プラットフォームです。",
-        "faq": {
-            "q1": "CheapestGo はどうやって安い航空券を見つけますか？",
-            "a1": "CheapestGo は複数の航空会社とグローバル流通システムを検索し、リアルタイムで最安値を探して一か所で比較・予約できます。",
-            "q2": "CheapestGo で航空券とホテルの両方を予約できますか？",
-            "a2": "はい。CheapestGo では航空券、ホテル、アパート、ユニークな宿泊施設をすべて一つのプラットフォームで予約できます。",
-            "q3": "CheapestGo は無料で使えますか？",
-            "a3": "はい、価格の検索と比較は完全無料です。費用が発生するのは予約時のみです。",
-            "q4": "CheapestGo はどの通貨に対応していますか？",
-            "a4": "CheapestGo は複数の通貨に対応しており、設定に基づいて自動的に価格を換算し、いつでも現地通貨で確認できます。"
-        }
-    },
-    "ai": {
-        "prompts": {
-            "bali": "バリ島のビーチフロントリゾート、大人2名、2月14〜21日...",
-            "tokyo": "東京の高級ホテル、1泊200ドル以下、プール付き...",
-            "cebu": "来月、セブでカップルの週末旅行...",
-            "manila": "マニラ近郊のファミリーリゾート、大人2名・子ども2名..."
-        }
+    "card": {
+      "direct": "直行便",
+      "stop": "回乗り継ぎ",
+      "stops": "回乗り継ぎ",
+      "viewDeal": "料金を見る",
+      "perPerson": "1人あたり"
     }
+  },
+  "footer": {
+    "tagline": "目の肥えた旅行者のために設計。",
+    "taglinePrecision": "正確なデータ。妥協なし。",
+    "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
+    "module": "サービス",
+    "flights": "フライト",
+    "hotels": "ホテル",
+    "cars": "レンタカー",
+    "company": "会社情報",
+    "aboutUs": "会社概要",
+    "enterprise": "法人向け",
+    "support": "サポート",
+    "network": "接続状況",
+    "flightsApi": "フライト API",
+    "paymentGateway": "決済ゲートウェイ",
+    "copyright": "© 2026 FORHU Inc. All rights reserved.",
+    "terms": "利用規約",
+    "privacy": "プライバシー",
+    "cookies": "クッキー",
+    "contact": "お問い合わせ",
+    "copyrightMinimal": "CheapestGo © 2026",
+    "termsMinimal": "利用規約と条件",
+    "privacyMinimal": "プライバシーポリシー",
+    "cookiesMinimal": "Cookie 設定",
+    "contactMinimal": "お問い合わせ",
+    "reportBug": "バグを報告"
+  },
+  "guestFavorites": {
+    "headerMain": "お気に入り",
+    "headerHighlight": "ホテル",
+    "subtitle": "旅行者に愛される高評価ホテル · 毎日更新",
+    "allFavoritesCount": "すべてのお気に入り（{count}件）",
+    "collapse": "折りたたむ ↑"
+  },
+  "hotels": {
+    "ratings": {
+      "exceptional": "素晴らしい",
+      "excellent": "大変良い",
+      "superb": "素晴らしい",
+      "veryGood": "とても良い",
+      "good": "良い",
+      "average": "普通"
+    },
+    "fromPrice": "{price}〜",
+    "perNight": "/泊",
+    "pricesMayVary": "価格は変動する場合があります",
+    "guestFavorite": "ゲストのお気に入り",
+    "bookNow": "今すぐ予約",
+    "headerDefault": "人気のホテルセール",
+    "headerPersonalized": "{country} のホテルセール",
+    "subtitleDefault": "厳選されたホテルをお得な価格で",
+    "subtitlePersonalized": "{country} の高評価ホテル · 毎日更新",
+    "allHotelsCount": "すべてのホテル（{count}軒）",
+    "collapse": "折りたたむ ↑"
+  },
+  "invoice": {
+    "amount": "金額",
+    "billedTo": "請求先",
+    "bookingDetails": "予約内容",
+    "bookingRef": "予約番号",
+    "date": "日付",
+    "description": "内容",
+    "flight": "航空券",
+    "hotel": "ホテル",
+    "hotelPartner": "ホテルパートナー",
+    "issued": "発行日: {date}",
+    "passengers": "搭乗者",
+    "payment": "お支払い",
+    "paymentMethod": "Stripe（カード）",
+    "provider": "提供元",
+    "receipt": "領収書",
+    "route": "区間",
+    "thankYou": "CheapestGoをご利用いただきありがとうございます。お問い合わせ先",
+    "totalPaid": "お支払い総額",
+    "type": "種別",
+    "yourTravelPartner": "あなたの旅のパートナー"
+  },
+  "landing": {
+    "hero": {
+      "title": "最安値の航空券",
+      "titleLine1": "精密な旅。",
+      "titleLine2": "あなた専用に設計。",
+      "subtitle": "現代の旅行者のためのオペレーティングシステム。",
+      "monoSubtext": "何でも尋ねて、すべてを予約。",
+      "cta": "フライトを検索"
+    },
+    "search": {
+      "from": "出発地",
+      "to": "目的地",
+      "depart": "出発日",
+      "return": "帰国日",
+      "rooms": "部屋",
+      "placeholder": {
+        "airport": "都市または空港",
+        "date": "日付を選択"
+      },
+      "tripType": {
+        "roundTrip": "往復",
+        "oneWay": "片道",
+        "multiCity": "マルチシティ"
+      },
+      "cabinClass": {
+        "economy": "エコノミー",
+        "premiumEconomy": "プレミアムエコノミー",
+        "business": "ビジネス",
+        "first": "ファースト"
+      },
+      "submit": "検索",
+      "anywhere": "どこでも",
+      "anyWeek": "いつでも",
+      "addGuests": "人数を追加",
+      "guests": "{count}名",
+      "guestsPlural": "{count}名",
+      "clearAll": "すべてクリア",
+      "findDeals": "最安値を探す",
+      "comingSoon": "近日公開",
+      "aiDevelopment": "AI検索は現在開発中です。お楽しみに！",
+      "askAi": "AIに聞く",
+      "aiGreeting": "今朝は何をお手伝いしますか？",
+      "results": "検索結果",
+      "findingFlights": "航空便を検索中…",
+      "searchFlightsHeader": "フライト検索",
+      "bundle": {
+        "hotelBooked": "ホテル予約済み！",
+        "instructions": "{from}と{to}の空港を入力し、日程を選んで検索すると最大8%お得になります。"
+      },
+      "whereTo": "どこへ？",
+      "searchDestination": "目的地を検索",
+      "checkIn": "チェックイン",
+      "checkOut": "チェックアウト",
+      "travelers": "旅行者",
+      "guest": "{count}名",
+      "guestPlural": "{count}名",
+      "guestsRooms": "ゲストと部屋",
+      "adults": "大人",
+      "children": "子ども",
+      "childrenAges": "0〜17歳",
+      "roomsNote": "1予約につき1室。追加の部屋は別途予約してください。",
+      "done": "完了",
+      "calendar": "カレンダー",
+      "flexibleDates": "柔軟な日程",
+      "whenTravel": "いつ旅行しますか？",
+      "childLabel": "子ども{index}：{age}歳",
+      "yearsOld": "{age}歳",
+      "month": "月",
+      "year": "年",
+      "searchDestinationsPlaceholder": "目的地を検索...",
+      "recentSearches": "最近の検索",
+      "searching": "検索中...",
+      "noResults": "結果が見つかりません",
+      "countries": "国",
+      "cities": "都市",
+      "typeToSearch": "都市名または空港コードを入力...",
+      "noAirportsFound": "「{query}」の空港が見つかりません",
+      "typeToSearchPrompt": "都市名または空港コードを入力して検索",
+      "cabinClassLabel": "座席クラス",
+      "passengers": "乗客",
+      "infants": "幼児",
+      "adultAge": "12歳以上",
+      "childAge": "2〜11歳",
+      "infantAge": "2歳未満（膝上）",
+      "selectDate": "選択",
+      "months": [
+        "１月",
+        "２月",
+        "３月",
+        "４月",
+        "５月",
+        "６月",
+        "７月",
+        "８月",
+        "９月",
+        "１０月",
+        "１１月",
+        "１２月"
+      ],
+      "days": [
+        "日",
+        "月",
+        "火",
+        "水",
+        "木",
+        "金",
+        "土"
+      ],
+      "flexOptions": [
+        "正確な日付",
+        "±1日",
+        "±2日",
+        "±3日",
+        "±7日"
+      ],
+      "searchMode": {
+        "stays": "宿泊",
+        "flights": "フライト",
+        "aiSearch": "AI 検索"
+      }
+    },
+    "recentlyViewed": {
+      "title": "検索を再開",
+      "subtitle": "前回の続きから",
+      "viewAll": "すべて見る",
+      "recentlySearched": "最近の検索",
+      "from": "から",
+      "stay": "宿泊",
+      "flight": "フライト",
+      "showLess": "折りたたむ"
+    }
+  },
+  "languagePicker": {
+    "label": "言語を選択",
+    "en": "English",
+    "ko": "한국어",
+    "cn": "中文",
+    "ja": "日本語"
+  },
+  "legal": {
+    "layout": {
+      "breadcrumb": "CheapestGo · 法的情報",
+      "effective": "発効日：",
+      "lastUpdated": "最終更新：",
+      "disclaimer": {
+        "label": "注意：",
+        "body": "この文書は情報提供を目的としています。CheapestGoは、本番環境への公開前に、お客様の特定の管轄区域に適した法律の専門家による確認を推奨します。"
+      },
+      "contents": "目次",
+      "contact": {
+        "heading": "この文書についてご不明な点はありますか？",
+        "contactLine": "お問い合わせはこちら：",
+        "address": "FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · アメリカ合衆国"
+      }
+    },
+    "cookiePolicy": {
+      "description": "CheapestGoがCookieおよび類似の追跡技術を使用する方法です。",
+      "pageSubtitle": "CheapestGoでのCookieおよび類似技術の使用方法をご案内します。",
+      "pageTitle": "Cookieポリシー",
+      "title": "Cookieポリシー — CheapestGo"
+    },
+    "privacyPolicy": {
+      "description": "CheapestGoがお客様の個人情報を収集、使用、保護する方法です。",
+      "pageSubtitle": "お客様の個人情報の収集、使用、保護方法をご案内します。",
+      "pageTitle": "プライバシーポリシー",
+      "title": "プライバシーポリシー — CheapestGo"
+    },
+    "refundPolicy": {
+      "description": "CheapestGoでのキャンセル、払い戻し、予約変更の処理方法をご確認ください。",
+      "pageSubtitle": "キャンセル、払い戻し、予約変更に関するすべての情報をご案内します。",
+      "pageTitle": "返金・キャンセルポリシー",
+      "title": "返金・キャンセルポリシー — CheapestGo"
+    },
+    "termsGate": {
+      "title": "ご利用開始前に",
+      "subtitle": "CheapestGoの利用を続けるには、利用規約をご確認の上、同意してください。",
+      "points": [
+        "18歳以上で、法的拘束力のある契約を締結できる方に限ります。",
+        "CheapestGoは仲介業者です。予約契約はホテル、航空会社、またはパッケージ提供者との間で締結され、当社とは締結されません。",
+        "料金と空室状況は、お支払いが処理され、確認メールを受け取るまで保証されません。",
+        "キャンセルと払い戻しは、サプライヤーのポリシーと当社の返金・キャンセルポリシーに従います。",
+        "お支払いはStripeが処理します。当社はお客様のカード情報を保存しません。",
+        "紛争はニューヨークで拘束力のある仲裁により解決され、集団訴訟に参加する権利を放棄します。"
+      ],
+      "termsLink": "利用規約",
+      "privacyLink": "プライバシーポリシー",
+      "opensInNewTab": "新しいタブで開きます — 現在のページは保持されます。",
+      "checkboxLabel": "利用規約およびプライバシーポリシーを読み、同意します。",
+      "acceptButton": "同意して続ける",
+      "checkboxPrefix": "以下に同意します: ",
+      "checkboxTerms": "利用規約",
+      "checkboxConnector": "および",
+      "checkboxPrivacy": "プライバシーポリシー",
+      "checkboxSuffix": "。",
+      "checkboxAriaLabel": "利用規約およびプライバシーポリシーに同意します"
+    },
+    "termsOfService": {
+      "description": "CheapestGoのご利用に適用される利用規約です。",
+      "pageSubtitle": "CheapestGoをご利用になる前に、この規約をよくお読みください。",
+      "pageTitle": "利用規約",
+      "title": "利用規約 — CheapestGo"
+    },
+    "content": {
+      "terms": {
+        "acceptance": {
+          "title": "利用規約への同意",
+          "body": "CheapestGoのウェブサイトおよびサービス（以下「プラットフォーム」）にアクセスまたは利用することにより、お客様は本利用規約（以下「規約」）およびすべての適用法令に拘束されることに同意します。本規約に同意されない場合は、プラットフォームをご利用いただけません。CheapestGoは、米国ニューヨーク州ニューヨーク市ウォールストリート30番地8階に所在するFORHU Inc.により運営されています。本規約は、お客様とCheapestGoとの間の法的拘束力のある合意を構成します。"
+        },
+        "eligibility": {
+          "title": "利用資格",
+          "intro": "CheapestGoをご利用いただくには、以下の条件を満たす必要があります：",
+          "items": [
+            "18歳以上であること",
+            "法的拘束力のある契約を締結できる法的能力を有すること",
+            "適用法令によりプラットフォームの利用を禁止されていないこと",
+            "アカウント作成または予約時に正確で最新の完全な情報を提供すること"
+          ]
+        },
+        "accountRegistration": {
+          "title": "アカウント登録",
+          "intro": "プラットフォームの一部の機能をご利用いただくには、アカウントの作成が必要な場合があります。お客様は以下に同意します：",
+          "items": [
+            "登録時に正確かつ真実の情報を提供すること",
+            "ログイン資格情報を秘密に保ち、第三者と共有しないこと",
+            "アカウントの不正使用を直ちに当社に通知すること",
+            "アカウント上で発生するすべての活動に責任を負うこと"
+          ],
+          "note": "CheapestGoは、本規約に違反するアカウントまたは長期間非アクティブなアカウントを停止または終了する権利を留保します。"
+        },
+        "bookingProcess": {
+          "title": "予約プロセスと確認",
+          "intro": "CheapestGoを通じて予約を行う場合、お客様はCheapestGoとではなく、旅行サプライヤー（ホテル、航空会社、またはパッケージ提供者）との契約を締結します。CheapestGoは予約を仲介する仲介者として機能します。",
+          "items": [
+            {
+              "label": "予約確認",
+              "text": "CheapestGoから予約参照番号を記載した書面による確認メールを受け取った場合にのみ、予約が確定します。"
+            },
+            {
+              "label": "正確性",
+              "text": "お支払いを確定する前に、すべての予約詳細（日付、ゲスト名、客室タイプ）が正確であることを確認する責任はお客様にあります。"
+            },
+            {
+              "label": "サプライヤーの条件",
+              "text": "お客様の予約は、キャンセルおよびノーショーポリシーを含む各旅行サプライヤーの利用条件に従います。"
+            },
+            {
+              "label": "空室状況",
+              "text": "お支払いが正常に処理され、確認書が発行されるまで、料金と空室状況は保証されません。"
+            }
+          ]
+        },
+        "pricing": {
+          "title": "料金とお支払い",
+          "items": [
+            {
+              "label": "料金",
+              "text": "表示される料金は旅行パートナーから直接調達されており、現在の卸売料金を反映しています。隠れたプラットフォーム手数料はありません。"
+            },
+            {
+              "label": "通貨",
+              "text": "料金はお客様が選択した通貨で表示されます。通貨換算レートは参考のために提供されており、お支払い時に変動する場合があります。"
+            },
+            {
+              "label": "お支払い処理",
+              "text": "すべてのお支払いはStripe, Inc.により安全に処理されます。お支払いを行うことで、Stripeの利用規約にも同意されたことになります。CheapestGoはお客様のカード情報を保存しません。"
+            },
+            {
+              "label": "税金と手数料",
+              "text": "表示料金には該当するサービス手数料が含まれます。特に明示されない限り、チェックイン時にホテルが直接請求する現地税や観光税は含まれません。"
+            },
+            {
+              "label": "料金変更",
+              "text": "お支払いが完了するまで料金は変更される場合があります。予約確定前の料金変動について当社は責任を負いません。"
+            }
+          ]
+        },
+        "cancellations": {
+          "title": "キャンセルと払い戻し",
+          "textBefore": "キャンセルと払い戻しは、本規約に参照として組み込まれた当社の",
+          "refundLinkText": "返金・キャンセルポリシー",
+          "textAfter": "に準拠します。ポリシーはホテルや料金タイプによって異なりますので、予約前によくご確認ください。"
+        },
+        "prohibitedConduct": {
+          "title": "禁止行為",
+          "intro": "お客様は以下の行為を行わないことに同意します：",
+          "items": [
+            "違法な目的または適用法令に違反してプラットフォームを利用すること",
+            "不正な予約、盗まれた支払い認証情報の使用、または悪意のあるチャージバックを行うこと",
+            "プラットフォームのリバースエンジニアリング、スクレイピング、またはデータ抽出を試みること",
+            "自動化されたボットまたはスクリプトを使用してプラットフォームにアクセスまたはやり取りすること",
+            "当社の書面による同意なく商業目的で予約を転売または再配布すること",
+            "虚偽または誤解を招く情報やレビューを投稿すること、または他の個人や組織になりすますこと",
+            "プラットフォームのセキュリティ、完全性、またはパフォーマンスを妨害すること",
+            "他のユーザーまたはCheapestGoのスタッフを嫌がらせ、脅迫、または危害を加えること"
+          ]
+        },
+        "intellectualProperty": {
+          "title": "知的財産",
+          "body": "CheapestGoプラットフォームのすべてのコンテンツ（ロゴ、テキスト、グラフィック、ソフトウェア、デザインを含む）は、CheapestGoまたはそのライセンサーの財産であり、適用される知的財産法により保護されています。事前の書面による同意なしに、当社のコンテンツを複製、配布、または派生著作物を作成することはできません。ホテルおよびフライトの画像と説明は、当社のパートナー（Duffel、Mystifly、TravelgateX、ONDA、Rakuten）および各サプライヤーがライセンスに基づいて提供します。"
+        },
+        "disclaimers": {
+          "title": "免責事項",
+          "intro": "CheapestGoは「現状のまま」および「利用可能な状態」でサービスを提供します。当社は以下を保証しません：",
+          "items": [
+            "プラットフォームが中断なく、エラーなく、またはウイルスなく動作すること",
+            "ホテルの説明、写真、またはアメニティリストが完全に正確であること（これらはサプライヤーが提供）",
+            "表示される料金が常に市場で最安値であること",
+            "サプライヤーの倒産またはオーバーブッキングの場合に旅行サプライヤーがすべての予約を履行すること"
+          ],
+          "note": "CheapestGoは、旅行サプライヤーの行為、誤り、不作為、表明、保証、または過失について責任を負いません。"
+        },
+        "liability": {
+          "title": "責任の制限",
+          "body": "適用法が許容する最大限の範囲で、CheapestGoおよびその役員、取締役、従業員、関連会社は、プラットフォームの利用またはそれを通じた予約に関連して生じる利益損失、データ損失、または営業権の損失を含む間接的、偶発的、特別、結果的、または懲罰的損害について責任を負いません。本規約に基づくお客様に対する当社の総責任は、請求の原因となった予約についてお客様が支払った総額を超えないものとします。"
+        },
+        "indemnification": {
+          "title": "補償",
+          "body": "お客様は、プラットフォームの利用、本規約の違反、または他者の権利の侵害に関連して生じるすべての請求、責任、損害、損失、および費用（法律費用を含む）に対して、CheapestGoおよびFORHU Inc.を補償、防御、免責することに同意します。"
+        },
+        "governingLaw": {
+          "title": "準拠法と紛争解決",
+          "para1": "本規約は、抵触法の規定に関わらず、米国ニューヨーク州の法律に準拠します。",
+          "para2": "本規約またはCheapestGoのご利用に関連して生じる紛争は、まず誠意ある交渉により解決を試みます。30日以内に解決されない場合、紛争は米国仲裁協会（AAA）の規則に基づき、ニューヨーク州ニューヨーク市での拘束力のある仲裁に付されます。お客様は集団訴訟または集団仲裁に参加する権利を放棄します。"
+        },
+        "changes": {
+          "title": "規約の変更",
+          "body": "CheapestGoはいつでも本規約を変更する権利を留保します。重要な変更がある場合は、改訂された「最終更新日」とともに更新版をプラットフォームに掲載し、登録ユーザーにメールで通知します。変更が発効した後にプラットフォームを継続してご利用になる場合は、改訂された規約に同意したものとみなします。"
+        },
+        "contact": {
+          "title": "お問い合わせ",
+          "intro": "本規約に関するお問い合わせ：",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 米国ニューヨーク州ニューヨーク市ウォールストリート30番地8階 10005"
+        }
+      },
+      "privacy": {
+        "whoWeAre": {
+          "title": "私たちについて",
+          "para1": "CheapestGo（以下「当社」）は、米国ニューヨーク州ニューヨーク市ウォールストリート30番地8階に所在するFORHU Inc.が運営するオンライン旅行代理店です。当社は、ウェブサイトおよびモバイルプラットフォームを通じて、主に東南アジアの旅行者にホテル予約、フライトパッケージ、トラベルディールサービスを提供しています。",
+          "para2Before": "本プライバシーポリシーに関するお問い合わせは、こちらまでご連絡ください：",
+          "para2After": "。"
+        },
+        "informationWeCollect": {
+          "title": "収集する情報",
+          "directLabel": "お客様が直接提供する情報：",
+          "directItems": [
+            "アカウント作成または予約時の氏名、メールアドレス、電話番号、生年月日",
+            "請求先住所および支払い情報（Stripeが安全に処理 — カード番号は保存しません）",
+            "旅行の好み、検索履歴、過去の予約詳細",
+            "メールまたはサポートチャンネルを通じてお送りいただいたご連絡"
+          ],
+          "autoLabel": "自動的に収集される情報：",
+          "autoItems": [
+            "IPアドレス、ブラウザの種類、オペレーティングシステム、デバイス識別子",
+            "訪問したページ、ページ滞在時間、クリックしたリンク、リファラルURL",
+            "Cookie、ウェブビーコン、および類似の追跡技術（Cookieポリシーをご参照ください）",
+            "IPアドレスから導出された位置データ（国/地域レベル）"
+          ],
+          "thirdPartyLabel": "第三者から収集された情報：",
+          "thirdPartyItems": [
+            "パートナー（Duffel、Mystifly、TravelgateX、ONDA、Rakuten）からの旅行空室状況および料金データ",
+            "Stripeからの支払い確認および不正検知信号",
+            "プラットフォーム改善のために利用するサービスプロバイダーからの分析データ"
+          ]
+        },
+        "howWeUse": {
+          "title": "情報の利用方法",
+          "items": [
+            "旅行予約の処理と確認、予約確認メールの送信",
+            "Stripeを通じた支払い処理と不正防止",
+            "CheapestGoアカウントの作成と管理",
+            "取引メールの送信（予約確認、領収書、旅程の更新）",
+            "プロモーションメールとお得情報のアラート送信 — お客様の同意のみに基づき、いつでも配信停止可能",
+            "プラットフォームの改善、コンテンツのパーソナライズ、利用パターンの分析",
+            "法的義務の遵守および利用規約の執行",
+            "お客様のお問い合わせへの対応およびカスタマーサポートの提供"
+          ]
+        },
+        "howWeShare": {
+          "title": "情報の共有方法",
+          "intro": "当社はお客様の個人情報を販売しません。以下の場合にのみデータを共有します：",
+          "items": [
+            {
+              "label": "ホテルおよび旅行サプライヤー",
+              "text": "予約を履行するために、お客様の氏名、連絡先、予約情報をホテルおよびサプライヤーと共有します。"
+            },
+            {
+              "label": "Stripe",
+              "text": "支払い情報はStripe, Inc.が処理します。Stripeのプライバシーポリシーが支払いデータの取り扱いを規定します。参照：",
+              "linkText": "stripe.com/privacy",
+              "linkHref": "https://stripe.com/privacy"
+            },
+            {
+              "label": "旅行パートナー（Duffel、Mystifly、TravelgateX、ONDA、Rakuten）",
+              "text": "空室状況と料金を取得するために、検索クエリと予約詳細をパートナーAPIを通じて処理します。"
+            },
+            {
+              "label": "Supabase",
+              "text": "当社のデータベースインフラはSupabaseでホスティングされています。データは保存時および転送時に暗号化されます。"
+            },
+            {
+              "label": "法的要件",
+              "text": "法律、裁判所命令による場合、またはCheapestGoや他者の権利、財産、安全を保護するために必要な場合に情報を開示することがあります。"
+            }
+          ]
+        },
+        "cookies": {
+          "title": "Cookieと追跡技術",
+          "textBefore": "当社はプラットフォームの運営とお客様の体験向上のためにCookieおよび類似技術を使用しています。当社が使用するCookieの詳細と設定の管理方法については、当社の",
+          "linkText": "Cookieポリシー",
+          "textAfter": "をご参照ください。"
+        },
+        "dataRetention": {
+          "title": "データ保持",
+          "intro": "当社は以下の目的に必要な期間、お客様の個人データを保持します：",
+          "items": [
+            "アカウントの維持とサービスの提供",
+            "法的、税務的、会計的義務の遵守（財務記録については通常7年）",
+            "紛争の解決および契約の執行"
+          ],
+          "note": "アカウントを削除された場合、法律で保持が義務付けられている場合を除き、90日以内にお客様の個人データを削除または匿名化します。"
+        },
+        "internationalTransfers": {
+          "title": "国際データ転送",
+          "body": "CheapestGoは米国に本社を置いています。東南アジアまたはその他の地域からサービスをご利用になる場合、お客様のデータは米国に転送され処理されます。当社は、適用法令（GDPRおよび2012年フィリピン個人情報保護法、共和国法第10173号を含む）に基づいて必要な場合、標準契約条項を含む適切な保護措置を確保しています。"
+        },
+        "yourRights": {
+          "title": "お客様の権利と選択",
+          "intro": "お客様の居住地域によっては、以下の権利を有する場合があります：",
+          "items": [
+            {
+              "label": "アクセス権",
+              "text": "当社が保有するお客様の個人データのコピーを要求する権利"
+            },
+            {
+              "label": "訂正権",
+              "text": "不正確または不完全なデータの訂正を要求する権利"
+            },
+            {
+              "label": "削除権",
+              "text": "お客様の個人データの削除を要求する権利（「忘れられる権利」）"
+            },
+            {
+              "label": "ポータビリティ権",
+              "text": "構造化された機械可読形式でデータを受け取る権利"
+            },
+            {
+              "label": "オプトアウト権",
+              "text": "メール内のリンクを使用していつでもマーケティングメールの配信を停止する権利"
+            },
+            {
+              "label": "同意撤回権",
+              "text": "処理が同意に基づく場合、いつでも同意を撤回する権利"
+            }
+          ],
+          "emailBefore": "これらの権利を行使するには、こちらまでメールでご連絡ください：",
+          "emailAfter": "。30日以内にご回答いたします。"
+        },
+        "childrensPrivacy": {
+          "title": "子どものプライバシー",
+          "body": "CheapestGoは18歳未満の子どもを対象としていません。当社は子どもから意図的に個人情報を収集しません。子どもの情報が誤って収集されたとお思いの場合は、直ちにsupport@cheapestgo.comまでご連絡ください。速やかに当該情報を削除いたします。"
+        },
+        "security": {
+          "title": "セキュリティ",
+          "body": "当社はお客様の個人データを保護するために、転送時の暗号化（TLS/HTTPS）、保存時の暗号化、アクセス制御、定期的なセキュリティレビューなど、業界標準の技術的・組織的措置を実施しています。支払いデータはPCI DSS準拠のStripeが独占的に処理します。ただし、インターネット経由の送信方法は完全に安全ではなく、絶対的なセキュリティを保証することはできません。"
+        },
+        "changes": {
+          "title": "ポリシーの変更",
+          "body": "当社は本プライバシーポリシーを随時更新することがあります。重要な変更を行う場合は、アカウントをお持ちの方にはメールで通知するか、ウェブサイトに目立つ告知を掲載します。改訂されたポリシーの発効日以降にCheapestGoを継続してご利用になる場合は、変更に同意したものとみなします。"
+        },
+        "contact": {
+          "title": "お問い合わせ",
+          "intro": "プライバシーに関するお問い合わせ、ご要望、またはご不満：",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 米国ニューヨーク州ニューヨーク市ウォールストリート30番地8階 10005"
+        }
+      },
+      "refund": {
+        "overview": {
+          "title": "概要",
+          "body": "CheapestGoはお客様と旅行サプライヤー（ホテル、航空会社、パッケージ提供者）の間の仲介者として機能します。キャンセルおよび返金の権利は主に、物件、料金タイプ、予約日によって異なる各サプライヤーのポリシーに準拠します。本ポリシーでは、当社がお客様に代わってキャンセルと返金を処理する方法を説明します。"
+        },
+        "cancellationTypes": {
+          "title": "ホテルのキャンセルタイプ",
+          "intro": "CheapestGoでホテルを予約すると、以下のいずれかの料金タイプが表示されます：",
+          "free": {
+            "heading": "無料キャンセル",
+            "body": "予約時に指定された期限前にキャンセルすれば、料金は発生しません。正確な期限（例：「チェックイン48時間前まで無料キャンセル」）は予約ページと確認メールに表示されます。"
+          },
+          "partial": {
+            "heading": "一部払い戻し",
+            "body": "チェックイン日を基準にキャンセルするタイミングによって、一部払い戻しが適用されます。ペナルティ金額と締め切り日はお支払い確定前に表示されます。"
+          },
+          "nonRefundable": {
+            "heading": "返金不可",
+            "body": "キャンセルしても払い戻しはありません。これらの料金は通常価格が低く、チェックアウト前に「返金不可」と明確に表示されます。"
+          }
+        },
+        "howToCancel": {
+          "title": "予約のキャンセル方法",
+          "intro": "予約をキャンセルするには：",
+          "steps": [
+            "CheapestGoアカウントにログインし、マイ予約に移動します。",
+            "キャンセルする予約を選択し、予約をキャンセルをクリックします。",
+            "キャンセルポリシーと画面に表示される適用手数料を確認します。",
+            "キャンセルを確認します。キャンセル確認メールが届きます。"
+          ],
+          "emailBefore": "または、予約参照番号を添えて以下までご連絡ください：",
+          "emailAfter": "営業日1日以内にキャンセルを処理いたします。"
+        },
+        "processing": {
+          "title": "払い戻し処理",
+          "items": [
+            {
+              "label": "対象の払い戻し",
+              "text": "チェックアウト時にStripe経由で使用した元の支払い方法（クレジット/デビットカードまたはGrabPay）に返金されます。"
+            },
+            {
+              "label": "処理時間",
+              "text": "払い戻しを開始してから、銀行やカード会社によって異なりますが、明細書に反映されるまで通常5〜10営業日かかります。"
+            },
+            {
+              "label": "CheapestGoサービス料",
+              "text": "サプライヤーのエラーまたはCheapestGoシステムの障害によるキャンセルでない限り、該当するプラットフォームサービス料は返金されません。"
+            },
+            {
+              "label": "Stripe処理手数料",
+              "text": "Stripeが請求する支払い処理手数料は、Stripeの標準ポリシーに従い、CheapestGoでは返金されません。"
+            },
+            {
+              "label": "通貨",
+              "text": "払い戻しは元の支払いと同じ通貨で行われます。払い戻し時の為替レートの差異について当社は責任を負いません。"
+            }
+          ]
+        },
+        "noShows": {
+          "title": "ノーショー",
+          "body": "事前にキャンセルせず、予定の到着日にチェックインしない場合、予約はノーショーとして処理されます。ノーショーポリシーはホテルによって異なりますが、ほとんどのホテルでは予約全額が請求されます。CheapestGoはホテルのノーショーポリシーを変更することはできません。計画が変わった場合は、事前にキャンセルされることを強くお勧めします。"
+        },
+        "amendments": {
+          "title": "予約の変更",
+          "intro": "日付変更、客室タイプの変更、ゲスト名の修正は、ホテルの空室状況とサプライヤーのポリシーに従います。変更をご要望の場合：",
+          "steps": [
+            "予約参照番号を添えてsupport@cheapestgo.comまでご連絡ください",
+            "必要な変更内容と理由をお伝えください",
+            "当社がサプライヤーと空室状況を確認し、変更の可否をお知らせします"
+          ],
+          "noteLabel": "注意：",
+          "noteText": "変更により料金差（追加料金またはクレジット）が生じる場合があり、キャンセルと再予約なしには変更できない場合があります。変更リクエストが必ず受け入れられるとは限りません。"
+        },
+        "supplierCancellations": {
+          "title": "サプライヤーのキャンセルと不可抗力",
+          "intro": "まれに、ホテルや旅行サプライヤーがオーバーブッキング、閉鎖、自然災害、または不可抗力によって予約をキャンセルする場合があります。この場合：",
+          "items": [
+            "CheapestGoはサプライヤーから通知を受け次第、お客様にお知らせします",
+            "サービス料を含むCheapestGoに支払われた金額の全額を払い戻します",
+            "可能な場合は代替宿泊施設の手配をお手伝いしますが、代替施設を保証することはできません"
+          ],
+          "note": "CheapestGoは、交通費、他の場所で追加予約したホテル代、または結果的損失を含む、サプライヤーのキャンセルによる損失に対して責任を負いません。このような事態に備えて旅行保険の加入をお勧めします。"
+        },
+        "disputes": {
+          "title": "紛争とチャージバック",
+          "body": "請求に関するご不満がある場合は、銀行にチャージバックを申請する前に、まずsupport@cheapestgo.comまでご連絡ください。ほとんどの問題は迅速に解決できます。CheapestGoに事前に連絡せずに開始されたチャージバックは、アカウントの停止につながる場合があります。CheapestGoは、悪意を持ってまたは当社のキャンセルポリシーに違反して申請されたチャージバックに異議を申し立てる権利を留保します。"
+        },
+        "flightPackages": {
+          "title": "フライトパッケージ",
+          "body": "フライト＋ホテルのオールインクルーシブパッケージの場合、キャンセル条件はホテルと航空会社の両方の条件によって異なります。航空券は一般的に返金不可か、相当なキャンセル料が発生します。パッケージの具体的な条件はチェックアウト時および確認メールに表示されます。パッケージをキャンセルする必要がある場合は、直ちにsupport@cheapestgo.comまでご連絡ください。"
+        },
+        "contact": {
+          "title": "払い戻しに関するお問い合わせ",
+          "intro": "すべての払い戻しおよびキャンセルに関するお問い合わせは、予約参照番号をご用意の上、以下までご連絡ください：",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 米国ニューヨーク州ニューヨーク市ウォールストリート30番地8階 10005",
+          "outro": "すべての払い戻しリクエストに対して、営業日1〜2日以内にご回答いたします。"
+        }
+      },
+      "cookie": {
+        "whatAreCookies": {
+          "title": "Cookieとは？",
+          "body": "Cookieとは、ウェブサイトを訪問した際にお使いのデバイスに保存される小さなテキストファイルです。ウェブサイトを効率的に機能させ、お客様の設定を記憶し、ウェブサイト運営者に情報を提供するために広く使用されています。類似技術にはウェブビーコン、ピクセル、ローカルストレージ、セッションストレージなどがあり、本ポリシーでは総称して「Cookie」と呼びます。"
+        },
+        "whyWeUse": {
+          "title": "Cookieを使用する理由",
+          "intro": "CheapestGoはCookieを以下の目的で使用します：",
+          "items": [
+            "ログイン状態の維持とセッションの安全な管理",
+            "設定の記憶（通貨、言語、ダーク/ライトモード）",
+            "最近の検索履歴と閲覧した物件の保存",
+            "不正防止とアカウントセキュリティの保護",
+            "パフォーマンスの測定と訪問者のプラットフォーム利用状況の把握",
+            "コンテンツのパーソナライズと関連するお得情報・おすすめの表示"
+          ]
+        },
+        "types": {
+          "title": "使用するCookieの種類",
+          "categories": [
+            {
+              "heading": "必須Cookie",
+              "body": "これらのCookieはプラットフォームの機能に必要不可欠です。認証、セッション管理、セキュリティトークン、支払い処理などのコア機能を可能にします。サービスの運営に必要なため、これらのCookieを無効にすることはできません。",
+              "items": [
+                "supabase-auth-token — 認証セッション",
+                "__stripe_mid / __stripe_sid — Stripe不正防止"
+              ]
+            },
+            {
+              "heading": "機能Cookie",
+              "body": "これらのCookieはお客様の選択を記憶し、体験をパーソナライズします。無効にすると機能が低下する場合があります。",
+              "items": [
+                "通貨設定（例：KRW、USD、PHP）",
+                "テーマ設定（ダークまたはライトモード）",
+                "最近閲覧したホテルと検索履歴"
+              ]
+            },
+            {
+              "heading": "分析Cookie",
+              "body": "訪問者がプラットフォームとどのようにやり取りするか（最も訪問されるページ、離脱場所、体験改善の方法）を理解するのに役立ちます。データは可能な限り集計および匿名化されます。",
+              "items": [
+                "ページビュー追跡とセッション時間",
+                "お得情報と検索結果のクリック率",
+                "エラーログとパフォーマンス監視"
+              ]
+            },
+            {
+              "heading": "マーケティングCookie",
+              "body": "プラットフォームでお客様に関連する旅行のお得情報を表示するために使用する場合があります。現在、当社はサードパーティ広告を配信していません。変更の場合は、本ポリシーを更新し、同意を求めます。"
+            }
+          ]
+        },
+        "thirdParty": {
+          "title": "サードパーティCookie",
+          "intro": "一部のCookieは、当社ページに表示されるサードパーティサービスによって設定されます：",
+          "stripeBefore": "不正検知と支払いセッション管理のためのCookieを設定します。参照：",
+          "stripeLinkText": "Stripeのプライバシーポリシー",
+          "supabaseText": "当社のデータベースインフラでお客様のログインセッションを管理するための認証Cookieを設定します。",
+          "outro": "当社はサードパーティCookieを制御することはできません。詳細については、各プロバイダーのプライバシーポリシーをご確認ください。"
+        },
+        "duration": {
+          "title": "Cookieの有効期間",
+          "intro": "CheapestGoのCookieは以下の2種類です：",
+          "items": [
+            {
+              "label": "セッションCookie",
+              "text": "ブラウザを閉じると自動的に削除されます。ログインセッションと一時的な状態に使用されます。"
+            },
+            {
+              "label": "永続的Cookie",
+              "text": "一定期間（通常30日〜1年）デバイスに保持されます。設定と分析に使用されます。"
+            }
+          ]
+        },
+        "managing": {
+          "title": "Cookie設定の管理",
+          "intro": "Cookieはいくつかの方法で制御できます：",
+          "items": [
+            {
+              "label": "ブラウザ設定",
+              "text": "ほとんどのブラウザでは、設定（通常はプライバシーまたはセキュリティの下）からCookieを拒否または削除できます。必須Cookieを無効にすると、ログインやチェックアウトなどのコア機能が使用できなくなります。"
+            },
+            {
+              "label": "Cookieバナー",
+              "text": "CheapestGoを初めて訪問した際に、必須でないCookieを承認または拒否できるCookie同意バナーが表示される場合があります。"
+            },
+            {
+              "label": "オプトアウトツール",
+              "text": "分析については、該当する場合はGoogleアナリティクスオプトアウトブラウザアドオンなどのブラウザ拡張機能を使用できます。"
+            }
+          ],
+          "note": "Cookie設定の調整はプラットフォームの機能に影響を与える場合があります。必須CookieはCheapestGoを利用する能力に影響するため、無効にすることはできません。"
+        },
+        "doNotTrack": {
+          "title": "トラッキング拒否（Do Not Track）",
+          "body": "一部のブラウザは「Do Not Track」（DNT）シグナルを送信します。ウェブサイトがDNTシグナルにどのように反応すべきかについての普遍的な標準がないため、CheapestGoは現在DNTシグナルに応答しません。標準が進化するにつれて、この分野を引き続き評価します。"
+        },
+        "changes": {
+          "title": "Cookieポリシーの変更",
+          "body": "当社は、技術、規制、またはCookieの使用状況の変化を反映するために、本Cookieポリシーを随時更新することがあります。重要な変更を行う場合は、本ページ上部の「最終更新日」を更新します。変更が掲載された後にプラットフォームを継続してご利用になる場合は、改訂されたポリシーに同意したものとみなします。"
+        },
+        "contact": {
+          "title": "お問い合わせ",
+          "intro": "Cookieの使用に関するお問い合わせ：",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 米国ニューヨーク州ニューヨーク市ウォールストリート30番地8階 10005"
+        }
+      }
+    },
+    "scrollToContinue": "続けるには最後までスクロールしてください"
+  },
+  "nav": {
+    "support": "サポート",
+    "openApp": "アプリを開く",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "myTrips": "マイトリップ",
+    "account": "アカウント",
+    "trips": "旅行",
+    "createAccount": "アカウントを作成",
+    "accountSettings": "アカウント設定",
+    "membersSave": "会員は10%以上割引",
+    "membersSaveSubtitle": "ログイン中の対象宿泊が対象",
+    "accountWorks": "アカウントはCheapestGoおよびすべてのパートナーサイトで利用できます"
+  },
+  "property": {
+    "addressNotAvailable": "住所情報がありません",
+    "bookingWidget": {
+      "amenities": "設備",
+      "bookThisRoom": "この部屋を予約",
+      "description": "説明",
+      "guests": "{count}名",
+      "roomDetails": "客室詳細",
+      "selectedRoom": "選択した部屋"
+    },
+    "breadcrumbHome": "ホーム",
+    "breadcrumbStaysIn": "{city}の宿泊施設",
+    "bundleActive": "バンドル割引適用中",
+    "bundleApplied": "バンドル割引が適用されました — {percent}%お得です",
+    "faq": {
+      "checkInAnswer": "チェックイン時間は{time}です",
+      "checkInQuestion": "この宿泊施設のチェックイン時間はいつですか？",
+      "checkOutAnswer": "チェックアウト時間は{time}です",
+      "checkOutQuestion": "チェックアウト時間はいつですか？",
+      "fallbackCancellationAnswer": "キャンセルポリシーは料金によって異なります。予約前に上記の客室オプションで具体的なキャンセル条件をご確認ください。",
+      "fallbackCancellationQuestion": "{name}のキャンセルポリシーは何ですか？",
+      "fallbackModificationAnswer": "予約後に送られる確認メールから予約を管理できます。緊急の変更は施設に直接お問い合わせください。",
+      "fallbackModificationQuestion": "予約を変更またはキャンセルするにはどうすればよいですか？",
+      "fallbackPaymentAnswer": "ほとんどの主要なクレジットカードとデビットカードが利用できます。利用可能な支払い方法は施設に直接お問い合わせください。",
+      "fallbackPaymentQuestion": "{name}ではクレジットカードを使えますか？",
+      "importantQuestion": "予約前に知っておくべき重要なことはありますか？",
+      "parkingAnswer": "はい、施設では{facility}を提供しています。",
+      "parkingQuestion": "{name}には駐車場がありますか？",
+      "poolAnswer": "はい、施設には{facility}があります。",
+      "poolQuestion": "{name}にはプールがありますか？",
+      "restaurantAnswer": "はい、施設には直営レストランがあります。",
+      "restaurantQuestion": "{name}にはレストランがありますか？",
+      "title": "よくある質問",
+      "wifiAnswer": "はい、施設ではWiFiが利用できます。",
+      "wifiQuestion": "{name}ではWiFiを使えますか？"
+    },
+    "locationLabel": "所在地",
+    "locationTitle": "アクセス情報",
+    "mobileCta": {
+      "checkRoomRates": "客室料金を確認",
+      "from": "から",
+      "perNight": "/泊",
+      "viewRooms": "客室を見る"
+    },
+    "propertyNotFound": "物件が見つかりません。（ID: {id}）",
+    "rooms": {
+      "availableRooms": "空き部屋 ({count})",
+      "choose": "選択",
+      "chooseRoom": "客室を選ぶ",
+      "filterAll": "すべて",
+      "filterNonRefundable": "返金不可",
+      "filterRefundable": "返金可能",
+      "freeCancellation": "無料キャンセル",
+      "freeCancellationTick": "✓ 無料キャンセル",
+      "includesTaxes": "（{nights}泊1室・税込）",
+      "noMeals": "食事なし",
+      "noNonRefundableRooms": "返金不可の部屋はありません。",
+      "noRefundableRooms": "返金可能な部屋はありません。",
+      "changeDates": "日程を変更",
+      "noRooms": "選択した日程に空き部屋がありません。",
+      "nonRefundable": "返金不可",
+      "nonRefundablePill": "返金不可",
+      "pageOf": "{current}/{total}ページ",
+      "perNight": "/泊",
+      "rateOptions": "{count}つの料金オプション",
+      "reserve": "予約",
+      "roomOnly": "素泊まり",
+      "showingRooms": "{total}室中{start}–{end}を表示",
+      "sleeps": "最大{count}名",
+      "standardRoom": "スタンダードルーム",
+      "total": "合計",
+      "hotelPhotoLabel": "ホテル写真",
+      "select": "選択",
+      "viewHotelPhotos": "ホテルの写真を見る",
+      "viewRoomPhotos": "客室の写真を見る",
+      "etgNotice": {
+        "title": "オンライン予約は現在ご利用いただけません",
+        "description": "この施設はパートナー予約システムで管理されています。以下の料金は目安価格です。ご予約の確認と完了については、お問い合わせください。"
+      },
+      "showLess": "表示を減らす",
+      "checkAtCheckout": "お支払い画面で確認"
+    },
+    "savePercent": "{percent}%お得",
+    "weather": {
+      "feelsLike": "体感気温",
+      "forecast": "天気予報",
+      "humidity": "湿度",
+      "nextHours": "次の数時間",
+      "poweredBy": "Google Weather 提供",
+      "today": "今日",
+      "tomorrow": "明日",
+      "uv": {
+        "extreme": "極端に強い",
+        "high": "強い",
+        "low": "弱い",
+        "moderate": "普通",
+        "veryHigh": "非常に強い"
+      },
+      "wind": "風速"
+    },
+    "mapOverlay": {
+      "getDirections": "ルートを検索...",
+      "whereFrom": "出発地は？",
+      "layers": "レイヤー",
+      "kmAway": "{distance}km 先",
+      "viewOnMaps": "マップで見る",
+      "details": "詳細",
+      "recenterMap": "地図を中央に戻す",
+      "fullscreen": "全画面表示",
+      "exitFullscreen": "全画面を終了",
+      "selectMode": "モードを選択"
+    },
+    "policies": {
+      "title": "ポリシー",
+      "checkInOut": "チェックイン・チェックアウト",
+      "checkIn": "チェックイン",
+      "checkOut": "チェックアウト",
+      "contactProperty": "施設にお問い合わせください",
+      "cancellationPolicy": "キャンセルポリシー",
+      "refundable": "返金可能",
+      "nonRefundable": "返金不可",
+      "cancelBefore": "<time>{time}</time> までにキャンセル",
+      "feeSuffix": " - 手数料: <fee>{amount}</fee>",
+      "noShowPenalty": "ノーショー料金：",
+      "noShowBody": "キャンセルせずにチェックインしなかった場合は {amount} がかかります。",
+      "earlyDepartureFee": "早期チェックアウト料金：",
+      "earlyDepartureBody": "予定日より早くチェックアウトした場合は {amount} がかかります。",
+      "importantInformation": "重要なお知らせ"
+    },
+    "poiDetails": {
+      "openingHours": "営業時間",
+      "openNow": "営業中",
+      "closed": "営業時間外",
+      "yourRating": "あなたの評価",
+      "commentPlaceholder": "体験を書いてみましょう...",
+      "addPhoto": "写真を追加",
+      "justNow": "たった今",
+      "you": "あなた",
+      "postReview": "レビューを投稿",
+      "communityPhotos": "みんなの写真",
+      "brandReviews": "CheapestGo のレビュー",
+      "googleFoursquareReviews": "Google・Foursquare のレビュー",
+      "foursquareRecommendations": "Foursquare のおすすめ",
+      "googleReviews": "Google のレビュー",
+      "noReviews": "この場所のレビューはまだありません。"
+    },
+    "meta": {
+      "title": "{name} – 最安料金 | CheapestGo",
+      "description": "{name}を最安値で予約。",
+      "descriptionIn": "{location}の{name}を最安値で予約。",
+      "rated": "評価 {rating}/10。",
+      "closing": "無料キャンセル可能なホテルのお得なプランを多数ご用意。"
+    },
+    "v2": {
+      "nearbyPlaces": "周辺のスポット",
+      "loadingNearby": "周辺のスポットを読み込み中…",
+      "whatGuestsSay": "ご宿泊者の声",
+      "greatStay": "快適な滞在でした",
+      "additionalInfo": "その他の情報",
+      "availableRooms": "ご予約可能なお部屋",
+      "photoOfProperty": "施設の写真",
+      "previousPhoto": "前の写真",
+      "nextPhoto": "次の写真",
+      "goBack": "戻る",
+      "notFound": "施設が見つかりませんでした。",
+      "loadFailed": "施設情報を読み込めませんでした",
+      "lightMode": "ライトモード",
+      "darkMode": "ダークモード",
+      "switchToLight": "ライトモードに切り替える",
+      "switchToDark": "ダークモードに切り替える",
+      "mealPlan": "食事プラン",
+      "cancellationPolicy": "キャンセルポリシー",
+      "price": "料金"
+    }
+  },
+  "propertyGallery": {
+    "alt": {
+      "galleryView": "ギャラリー画像 {number}",
+      "mainPropertyView": "物件のメイン画像",
+      "propertyView": "物件の画像",
+      "propertyViewNumbered": "物件の画像 {number}",
+      "thumbnail": "サムネイル {number}",
+      "view": "画像 {number}"
+    },
+    "moreInfo": "詳細情報",
+    "morePhotos": "+{count} 枚の写真",
+    "noImages": "画像がありません",
+    "showAllPhotos": "すべての写真を見る",
+    "viewPhoto": "写真を見る"
+  },
+  "propertyNav": {
+    "amenities": "設備",
+    "location": "所在地",
+    "overview": "概要",
+    "policies": "ポリシー",
+    "reviews": "レビュー",
+    "rooms": "客室"
+  },
+  "propertyOverview": {
+    "aboutProperty": "この宿泊施設について",
+    "checkIn": "チェックイン",
+    "checkOut": "チェックアウト",
+    "contactInfo": "連絡先",
+    "importantInfo": "重要なお知らせ",
+    "cleaningSafety": {
+      "description": "この宿泊施設では、非接触チェックインや強化された清掃プロトコルなど、徹底した衛生対策を実施しています。",
+      "title": "衛生・安全対策"
+    },
+    "popularAmenities": "人気の設備",
+    "readMore": "続きを読む",
+    "seeAllAmenities": "すべての設備を見る（{count}件）",
+    "showLess": "折りたたむ",
+    "showLessAmenities": "設備を折りたたむ",
+    "verifiedReview": "{count} 件の認証済みレビュー",
+    "verifiedReviews": "{count} 件の認証済みレビュー",
+    "amenityLabels": {
+      "Free WiFi": "無料Wi-Fi",
+      "WiFi": "Wi-Fi",
+      "Internet": "インターネット",
+      "High-Speed Internet": "高速インターネット",
+      "Free Parking": "無料駐車場",
+      "Parking": "駐車場",
+      "Valet Parking": "バレーパーキング",
+      "Secure Parking": "セキュリティ駐車場",
+      "Underground Parking": "地下駐車場",
+      "Swimming Pool": "スイミングプール",
+      "Indoor Pool": "室内プール",
+      "Outdoor Pool": "屋外プール",
+      "Heated Pool": "温水プール",
+      "Rooftop Pool": "ルーフトッププール",
+      "Fitness Center": "フィットネスセンター",
+      "Sauna": "サウナ",
+      "Spa": "スパ",
+      "Hot Tub": "ホットタブ",
+      "Jacuzzi": "ジャグジー",
+      "Steam Room": "スチームルーム",
+      "Restaurant": "レストラン",
+      "Bar": "バー",
+      "Breakfast Available": "朝食あり",
+      "Breakfast Included": "朝食込み",
+      "Buffet Breakfast": "ブッフェ朝食",
+      "Room Service": "ルームサービス",
+      "Minibar": "ミニバー",
+      "Kitchen": "キッチン",
+      "Kitchenette": "簡易キッチン",
+      "Coffee Maker": "コーヒーメーカー",
+      "Snack Bar": "スナックバー",
+      "Air Conditioning": "エアコン",
+      "Heating": "暖房",
+      "Balcony": "バルコニー",
+      "Terrace": "テラス",
+      "Sea View": "海の眺望",
+      "City View": "市街の眺望",
+      "Garden View": "庭園の眺望",
+      "In-Room Safe": "室内金庫",
+      "TV": "テレビ",
+      "Flat-Screen TV": "薄型テレビ",
+      "Concierge": "コンシェルジュ",
+      "24/7 Reception": "24時間フロント",
+      "Laundry Service": "ランドリーサービス",
+      "Dry Cleaning": "ドライクリーニング",
+      "Luggage Storage": "手荷物預かり",
+      "Airport Transfer": "空港送迎",
+      "Shuttle Service": "シャトルサービス",
+      "Tour Desk": "ツアーデスク",
+      "Daily Housekeeping": "毎日清掃",
+      "Business Center": "ビジネスセンター",
+      "Meeting Rooms": "会議室",
+      "Conference Facilities": "会議施設",
+      "Wheelchair Accessible": "車椅子対応",
+      "Disabled Facilities": "バリアフリー設備",
+      "Elevator": "エレベーター",
+      "Non-Smoking Rooms": "禁煙ルーム",
+      "Pet Friendly": "ペット可",
+      "Family Rooms": "ファミリールーム",
+      "Smoke-Free Property": "全館禁煙",
+      "Garden": "庭園",
+      "BBQ Facilities": "バーベキュー設備",
+      "Sun Terrace": "サンテラス",
+      "Beach Access": "ビーチアクセス",
+      "Private Beach": "プライベートビーチ",
+      "Express Check-in": "エクスプレスチェックイン",
+      "Early Check-in": "アーリーチェックイン",
+      "Late Check-out": "レイトチェックアウト",
+      "Lockers": "ロッカー",
+      "ATM on Site": "ATM設置",
+      "Gift Shop": "ギフトショップ",
+      "Newsstand": "売店",
+      "Multilingual Staff": "多言語対応スタッフ",
+      "Smoking Areas": "喫煙エリア",
+      "Security Guard": "警備員",
+      "Lobby TV": "ロビーTV"
+    },
+    "noReviewsYet": "まだレビューはありません",
+    "verifiedReviewCount": "{count, plural, other {認証済みレビュー #件}}"
+  },
+  "pwa": {
+    "installPrompt": {
+      "title": "CheapestGo アプリを入手",
+      "body": "ホーム画面に追加すると、より素早くアクセスできます。",
+      "install": "インストール",
+      "dismiss": "後で"
+    }
+  },
+  "reviewsSection": {
+    "aggregatedNote": "ゲストスコアは集計された評価に基づきます。",
+    "aggregatedScore": "集計ゲストスコア",
+    "anonymous": "匿名",
+    "basedOnReview": "{count}件のレビューに基づく",
+    "basedOnReviews": "{count}件のレビューに基づく",
+    "guestReviews": "ゲストレビュー",
+    "loadMore": "レビューをさらに表示",
+    "noReviews": "個別のレビューはありません。",
+    "noReviewsAvailable": "レビューがありません",
+    "showAllReviews": "すべての{count}件のレビューを表示",
+    "showLess": "閉じる",
+    "showMore": "さらに表示",
+    "showingCount": "{total}件中{shown}件を表示",
+    "sort": {
+      "highestRated": "評価が高い順",
+      "lowestRated": "評価が低い順",
+      "newestFirst": "新着順"
+    },
+    "travelerTypes": {
+      "business": "ビジネス",
+      "couple": "カップル",
+      "family": "ファミリー",
+      "friendsGroup": "友人/グループ",
+      "solo": "一人旅"
+    },
+    "verifiedReviewCount": "{count, plural, other {{count}件の認証済みレビュー}}",
+    "whoStaysHere": "宿泊者層"
+  },
+  "search": {
+    "validation": {
+      "allHotelFieldsRequired": "ホテル検索にはすべての項目が必要です",
+      "fieldList": "{fields}と{last}",
+      "fields": {
+        "checkInDate": "チェックイン日",
+        "checkOutDate": "チェックアウト日",
+        "destination": "目的地"
+      },
+      "listSeparator": "、",
+      "selectField": "{field}を選択してください"
+    },
+    "results": {
+      "activeFilters": "適用中のフィルター:",
+      "amenitiesSuffix": "設備 {count}件",
+      "anyWeek": "いつでも",
+      "anywhere": "どこでも",
+      "boardTypes": {
+        "AI": "オールインクルーシブ",
+        "BB": "朝食付き",
+        "FB": "3食付き",
+        "HB": "2食付き",
+        "RO": "食事なし"
+      },
+      "freeCancellation": "無料キャンセル",
+      "guestCount": "{count, plural, other {ゲスト #名}}",
+      "namePrefix": "名称: {name}",
+      "otherCities": "他の都市:",
+      "ratingPrefix": "評価 {rating} 以上",
+      "reviewsSuffix": "レビュー {count} 件以上",
+      "showingHotelsIn": "こちらのエリアのホテル:",
+      "starSuffix": "{stars}つ星",
+      "whereTo": "どちらへ行きますか？"
+    },
+    "v2": {
+      "noAccommodations": "条件に合う宿泊施設が見つかりませんでした",
+      "hideStayCards": "宿泊カードを隠す",
+      "hideCards": "カードを隠す",
+      "checkingCount": "{count}件を確認中…",
+      "staysCount": "{count}件の宿泊施設",
+      "clusterChecking": "{count}件を確認中…",
+      "clusterHotels": "ホテル{count}軒",
+      "clusterFrom": "{price}〜"
+    }
+  },
+  "seo": {
+    "orgDescription": "CheapestGo は、世界中で最安値の航空券とホテルを見つける現代的な旅行予約プラットフォームです。",
+    "faq": {
+      "q1": "CheapestGo はどうやって安い航空券を見つけますか？",
+      "a1": "CheapestGo は複数の航空会社とグローバル流通システムを検索し、リアルタイムで最安値を探して一か所で比較・予約できます。",
+      "q2": "CheapestGo で航空券とホテルの両方を予約できますか？",
+      "a2": "はい。CheapestGo では航空券、ホテル、アパート、ユニークな宿泊施設をすべて一つのプラットフォームで予約できます。",
+      "q3": "CheapestGo は無料で使えますか？",
+      "a3": "はい、価格の検索と比較は完全無料です。費用が発生するのは予約時のみです。",
+      "q4": "CheapestGo はどの通貨に対応していますか？",
+      "a4": "CheapestGo は複数の通貨に対応しており、設定に基づいて自動的に価格を換算し、いつでも現地通貨で確認できます。"
+    }
+  },
+  "theme": {
+    "switchToDark": "ダークモードに切り替え",
+    "switchToLight": "ライトモードに切り替え"
+  },
+  "topCities": {
+    "headerMain": "人気の都市",
+    "headerHighlight": "世界中",
+    "subtitle": "最も人気の目的地 · すぐにホテルを検索",
+    "exploreHotels": "ホテルを検索"
+  },
+  "topDestinations": {
+    "headerMain": "人気の目的地",
+    "headerHighlight": "世界中",
+    "subtitle": "世界中から集めたアイコニックな体験",
+    "findHotels": "ホテルを検索"
+  },
+  "trips": {
+    "bookingCard": {
+      "actions": {
+        "cancel": "キャンセル",
+        "details": "詳細",
+        "map": "地図",
+        "modify": "変更",
+        "receipt": "領収書をダウンロード",
+        "retryRefund": "返金を再試行"
+      },
+      "adult": "大人{count}名",
+      "adults": "大人{count}名",
+      "cancelled": "キャンセル済み",
+      "child": "子ども{count}名",
+      "children": "子ども{count}名",
+      "night": "{count}泊",
+      "nights": "{count}泊",
+      "policyBadges": {
+        "freeCancellation": "無料キャンセル",
+        "nonRefundable": "返金不可",
+        "partialRefund": "一部返金"
+      },
+      "ratings": {
+        "excellent": "とても良い",
+        "exceptional": "最高",
+        "good": "良い",
+        "pleasant": "快適",
+        "veryGood": "非常に良い"
+      },
+      "reviews": "口コミ{count}件",
+      "stayDates": "{from}〜{to}",
+      "total": "合計",
+      "totalPaid": "お支払い総額",
+      "tripCompleted": "旅行完了"
+    },
+    "cancellationModal": {
+      "bookingId": "予約ID: {id}",
+      "cancelBooking": "予約をキャンセル",
+      "cancelling": "キャンセル中...",
+      "close": "閉じる",
+      "keepBooking": "予約を維持",
+      "loadingPolicy": "キャンセルポリシーを読み込み中...",
+      "policyTimeline": "キャンセルポリシーのスケジュール",
+      "retryRefund": "返金を再試行",
+      "retryRefundTitle": "返金を再試行",
+      "retrying": "再試行中...",
+      "title": "予約をキャンセル",
+      "tryAgain": "もう一度試す",
+      "unableToLoadPolicy": "ポリシーを読み込めませんでした"
+    },
+    "cancellationPolicies": {
+      "before": "期限前: ",
+      "cancellationFee": "キャンセル料: {amount}",
+      "earlyDepartureDescription": "予定日より早くチェックアウトした場合、{amount}の料金がかかります。",
+      "earlyDepartureFee": "早期チェックアウト料金",
+      "importantNotes": "重要なお知らせ",
+      "noPolicy": "特定のキャンセルポリシーはありません。標準規約が適用されます。",
+      "noShowDescription": "キャンセルせずにチェックインしなかった場合、{amount}が請求されます。",
+      "noShowPenalty": "ノーショー料金",
+      "passed": "期限切れ: "
+    },
+    "emptyState": {
+      "allTitle": "まだ旅行はありません",
+      "otherDesc": "探索を始めて、最初の旅行を予約しましょう",
+      "pastTitle": "過去の旅行はありません",
+      "upcomingDesc": "次の冒険を計画しましょう！",
+      "upcomingTitle": "今後の旅行はありません"
+    },
+    "exploreDestinations": "旅行先を探す",
+    "flightBookingCard": {
+      "addBookingNote": "予約メモを追加",
+      "airlineBookingDetails": "航空会社の予約詳細",
+      "airlineDetails": "航空会社の詳細",
+      "amErrors": {
+        "cancelFailed": "キャンセルに失敗しました。サポートまでお問い合わせください。",
+        "duffelCannotCancel": "この予約はオンラインでキャンセルできません。手動キャンセルをご希望の場合は crm@cheapestgo.com までご連絡ください。",
+        "mystiflyCannotCancel": "発券済みのこの予約はAPIでキャンセルできません。キャンセルをご希望の場合は crm@myfarebox.com までメールでご連絡ください。",
+        "networkError": "ネットワークエラーです。もう一度お試しください。"
+      },
+      "assignedSeats": "指定座席",
+      "bookingNotes": "予約メモ",
+      "cancel": "キャンセル",
+      "cancelBooking": "予約をキャンセル",
+      "cancelModal": {
+        "baseFareNonRefundable": "基本運賃は返金されず、税金と手数料のみ返金されます。",
+        "cancelling": "キャンセル中…",
+        "cannotCancelOnline": "この予約はオンラインでキャンセルできません。サポートまでお問い合わせください。",
+        "cannotUndo": "この操作は取り消せません。",
+        "checkingRefund": "航空会社に最新の返金額を確認中…",
+        "confirmCancel": "はい、予約をキャンセルします",
+        "estimatedPenalty": "航空会社の推定違約金: {amount}",
+        "fareRulesNonRefundable": "運賃規則により、この航空券は返金不可です。",
+        "keepBooking": "予約を維持",
+        "loading": "読み込み中…",
+        "networkError": "キャンセル見積もりの取得中にネットワークエラーが発生しました。",
+        "noQuote": "航空会社からキャンセル見積もりを取得できませんでした。",
+        "noRefund": "返金なし — 航空会社の規定により返金不可の運賃です。",
+        "penaltiesDeducted": "航空会社が定めるキャンセル料が差し引かれます。",
+        "pnr": "PNR: {pnr}",
+        "refundEligibility": "返金の可否と金額は、航空会社の運賃規則によってのみ決定されます。",
+        "refundPolicy": "返金ポリシー:",
+        "refundTiming": "返金される場合、通常5～10営業日かかります。",
+        "taxesRefund": "税金・手数料の返金: {amount}",
+        "title": "予約をキャンセルしますか？",
+        "willReceive": "{amount}が返金されます。",
+        "zeroRefund": "キャンセルした場合の返金額は$0です。"
+      },
+      "cancellationFailed": "キャンセル失敗",
+      "changeFlight": "便を変更",
+      "couldNotLoadTripDetails": "旅行の詳細を読み込めませんでした",
+      "details": "詳細",
+      "eTicket": "E-TKT",
+      "fareBadges": {
+        "changeable": "変更可",
+        "checkingFarePolicy": "運賃ポリシーを確認中…",
+        "fareRulesNonRefundable": "運賃規則: 返金不可",
+        "freeCancellation": "無料キャンセル",
+        "nonRefundable": "24時間経過後は返金不可",
+        "refundable": "返金可"
+      },
+      "flightBooking": "航空券の予約",
+      "flightItinerary": "フライト日程を表示",
+      "hideChangeFlight": "便の変更を閉じる",
+      "hideDetails": "詳細を閉じる",
+      "hideFlightItinerary": "フライト日程を閉じる",
+      "hideRefundQuote": "返金見積もりを閉じる",
+      "hideVoidQuote": "VOID見積もりを閉じる",
+      "issuedTickets": "発券済み航空券",
+      "layover": "{airport}で{duration}の乗り継ぎ",
+      "loadingTripDetails": "航空会社の詳細を読み込み中…",
+      "networkError": "ネットワークエラーです。もう一度お試しください。",
+      "noRefund": "返金はありません",
+      "nonstop": "直行便",
+      "noteAdded": "メモを追加しました。",
+      "notePlaceholder": "この予約のメモを入力…",
+      "originTo": "{origin} → {destination}",
+      "passenger": "搭乗者{count}名",
+      "passengers": "搭乗者{count}名",
+      "pax": "{count}名",
+      "penaltyApplied": "適用された違約金: {amount}",
+      "pnr": "PNR",
+      "receipt": "領収書をダウンロード",
+      "refundFailed": "返金失敗",
+      "refundNotAvailable": "返金不可",
+      "refundNotAvailablePolicy": "返金不可（航空会社の規定）",
+      "refundQuote": "返金見積もり",
+      "retry": "再試行",
+      "save": "保存",
+      "seat": "座席",
+      "departFrom": "出発",
+      "arriveAt": "到着",
+      "stateChips": {
+        "awaitingConfirmation": "確定待ち",
+        "cancelFailed": "キャンセル失敗 — 下から再試行",
+        "cancelStuck": "キャンセル処理が停止中 — 下から再試行",
+        "cancelled": "キャンセル済み",
+        "contactSupport": "キャンセルはサポートへ連絡",
+        "emailToCancel": "キャンセルは crm@myfarebox.com へメール",
+        "flightCompleted": "フライト完了",
+        "refundFailed": "返金失敗",
+        "refundProcessing": "返金処理中",
+        "refunded": "返金済み",
+        "supplierNotFound": "サプライヤーの記録が見つかりません",
+        "upcomingFlight": "今後のフライト",
+        "flightInProgress": "フライト中",
+        "processing": "処理中",
+        "booked": "予約済み",
+        "bookingFailed": "予約失敗",
+        "reissued": "再発行済み",
+        "unknown": "不明"
+      },
+      "stop": "経由{count}回",
+      "stops": "経由{count}回",
+      "successBanners": {
+        "cancelled": "予約をキャンセルしました。",
+        "refundProcessed": "予約をキャンセルしました。返金処理が完了しました。",
+        "refundProcessing": "予約をキャンセルしました。返金を処理中です — しばらくしてから再度ご確認ください。"
+      },
+      "totalPaid": "お支払い総額",
+      "totalRefund": "返金総額",
+      "tripLegs": {
+        "leg": "第{number}区間",
+        "outbound": "往路",
+        "return": "復路"
+      },
+      "tripTypes": {
+        "multiCity": "周遊",
+        "oneWay": "片道",
+        "roundTrip": "往復"
+      },
+      "voidNotAvailable": "VOID不可",
+      "voidNotAvailablePolicy": "VOID不可（航空会社の規定）",
+      "voidQuote": "VOID見積もり",
+      "totalFlightDuration": "総飛行時間"
+    },
+    "labels": {
+      "afterDatePenalty": "{date}以降: 違約金{amount}",
+      "bookedOn": "予約日",
+      "checkIn": "チェックイン",
+      "checkOut": "チェックアウト",
+      "duration": "期間",
+      "email": "メールアドレス",
+      "freeCancelUntil": "無料キャンセル期限",
+      "freeCancellation": "無料キャンセル可能",
+      "guests": "宿泊者",
+      "name": "氏名",
+      "nonRefundable": "返金不可",
+      "paymentMethod": "お支払い方法",
+      "policyNotAvailable": "キャンセルポリシーの詳細はありません。",
+      "provider": "提供元",
+      "room": "客室",
+      "specialRequests": "特別リクエスト",
+      "totalPaid": "お支払い総額"
+    },
+    "modificationModal": {
+      "discard": "破棄",
+      "email": "メールアドレス",
+      "emailPlaceholder": "email@example.com",
+      "firstName": "名",
+      "firstNamePlaceholder": "名",
+      "infoBanner": "予約者の氏名、メールアドレス、特別リクエストを変更できます。",
+      "lastName": "姓",
+      "lastNamePlaceholder": "姓",
+      "optional": "（任意）",
+      "remarksPlaceholder": "例: 遅めのチェックイン、枕の追加…",
+      "saveChanges": "変更を保存",
+      "saving": "保存中...",
+      "specialRequests": "特別リクエスト",
+      "title": "予約を変更"
+    },
+    "myTrips": "マイトリップ",
+    "noSegmentDetails": "区間の詳細はありません。",
+    "sections": {
+      "cancellationPolicy": "キャンセルポリシー",
+      "guestInformation": "宿泊者情報",
+      "itinerary": "旅程",
+      "passengers": "搭乗者",
+      "payment": "お支払い",
+      "stayDetails": "宿泊の詳細"
+    },
+    "status": {
+      "booked": "予約済み",
+      "cancelFailed": "キャンセル失敗",
+      "cancelPending": "キャンセル保留中",
+      "cancelled": "キャンセル済み",
+      "cancelledProviderMissing": "キャンセル済み",
+      "completed": "完了",
+      "confirmed": "確定",
+      "failed": "失敗",
+      "pending": "保留中",
+      "processing": "処理中",
+      "refundFailed": "返金失敗",
+      "refundPending": "返金保留中",
+      "refunded": "返金済み",
+      "ticketed": "確定",
+      "ticketing": "発券中",
+      "unknown": "不明",
+      "cancellationStuck": "キャンセル処理停止中"
+    },
+    "subtitle": "予約の確認と管理",
+    "tabs": {
+      "all": "すべて",
+      "past": "過去",
+      "upcoming": "今後",
+      "wishlist": "お気に入り"
+    },
+    "title": "マイトリップ | CheapestGo",
+    "viewMore": "さらに表示（残り{count}件）",
+    "viewReceipt": "領収書を表示",
+    "wishlist": {
+      "emptyDesc": "フライトやホテルのハートアイコンをタップすると、ここに保存されます。",
+      "emptyTitle": "保存した旅行はまだありません",
+      "perPerson": "1人あたり",
+      "removeError": "削除できませんでした。もう一度お試しください。",
+      "removeFromWishlist": "お気に入りから削除",
+      "savedOn": "{date}に保存",
+      "searchAgain": "再検索",
+      "saveToWishlist": "お気に入りに保存"
+    },
+    "tripMap": {
+      "navigate": "ナビ開始",
+      "tooFar": "車で直接行くには遠すぎます",
+      "flyingIn": "飛行機で移動",
+      "locating": "位置を特定中…",
+      "findingHotel": "ホテルを検索中…",
+      "gettingLocation": "現在地を取得中…",
+      "centerOnHotel": "ホテルを中心に表示",
+      "toggleTraffic": "交通情報の切り替え",
+      "driving": "車",
+      "walking": "徒歩",
+      "away": "{distance}先",
+      "calculatingDistance": "距離を計算中…",
+      "navigationStarts": "50km圏内に入るとナビが開始されます",
+      "openInMaps": "マップで開く",
+      "navigationReady": "近くに到着するとナビを利用できます",
+      "saveInMaps": "マップに保存",
+      "determiningLocation": "現在地を確認中…",
+      "close": "地図を閉じる"
+    },
+    "cancellationFeeCard": {
+      "ifYouCancelNow": "今キャンセルした場合:",
+      "fee": "キャンセル料",
+      "youllReceive": "返金額"
+    },
+    "pages": {
+      "backToBooking": "予約に戻る",
+      "ref": "予約番号:"
+    },
+    "requestsPage": {
+      "title": "特別リクエスト",
+      "note": "リクエストは施設に伝えられますが、保証されるものではありません。対応可否はホテルによります。",
+      "cancelled": "この予約はキャンセル済みのため、特別リクエストを更新できません。"
+    },
+    "requestsForm": {
+      "label": "施設へのメッセージ",
+      "placeholder": "例: 22時以降のチェックイン、エキストラベッド、高層階…",
+      "saved": "保存しました — 施設に通知されました。",
+      "saveError": "リクエストを保存できませんでした。もう一度お試しください。",
+      "submit": "リクエストを保存"
+    },
+    "sharePage": {
+      "title": "予約確認書を共有",
+      "note": "確認メールをご自身や他の方に再送できます — 同行者への共有や記録用に便利です。"
+    },
+    "shareForm": {
+      "sendTo": "送信先",
+      "sentTo": "{email}に送信しました。",
+      "sendError": "送信できませんでした。もう一度お試しください。",
+      "submit": "確認書を送信"
+    },
+    "hotelConfirmed": {
+      "confirming": "予約を確定中…",
+      "loading": "予約を読み込み中…"
+    },
+    "invoice": {
+      "downloadPdf": "PDFをダウンロード",
+      "generating": "生成中…",
+      "print": "印刷"
+    },
+    "v2": {
+      "backToMyTrips": "マイトリップに戻る",
+      "downloadETicket": "Eチケットをダウンロード",
+      "refundNotice": "払い戻しの可否は航空会社の運賃規則に従います。"
+    }
+  }
 }

@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { MappableProperty } from '@/shared/components/map/types';
 import { useHotelClusters, isCluster, type ViewBounds } from '@/shared/components/map/useHotelClusters';
 import { ClusterPin } from '@/shared/components/map/ClusterPin';
+import { useTranslations } from 'next-intl';
 import { useMapboxInstance } from './hooks/useMapboxInstance';
 import { useMapInteractions, PoiData } from './hooks/useMapInteractions';
 import { useMapViewport } from './hooks/useMapViewport';
@@ -180,6 +181,17 @@ export const SearchMapContainer = React.memo(({
     const router = useRouter();
     const targetCurrency = useUserCurrency();
     const { theme } = useTheme();
+
+    /**
+     * The cluster marker renders into its own React root attached to a Mapbox element, which
+     * is outside this tree and so outside next-intl's provider. Its words are resolved here
+     * and handed over, rather than the marker reaching for a hook it cannot use.
+     */
+    const tSearch = useTranslations('search');
+    const clusterLabels = useMemo(() => ({
+        checking: (count: number) => tSearch('v2.clusterChecking', { count }),
+        hotels:   (count: number) => tSearch('v2.clusterHotels',   { count }),
+    }), [tSearch]);
 
     const mappableProperties = useMemo(() =>
         properties.filter(p =>
@@ -388,7 +400,7 @@ export const SearchMapContainer = React.memo(({
             try { priceLabel = minPrice > 0 ? formatCurrency(minPrice, targetCurrency) : ''; } catch { /* noop */ }
             root.render(
                 <div style={{ pointerEvents: 'none' }}>
-                    <ClusterPin count={count} priceLabel={priceLabel} />
+                    <ClusterPin count={count} priceLabel={priceLabel} labels={clusterLabels} />
                 </div>
             );
         };

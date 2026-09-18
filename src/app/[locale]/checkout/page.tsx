@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ArrowLeft, Check, Download, Calendar, MapPin, Users, CreditCard, Lock } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -125,15 +126,18 @@ function PrimaryBtn({ onClick, loading, disabled, children }: { onClick?: () => 
 
 // ─── Step progress bar ────────────────────────────────────────────────────────
 
+// The label is a key rather than a word: this array is module scope, and a hook cannot run
+// here. ProgressBar resolves it.
 const STEPS = [
-    { key: 'form',      label: 'Details',   num: 1 },
-    { key: 'payment',   label: 'Payment',   num: 2 },
-    { key: 'confirmed', label: 'Confirmed', num: 3 },
+    { key: 'form',      labelKey: 'steps.details',   num: 1 },
+    { key: 'payment',   labelKey: 'steps.payment',   num: 2 },
+    { key: 'confirmed', labelKey: 'steps.confirmed', num: 3 },
 ] as const;
 
 type Step = 'form' | 'payment' | 'confirmed';
 
 function ProgressBar({ step }: { step: Step }) {
+    const t = useTranslations('checkout');
     const idx = { form: 0, payment: 1, confirmed: 2 }[step];
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, marginBottom: 36, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
@@ -146,7 +150,7 @@ function ProgressBar({ step }: { step: Step }) {
                             <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, background: i <= idx ? ACCENT : 'rgba(255,255,255,.08)', color: i <= idx ? '#fff' : 'rgba(245,239,228,.4)', border: active && step !== 'confirmed' ? '2px solid #fff' : 'none' }}>
                                 {done && step !== 'confirmed' ? <Check size={13} strokeWidth={3} /> : s.num}
                             </div>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: i <= idx ? TEXT : 'rgba(245,239,228,.4)' }}>{s.label}</div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: i <= idx ? TEXT : 'rgba(245,239,228,.4)' }}>{t(s.labelKey)}</div>
                         </div>
                         {i < STEPS.length - 1 && (
                             <div style={{ flex: 1, height: 2, background: i < idx ? ACCENT : 'rgba(255,255,255,.12)', marginBottom: 18, marginLeft: 4, marginRight: 4 }} />
@@ -244,6 +248,7 @@ function ConfirmedScreen({
     onHome:       () => void;
     onTrips:      () => void;
 }) {
+    const t = useTranslations('checkout');
     const fmtDate = (d: string) => d
         ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
         : '';
@@ -281,19 +286,19 @@ function ConfirmedScreen({
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '32px 0 24px' }}>
                     <div style={{ width: 100, height: 100, borderRadius: '50%', background: GREEN, border: '3px dashed rgba(255,255,255,.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', animation: 'fsStamp .6s ease', flexShrink: 0 }}>
                         <Check size={24} strokeWidth={3} />
-                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>BOOKED</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>{t('booked')}</div>
                     </div>
                     <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: '#fff', marginTop: 20 }}>
-                        You&rsquo;re all set!
+                        {t('allSet')}
                     </div>
                     <div style={{ fontSize: 13, color: 'rgba(245,239,228,.55)', marginTop: 6 }}>
-                        Your booking is confirmed. A receipt has been sent to {guestEmail}.
+                        {t('receiptSent', { email: guestEmail })}
                     </div>
                 </div>
 
                 {/* Booking reference */}
                 <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>Booking Reference</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
                     <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
                 </div>
 
@@ -323,7 +328,7 @@ function ConfirmedScreen({
                         {/* Stay details grid */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginBottom: 24 }}>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>Check-in</div>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
                                 <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkIn)}
@@ -331,7 +336,7 @@ function ConfirmedScreen({
                                 <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{fmtDate(checkIn)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>Check-out</div>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
                                 <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkOut)}
@@ -339,17 +344,17 @@ function ConfirmedScreen({
                                 <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{fmtDate(checkOut)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>Guest</div>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
                                 <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Users size={13} color={ACCENT} />
                                     {guestName}
                                 </div>
-                                <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{adults} guest{adults !== 1 ? 's' : ''}</div>
+                                <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
                             </div>
                             <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>Room</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{roomName || 'Standard Room'}</div>
-                                {nights && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{nights} night{nights !== 1 ? 's' : ''}</div>}
+                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
+                                {nights && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
                             </div>
                         </div>
 
@@ -358,21 +363,21 @@ function ConfirmedScreen({
 
                         {/* Receipt breakdown */}
                         <div style={{ marginBottom: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 12 }}>Price breakdown</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
                             {nights && nightlyPrice > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
-                                    <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
+                                    <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {(nightlyPrice * nights).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                 </div>
                             )}
                             {fee > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
-                                    <span>Service fee</span>
+                                    <span>{t('serviceFee')}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
                                 </div>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#fff', paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
-                                <span>Total paid</span>
+                                <span>{t('totalPaid')}</span>
                                 <span style={{ color: GREEN }}>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                             </div>
                         </div>
@@ -410,6 +415,7 @@ function ConfirmedScreen({
 // ─── Checkout inner ───────────────────────────────────────────────────────────
 
 function CheckoutContent() {
+    const t            = useTranslations('checkout');
     const searchParams = useSearchParams();
     const router       = useRouter();
     const { user }     = useAuthStore();
@@ -755,21 +761,21 @@ function CheckoutContent() {
 
                             {nights && nightlyPrice > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
-                                    <span>{shownCurrency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
+                                    <span>{shownCurrency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
                                     <span style={{ fontWeight: 600 }}>{shownCurrency} {roomTotal.toLocaleString()}</span>
                                 </div>
                             )}
                             {display ? (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 10 }}>
-                                    <span>Service fee</span><span style={{ fontWeight: 600 }}>{shownCurrency} {fee.toLocaleString()}</span>
+                                    <span>{t('serviceFee')}</span><span style={{ fontWeight: 600 }}>{shownCurrency} {fee.toLocaleString()}</span>
                                 </div>
                             ) : (
                                 <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginBottom: 10 }}>
-                                    Confirming the final price…
+                                    {t('confirmingFinalPrice')}
                                 </div>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff', paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
-                                <span>Total</span><span>{shownCurrency} {total.toLocaleString()}</span>
+                                <span>{t('summary.total')}</span><span>{shownCurrency} {total.toLocaleString()}</span>
                             </div>
                         </>
                     ) : (

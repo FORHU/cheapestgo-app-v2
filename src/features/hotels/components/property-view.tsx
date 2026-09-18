@@ -10,6 +10,7 @@
  */
 
 import React, { useEffect, useState, useMemo, Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -172,8 +173,9 @@ const HERO_ARROW: React.CSSProperties = {
 };
 
 function ratingInfo(score: number): { label: string; color: string } {
-    if (score >= 9) return { label: 'Exceptional', color: GREEN };
-    if (score >= 8) return { label: 'Excellent',   color: '#4FA8E0' };
+    // Keys, not words: this runs outside a component, where a hook cannot.
+    if (score >= 9) return { label: 'ratings.exceptional', color: GREEN };
+    if (score >= 8) return { label: 'ratings.excellent',   color: '#4FA8E0' };
     return                  { label: 'Good',        color: '#E0A23C' };
 }
 
@@ -213,6 +215,7 @@ function categoryDotColor(cat: string): string {
 // ─── NearbySection ────────────────────────────────────────────────────────────
 
 function NearbySection({ coordinates, palette }: { coordinates: { lat: number; lng: number }; palette: PropertyPalette }) {
+    const t = useTranslations('property');
     const { gems } = useNearbyGems({ coordinates, category: 'all', radiusMeters: 2000 });
     const topGems  = gems.slice(0, 5);
 
@@ -248,7 +251,7 @@ function NearbySection({ coordinates, palette }: { coordinates: { lat: number; l
                 names and distances stay under it. */}
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
                 {topGems.length === 0 && (
-                    <p style={{ color: palette.muted, fontSize: 18 }}>Loading nearby places…</p>
+                    <p style={{ color: palette.muted, fontSize: 18 }}>{t('v2.loadingNearby')}</p>
                 )}
                 {topGems.map((gem, i) => {
                     const dist = haversine(coordinates.lat, coordinates.lng, gem.coordinates.lat, gem.coordinates.lng);
@@ -290,6 +293,7 @@ function NearbySection({ coordinates, palette }: { coordinates: { lat: number; l
 // ─── PropertyContent ──────────────────────────────────────────────────────────
 
 function PropertyContent() {
+    const t = useTranslations('property');
     const params       = useParams();
     const searchParams = useSearchParams();
     const router       = useRouter();
@@ -343,7 +347,7 @@ function PropertyContent() {
 
         http.get<PropertyApiResponse>(`/hotels/property/${hotelId}?${qs.toString()}`)
             .then(res  => { if (!cancelled) setData(res); })
-            .catch(err => { if (!cancelled) setError(err.message ?? 'Failed to load property'); })
+            .catch(err => { if (!cancelled) setError(err.message ?? t('v2.loadFailed')); })
             .finally(()=> { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
@@ -460,7 +464,7 @@ function PropertyContent() {
     if (error || !content) {
         return (
             <div style={{ ...rootStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-                <p style={{ color: palette.muted, textAlign: 'center' }}>{error ?? 'Property not found.'}</p>
+                <p style={{ color: palette.muted, textAlign: 'center' }}>{error ?? t('v2.notFound')}</p>
                 <button
                     onClick={() => router.back()}
                     style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
@@ -524,7 +528,7 @@ function PropertyContent() {
                     should not be something you scroll to find. */}
                 <button
                     onClick={() => router.back()}
-                    aria-label="Go back"
+                    aria-label={t('v2.goBack')}
                     className="left-5 sm:left-8 lg:left-12"
                     style={{
                         position: 'absolute', top: 20, zIndex: 2,
@@ -562,8 +566,8 @@ function PropertyContent() {
                     />
                     <button
                         onClick={toggleTheme}
-                        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                        aria-label={theme === 'dark' ? t('v2.switchToLight') : t('v2.switchToDark')}
+                        title={theme === 'dark' ? t('v2.lightMode') : t('v2.darkMode')}
                         style={{
                             width: 44, height: 44, borderRadius: '50%', border: 'none',
                             background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
@@ -586,7 +590,7 @@ function PropertyContent() {
                     <>
                         <motion.button
                             onClick={() => { setHeroDir(-1); setHeroIndex(i => (i - 1 + heroCount) % heroCount); }}
-                            aria-label="Previous photo"
+                            aria-label={t('v2.previousPhoto')}
                             className="left-5 sm:left-8 lg:left-12"
                             style={HERO_ARROW}
                             animate={{ scale: [1, 1.12, 1] }}
@@ -596,7 +600,7 @@ function PropertyContent() {
                         </motion.button>
                         <motion.button
                             onClick={() => { setHeroDir(1); setHeroIndex(i => (i + 1) % heroCount); }}
-                            aria-label="Next photo"
+                            aria-label={t('v2.nextPhoto')}
                             className="right-5 sm:right-8 lg:right-12"
                             style={HERO_ARROW}
                             animate={{ scale: [1, 1.12, 1] }}
@@ -727,7 +731,7 @@ function PropertyContent() {
                 {/* ── Nearby places ────────────────────────────────────────── */}
                 {coordinates && (
                     <section className="min-w-0">
-                        <h2 className={SECTION_HEADING} style={{ color: palette.title }}>Nearby Places</h2>
+                        <h2 className={SECTION_HEADING} style={{ color: palette.title }}>{t('v2.nearbyPlaces')}</h2>
                         <div className="mt-4">
                             <NearbySection coordinates={coordinates} palette={palette} />
                         </div>
@@ -738,12 +742,12 @@ function PropertyContent() {
                 {/* ── Guest reviews ──────────────────────────────────────────── */}
                 {reviewItems.length > 0 && (
                     <Reveal style={{ margin: '44px 0 0' }}>
-                        <h2 className={cn(SECTION_HEADING, 'mb-4')} style={{ color: palette.title }}>What guests say</h2>
+                        <h2 className={cn(SECTION_HEADING, 'mb-4')} style={{ color: palette.title }}>{t('v2.whatGuestsSay')}</h2>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                             {reviewItems.map((rev, i) => {
                                 const score = Number(rev.score ?? 0);
                                 const ri    = ratingInfo(score);
-                                const blurb = rev.pros || rev.headline || 'Great stay';
+                                const blurb = rev.pros || rev.headline || t('v2.greatStay');
                                 return (
                                     <div
                                         key={i}

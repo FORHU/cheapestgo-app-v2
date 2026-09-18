@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -571,6 +572,7 @@ function StatusScreen({
 
 // ─── Main content ─────────────────────────────────────────────────────────────
 function HotelSearchContent() {
+    const t = useTranslations('search');
     const searchParams = useSearchParams();
     const router       = useRouter();
 
@@ -1640,7 +1642,9 @@ function HotelSearchContent() {
                                             }} />
                                         )}
                                         <span className="whitespace-nowrap text-[11.5px] font-semibold md:text-[13px]" style={{ color: chrome.text }}>
-                                            {isStreaming ? `${count}+` : count} Stays
+                                            {/* While streaming this counts places being checked, not stays found.
+                                                "107+ Stays" collapsing to 2 is the difference between the two. */}
+                                            {isStreaming ? t('v2.checkingCount', { count }) : t('v2.staysCount', { count })}
                                         </span>
                                     </div>
 
@@ -1679,8 +1683,8 @@ function HotelSearchContent() {
                                             lining up. */}
                                         <button
                                             onClick={() => setRailHidden(true)}
-                                            aria-label="Hide stay cards"
-                                            title="Hide cards"
+                                            aria-label={t('v2.hideStayCards')}
+                                            title={t('v2.hideCards')}
                                             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-10"
                                             style={{
                                                 background: chrome.surface, border: `1px solid ${chrome.border}`,

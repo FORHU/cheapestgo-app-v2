@@ -6,19 +6,21 @@
  *
  * - **Locked** (AirangGo sets `ko`). It serves exactly one language, at the root, with no URL
  *   prefix. A prefix does not switch language there — `airanggo.com/ja/about` renders Korean —
- *   so a locked deployment has no alternates to declare and every canonical is unprefixed.
- *   That also folds those prefixed URLs onto the real one rather than letting them stand as
- *   separate pages.
+ *   so every canonical is unprefixed, which folds those prefixed URLs onto the real one rather
+ *   than letting them stand as separate pages.
  * - **Unlocked** (CheapestGo). English at the root, `PREFIXED_LOCALES` under a prefix.
  *
- * Korean is deliberately missing from `PREFIXED_LOCALES`: a language has exactly one home and
- * Korean's is `airanggo.com` (ADR-0037). `/ko` still answers — it is simply no longer
- * advertised in a sitemap or an alternate. A visitor who reaches it still gets a canonical
- * naming that same Korean URL, because claiming to be the English page is what made Google
- * discard it.
+ * Both domains declare the same `hreflang` set: all four languages, each at its own home in
+ * `LANGUAGE_HOMES`. Google ignores alternates that are not confirmed from the other side, so a
+ * set only one domain declared would be discarded — AirangGo naming CheapestGo's English,
+ * Japanese and Chinese pages is what lets CheapestGo's Korean alternate count.
  *
- * This list is not duplicated anywhere. Two copies is how v1's sitemap came to advertise URLs
- * its own pages did not agree with.
+ * `cheapestgo.com/ko` still answers until the redirect lands. It is in no sitemap and no
+ * alternate, and a visitor who reaches it gets a canonical naming that same Korean URL,
+ * because claiming to be the English page is what made Google discard it.
+ *
+ * The list of languages is not duplicated in `src/app/sitemap.ts`. Two copies are how v1's
+ * sitemap came to advertise URLs its own pages did not agree with.
  */
 
 import { getLocale } from 'next-intl/server';
@@ -26,8 +28,24 @@ import { routing } from '@/i18n/routing';
 
 const DEFAULT_LOCALE = routing.defaultLocale;
 
-/** Locales advertised under a URL prefix. Not the same as the locales that are *served*. */
-const PREFIXED_LOCALES = ['ja', 'zh'] as const;
+/**
+ * Where each language is served in production — the decision in ADR-0037, written down once.
+ *
+ * Production origins on purpose, not `NEXT_PUBLIC_SITE_URL`: an alternate names the page in
+ * another language on the live site. A deployment's own languages are still emitted as
+ * relative paths, so a local or staging build points at itself for those.
+ */
+const LANGUAGE_HOMES: Record<string, string> = {
+    en: 'https://cheapestgo.com',
+    ja: 'https://cheapestgo.com',
+    zh: 'https://cheapestgo.com',
+    ko: 'https://airanggo.com',
+};
+
+/** Languages served under a prefix beside the default: those sharing the default's home. */
+const PREFIXED_LOCALES = Object.keys(LANGUAGE_HOMES).filter(
+    (locale) => locale !== DEFAULT_LOCALE && LANGUAGE_HOMES[locale] === LANGUAGE_HOMES[DEFAULT_LOCALE],
+);
 
 /** The locale this deployment is locked to, or null when it serves several. */
 function lockedLocale(): string | null {
@@ -56,14 +74,28 @@ export function servedLocalePaths(
 }
 
 /**
- * The `alternates.languages` map, or undefined on a locked deployment — one language has
- * nothing to alternate with, and declaring alternates it does not serve is a false claim.
+ * Where `path` lives in `locale`: relative when this deployment serves that language,
+ * otherwise absolute at the language's home. A home holding a single language is shaped like a
+ * locked deployment and serves it unprefixed.
  */
-export function hreflang(path: string, locked: string | null = lockedLocale()): Record<string, string> | undefined {
-    if (locked !== null) return undefined;
-    const languages = Object.fromEntries(servedLocalePaths(path, null).map(({ locale, path: at }) => [locale, at]));
-    // x-default is what a crawler serves for a language we do not publish.
-    return { ...languages, 'x-default': localePath(path, DEFAULT_LOCALE, null) };
+function alternateUrl(path: string, locale: string, locked: string | null): string {
+    if (servedLocalePaths(path, locked).some((served) => served.locale === locale)) {
+        return localePath(path, locale, locked);
+    }
+    const home = LANGUAGE_HOMES[locale];
+    const languagesAtHome = Object.keys(LANGUAGE_HOMES).filter((l) => LANGUAGE_HOMES[l] === home);
+    return `${home}${localePath(path, locale, languagesAtHome.length === 1 ? locale : null)}`;
+}
+
+/**
+ * The `alternates.languages` map: every language at its home, plus `x-default` at the default
+ * language's page. Identical on both domains, which is what makes it count.
+ */
+export function hreflang(path: string, locked: string | null = lockedLocale()): Record<string, string> {
+    const languages = Object.fromEntries(
+        Object.keys(LANGUAGE_HOMES).map((locale) => [locale, alternateUrl(path, locale, locked)]),
+    );
+    return { ...languages, 'x-default': alternateUrl(path, DEFAULT_LOCALE, locked) };
 }
 
 /**
@@ -96,4 +128,4 @@ export async function hreflangAlternates(path: string) {
     };
 }
 
-export { DEFAULT_LOCALE, PREFIXED_LOCALES };
+export { DEFAULT_LOCALE, PREFIXED_LOCALES, LANGUAGE_HOMES };

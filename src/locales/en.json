@@ -1,324 +1,1879 @@
 {
-    "nav": {
-        "support": "Support",
-        "openApp": "Open app",
-        "signIn": "Sign in",
-        "signOut": "Sign out",
-        "myTrips": "My trips",
-        "account": "Account",
-        "trips": "Trips",
-        "createAccount": "Create an account",
-        "accountSettings": "Account Settings",
-        "membersSave": "Members save 10% or more",
-        "membersSaveSubtitle": "on select stays when signed in",
-        "accountWorks": "Your account works across CheapestGo and all partner sites"
+  "ai": {
+    "prompts": {
+      "bali": "Find me a beachfront resort in Bali for 2 adults, Feb 14-21...",
+      "tokyo": "Luxury hotel in Tokyo under $200/night with pool...",
+      "cebu": "Weekend getaway in Cebu for a couple, next month...",
+      "manila": "Family resort near Manila, 2 adults 2 kids..."
+    }
+  },
+  "appBanner": {
+    "badge": "Mobile App",
+    "title": "Travel smarter with our app",
+    "subtitle": "Get exclusive app-only deals, instant notifications, and manage your trips on the go.",
+    "downloads": "Downloads",
+    "rating": "App Rating",
+    "savings": "Extra Savings",
+    "installBtn": "Install App",
+    "downloadBtn": "Download App",
+    "learnMore": "Learn More"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in to CheapestGo",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "continueWithEmail": "Continue with email",
+      "continueWithGoogle": "Continue with Google",
+      "continueWithApple": "Continue with Apple",
+      "orDivider": "or",
+      "terms": "By signing in you agree to our {terms} and {privacy}.",
+      "termsLink": "Terms",
+      "privacyLink": "Privacy"
+    }
+  },
+  "checkout": {
+    "back": "Back",
+    "backToBookingDetails": "Back to booking details",
+    "bookingErrorTitle": "Booking error",
+    "bookingFor": {
+      "guestFirstName": "Guest First Name *",
+      "guestLastName": "Guest Last Name *",
+      "myself": "Myself",
+      "someoneElse": "Someone else",
+      "whoIsBooking": "Who is the booking for?"
     },
-    "languagePicker": {
-        "label": "Select language",
-        "en": "English",
-        "ko": "한국어",
-        "cn": "中文",
-        "ja": "日本語"
+    "cancellation": {
+      "cancelAfter": "Cancel after",
+      "cancelBy": "Cancel by",
+      "description": "How much will it cost to cancel the rooms?",
+      "earlyDepartureFee": "Early Departure Fee: {amount} if you check out before your scheduled date.",
+      "footer": "Cancellation costs are based on the total booking value. All dates and times are mentioned in GMT.",
+      "freeCancellation": "Free cancellation available — see deadlines below",
+      "freeCancellationLabel": "Free Cancellation",
+      "fullRefund": "(Full refund)",
+      "noShowPenalty": "No-Show Penalty: {amount} if you don’t check in without cancelling.",
+      "nonRefundable": "Non-refundable — this booking cannot be cancelled for a refund",
+      "refund": "{amount} Refund",
+      "title": "Cancellation Policy"
     },
-    "currencyPicker": {
-        "label": "Select currency"
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "chooseYourDates": "Choose your dates",
+    "completeYourBooking": "Complete your booking",
+    "confirmingBooking": "Confirming your booking",
+    "confirmingWithHotel": "Confirming with the hotel...",
+    "continue": "Continue",
+    "dontClosePage": "Please don't close this page",
+    "duplicateBookingDesc": "Cancel your existing booking first, or go back and keep it.",
+    "duplicateBookingTitle": "You already have a booking at {hotel} for overlapping dates.",
+    "finalizingDetails": "Finalizing booking details...",
+    "goBack": "← Go back",
+    "goBackBtn": "Go back",
+    "keepExistingBooking": "Keep existing booking",
+    "loadingPaymentForm": "Loading payment form...",
+    "modifyBooking": "Modify booking",
+    "payment": {
+      "card": "Card",
+      "cardNumber": "Card number",
+      "countries": {
+        "ID": "Indonesia",
+        "JP": "Japan",
+        "KR": "South Korea",
+        "MY": "Malaysia",
+        "PH": "Philippines",
+        "SG": "Singapore",
+        "TH": "Thailand",
+        "US": "United States",
+        "VN": "Vietnam"
+      },
+      "country": "Country",
+      "mmYY": "MM / YY",
+      "payeeFirstName": "Payee First Name",
+      "payeeLastName": "Payee Last Name",
+      "paymentInformation": "Payment Information",
+      "securedMessage": "Your payment information is secured.",
+      "securityCode": "Security code"
     },
-    "theme": {
-        "switchToDark": "Switch to dark mode",
-        "switchToLight": "Switch to light mode"
+    "pickDatesDescription": "Pick check-in and check-out to continue.",
+    "promos": {
+      "applied": "Applied",
+      "apply": "Apply",
+      "availableForBooking": "Available promos for this booking",
+      "availablePromos": "Available promos",
+      "failedToApply": "Failed to apply promo. Please try again.",
+      "hotelDeal": "Hotel Deal",
+      "loadingPromos": "Loading available promos...",
+      "location": "Location",
+      "minAmount": "Min. {amount}",
+      "newUser": "New User",
+      "off": "off",
+      "promo": "Promo",
+      "seasonal": "Seasonal",
+      "until": "Until {date}",
+      "upTo": "Up to {amount}"
     },
-    "landing": {
-        "hero": {
-            "title": "Flights at the lowest price",
-            "titleLine1": "Precision Travel.",
-            "titleLine2": "Machined for You.",
-            "subtitle": "The operating system for the modern voyager.",
-            "monoSubtext": "Ask anything. Book everything.",
-            "cta": "Search flights"
-        },
-        "search": {
-            "from": "From",
-            "to": "To",
-            "depart": "Depart",
-            "return": "Return",
-            "passengers": "Passengers",
-            "placeholder": {
-                "airport": "City or airport",
-                "date": "Add date"
-            },
-            "tripType": {
-                "roundTrip": "Round trip",
-                "oneWay": "One way",
-                "multiCity": "Multi-city"
-            },
-            "cabinClass": {
-                "economy": "Economy",
-                "premiumEconomy": "Premium economy",
-                "business": "Business",
-                "first": "First"
-            },
-            "submit": "Search",
-            "anywhere": "Anywhere",
-            "anyWeek": "Any week",
-            "addGuests": "Add guests",
-            "guests": "{count} guest",
-            "guestsPlural": "{count} guests",
-            "clearAll": "Clear all",
-            "findDeals": "Find the best deals",
-            "comingSoon": "Coming Soon",
-            "aiDevelopment": "AI Search is under development. Stay tuned!",
-            "askAi": "Ask AI",
-            "aiGreeting": "How can I help you this morning?",
-            "results": "Results",
-            "findingFlights": "Finding flights…",
-            "searchFlightsHeader": "Search Flights",
-            "bundle": {
-                "hotelBooked": "Hotel booked!",
-                "instructions": "Enter your {from} and {to} airports, pick your dates, then hit Search to bundle and save up to 8%."
-            },
-            "whereTo": "Where to?",
-            "searchDestination": "Search destination",
-            "checkIn": "Check-in",
-            "checkOut": "Check-out",
-            "travelers": "Travelers",
-            "selectDate": "Select date",
-            "guest": "{count} Guest",
-            "guestPlural": "{count} Guests",
-            "guestsRooms": "Guests & Rooms",
-            "adults": "Adults",
-            "children": "Children",
-            "childrenAges": "Ages 0 to 17",
-            "rooms": "Rooms",
-            "roomsNote": "1 room per booking. Book separately for more.",
-            "done": "Done",
-            "calendar": "Calendar",
-            "flexibleDates": "Flexible dates",
-            "whenTravel": "When do you want to travel?",
-            "childLabel": "Child {index}: {age} yrs",
-            "yearsOld": "{age} years old",
-            "month": "Month",
-            "year": "Year",
-            "searchDestinationsPlaceholder": "Search destinations...",
-            "recentSearches": "Recent Searches",
-            "searching": "Searching...",
-            "noResults": "No results found",
-            "countries": "Countries",
-            "cities": "Cities",
-            "typeToSearch": "Type city name or airport code...",
-            "noAirportsFound": "No airports found for \"{query}\"",
-            "typeToSearchPrompt": "Type a city or airport code to search",
-            "cabinClassLabel": "Cabin Class",
-            "infants": "Infants",
-            "adultAge": "Age 12+",
-            "childAge": "Age 2-11",
-            "infantAge": "Under 2 (lap)",
-            "months": [
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December"
-            ],
-            "days": [
-                "S",
-                "M",
-                "T",
-                "W",
-                "T",
-                "F",
-                "S"
-            ],
-            "flexOptions": [
-                "Exact dates",
-                "\u00b1 1 day",
-                "\u00b1 2 days",
-                "\u00b1 3 days",
-                "\u00b1 7 days"
-            ],
-            "searchMode": {
-                "stays": "Stays",
-                "flights": "Flights",
-                "aiSearch": "AI Search"
-            }
-        },
-        "recentlyViewed": {
-            "title": "Continue Your Search",
-            "subtitle": "Pick up where you left off",
-            "viewAll": "View all",
-            "recentlySearched": "Recently searched",
-            "from": "from",
-            "stay": "Stay",
-            "flight": "Flight",
-            "showLess": "Show less"
-        }
+    "rating": {
+      "average": "Average",
+      "exceptional": "Exceptional",
+      "fabulous": "Fabulous",
+      "good": "Good",
+      "pleasant": "Pleasant",
+      "veryGood": "Very Good"
     },
-    "flights": {
-        "results": {
-            "loading": "Finding the best fares…",
-            "empty": "No flights found for these dates.",
-            "sortBy": "Sort by",
-            "filters": "Filters",
-            "price": "Price",
-            "duration": "Duration",
-            "stops": {
-                "any": "Any",
-                "direct": "Direct",
-                "oneStop": "1 stop",
-                "twoPlus": "2+ stops"
-            }
-        },
-        "card": {
-            "direct": "Direct",
-            "stop": "stop",
-            "stops": "stops",
-            "viewDeal": "View deal",
-            "perPerson": "per person"
-        }
+    "retry": "Retry",
+    "searchAvailableRooms": "Search available rooms →",
+    "secureYourBooking": "Secure your booking",
+    "securingReservation": "Securing your reservation...",
+    "selectYourDates": "Select your dates",
+    "signIn": "Sign In",
+    "signInBannerDesc": "You'll receive booking confirmation and updates via email.",
+    "signInToComplete": "Sign in to complete your booking",
+    "specialRequests": {
+      "placeholder": "The property will do its best to arrange it.",
+      "title": "Any special requests?"
     },
-    "auth": {
-        "signIn": {
-            "title": "Sign in to CheapestGo",
-            "emailLabel": "Email address",
-            "emailPlaceholder": "you@example.com",
-            "continueWithEmail": "Continue with email",
-            "continueWithGoogle": "Continue with Google",
-            "continueWithApple": "Continue with Apple",
-            "orDivider": "or",
-            "terms": "By signing in you agree to our {terms} and {privacy}.",
-            "termsLink": "Terms",
-            "privacyLink": "Privacy"
-        }
+    "stripe": {
+      "completePayment": "Complete Payment",
+      "loadError": "Failed to load the payment form. Please refresh and try again.",
+      "payNow": "Pay Now",
+      "processing": "Payment is processing...",
+      "unexpectedError": "An unexpected error occurred."
+    },
+    "submit": {
+      "continueToPayment": "Continue to Payment • {amount}",
+      "goBackDifferentHotel": "Go back & choose a different hotel",
+      "goBackReselect": "Go back & reselect room",
+      "hotelUnavailable": "Hotel temporarily unavailable",
+      "hotelUnavailableDesc": "This hotel cannot be booked right now. Please go back and choose a different hotel.",
+      "processingBooking": "Processing Your Booking...",
+      "sessionExpired": "Room session expired",
+      "sessionExpiredDesc": "Your room hold has expired. Go back and reselect the room to get a fresh session — you can pick the same room again.",
+      "signInToComplete": "Sign In to Complete Booking",
+      "verificationFailed": "Verification failed — see error above",
+      "verifyingPrice": "Verifying Price...",
+      "verifyingRoom": "Verifying Room...",
+      "waitingMessage": "Please wait while we confirm your reservation with the hotel...",
+      "waitingWarning": "This may take up to 30 seconds. Do not close this page."
+    },
+    "success": {
+      "bookFlightBundle": "Book your flight now and get a bundle discount on your total.",
+      "bookingConfirmed": "Booking Confirmed! 🎉",
+      "bookingId": "Booking ID",
+      "bundleDeal": "✦ Bundle Deal",
+      "bundleDiscountApplied": "Bundle discount applied",
+      "checkEmail": "Check your email for booking details and updates",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "confirmationSentTo": "Confirmation sent to",
+      "emailInfo": "Your booking confirmation will be emailed to you within a few minutes.",
+      "freeCancellationInfo": "If your booking is free cancellation, you can cancel or modify via My Trips.",
+      "hotel": "Hotel",
+      "hotelCheckInInfo": "Present your booking ID at the hotel reception upon arrival.",
+      "hotelSuccess": "Your hotel has been booked successfully.",
+      "flightHotelBundle": "Flight + Hotel Bundle",
+      "needFlight": "Need a flight to {destination}?",
+      "reservationComplete": "Your reservation at <strong>{name}</strong> is complete.",
+      "returnToHome": "Return to Home",
+      "room": "Room",
+      "saveUpTo": "Save up to 8%",
+      "saved": "{amount} saved",
+      "searchFlightsAndBundle": "Search flights & bundle",
+      "sent": "Sent",
+      "stayDuration": "Stay Duration",
+      "total": "Total",
+      "viewMyTrips": "View My Trips",
+      "whatsNext": "What's Next",
+      "openingDestination": "Opening your destination…"
+    },
+    "summary": {
+      "adult": "Adult",
+      "adults": "Adults",
+      "averagePerNight": "average per night",
+      "calculatingPerNight": "Calculated per night...",
+      "checkInAndOut": "Check-in & Check-out",
+      "checkInLabel": "Check-in",
+      "checkOutLabel": "Check-out",
+      "child": "Child",
+      "children": "Children",
+      "edit": "Edit",
+      "night": "night",
+      "nights": "nights",
+      "priceDetails": "Price details",
+      "promoCode": "Promo: {code}",
+      "roomConfirmed": "Room Confirmed",
+      "roomNights": "1 room × {nights} {count}",
+      "taxes": "Taxes",
+      "includedInPrice": "Included",
+      "included": "included",
+      "serviceFee": "Platform service fee",
+      "total": "Total",
+      "updateDates": "Update dates",
+      "youSave": "You save {amount} with this promo",
+      "yourRoom": "Your Room",
+      "freeCancellationBefore": "Free cancellation before {date}",
+      "freeCancellationShort": "Free cancellation",
+      "nonRefundable": "Non-refundable",
+      "termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
+      "fetchingPolicy": "Fetching cancellation policy…"
+    },
+    "title": "Checkout | CheapestGo",
+    "userDetails": {
+      "email": "Email *",
+      "emailPlaceholder": "Email",
+      "firstName": "First Name *",
+      "firstNamePlaceholder": "First name",
+      "lastName": "Last Name *",
+      "lastNamePlaceholder": "Last name",
+      "no": "No",
+      "phone": "Phone",
+      "phonePlaceholder": "Number",
+      "title": "Your details",
+      "travelingForWork": "Traveling for work?",
+      "yes": "Yes",
+      "guest1": "GUEST 1 (YOU)",
+      "guestN": "GUEST {n}",
+      "childN": "CHILD {n}",
+      "age": "Age *",
+      "agePlaceholder": "0–17",
+      "phoneNumber": "Phone number",
+      "passportNumber": "Passport number",
+      "dateOfBirth": "Date of birth"
+    },
+    "validation": {
+      "bookingFailed": "Booking confirmation failed: {message}. Your payment will be automatically refunded.",
+      "fieldRequired": "This field is required",
+      "firstNameRequired": "First name is required",
+      "fixHighlighted": "Please fix the highlighted fields before continuing.",
+      "invalidPrice": "Invalid booking price. Please retry.",
+      "lastNameRequired": "Last name is required",
+      "nameInvalid": "Name must only contain letters",
+      "paymentSetupFailed": "Payment setup failed",
+      "phoneDigitsOnly": "Phone number must contain digits only",
+      "phoneRequired": "Phone number is required",
+      "priceVerifying": "Price is still being verified — please wait a moment and try again.",
+      "requiresAuth": "Authentication required",
+      "sessionExpired": "Booking session expired. Please go back and select the room again.",
+      "sessionExpiredCharge": "Your session expired during payment. Your card was charged — please contact support with payment reference: {id}",
+      "refreshingSession": "Refreshing your price hold…",
+      "quoteExpiringSoon": "Your price hold expires in 5 minutes — please complete your booking soon.",
+      "required": "Required"
+    },
+    "priceChanged": {
+      "title": "Price has changed",
+      "description": "The price for this room changed between when you selected it and when we tried to confirm your booking.",
+      "originalPrice": "Original price",
+      "newPrice": "New price",
+      "refundNotice": "Your payment of {amount} has been automatically refunded. It may take 3–5 business days to appear on your statement.",
+      "backToSearch": "Back to search"
+    },
+    "verifyingPayment": "Verifying payment...",
+    "viewExistingBooking": "View existing booking",
+    "voucher": {
+      "apply": "Apply",
+      "enterPromoCode": "ENTER PROMO CODE",
+      "failedToValidate": "Failed to validate voucher. Please try again.",
+      "havePromoCode": "Have a promo code?",
+      "off": "OFF",
+      "promoCode": "Promo code",
+      "removeVoucher": "Remove voucher",
+      "saved": "{amount} saved"
+    },
+    "booked": "BOOKED",
+    "bookingReference": "Booking Reference",
+    "guestLabel": "Guest",
+    "priceBreakdown": "Price breakdown",
+    "serviceFee": "Service fee",
+    "totalPaid": "Total paid",
+    "whosCheckingIn": "Who's checking in?",
+    "steps": {
+      "details": "Details",
+      "payment": "Payment",
+      "confirmed": "Confirmed"
     },
     "errors": {
-        "generic": "Something went wrong. Please try again.",
-        "notFound": "Page not found.",
-        "searchFailed": "Search failed. Check your connection and try again."
+      "paymentFailed": "Payment failed. Please try again.",
+      "paymentProcessing": "Payment is processing. Check your trips shortly."
     },
-    "pwa": {
-        "installPrompt": {
-            "title": "Get the CheapestGo app",
-            "body": "Add to your home screen for faster access.",
-            "install": "Install",
-            "dismiss": "Not now"
-        }
+    "allSet": "You're all set!",
+    "receiptSent": "Your booking is confirmed. A receipt has been sent to {email}.",
+    "nightsCount": "{count, plural, one {# night} other {# nights}}",
+    "guestsCount": "{count, plural, one {# guest} other {# guests}}",
+    "roomFallback": "Standard Room",
+    "confirmingFinalPrice": "Confirming the final price…"
+  },
+  "currencyPicker": {
+    "label": "Select currency"
+  },
+  "deals": {
+    "popularRoute": "Popular Route",
+    "searchFlights": "Search Flights",
+    "all": "All",
+    "oneWay": "One Way",
+    "roundTrip": "Round Trip",
+    "headerDefault": "Exclusive Deals & Offers",
+    "headerPersonalized": "Flight Deals from {city}",
+    "subtitleDefault": "Low fares on popular routes",
+    "subtitlePersonalized": "Low fares departing from {city}",
+    "allDealsCount": "All {count} deals",
+    "collapse": "Collapse ↑"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Page not found.",
+    "searchFailed": "Search failed. Check your connection and try again."
+  },
+  "flights": {
+    "results": {
+      "loading": "Finding the best fares…",
+      "empty": "No flights found for these dates.",
+      "sortBy": "Sort by",
+      "filters": "Filters",
+      "price": "Price",
+      "duration": "Duration",
+      "stops": {
+        "any": "Any",
+        "direct": "Direct",
+        "oneStop": "1 stop",
+        "twoPlus": "2+ stops"
+      }
     },
-    "footer": {
-        "tagline": "Engineered for the discerning traveler.",
-        "taglinePrecision": "Precision data. Zero compromise.",
-        "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
-        "module": "Module",
-        "flights": "Flights",
-        "hotels": "Hotels",
-        "cars": "Cars",
-        "company": "Company",
-        "aboutUs": "About Us",
-        "enterprise": "Enterprise",
-        "support": "Support",
-        "network": "Network",
-        "flightsApi": "Flights API",
-        "paymentGateway": "Payment Gateway",
-        "copyright": "© 2026 JTP Partners. All rights reserved.",
-        "terms": "Terms",
-        "privacy": "Privacy",
-        "cookies": "Cookies",
-        "contact": "Contact",
-        "copyrightMinimal": "CheapestGo © 2026",
-        "termsMinimal": "Terms & Conditions",
-        "privacyMinimal": "Privacy Policy",
-        "cookiesMinimal": "Cookie preferences",
-        "contactMinimal": "Contact us",
-        "reportBug": "Report a Bug"
-    },
-    "appBanner": {
-        "badge": "Mobile App",
-        "title": "Travel smarter with our app",
-        "subtitle": "Get exclusive app-only deals, instant notifications, and manage your trips on the go.",
-        "downloads": "Downloads",
-        "rating": "App Rating",
-        "savings": "Extra Savings",
-        "installBtn": "Install App",
-        "downloadBtn": "Download App",
-        "learnMore": "Learn More"
-    },
-    "deals": {
-        "popularRoute": "Popular Route",
-        "searchFlights": "Search Flights",
-        "all": "All",
-        "oneWay": "One Way",
-        "roundTrip": "Round Trip",
-        "headerDefault": "Exclusive Deals & Offers",
-        "headerPersonalized": "Flight Deals from {city}",
-        "subtitleDefault": "Low fares on popular routes",
-        "subtitlePersonalized": "Low fares departing from {city}",
-        "allDealsCount": "All {count} deals",
-        "collapse": "Collapse ↑"
-    },
-    "hotels": {
-        "ratings": {
-            "exceptional": "Exceptional",
-            "superb": "Superb",
-            "excellent": "Excellent",
-            "veryGood": "Very Good",
-            "good": "Good",
-            "average": "Average"
-        },
-        "fromPrice": "From {price}",
-        "perNight": "/night",
-        "pricesMayVary": "prices may vary",
-        "bookNow": "Book Now",
-        "guestFavorite": "Guest Favorite",
-        "headerDefault": "Top Hotel Deals",
-        "headerPersonalized": "Hotel Deals in {country}",
-        "subtitleDefault": "Handpicked stays at unbeatable prices",
-        "subtitlePersonalized": "Top-rated stays in {country} · updated daily",
-        "allHotelsCount": "All {count} hotels",
-        "collapse": "Collapse ↑"
-    },
-    "topCities": {
-        "headerMain": "Top Cities",
-        "headerHighlight": "Worldwide",
-        "subtitle": "Most visited destinations · find hotels instantly",
-        "exploreHotels": "Explore Hotels"
-    },
-    "topDestinations": {
-        "headerMain": "Top Destinations",
-        "headerHighlight": "Worldwide",
-        "subtitle": "Iconic experiences from every corner of the globe",
-        "findHotels": "Find Hotels"
-    },
-    "guestFavorites": {
-        "headerMain": "Guest",
-        "headerHighlight": "Favorites",
-        "subtitle": "Top-rated hotels loved by travellers · updated daily",
-        "allFavoritesCount": "All {count} favorites",
-        "collapse": "Collapse ↑"
-    },
-    "seo": {
-        "orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
-        "faq": {
-            "q1": "How does CheapestGo find cheap flights?",
-            "a1": "CheapestGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
-            "q2": "Can I book both flights and hotels on CheapestGo?",
-            "a2": "Yes. CheapestGo supports booking flights, hotels, apartments, and unique stays — all from a single platform.",
-            "q3": "Is CheapestGo free to use?",
-            "a3": "Yes, searching and comparing prices on CheapestGo is completely free. You only pay when you book.",
-            "q4": "What currencies does CheapestGo support?",
-            "a4": "CheapestGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency."
-        }
-    },
-    "ai": {
-        "prompts": {
-            "bali": "Find me a beachfront resort in Bali for 2 adults, Feb 14-21...",
-            "tokyo": "Luxury hotel in Tokyo under $200/night with pool...",
-            "cebu": "Weekend getaway in Cebu for a couple, next month...",
-            "manila": "Family resort near Manila, 2 adults 2 kids..."
-        }
+    "card": {
+      "direct": "Direct",
+      "stop": "stop",
+      "stops": "stops",
+      "viewDeal": "View deal",
+      "perPerson": "per person"
     }
+  },
+  "footer": {
+    "tagline": "Engineered for the discerning traveler.",
+    "taglinePrecision": "Precision data. Zero compromise.",
+    "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
+    "module": "Module",
+    "flights": "Flights",
+    "hotels": "Hotels",
+    "cars": "Cars",
+    "company": "Company",
+    "aboutUs": "About Us",
+    "enterprise": "Enterprise",
+    "support": "Support",
+    "network": "Network",
+    "flightsApi": "Flights API",
+    "paymentGateway": "Payment Gateway",
+    "copyright": "© 2026 FORHU Inc. All rights reserved.",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "contact": "Contact",
+    "copyrightMinimal": "CheapestGo © 2026",
+    "termsMinimal": "Terms & Conditions",
+    "privacyMinimal": "Privacy Policy",
+    "cookiesMinimal": "Cookie preferences",
+    "contactMinimal": "Contact us",
+    "reportBug": "Report a Bug"
+  },
+  "guestFavorites": {
+    "headerMain": "Guest",
+    "headerHighlight": "Favorites",
+    "subtitle": "Top-rated hotels loved by travellers · updated daily",
+    "allFavoritesCount": "All {count} favorites",
+    "collapse": "Collapse ↑"
+  },
+  "hotels": {
+    "ratings": {
+      "exceptional": "Exceptional",
+      "superb": "Superb",
+      "excellent": "Excellent",
+      "veryGood": "Very Good",
+      "good": "Good",
+      "average": "Average"
+    },
+    "fromPrice": "From {price}",
+    "perNight": "/night",
+    "pricesMayVary": "prices may vary",
+    "bookNow": "Book Now",
+    "guestFavorite": "Guest Favorite",
+    "headerDefault": "Top Hotel Deals",
+    "headerPersonalized": "Hotel Deals in {country}",
+    "subtitleDefault": "Handpicked stays at unbeatable prices",
+    "subtitlePersonalized": "Top-rated stays in {country} · updated daily",
+    "allHotelsCount": "All {count} hotels",
+    "collapse": "Collapse ↑"
+  },
+  "invoice": {
+    "amount": "Amount",
+    "billedTo": "Billed to",
+    "bookingDetails": "Booking Details",
+    "bookingRef": "Booking Ref",
+    "date": "Date",
+    "description": "Description",
+    "flight": "Flight",
+    "hotel": "Hotel",
+    "hotelPartner": "Hotel Partner",
+    "issued": "Issued: {date}",
+    "passengers": "Passengers",
+    "payment": "Payment",
+    "paymentMethod": "Stripe (Card)",
+    "provider": "Provider",
+    "receipt": "RECEIPT",
+    "route": "Route",
+    "thankYou": "Thank you for booking with CheapestGo. For support, contact",
+    "totalPaid": "Total Paid",
+    "type": "Type",
+    "yourTravelPartner": "Your Travel Partner"
+  },
+  "landing": {
+    "hero": {
+      "title": "Flights at the lowest price",
+      "titleLine1": "Precision Travel.",
+      "titleLine2": "Machined for You.",
+      "subtitle": "The operating system for the modern voyager.",
+      "monoSubtext": "Ask anything. Book everything.",
+      "cta": "Search flights"
+    },
+    "search": {
+      "from": "From",
+      "to": "To",
+      "depart": "Depart",
+      "return": "Return",
+      "passengers": "Passengers",
+      "placeholder": {
+        "airport": "City or airport",
+        "date": "Add date"
+      },
+      "tripType": {
+        "roundTrip": "Round trip",
+        "oneWay": "One way",
+        "multiCity": "Multi-city"
+      },
+      "cabinClass": {
+        "economy": "Economy",
+        "premiumEconomy": "Premium economy",
+        "business": "Business",
+        "first": "First"
+      },
+      "submit": "Search",
+      "anywhere": "Anywhere",
+      "anyWeek": "Any week",
+      "addGuests": "Add guests",
+      "guests": "{count} guest",
+      "guestsPlural": "{count} guests",
+      "clearAll": "Clear all",
+      "findDeals": "Find the best deals",
+      "comingSoon": "Coming Soon",
+      "aiDevelopment": "AI Search is under development. Stay tuned!",
+      "askAi": "Ask AI",
+      "aiGreeting": "How can I help you this morning?",
+      "results": "Results",
+      "findingFlights": "Finding flights…",
+      "searchFlightsHeader": "Search Flights",
+      "bundle": {
+        "hotelBooked": "Hotel booked!",
+        "instructions": "Enter your {from} and {to} airports, pick your dates, then hit Search to bundle and save up to 8%."
+      },
+      "whereTo": "Where to?",
+      "searchDestination": "Search destination",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "travelers": "Travelers",
+      "selectDate": "Select date",
+      "guest": "{count} Guest",
+      "guestPlural": "{count} Guests",
+      "guestsRooms": "Guests & Rooms",
+      "adults": "Adults",
+      "children": "Children",
+      "childrenAges": "Ages 0 to 17",
+      "rooms": "Rooms",
+      "roomsNote": "1 room per booking. Book separately for more.",
+      "done": "Done",
+      "calendar": "Calendar",
+      "flexibleDates": "Flexible dates",
+      "whenTravel": "When do you want to travel?",
+      "childLabel": "Child {index}: {age} yrs",
+      "yearsOld": "{age} years old",
+      "month": "Month",
+      "year": "Year",
+      "searchDestinationsPlaceholder": "Search destinations...",
+      "recentSearches": "Recent Searches",
+      "searching": "Searching...",
+      "noResults": "No results found",
+      "countries": "Countries",
+      "cities": "Cities",
+      "typeToSearch": "Type city name or airport code...",
+      "noAirportsFound": "No airports found for \"{query}\"",
+      "typeToSearchPrompt": "Type a city or airport code to search",
+      "cabinClassLabel": "Cabin Class",
+      "infants": "Infants",
+      "adultAge": "Age 12+",
+      "childAge": "Age 2-11",
+      "infantAge": "Under 2 (lap)",
+      "months": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ],
+      "days": [
+        "S",
+        "M",
+        "T",
+        "W",
+        "T",
+        "F",
+        "S"
+      ],
+      "flexOptions": [
+        "Exact dates",
+        "± 1 day",
+        "± 2 days",
+        "± 3 days",
+        "± 7 days"
+      ],
+      "searchMode": {
+        "stays": "Stays",
+        "flights": "Flights",
+        "aiSearch": "AI Search"
+      }
+    },
+    "recentlyViewed": {
+      "title": "Continue Your Search",
+      "subtitle": "Pick up where you left off",
+      "viewAll": "View all",
+      "recentlySearched": "Recently searched",
+      "from": "from",
+      "stay": "Stay",
+      "flight": "Flight",
+      "showLess": "Show less"
+    }
+  },
+  "languagePicker": {
+    "label": "Select language",
+    "en": "English",
+    "ko": "한국어",
+    "cn": "中文",
+    "ja": "日本語"
+  },
+  "legal": {
+    "cookiePolicy": {
+      "description": "How CheapestGo uses cookies and similar tracking technologies.",
+      "pageSubtitle": "How we use cookies and similar technologies on CheapestGo.",
+      "pageTitle": "Cookie Policy",
+      "title": "Cookie Policy — CheapestGo"
+    },
+    "privacyPolicy": {
+      "description": "How CheapestGo collects, uses, and protects your personal information.",
+      "pageSubtitle": "How we collect, use, and protect your personal information.",
+      "pageTitle": "Privacy Policy",
+      "title": "Privacy Policy — CheapestGo"
+    },
+    "refundPolicy": {
+      "description": "Understand how cancellations, refunds, and amendments work on CheapestGo.",
+      "pageSubtitle": "Everything you need to know about cancellations, refunds, and booking changes.",
+      "pageTitle": "Refund & Cancellation Policy",
+      "title": "Refund & Cancellation Policy — CheapestGo"
+    },
+    "termsGate": {
+      "title": "Before you start",
+      "subtitle": "Please review and accept our terms to continue using CheapestGo.",
+      "points": [
+        "You must be at least 18 and able to enter a binding contract.",
+        "CheapestGo is an intermediary — your booking contract is with the hotel, airline, or package provider, not with us.",
+        "Prices and availability are not guaranteed until payment is processed and you receive a confirmation email.",
+        "Cancellations and refunds follow the supplier's policy and our Refund & Cancellation Policy.",
+        "Payments are processed by Stripe. We never store your card details.",
+        "Disputes are resolved by binding arbitration in New York, and you waive the right to join a class action."
+      ],
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy",
+      "opensInNewTab": "Opens in a new tab — you won't lose your place.",
+      "checkboxLabel": "I have read and agree to the Terms of Service and Privacy Policy.",
+      "checkboxPrefix": "I agree to the ",
+      "checkboxTerms": "Terms & Conditions",
+      "checkboxConnector": " and ",
+      "checkboxPrivacy": "Privacy Policy",
+      "checkboxSuffix": ".",
+      "checkboxAriaLabel": "I agree to the Terms & Conditions and Privacy Policy",
+      "acceptButton": "Accept and continue"
+    },
+    "termsOfService": {
+      "description": "The terms and conditions governing your use of CheapestGo.",
+      "pageSubtitle": "Please read these terms carefully before using CheapestGo.",
+      "pageTitle": "Terms of Service",
+      "title": "Terms of Service — CheapestGo"
+    },
+    "layout": {
+      "breadcrumb": "CheapestGo · Legal",
+      "effective": "Effective:",
+      "lastUpdated": "Last updated:",
+      "disclaimer": {
+        "label": "Note:",
+        "body": "This document is provided for informational purposes. CheapestGo recommends consulting a qualified attorney to review these terms for your specific jurisdiction before publishing to production."
+      },
+      "contents": "Contents",
+      "contact": {
+        "heading": "Questions about this document?",
+        "contactLine": "Contact us at",
+        "address": "FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · United States"
+      }
+    },
+    "content": {
+      "terms": {
+        "acceptance": {
+          "title": "Acceptance of Terms",
+          "body": "By accessing or using the CheapestGo website and services (the \"Platform\"), you agree to be bound by these Terms of Service (\"Terms\") and all applicable laws and regulations. If you do not agree to these Terms, you may not use the Platform. CheapestGo is operated by FORHU Inc., 30 Wall Street, 8th Floor, New York, NY 10005, United States. These Terms constitute a legally binding agreement between you and CheapestGo."
+        },
+        "eligibility": {
+          "title": "Eligibility",
+          "intro": "To use CheapestGo, you must:",
+          "items": [
+            "Be at least 18 years of age",
+            "Have the legal capacity to enter into a binding contract",
+            "Not be prohibited from using the Platform under applicable laws",
+            "Provide accurate, current, and complete information when creating an account or making a booking"
+          ]
+        },
+        "accountRegistration": {
+          "title": "Account Registration",
+          "intro": "To access certain features of the Platform, you may need to create an account. You agree to:",
+          "items": [
+            "Provide accurate and truthful information during registration",
+            "Keep your login credentials confidential and not share them with third parties",
+            "Notify us immediately of any unauthorized use of your account",
+            "Be responsible for all activity that occurs under your account"
+          ],
+          "note": "CheapestGo reserves the right to suspend or terminate accounts that violate these Terms or that are inactive for an extended period."
+        },
+        "bookingProcess": {
+          "title": "Booking Process and Confirmation",
+          "intro": "When you make a booking through CheapestGo, you are entering into a contract with the travel supplier (hotel, airline, or package provider), not with CheapestGo. CheapestGo acts as an intermediary facilitating the booking.",
+          "items": [
+            {
+              "label": "Booking confirmation",
+              "text": "A booking is confirmed only when you receive a written confirmation email from CheapestGo with a booking reference number."
+            },
+            {
+              "label": "Accuracy",
+              "text": "You are responsible for ensuring all booking details (dates, guest names, room type) are correct before confirming payment."
+            },
+            {
+              "label": "Supplier terms",
+              "text": "Your booking is subject to the terms and conditions of the individual travel supplier, including their cancellation and no-show policies."
+            },
+            {
+              "label": "Availability",
+              "text": "Prices and availability are not guaranteed until payment is successfully processed and a confirmation is issued."
+            }
+          ]
+        },
+        "pricing": {
+          "title": "Pricing and Payments",
+          "items": [
+            {
+              "label": "Pricing",
+              "text": "Prices displayed are sourced directly from our travel partners and reflect current wholesale rates. There are no hidden platform fees."
+            },
+            {
+              "label": "Currency",
+              "text": "Prices are displayed in the currency of your choosing. Currency conversion rates are provided for reference and may vary at time of payment."
+            },
+            {
+              "label": "Payment processing",
+              "text": "All payments are processed securely by Stripe, Inc. By making a payment, you also agree to Stripe's terms of service. CheapestGo does not store your card details."
+            },
+            {
+              "label": "Taxes and fees",
+              "text": "Displayed prices include applicable service fees. Local taxes or tourism fees charged directly by the hotel at check-in are not included unless stated otherwise."
+            },
+            {
+              "label": "Price changes",
+              "text": "Prices are subject to change until payment is completed. We are not liable for price fluctuations prior to booking confirmation."
+            }
+          ]
+        },
+        "cancellations": {
+          "title": "Cancellations and Refunds",
+          "textBefore": "Cancellations and refunds are governed by our",
+          "refundLinkText": "Refund & Cancellation Policy",
+          "textAfter": ", which is incorporated into these Terms by reference. Please review it carefully before making a booking, as policies vary by hotel and rate type."
+        },
+        "prohibitedConduct": {
+          "title": "Prohibited Conduct",
+          "intro": "You agree not to:",
+          "items": [
+            "Use the Platform for any unlawful purpose or in violation of any regulations",
+            "Make fraudulent bookings, use stolen payment credentials, or engage in chargebacks in bad faith",
+            "Attempt to reverse-engineer, scrape, or extract data from the Platform",
+            "Use automated bots or scripts to access or interact with the Platform",
+            "Resell or redistribute bookings for commercial purposes without our written consent",
+            "Post false or misleading information, reviews, or impersonate any person or entity",
+            "Interfere with the security, integrity, or performance of the Platform",
+            "Harass, threaten, or harm other users or CheapestGo staff"
+          ]
+        },
+        "intellectualProperty": {
+          "title": "Intellectual Property",
+          "body": "All content on the CheapestGo Platform — including logos, text, graphics, software, and design — is the property of CheapestGo or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from our content without prior written consent. Hotel and flight images and descriptions are provided by our partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten) and respective suppliers under license."
+        },
+        "disclaimers": {
+          "title": "Disclaimers",
+          "intro": "CheapestGo provides its services on an \"as is\" and \"as available\" basis. We do not guarantee that:",
+          "items": [
+            "The Platform will be uninterrupted, error-free, or free of viruses",
+            "Hotel descriptions, photos, or amenity lists are fully accurate (these are provided by suppliers)",
+            "Prices displayed will always be the lowest available in the market",
+            "All bookings will be honored by the travel supplier in the event of supplier insolvency or overbooking"
+          ],
+          "note": "CheapestGo is not responsible for the acts, errors, omissions, representations, warranties, or negligence of any travel supplier."
+        },
+        "liability": {
+          "title": "Limitation of Liability",
+          "body": "To the maximum extent permitted by applicable law, CheapestGo, its officers, directors, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or goodwill, arising out of or in connection with your use of the Platform or any booking made through it. Our total aggregate liability to you for any claim arising out of these Terms shall not exceed the total amount paid by you for the booking giving rise to the claim."
+        },
+        "indemnification": {
+          "title": "Indemnification",
+          "body": "You agree to indemnify, defend, and hold harmless CheapestGo and FORHU Inc. from and against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your use of the Platform, your violation of these Terms, or your violation of any rights of another person."
+        },
+        "governingLaw": {
+          "title": "Governing Law and Dispute Resolution",
+          "para1": "These Terms are governed by the laws of the State of New York, United States, without regard to its conflict of law provisions.",
+          "para2": "Any dispute arising from or relating to these Terms or your use of CheapestGo shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be submitted to binding arbitration in New York City, New York, under the rules of the American Arbitration Association (AAA). You waive any right to participate in a class action lawsuit or class-wide arbitration."
+        },
+        "changes": {
+          "title": "Changes to These Terms",
+          "body": "CheapestGo reserves the right to modify these Terms at any time. We will notify registered users of material changes via email and by posting an updated version on the Platform with a revised \"Last Updated\" date. Your continued use of the Platform after changes take effect constitutes your acceptance of the revised Terms."
+        },
+        "contact": {
+          "title": "Contact",
+          "intro": "For questions about these Terms:",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA"
+        }
+      },
+      "privacy": {
+        "whoWeAre": {
+          "title": "Who We Are",
+          "para1": "CheapestGo (\"we,\" \"us,\" or \"our\") is an online travel agency operated by FORHU Inc., located at 30 Wall Street, 8th Floor, New York, NY 10005, United States. We provide hotel booking, flight package, and travel deal services primarily to travelers in Southeast Asia through our website and mobile platform.",
+          "para2Before": "For questions regarding this Privacy Policy, contact us at",
+          "para2After": "."
+        },
+        "informationWeCollect": {
+          "title": "Information We Collect",
+          "directLabel": "Information you provide directly:",
+          "directItems": [
+            "Name, email address, phone number, and date of birth when creating an account or making a booking",
+            "Billing address and payment information (processed securely by Stripe — we do not store card numbers)",
+            "Travel preferences, search history, and past booking details",
+            "Communications you send us via email or support channels"
+          ],
+          "autoLabel": "Information collected automatically:",
+          "autoItems": [
+            "IP address, browser type, operating system, and device identifiers",
+            "Pages visited, time spent on pages, links clicked, and referral URLs",
+            "Cookies, web beacons, and similar tracking technologies (see our Cookie Policy)",
+            "Location data (country/region level) derived from your IP address"
+          ],
+          "thirdPartyLabel": "Information from third parties:",
+          "thirdPartyItems": [
+            "Travel availability and pricing data from our partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten)",
+            "Payment confirmation and fraud signals from Stripe",
+            "Analytics data from service providers we use to improve our platform"
+          ]
+        },
+        "howWeUse": {
+          "title": "How We Use Your Information",
+          "items": [
+            "To process and confirm your travel bookings and send booking confirmations",
+            "To process payments and prevent fraud through Stripe",
+            "To create and manage your CheapestGo account",
+            "To send transactional emails (booking confirmations, receipts, itinerary updates)",
+            "To send promotional emails and deal alerts — only with your consent, and you may opt out at any time",
+            "To improve our platform, personalize content, and analyze usage patterns",
+            "To comply with legal obligations and enforce our Terms of Service",
+            "To respond to your inquiries and provide customer support"
+          ]
+        },
+        "howWeShare": {
+          "title": "How We Share Your Information",
+          "intro": "We do not sell your personal information. We share your data only in the following circumstances:",
+          "items": [
+            {
+              "label": "Hotels and travel suppliers",
+              "text": "Your name, contact details, and booking information are shared with hotels and suppliers to fulfill your reservation."
+            },
+            {
+              "label": "Stripe",
+              "text": "Payment information is processed by Stripe, Inc. Stripe's privacy policy governs how they handle your payment data. See",
+              "linkText": "stripe.com/privacy",
+              "linkHref": "https://stripe.com/privacy"
+            },
+            {
+              "label": "Travel Partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten)",
+              "text": "Search queries and booking details are processed through our partner APIs to retrieve availability and pricing."
+            },
+            {
+              "label": "Supabase",
+              "text": "Our database infrastructure is hosted on Supabase. Data is stored with encryption at rest and in transit."
+            },
+            {
+              "label": "Legal requirements",
+              "text": "We may disclose information when required by law, court order, or to protect the rights, property, or safety of CheapestGo or others."
+            }
+          ]
+        },
+        "cookies": {
+          "title": "Cookies and Tracking Technologies",
+          "textBefore": "We use cookies and similar technologies to operate our platform and improve your experience. Please see our",
+          "linkText": "Cookie Policy",
+          "textAfter": "for full details on what cookies we use and how to manage your preferences."
+        },
+        "dataRetention": {
+          "title": "Data Retention",
+          "intro": "We retain your personal data for as long as necessary to:",
+          "items": [
+            "Maintain your account and provide our services",
+            "Comply with legal, tax, and accounting obligations (typically 7 years for financial records)",
+            "Resolve disputes and enforce our agreements"
+          ],
+          "note": "When you delete your account, we will delete or anonymize your personal data within 90 days, except where retention is required by law."
+        },
+        "internationalTransfers": {
+          "title": "International Data Transfers",
+          "body": "CheapestGo is headquartered in the United States. When you use our services from Southeast Asia or other regions, your data is transferred to and processed in the United States. We ensure appropriate safeguards are in place for international transfers, including standard contractual clauses where required under applicable law (including GDPR and the Philippine Data Privacy Act of 2012, Republic Act No. 10173)."
+        },
+        "yourRights": {
+          "title": "Your Rights and Choices",
+          "intro": "Depending on your jurisdiction, you may have the following rights:",
+          "items": [
+            {
+              "label": "Access",
+              "text": "Request a copy of the personal data we hold about you"
+            },
+            {
+              "label": "Correction",
+              "text": "Request correction of inaccurate or incomplete data"
+            },
+            {
+              "label": "Deletion",
+              "text": "Request deletion of your personal data (\"right to be forgotten\")"
+            },
+            {
+              "label": "Portability",
+              "text": "Receive your data in a structured, machine-readable format"
+            },
+            {
+              "label": "Opt-out",
+              "text": "Unsubscribe from marketing emails at any time using the link in our emails"
+            },
+            {
+              "label": "Withdraw consent",
+              "text": "Where processing is based on consent, you may withdraw it at any time"
+            }
+          ],
+          "emailBefore": "To exercise any of these rights, email us at",
+          "emailAfter": ". We will respond within 30 days."
+        },
+        "childrensPrivacy": {
+          "title": "Children's Privacy",
+          "body": "CheapestGo is not intended for children under the age of 18. We do not knowingly collect personal information from children. If you believe we have inadvertently collected information from a child, please contact us immediately at support@cheapestgo.com and we will delete such information promptly."
+        },
+        "security": {
+          "title": "Security",
+          "body": "We implement industry-standard technical and organizational measures to protect your personal data, including encryption in transit (TLS/HTTPS), encryption at rest, access controls, and regular security reviews. Payment data is handled exclusively by Stripe, which is PCI DSS compliant. However, no method of transmission over the internet is completely secure, and we cannot guarantee absolute security."
+        },
+        "changes": {
+          "title": "Changes to This Policy",
+          "body": "We may update this Privacy Policy from time to time. When we make material changes, we will notify you by email (if you have an account) or by posting a prominent notice on our website. Your continued use of CheapestGo after the effective date of the revised policy constitutes your acceptance of the changes."
+        },
+        "contact": {
+          "title": "Contact Us",
+          "intro": "For privacy-related inquiries, requests, or complaints:",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA"
+        }
+      },
+      "refund": {
+        "overview": {
+          "title": "Overview",
+          "body": "CheapestGo acts as an intermediary between you and travel suppliers (hotels, airlines, and package providers). Cancellation and refund rights are primarily governed by the individual supplier's policies, which vary by property, rate type, and booking dates. This policy explains how we facilitate cancellations and refunds on your behalf."
+        },
+        "cancellationTypes": {
+          "title": "Hotel Cancellation Types",
+          "intro": "When you book a hotel through CheapestGo, you will see one of the following rate types:",
+          "free": {
+            "heading": "Free Cancellation",
+            "body": "You may cancel at no charge before the deadline specified at booking. The exact deadline (e.g., \"Free cancellation until 48 hours before check-in\") is shown on the booking page and in your confirmation email."
+          },
+          "partial": {
+            "heading": "Partially Refundable",
+            "body": "A partial refund applies depending on when you cancel relative to the check-in date. The penalty amount and cutoff dates are displayed before you confirm payment."
+          },
+          "nonRefundable": {
+            "heading": "Non-Refundable",
+            "body": "No refund is provided if you cancel. These rates are typically lower in price and are clearly labeled \"Non-refundable\" before checkout."
+          }
+        },
+        "howToCancel": {
+          "title": "How to Cancel a Booking",
+          "intro": "To cancel a booking:",
+          "steps": [
+            "Log in to your CheapestGo account and go to My Bookings.",
+            "Select the booking you wish to cancel and click Cancel Booking.",
+            "Review the cancellation policy and any applicable fees shown on screen.",
+            "Confirm the cancellation. You will receive a cancellation confirmation email."
+          ],
+          "emailBefore": "Alternatively, contact us at",
+          "emailAfter": "with your booking reference number and we will process the cancellation within 1 business day."
+        },
+        "processing": {
+          "title": "Refund Processing",
+          "items": [
+            {
+              "label": "Eligible refunds",
+              "text": "are processed back to the original payment method (credit/debit card or GrabPay) used at checkout via Stripe."
+            },
+            {
+              "label": "Processing time",
+              "text": "Once we initiate the refund, it typically takes 5–10 business days to appear on your statement, depending on your bank or card issuer."
+            },
+            {
+              "label": "CheapestGo service fee",
+              "text": "Any applicable platform service fees are non-refundable unless the cancellation is due to a supplier error or CheapestGo system fault."
+            },
+            {
+              "label": "Stripe processing fees",
+              "text": "Payment processing fees charged by Stripe are non-refundable by CheapestGo, in line with Stripe's standard policy."
+            },
+            {
+              "label": "Currency",
+              "text": "Refunds are issued in the same currency as the original payment. Exchange rate differences at the time of refund are not our responsibility."
+            }
+          ]
+        },
+        "noShows": {
+          "title": "No-Shows",
+          "body": "If you fail to check in on the scheduled arrival date without cancelling in advance, the booking will be treated as a no-show. No-show policies vary by hotel — most hotels will charge the full booking amount. CheapestGo cannot override hotel no-show policies. We strongly recommend cancelling ahead of time if your plans change."
+        },
+        "amendments": {
+          "title": "Booking Amendments",
+          "intro": "Date changes, room type changes, and guest name corrections are subject to hotel availability and supplier policies. To request an amendment:",
+          "steps": [
+            "Contact us at support@cheapestgo.com with your booking reference",
+            "Specify the change you need and the reason",
+            "We will check availability with the supplier and confirm if the amendment is possible"
+          ],
+          "noteLabel": "Note:",
+          "noteText": "Amendments may result in a price difference (additional charge or credit) and may not always be possible without cancelling and rebooking. We cannot guarantee that amendment requests will be accommodated."
+        },
+        "supplierCancellations": {
+          "title": "Supplier Cancellations and Force Majeure",
+          "intro": "In rare cases, a hotel or travel supplier may cancel your booking due to overbooking, closure, natural disaster, or force majeure events. If this occurs:",
+          "items": [
+            "CheapestGo will notify you as soon as we are informed by the supplier",
+            "We will process a full refund of the amount paid to CheapestGo, including our service fee",
+            "We will assist you in finding alternative accommodation where possible, though we cannot guarantee a replacement"
+          ],
+          "note": "CheapestGo is not liable for losses arising from supplier cancellations, including transportation costs, additional hotel nights booked elsewhere, or consequential losses. We recommend purchasing travel insurance to cover such events."
+        },
+        "disputes": {
+          "title": "Disputes and Chargebacks",
+          "body": "If you have a concern about a charge, please contact us at support@cheapestgo.com before initiating a chargeback with your bank. Most issues can be resolved quickly. Chargebacks initiated without first contacting CheapestGo may result in account suspension. CheapestGo reserves the right to contest chargebacks that are made in bad faith or that do not comply with our cancellation policy."
+        },
+        "flightPackages": {
+          "title": "Flight Packages",
+          "body": "For all-inclusive flight + hotel packages, cancellation terms depend on both the hotel and airline components. Airline tickets are generally non-refundable or carry significant cancellation fees. The specific terms for your package will be shown during checkout and in your confirmation email. If you need to cancel a package, contact us immediately at support@cheapestgo.com for guidance."
+        },
+        "contact": {
+          "title": "Contact for Refund Requests",
+          "intro": "For all refund and cancellation queries, please have your booking reference number ready and reach us at:",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
+          "outro": "We aim to respond to all refund requests within 1–2 business days."
+        }
+      },
+      "cookie": {
+        "whatAreCookies": {
+          "title": "What Are Cookies?",
+          "body": "Cookies are small text files placed on your device when you visit a website. They are widely used to make websites work efficiently, to remember your preferences, and to provide information to website operators. Similar technologies include web beacons, pixels, local storage, and session storage, all of which we refer to collectively as \"cookies\" in this policy."
+        },
+        "whyWeUse": {
+          "title": "Why We Use Cookies",
+          "intro": "CheapestGo uses cookies to:",
+          "items": [
+            "Keep you signed in and maintain your session securely",
+            "Remember your preferences (currency, language, dark/light mode)",
+            "Save your recent searches and viewed properties",
+            "Prevent fraud and protect the security of your account",
+            "Measure performance and understand how visitors use our platform",
+            "Personalize content and show relevant deals and recommendations"
+          ]
+        },
+        "types": {
+          "title": "Types of Cookies We Use",
+          "categories": [
+            {
+              "heading": "Strictly Necessary Cookies",
+              "body": "These cookies are essential for the Platform to function. They enable core features such as authentication, session management, security tokens, and payment processing. You cannot opt out of these cookies as they are required for the service to operate.",
+              "items": [
+                "supabase-auth-token — authentication session",
+                "__stripe_mid / __stripe_sid — Stripe fraud prevention"
+              ]
+            },
+            {
+              "heading": "Functional Cookies",
+              "body": "These cookies remember your choices and personalize your experience. Disabling them may reduce functionality.",
+              "items": [
+                "Currency preference (e.g., KRW, USD, PHP)",
+                "Theme preference (dark or light mode)",
+                "Recently viewed hotels and search history"
+              ]
+            },
+            {
+              "heading": "Analytics Cookies",
+              "body": "These help us understand how visitors interact with the Platform — which pages are most visited, where users drop off, and how we can improve the experience. Data is aggregated and anonymized where possible.",
+              "items": [
+                "Page view tracking and session duration",
+                "Click-through rates on deals and search results",
+                "Error logging and performance monitoring"
+              ]
+            },
+            {
+              "heading": "Marketing Cookies",
+              "body": "We may use these to show you relevant travel deals on our Platform. We do not currently serve third-party advertising. If this changes, we will update this policy and request your consent."
+            }
+          ]
+        },
+        "thirdParty": {
+          "title": "Third-Party Cookies",
+          "intro": "Some cookies are set by third-party services that appear on our pages:",
+          "stripeBefore": "sets cookies for fraud detection and payment session management. See",
+          "stripeLinkText": "Stripe's Privacy Policy",
+          "supabaseText": "sets authentication cookies to manage your login session on our database infrastructure.",
+          "outro": "We have no control over third-party cookies. Please review the respective privacy policies of these providers for more information."
+        },
+        "duration": {
+          "title": "Cookie Duration",
+          "intro": "Cookies on CheapestGo are either:",
+          "items": [
+            {
+              "label": "Session cookies",
+              "text": "deleted automatically when you close your browser. Used for login sessions and temporary state."
+            },
+            {
+              "label": "Persistent cookies",
+              "text": "remain on your device for a set period (typically 30 days to 1 year). Used for preferences and analytics."
+            }
+          ]
+        },
+        "managing": {
+          "title": "Managing Your Cookie Preferences",
+          "intro": "You can control cookies in several ways:",
+          "items": [
+            {
+              "label": "Browser settings",
+              "text": "Most browsers allow you to refuse or delete cookies via their settings (usually under Privacy or Security). Note that disabling strictly necessary cookies will break core functionality such as login and checkout."
+            },
+            {
+              "label": "Cookie banner",
+              "text": "When you first visit CheapestGo, you may be presented with a cookie consent banner where you can accept or decline non-essential cookies."
+            },
+            {
+              "label": "Opt-out tools",
+              "text": "For analytics, you can use browser extensions such as the Google Analytics Opt-out Browser Add-on where applicable."
+            }
+          ],
+          "note": "Adjusting your cookie settings may affect the functionality of the Platform. Essential cookies cannot be disabled without impacting your ability to use CheapestGo."
+        },
+        "doNotTrack": {
+          "title": "Do Not Track",
+          "body": "Some browsers send a \"Do Not Track\" (DNT) signal. CheapestGo does not currently respond to DNT signals, as there is no universal standard for how websites should react to them. We continue to evaluate this area as standards evolve."
+        },
+        "changes": {
+          "title": "Changes to This Cookie Policy",
+          "body": "We may update this Cookie Policy from time to time to reflect changes in technology, regulation, or our use of cookies. When we make material changes, we will update the \"Last Updated\" date at the top of this page. Continued use of the Platform after changes are posted constitutes your acceptance of the revised policy."
+        },
+        "contact": {
+          "title": "Contact",
+          "intro": "For questions about our use of cookies:",
+          "email": "📧 support@cheapestgo.com",
+          "address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA"
+        }
+      }
+    },
+    "scrollToContinue": "Scroll to the bottom to continue"
+  },
+  "nav": {
+    "support": "Support",
+    "openApp": "Open app",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "myTrips": "My trips",
+    "account": "Account",
+    "trips": "Trips",
+    "createAccount": "Create an account",
+    "accountSettings": "Account Settings",
+    "membersSave": "Members save 10% or more",
+    "membersSaveSubtitle": "on select stays when signed in",
+    "accountWorks": "Your account works across CheapestGo and all partner sites"
+  },
+  "property": {
+    "addressNotAvailable": "Address not available",
+    "bookingWidget": {
+      "amenities": "Amenities",
+      "bookThisRoom": "Book This Room",
+      "description": "Description",
+      "guests": "{count} guests",
+      "roomDetails": "Room Details",
+      "selectedRoom": "Selected Room"
+    },
+    "breadcrumbHome": "Home",
+    "breadcrumbStaysIn": "Stays in {city}",
+    "bundleActive": "Bundle Discount Active",
+    "bundleApplied": "Bundle discount applied — you're saving {percent}% on this hotel",
+    "faq": {
+      "checkInAnswer": "Check-in time is {time}",
+      "checkInQuestion": "What time is check-in at this property?",
+      "checkOutAnswer": "Check-out time is {time}",
+      "checkOutQuestion": "What are the check-out times?",
+      "fallbackCancellationAnswer": "Cancellation policies vary by rate. Please check the room options above for specific cancellation terms before booking.",
+      "fallbackCancellationQuestion": "What is the cancellation policy at {name}?",
+      "fallbackModificationAnswer": "You can manage your booking through the confirmation email you receive after booking. For urgent changes, contact the property directly.",
+      "fallbackModificationQuestion": "How do I modify or cancel my reservation?",
+      "fallbackPaymentAnswer": "Most major credit and debit cards are accepted. Contact the property directly to confirm accepted payment methods.",
+      "fallbackPaymentQuestion": "Does {name} accept credit cards?",
+      "importantQuestion": "Is there anything important I should know before booking?",
+      "parkingAnswer": "Yes, the property offers {facility}.",
+      "parkingQuestion": "Does {name} have parking?",
+      "poolAnswer": "Yes, the property has {facility}.",
+      "poolQuestion": "Does {name} have a pool?",
+      "restaurantAnswer": "Yes, the property has an on-site restaurant.",
+      "restaurantQuestion": "Is there a restaurant at {name}?",
+      "title": "Frequently asked questions",
+      "wifiAnswer": "Yes, WiFi is available at the property.",
+      "wifiQuestion": "Is WiFi available at {name}?"
+    },
+    "locationLabel": "Location",
+    "locationTitle": "Where you'll be",
+    "mobileCta": {
+      "checkRoomRates": "Check room rates",
+      "from": "From",
+      "perNight": "/night",
+      "viewRooms": "View Rooms"
+    },
+    "propertyNotFound": "Property not found. (ID: {id})",
+    "rooms": {
+      "availableRooms": "Available Rooms ({count})",
+      "choose": "Choose",
+      "chooseRoom": "Choose room",
+      "filterAll": "All",
+      "filterNonRefundable": "Non-refundable",
+      "filterRefundable": "Refundable",
+      "freeCancellation": "Free cancellation",
+      "freeCancellationTick": "✓ Free cancellation",
+      "includesTaxes": "({nights, plural, one {1 night} other {# nights}}, 1 Room incl. taxes)",
+      "noMeals": "No meals included",
+      "noNonRefundableRooms": "No non-refundable rooms available.",
+      "noRefundableRooms": "No refundable rooms available.",
+      "changeDates": "Change dates",
+      "noRooms": "No rooms available for the selected dates.",
+      "nonRefundable": "Non-refundable",
+      "nonRefundablePill": "Non-Refundable",
+      "pageOf": "Page {current} of {total}",
+      "perNight": "/night",
+      "rateOptions": "{count} rate options",
+      "reserve": "Reserve",
+      "roomOnly": "Room only",
+      "showingRooms": "Showing {start}–{end} of {total} rooms",
+      "sleeps": "Sleeps {count}",
+      "standardRoom": "Standard Room",
+      "total": "total",
+      "hotelPhotoLabel": "Hotel photo",
+      "select": "Select",
+      "viewHotelPhotos": "View hotel photos",
+      "viewRoomPhotos": "View room photos",
+      "etgNotice": {
+        "title": "Online booking not yet available",
+        "description": "This property is managed by our partner booking system. Indicative prices are shown below. Please contact us to confirm availability and complete your reservation."
+      },
+      "showLess": "Show less",
+      "checkAtCheckout": "Check at checkout"
+    },
+    "savePercent": "SAVE {percent}%",
+    "weather": {
+      "feelsLike": "Feels like",
+      "forecast": "Forecast",
+      "humidity": "Humidity",
+      "nextHours": "Next hours",
+      "poweredBy": "Powered by Google Weather",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "uv": {
+        "extreme": "Extreme",
+        "high": "High",
+        "low": "Low",
+        "moderate": "Moderate",
+        "veryHigh": "Very High"
+      },
+      "wind": "Wind"
+    },
+    "mapOverlay": {
+      "getDirections": "Get directions...",
+      "whereFrom": "Where from?",
+      "layers": "Layers",
+      "kmAway": "{distance} km away",
+      "viewOnMaps": "View on Maps",
+      "details": "Details",
+      "recenterMap": "Recenter Map",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "selectMode": "Select Mode"
+    },
+    "policies": {
+      "title": "Policies",
+      "checkInOut": "Check-in & Check-out",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "contactProperty": "Contact property",
+      "cancellationPolicy": "Cancellation Policy",
+      "refundable": "Refundable",
+      "nonRefundable": "Non-refundable",
+      "cancelBefore": "Cancel before <time>{time}</time>",
+      "feeSuffix": " - Fee: <fee>{amount}</fee>",
+      "noShowPenalty": "No-Show Penalty:",
+      "noShowBody": "{amount} if you don't check in without cancelling.",
+      "earlyDepartureFee": "Early Departure Fee:",
+      "earlyDepartureBody": "{amount} if you check out before your scheduled date.",
+      "importantInformation": "Important Information"
+    },
+    "poiDetails": {
+      "openingHours": "Opening Hours",
+      "openNow": "Open Now",
+      "closed": "Closed",
+      "yourRating": "Your Rating",
+      "commentPlaceholder": "Share your experience...",
+      "addPhoto": "Add Photo",
+      "justNow": "Just now",
+      "you": "You",
+      "postReview": "Post Review",
+      "communityPhotos": "Community Photos",
+      "brandReviews": "Cheapest Go Reviews",
+      "googleFoursquareReviews": "Google & Foursquare Reviews",
+      "foursquareRecommendations": "Foursquare Recommendations",
+      "googleReviews": "Google Reviews",
+      "noReviews": "No direct reviews available for this place yet."
+    },
+    "meta": {
+      "title": "{name} – Cheapest Rates | CheapestGo",
+      "description": "Book {name} at the cheapest price.",
+      "descriptionIn": "Book {name} in {location} at the cheapest price.",
+      "rated": "Rated {rating}/10.",
+      "closing": "Best deals on hotels with free cancellation options."
+    },
+    "v2": {
+      "nearbyPlaces": "Nearby Places",
+      "loadingNearby": "Loading nearby places…",
+      "whatGuestsSay": "What guests say",
+      "greatStay": "Great stay",
+      "additionalInfo": "Additional information",
+      "availableRooms": "Available Rooms",
+      "photoOfProperty": "Photo of the property",
+      "previousPhoto": "Previous photo",
+      "nextPhoto": "Next photo",
+      "goBack": "Go back",
+      "notFound": "Property not found.",
+      "loadFailed": "Failed to load property",
+      "lightMode": "Light mode",
+      "darkMode": "Dark mode",
+      "switchToLight": "Switch to light mode",
+      "switchToDark": "Switch to dark mode",
+      "mealPlan": "Meal plan",
+      "cancellationPolicy": "Cancellation policy",
+      "price": "Price"
+    }
+  },
+  "propertyGallery": {
+    "alt": {
+      "galleryView": "Gallery view {number}",
+      "mainPropertyView": "Main property view",
+      "propertyView": "Property view",
+      "propertyViewNumbered": "Property view {number}",
+      "thumbnail": "Thumbnail {number}",
+      "view": "View {number}"
+    },
+    "moreInfo": "More Info",
+    "morePhotos": "+{count} photos",
+    "noImages": "No images available",
+    "showAllPhotos": "Show all photos",
+    "viewPhoto": "View photo"
+  },
+  "propertyNav": {
+    "amenities": "Amenities",
+    "location": "Location",
+    "overview": "Overview",
+    "policies": "Policies",
+    "reviews": "Reviews",
+    "rooms": "Rooms"
+  },
+  "propertyOverview": {
+    "aboutProperty": "About this property",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "cleaningSafety": {
+      "description": "This property has extensive hygiene measures in place, including contactless check-in and enhanced cleaning protocols.",
+      "title": "Cleaning and safety practices"
+    },
+    "contactInfo": "Contact",
+    "importantInfo": "Important information",
+    "noReviewsYet": "No reviews yet",
+    "popularAmenities": "Popular amenities",
+    "readMore": "Read more",
+    "seeAllAmenities": "See all {count} amenities",
+    "showLess": "Show less",
+    "showLessAmenities": "Show less amenities",
+    "verifiedReview": "{count} verified review",
+    "verifiedReviewCount": "{count, plural, one {# verified review} other {# verified reviews}}",
+    "verifiedReviews": "{count} verified reviews",
+    "amenityLabels": {
+      "Free WiFi": "Free WiFi",
+      "WiFi": "WiFi",
+      "Internet": "Internet",
+      "High-Speed Internet": "High-Speed Internet",
+      "Free Parking": "Free Parking",
+      "Parking": "Parking",
+      "Valet Parking": "Valet Parking",
+      "Secure Parking": "Secure Parking",
+      "Underground Parking": "Underground Parking",
+      "Swimming Pool": "Swimming Pool",
+      "Indoor Pool": "Indoor Pool",
+      "Outdoor Pool": "Outdoor Pool",
+      "Heated Pool": "Heated Pool",
+      "Rooftop Pool": "Rooftop Pool",
+      "Fitness Center": "Fitness Center",
+      "Sauna": "Sauna",
+      "Spa": "Spa",
+      "Hot Tub": "Hot Tub",
+      "Jacuzzi": "Jacuzzi",
+      "Steam Room": "Steam Room",
+      "Restaurant": "Restaurant",
+      "Bar": "Bar",
+      "Breakfast Available": "Breakfast Available",
+      "Breakfast Included": "Breakfast Included",
+      "Buffet Breakfast": "Buffet Breakfast",
+      "Room Service": "Room Service",
+      "Minibar": "Minibar",
+      "Kitchen": "Kitchen",
+      "Kitchenette": "Kitchenette",
+      "Coffee Maker": "Coffee Maker",
+      "Snack Bar": "Snack Bar",
+      "Air Conditioning": "Air Conditioning",
+      "Heating": "Heating",
+      "Balcony": "Balcony",
+      "Terrace": "Terrace",
+      "Sea View": "Sea View",
+      "City View": "City View",
+      "Garden View": "Garden View",
+      "In-Room Safe": "In-Room Safe",
+      "TV": "TV",
+      "Flat-Screen TV": "Flat-Screen TV",
+      "Concierge": "Concierge",
+      "24/7 Reception": "24/7 Reception",
+      "Laundry Service": "Laundry Service",
+      "Dry Cleaning": "Dry Cleaning",
+      "Luggage Storage": "Luggage Storage",
+      "Airport Transfer": "Airport Transfer",
+      "Shuttle Service": "Shuttle Service",
+      "Tour Desk": "Tour Desk",
+      "Daily Housekeeping": "Daily Housekeeping",
+      "Business Center": "Business Center",
+      "Meeting Rooms": "Meeting Rooms",
+      "Conference Facilities": "Conference Facilities",
+      "Wheelchair Accessible": "Wheelchair Accessible",
+      "Disabled Facilities": "Disabled Facilities",
+      "Elevator": "Elevator",
+      "Non-Smoking Rooms": "Non-Smoking Rooms",
+      "Pet Friendly": "Pet Friendly",
+      "Family Rooms": "Family Rooms",
+      "Smoke-Free Property": "Smoke-Free Property",
+      "Garden": "Garden",
+      "BBQ Facilities": "BBQ Facilities",
+      "Sun Terrace": "Sun Terrace",
+      "Beach Access": "Beach Access",
+      "Private Beach": "Private Beach",
+      "Express Check-in": "Express Check-in",
+      "Early Check-in": "Early Check-in",
+      "Late Check-out": "Late Check-out",
+      "Lockers": "Lockers",
+      "ATM on Site": "ATM on Site",
+      "Gift Shop": "Gift Shop",
+      "Newsstand": "Newsstand",
+      "Multilingual Staff": "Multilingual Staff",
+      "Smoking Areas": "Smoking Areas",
+      "Security Guard": "Security Guard",
+      "Lobby TV": "Lobby TV"
+    }
+  },
+  "pwa": {
+    "installPrompt": {
+      "title": "Get the CheapestGo app",
+      "body": "Add to your home screen for faster access.",
+      "install": "Install",
+      "dismiss": "Not now"
+    }
+  },
+  "reviewsSection": {
+    "aggregatedNote": "Guest score is based on aggregated ratings.",
+    "aggregatedScore": "Aggregated guest score",
+    "anonymous": "Anonymous",
+    "basedOnReview": "Based on {count} review",
+    "basedOnReviews": "Based on {count} reviews",
+    "guestReviews": "Guest reviews",
+    "loadMore": "Load more reviews",
+    "noReviews": "No individual reviews available.",
+    "noReviewsAvailable": "No reviews available",
+    "showAllReviews": "Show all {count} reviews",
+    "showLess": "Show Less",
+    "showMore": "Show More",
+    "showingCount": "Showing {shown} of {total} reviews",
+    "sort": {
+      "highestRated": "Highest rated",
+      "lowestRated": "Lowest rated",
+      "newestFirst": "Newest first"
+    },
+    "travelerTypes": {
+      "business": "Business",
+      "couple": "Couple",
+      "family": "Family",
+      "friendsGroup": "Friends/Group",
+      "solo": "Solo"
+    },
+    "verifiedReviewCount": "{count, plural, one {# verified review} other {# verified reviews}}",
+    "whoStaysHere": "Who stays here"
+  },
+  "search": {
+    "results": {
+      "activeFilters": "Active Filters:",
+      "amenitiesSuffix": "{count} amenities",
+      "anyWeek": "Any week",
+      "anywhere": "Anywhere",
+      "boardTypes": {
+        "AI": "All Inclusive",
+        "BB": "Breakfast",
+        "FB": "Full Board",
+        "HB": "Half Board",
+        "RO": "Room Only"
+      },
+      "freeCancellation": "Free cancellation",
+      "guestCount": "{count} {count, plural, one {guest} other {guests}}",
+      "namePrefix": "Name: {name}",
+      "otherCities": "Other cities:",
+      "ratingPrefix": "Rating {rating}+",
+      "reviewsSuffix": "{count}+ reviews",
+      "showingHotelsIn": "Showing hotels in",
+      "starSuffix": "{stars} stars",
+      "whereTo": "Where to?"
+    },
+    "validation": {
+      "allHotelFieldsRequired": "All fields are required to search for hotels",
+      "fieldList": "{fields} and {last}",
+      "fields": {
+        "checkInDate": "check-in date",
+        "checkOutDate": "check-out date",
+        "destination": "destination"
+      },
+      "listSeparator": ", ",
+      "selectField": "Please select {field}"
+    },
+    "v2": {
+      "noAccommodations": "No accommodations found",
+      "hideStayCards": "Hide stay cards",
+      "hideCards": "Hide cards",
+      "checkingCount": "Checking {count}…",
+      "staysCount": "{count} Stays",
+      "clusterChecking": "checking {count}…",
+      "clusterHotels": "{count} hotels",
+      "clusterFrom": "from {price}"
+    }
+  },
+  "seo": {
+    "orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
+    "faq": {
+      "q1": "How does CheapestGo find cheap flights?",
+      "a1": "CheapestGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
+      "q2": "Can I book both flights and hotels on CheapestGo?",
+      "a2": "Yes. CheapestGo supports booking flights, hotels, apartments, and unique stays — all from a single platform.",
+      "q3": "Is CheapestGo free to use?",
+      "a3": "Yes, searching and comparing prices on CheapestGo is completely free. You only pay when you book.",
+      "q4": "What currencies does CheapestGo support?",
+      "a4": "CheapestGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency."
+    }
+  },
+  "theme": {
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode"
+  },
+  "topCities": {
+    "headerMain": "Top Cities",
+    "headerHighlight": "Worldwide",
+    "subtitle": "Most visited destinations · find hotels instantly",
+    "exploreHotels": "Explore Hotels"
+  },
+  "topDestinations": {
+    "headerMain": "Top Destinations",
+    "headerHighlight": "Worldwide",
+    "subtitle": "Iconic experiences from every corner of the globe",
+    "findHotels": "Find Hotels"
+  },
+  "trips": {
+    "bookingCard": {
+      "actions": {
+        "cancel": "Cancel",
+        "details": "Details",
+        "map": "Map",
+        "modify": "Modify",
+        "receipt": "Download receipt",
+        "retryRefund": "Retry refund"
+      },
+      "adult": "{count} adult",
+      "adults": "{count} adults",
+      "cancelled": "Cancelled",
+      "child": "{count} child",
+      "children": "{count} children",
+      "night": "{count} night",
+      "nights": "{count} nights",
+      "policyBadges": {
+        "freeCancellation": "Free cancellation",
+        "nonRefundable": "Non-refundable",
+        "partialRefund": "Partial refund"
+      },
+      "ratings": {
+        "excellent": "Excellent",
+        "exceptional": "Exceptional",
+        "good": "Good",
+        "pleasant": "Pleasant",
+        "veryGood": "Very Good"
+      },
+      "reviews": "{count} reviews",
+      "stayDates": "{from} to {to}",
+      "total": "total",
+      "totalPaid": "Total Paid",
+      "tripCompleted": "Trip completed"
+    },
+    "cancellationModal": {
+      "bookingId": "Booking ID: {id}",
+      "cancelBooking": "Cancel Booking",
+      "cancelling": "Cancelling...",
+      "close": "Close",
+      "keepBooking": "Keep Booking",
+      "loadingPolicy": "Loading cancellation policy...",
+      "policyTimeline": "Cancellation Policy Timeline",
+      "retryRefund": "Retry Refund",
+      "retryRefundTitle": "Retry Refund",
+      "retrying": "Retrying...",
+      "title": "Cancel Booking",
+      "tryAgain": "Try again",
+      "unableToLoadPolicy": "Unable to load policy"
+    },
+    "cancellationPolicies": {
+      "before": "Before: ",
+      "cancellationFee": "Cancellation fee: {amount}",
+      "earlyDepartureDescription": "{amount} fee applies if you check out before your scheduled date.",
+      "earlyDepartureFee": "Early Departure Fee",
+      "importantNotes": "Important Notes",
+      "noPolicy": "No specific cancellation policy available. Standard terms apply.",
+      "noShowDescription": "{amount} will be charged if you don't check in without cancelling.",
+      "noShowPenalty": "No-Show Penalty",
+      "passed": "Passed: "
+    },
+    "emptyState": {
+      "allTitle": "No trips yet",
+      "otherDesc": "Start exploring and book your first trip",
+      "pastTitle": "No past trips",
+      "upcomingDesc": "Time to plan your next adventure!",
+      "upcomingTitle": "No upcoming trips"
+    },
+    "exploreDestinations": "Explore destinations",
+    "flightBookingCard": {
+      "addBookingNote": "Add Booking Note",
+      "airlineBookingDetails": "Airline booking details",
+      "airlineDetails": "Airline details",
+      "amErrors": {
+        "cancelFailed": "Cancellation failed. Please contact support.",
+        "duffelCannotCancel": "This booking cannot be cancelled online. Please contact us at crm@cheapestgo.com to request a manual cancellation.",
+        "mystiflyCannotCancel": "This ticketed booking cannot be cancelled via API. Please email crm@myfarebox.com to request cancellation.",
+        "networkError": "Network error. Please try again."
+      },
+      "assignedSeats": "Assigned Seats",
+      "bookingNotes": "Booking Notes",
+      "cancel": "Cancel",
+      "cancelBooking": "Cancel Booking",
+      "cancelModal": {
+        "baseFareNonRefundable": "The base fare is non-refundable — only taxes and fees are returned.",
+        "cancelling": "Cancelling…",
+        "cannotCancelOnline": "This booking cannot be cancelled online. Please contact support.",
+        "cannotUndo": "This action cannot be undone.",
+        "checkingRefund": "Checking with airline for live refund amount…",
+        "confirmCancel": "Yes, Cancel Booking",
+        "estimatedPenalty": "Estimated airline penalty: {amount}",
+        "fareRulesNonRefundable": "The fare rules indicate this ticket is non-refundable.",
+        "keepBooking": "Keep Booking",
+        "loading": "Loading…",
+        "networkError": "Network error fetching cancellation quote.",
+        "noQuote": "Could not fetch cancellation quote from airline.",
+        "noRefund": "No refund — this fare is non-refundable per airline policy.",
+        "penaltiesDeducted": "Cancellation penalties set by the airline will be deducted.",
+        "pnr": "PNR: {pnr}",
+        "refundEligibility": "Refund eligibility and amounts are strictly determined by the airline's fare rules.",
+        "refundPolicy": "Refund Policy:",
+        "refundTiming": "If a refund is issued, it typically takes 5–10 business days.",
+        "taxesRefund": "Taxes & fees refund: {amount}",
+        "title": "Cancel Booking?",
+        "willReceive": "You will receive {amount} back.",
+        "zeroRefund": "You will receive $0 back if you cancel."
+      },
+      "cancellationFailed": "Cancellation failed",
+      "changeFlight": "Change flight",
+      "couldNotLoadTripDetails": "Could not load trip details",
+      "details": "Details",
+      "eTicket": "E-TKT",
+      "fareBadges": {
+        "changeable": "Changeable",
+        "checkingFarePolicy": "Checking fare policy…",
+        "fareRulesNonRefundable": "Fare rules: Non-refundable",
+        "freeCancellation": "Free cancellation",
+        "nonRefundable": "Non-refundable after 24 hours",
+        "refundable": "Refundable"
+      },
+      "flightBooking": "Flight Booking",
+      "flightItinerary": "Show flight itinerary",
+      "hideChangeFlight": "Hide change flight",
+      "hideDetails": "Hide details",
+      "hideFlightItinerary": "Hide flight itinerary",
+      "hideRefundQuote": "Hide refund quote",
+      "hideVoidQuote": "Hide void quote",
+      "issuedTickets": "Issued Tickets",
+      "layover": "{duration} layover in {airport}",
+      "loadingTripDetails": "Loading airline details…",
+      "networkError": "Network error. Please try again.",
+      "noRefund": "No refund issued",
+      "nonstop": "Nonstop",
+      "noteAdded": "Note added successfully.",
+      "notePlaceholder": "Enter a note for this booking…",
+      "originTo": "{origin} to {destination}",
+      "passenger": "{count} passenger",
+      "passengers": "{count} passengers",
+      "pax": "{count} pax",
+      "penaltyApplied": "Penalty applied: {amount}",
+      "pnr": "PNR",
+      "receipt": "Download receipt",
+      "refundFailed": "Refund failed",
+      "refundNotAvailable": "Refund not available",
+      "refundNotAvailablePolicy": "Refund not available (airline policy)",
+      "refundQuote": "Refund quote",
+      "retry": "Retry",
+      "save": "Save",
+      "seat": "SEAT",
+      "stateChips": {
+        "awaitingConfirmation": "Awaiting Confirmation",
+        "cancelFailed": "Cancel failed — retry below",
+        "cancelStuck": "Cancellation stuck — retry below",
+        "cancelled": "Cancelled",
+        "contactSupport": "Contact support to cancel",
+        "emailToCancel": "Email crm@myfarebox.com to cancel",
+        "flightCompleted": "Flight completed",
+        "refundFailed": "Refund Failed",
+        "refundProcessing": "Refund processing",
+        "refunded": "Refunded",
+        "supplierNotFound": "Supplier record not found",
+        "upcomingFlight": "Upcoming Flight",
+        "flightInProgress": "Flight in progress",
+        "processing": "Processing",
+        "booked": "Booked",
+        "bookingFailed": "Booking failed",
+        "reissued": "Reissued",
+        "unknown": "Unknown"
+      },
+      "stop": "{count} stop",
+      "stops": "{count} stops",
+      "successBanners": {
+        "cancelled": "Booking cancelled successfully.",
+        "refundProcessed": "Booking cancelled. Refund has been processed.",
+        "refundProcessing": "Booking cancelled. Refund is being processed — check back shortly."
+      },
+      "totalPaid": "Total Paid",
+      "totalRefund": "Total Refund",
+      "tripLegs": {
+        "leg": "Leg {number}",
+        "outbound": "Outbound",
+        "return": "Return"
+      },
+      "tripTypes": {
+        "multiCity": "Multi-city",
+        "oneWay": "One-way",
+        "roundTrip": "Round-trip"
+      },
+      "voidNotAvailable": "Void not available",
+      "voidNotAvailablePolicy": "Void not available (airline policy)",
+      "voidQuote": "Void quote",
+      "departFrom": "Depart from",
+      "arriveAt": "Arrive at",
+      "totalFlightDuration": "Total Flight Duration"
+    },
+    "labels": {
+      "afterDatePenalty": "After {date}: penalty of {amount}",
+      "bookedOn": "Booked On",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "duration": "Duration",
+      "email": "Email",
+      "freeCancelUntil": "Free cancellation until",
+      "freeCancellation": "Free cancellation available",
+      "guests": "Guests",
+      "name": "Name",
+      "nonRefundable": "Non-refundable",
+      "paymentMethod": "Payment Method",
+      "policyNotAvailable": "Cancellation policy details not available.",
+      "provider": "Provider",
+      "room": "Room",
+      "specialRequests": "Special Requests",
+      "totalPaid": "Total Paid"
+    },
+    "modificationModal": {
+      "discard": "Discard",
+      "email": "Email",
+      "emailPlaceholder": "email@example.com",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "First name",
+      "infoBanner": "You can update the booking holder's name, email, and special requests.",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Last name",
+      "optional": "(optional)",
+      "remarksPlaceholder": "e.g., Late check-in, extra pillows...",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "specialRequests": "Special Requests",
+      "title": "Modify Booking"
+    },
+    "myTrips": "My Trips",
+    "noSegmentDetails": "No segment details available.",
+    "sections": {
+      "cancellationPolicy": "Cancellation Policy",
+      "guestInformation": "Guest Information",
+      "itinerary": "Itinerary",
+      "passengers": "Passengers",
+      "payment": "Payment",
+      "stayDetails": "Stay Details"
+    },
+    "status": {
+      "booked": "Booked",
+      "cancelFailed": "Cancel Failed",
+      "cancelPending": "Cancellation Pending",
+      "cancelled": "Cancelled",
+      "cancelledProviderMissing": "Cancelled",
+      "completed": "Completed",
+      "confirmed": "Confirmed",
+      "failed": "Failed",
+      "pending": "Pending",
+      "processing": "Processing",
+      "refundFailed": "Refund Failed",
+      "refundPending": "Refund Pending",
+      "refunded": "Refunded",
+      "ticketed": "Confirmed",
+      "ticketing": "Ticketing",
+      "unknown": "Unknown",
+      "cancellationStuck": "Cancellation Stuck"
+    },
+    "subtitle": "View and manage your bookings",
+    "tabs": {
+      "all": "All",
+      "past": "Past",
+      "upcoming": "Upcoming",
+      "wishlist": "Wishlist"
+    },
+    "title": "My Trips | CheapestGo",
+    "viewMore": "View more ({count} remaining)",
+    "viewReceipt": "View Receipt",
+    "wishlist": {
+      "emptyDesc": "Tap the heart icon on any flight or hotel to save it here.",
+      "emptyTitle": "No saved trips yet",
+      "perPerson": "per person",
+      "removeError": "Couldn't remove that item. Please try again.",
+      "removeFromWishlist": "Remove from wishlist",
+      "savedOn": "Saved {date}",
+      "searchAgain": "Search again",
+      "saveToWishlist": "Save to wishlist"
+    },
+    "tripMap": {
+      "navigate": "Navigate",
+      "tooFar": "Too far to drive directly",
+      "flyingIn": "Flying in",
+      "locating": "Locating…",
+      "findingHotel": "Finding hotel…",
+      "gettingLocation": "Getting your location…",
+      "centerOnHotel": "Center on hotel",
+      "toggleTraffic": "Toggle traffic",
+      "driving": "Driving",
+      "walking": "Walking",
+      "away": "{distance} away",
+      "calculatingDistance": "Calculating distance…",
+      "navigationStarts": "Navigation starts when you're within 50 km",
+      "openInMaps": "Open in Maps",
+      "navigationReady": "Navigation ready when you land nearby",
+      "saveInMaps": "Save in Maps",
+      "determiningLocation": "Determining your location…",
+      "close": "Close map"
+    },
+    "cancellationFeeCard": {
+      "ifYouCancelNow": "If you cancel now:",
+      "fee": "Cancellation Fee",
+      "youllReceive": "You'll Receive"
+    },
+    "pages": {
+      "backToBooking": "Back to booking",
+      "ref": "Ref:"
+    },
+    "requestsPage": {
+      "title": "Special requests",
+      "note": "Requests are passed to the property but aren't guaranteed — availability depends on the hotel.",
+      "cancelled": "This booking is cancelled, so special requests can no longer be updated."
+    },
+    "requestsForm": {
+      "label": "Message to the property",
+      "placeholder": "e.g. Late check-in after 10 PM, extra bed, high floor…",
+      "saved": "Saved — the property has been notified.",
+      "saveError": "Failed to save your request. Please try again.",
+      "submit": "Save request"
+    },
+    "sharePage": {
+      "title": "Share booking confirmation",
+      "note": "Resend the confirmation email to yourself or anyone else — useful for a travel companion or your own records."
+    },
+    "shareForm": {
+      "sendTo": "Send to",
+      "sentTo": "Sent to {email}.",
+      "sendError": "Failed to send. Please try again.",
+      "submit": "Send confirmation"
+    },
+    "hotelConfirmed": {
+      "confirming": "Confirming your booking…",
+      "loading": "Loading your booking…"
+    },
+    "invoice": {
+      "downloadPdf": "Download PDF",
+      "generating": "Generating…",
+      "print": "Print"
+    },
+    "v2": {
+      "backToMyTrips": "Back to My Trips",
+      "downloadETicket": "Download E-Ticket",
+      "refundNotice": "Refund eligibility is subject to airline fare rules."
+    }
+  }
 }

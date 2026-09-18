@@ -4,13 +4,14 @@ import { render as rtlRender, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RoomSelection } from '@/features/hotels/components/room-selection';
 import { ThemeProvider } from '@/shared/components/ThemeContext';
+import { withIntl } from '@/shared/testing/renderWithIntl';
 import type { RateRow, RoomOption } from '@/features/hotels/types/property.types';
 
 afterEach(cleanup);
 
 /** The section reads the app theme as its `tone` default, so it wants the
  *  provider the app mounts at its root. */
-const render = (ui: React.ReactElement) => rtlRender(<ThemeProvider>{ui}</ThemeProvider>);
+const render = (ui: React.ReactElement) => rtlRender(<ThemeProvider>{withIntl(ui)}</ThemeProvider>);
 
 const room = (over: Partial<RoomOption> = {}): RoomOption => ({
     id: 'r1',
