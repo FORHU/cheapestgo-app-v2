@@ -349,7 +349,7 @@
   "footer": {
     "tagline": "专为挑剔的旅行者设计。",
     "taglinePrecision": "精准数据。绝不妥协。",
-    "poweredBy": "由 Duffel、Mystifly、TravelgateX、ONDA 和 Rakuten 提供支持。",
+    "poweredBy": "由 Duffel 和 TravelgateX 提供支持。",
     "module": "模块",
     "flights": "航班",
     "hotels": "酒店",
@@ -721,7 +721,7 @@
         },
         "intellectualProperty": {
           "title": "知识产权",
-          "body": "CheapestGo平台上的所有内容（包括标志、文字、图形、软件和设计）均为CheapestGo或其许可方的财产，受适用知识产权法律保护。未经事先书面同意，您不得复制、分发或创作我们内容的衍生作品。酒店和航班图片及描述由我们的合作伙伴（Duffel、Mystifly、TravelgateX、ONDA、Rakuten）及相关供应商根据许可提供。"
+          "body": "CheapestGo平台上的所有内容（包括标志、文字、图形、软件和设计）均为CheapestGo或其许可方的财产，受适用知识产权法律保护。未经事先书面同意，您不得复制、分发或创作我们内容的衍生作品。酒店和航班图片及描述由我们的合作伙伴（Duffel、TravelgateX）及相关供应商根据许可提供。"
         },
         "disclaimers": {
           "title": "免责声明",
@@ -783,7 +783,7 @@
           ],
           "thirdPartyLabel": "从第三方收集的信息：",
           "thirdPartyItems": [
-            "来自我们合作伙伴（Duffel、Mystifly、TravelgateX、ONDA、Rakuten）的旅行可用性和价格数据",
+            "来自我们合作伙伴（Duffel、TravelgateX）的旅行可用性和价格数据",
             "来自Stripe的付款确认和欺诈检测信号",
             "来自我们用于改善平台的服务提供商的分析数据"
           ]
@@ -816,12 +816,12 @@
               "linkHref": "https://stripe.com/privacy"
             },
             {
-              "label": "旅行合作伙伴（Duffel、Mystifly、TravelgateX、ONDA、Rakuten）",
+              "label": "旅行合作伙伴（Duffel、TravelgateX）",
               "text": "搜索查询和预订详情通过我们的合作伙伴API处理，以获取可用性和价格信息。"
             },
             {
-              "label": "Supabase",
-              "text": "我们的数据库基础设施托管于Supabase。数据在存储和传输时均经过加密。"
+              "label": "Amazon Web Services (AWS)",
+              "text": "我们的数据库基础设施托管于Amazon Web Services (AWS)。数据在存储和传输时均经过加密。"
             },
             {
               "label": "法律要求",
@@ -1023,7 +1023,7 @@
               "heading": "必要Cookie",
               "body": "这些Cookie对平台运行至关重要。它们启用认证、会话管理、安全令牌和支付处理等核心功能。由于服务运行所必需，您无法选择不使用这些Cookie。",
               "items": [
-                "supabase-auth-token — 认证会话",
+                "cg-session — 认证会话",
                 "__stripe_mid / __stripe_sid — Stripe欺诈防控"
               ]
             },
@@ -1874,6 +1874,69 @@
       "backToMyTrips": "返回我的行程",
       "downloadETicket": "下载电子客票",
       "refundNotice": "是否可退款取决于航空公司的票价规则。"
+    }
+  },
+  "support": {
+    "title": "客户支持",
+    "open": "打开客服聊天",
+    "close": "关闭客服聊天",
+    "reference": "会话 {reference}",
+    "empty": "给我们留言，会有专人回复。",
+    "placeholder": "输入消息",
+    "send": "发送",
+    "sendFailed": "消息未能发送，请重试。",
+    "translating": "翻译中…",
+    "notTranslated": "无法翻译，按原文显示。",
+    "showOriginal": "查看原文",
+    "showTranslation": "查看译文",
+    "reopens": "目前无人在线。我们将于{when}回复。",
+    "reopensToday": "目前无人在线。我们将于今天{when}回复。",
+    "quick": {
+      "confirmation": "没有收到确认信",
+      "refunds": "退款什么时候到账？",
+      "changes": "取消或更改预订",
+      "priceGap": "结账时价格变了",
+      "payment": "支付出现问题"
+    },
+    "quickHeading": "常见问题",
+    "automated": "帮助中心 · 自动回复",
+    "thatAnsweredIt": "已解决",
+    "talkToAPerson": "联系人工客服",
+    "solvedNote": "很高兴能帮到您。如还有其他问题，随时联系我们。",
+    "attach": "添加文件",
+    "removeFile": "移除",
+    "fileExpired": "已超过保存期限"
+  },
+  "help": {
+    "title": "客服支持 | CheapestGo",
+    "description": "关于预订、退款和付款的说明，以及联系我们的方式。",
+    "pageTitle": "客服支持",
+    "pageSubtitle": "常见问题解答，以及联系人工客服的方式。",
+    "chatCta": "联系我们",
+    "chatNote": "客服在您的账户内回复，因此无论何时回来，对话都会保留。请登录后咨询。",
+    "contactHeading": "更希望使用邮件？",
+    "sections": {
+      "confirmation": {
+        "title": "我已预订，但没有收到确认",
+        "body": "请使用下单时的账户登录并查看“行程”。供应商确认后通常一分钟内即会显示。如果已扣款但行程中没有任何记录，请立即告诉我们——这意味着存在一笔我们看不到的预订，是我们最需要优先处理的情况。"
+      },
+      "refunds": {
+        "title": "退款什么时候到账？",
+        "body": "退款将原路退回付款银行卡，到账时间由您的银行决定而非我们，通常在我们发起退款后的五到十个工作日内。能否退款取决于您所选的房价条件，该条件在付款前和预订详情中均有显示。",
+        "link": "查看退款政策"
+      },
+      "changes": {
+        "title": "可以更改或取消预订吗？",
+        "body": "取消可在“行程”中操作，费用取决于房价条件：部分在截止时间前免费，部分则在任何情况下都不可退。截止时间显示在预订详情中。我们无法直接更改日期或姓名——如果房价条件允许，请取消后重新预订；如不确定，请先联系我们。"
+      },
+      "priceGap": {
+        "title": "为什么总价高于我搜索时看到的价格？",
+        "body": "搜索结果中的价格是供应商价格按您的货币换算后的金额。我们的服务费在结算时加入，因此总价高于您最初看到的数字，并会在付款前全额显示。付款之后不会再有任何附加费用。"
+      },
+      "payment": {
+        "title": "已扣款但预订失败",
+        "body": "该笔扣款是一次未完成的授权，通常会由您的银行在数日内自动释放。如果长时间未释放，或存在您并未打算完成的预订却已扣款，请提供预订编号联系我们，我们会为您追查。"
+      }
     }
   }
 }

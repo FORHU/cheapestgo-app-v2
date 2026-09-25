@@ -588,6 +588,7 @@ function HotelSearchContent() {
     const bboxParam    = searchParams.get('bbox')         ?? '';
     const districtName = searchParams.get('districtName') ?? '';
     const canonicalCity = searchParams.get('canonicalCity') ?? '';
+    const rung          = searchParams.get('rung')         ?? '';
     const searchQs    = searchParams.toString();
 
     // Falls back to one night so the cards still show a figure when the URL carries
@@ -704,6 +705,9 @@ function HotelSearchContent() {
         if (!destination && !lat) return;
         let cancelled = false;
         let accumulated = 0;
+        // Set once the server has sent `done` with more still coming. Everything after that
+        // point is the collecting pass, which must not put the page back into searching.
+        let collecting  = false;
         const ctrl = new AbortController();
         setStatus('loading');
         setHotels([]);
@@ -731,6 +735,20 @@ function HotelSearchContent() {
             if (lat) body.lat = Number(lat);
             if (lng) body.lng = Number(lng);
             if (countryCode) body.countryCode = countryCode;
+            // The extent the traveller picked, which the URL has carried all along and this
+            // request did not. Without it a borough is searched as a 50km circle around its
+            // centre — for Camden Town, the whole of Greater London — and the map opens on
+            // the city rather than the place that was asked for.
+            //
+            // `cityName` is the city whose inventory is searched, because OTV serves only
+            // the City rung (ADR-0006); `rung` and `bbox` are how that answer is cut back to
+            // the borough. Both are needed: the city alone answers with the city.
+            if (rung) body.rung = rung;
+            if (bboxParam) body.bbox = bboxParam;
+            if (canonicalCity) {
+                body.canonicalCity = canonicalCity;
+                body.cityName      = canonicalCity;
+            }
 
             const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/hotels/search/stream`, {
                 method: 'POST',
@@ -762,7 +780,15 @@ function HotelSearchContent() {
                         if ((chunk.type === 'instant' || chunk.type === 'hotels') && list.length > 0) {
                             accumulated += list.length;
                             const mapped = list.map(toMappable).filter((h): h is MappableProperty => !!h && isNearby(h));
-                            if (!cancelled) { setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); }); setStatus('streaming'); }
+                            if (!cancelled) {
+                                setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); });
+                                // After `done` the search is answered and these are extras, so
+                                // they land on the list and map without reviving the spinner.
+                                setStatus(collecting ? 'done' : 'streaming');
+                                // Priced hotels arriving is proof prices are not unavailable —
+                                // the first pass may have said otherwise before it timed out.
+                                if (collecting) setPricesUnavailable(false);
+                            }
                         } else if (chunk.type === 'prices' && Array.isArray(chunk.data)) {
                             const pm = new Map<string, PriceUpdate>(
                                 (chunk.data as PriceUpdate[]).map((p) => [p.hotelId, p]),
@@ -772,7 +798,13 @@ function HotelSearchContent() {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
                         } else if (chunk.type === 'done' || chunk.type === 'error') {
-                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setPricesUnavailable(Boolean(chunk.tgxUnanswered)); setStatus(accumulated > 0 ? 'done' : 'error'); } return;
+                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setPricesUnavailable(Boolean(chunk.tgxUnanswered)); setStatus(accumulated > 0 ? 'done' : 'error'); }
+                            // `done` answers the search; it no longer means the stream is over.
+                            // When the first pass came back truncated the server keeps the
+                            // connection open and sends the hotels it collects afterwards, so
+                            // returning here threw them away. The stream closing ends the loop.
+                            if (chunk.type === 'error' || !chunk.collecting) return;
+                            collecting = true;
                         }
                     } catch { /* skip */ }
                 }

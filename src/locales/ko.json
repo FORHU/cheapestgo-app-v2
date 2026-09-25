@@ -349,7 +349,7 @@
   "footer": {
     "tagline": "안목 있는 여행자를 위해 정밀하게 설계되었습니다.",
     "taglinePrecision": "정밀한 데이터. 타협 없는 서비스.",
-    "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
+    "poweredBy": "Powered by Duffel & TravelgateX.",
     "module": "모듈",
     "flights": "항공편",
     "hotels": "호텔",
@@ -721,7 +721,7 @@
         },
         "intellectualProperty": {
           "title": "지식재산권",
-          "body": "CheapestGo 플랫폼의 모든 콘텐츠(로고, 텍스트, 그래픽, 소프트웨어, 디자인 포함)는 CheapestGo 또는 그 라이선스 허여자의 재산이며, 관련 지식재산권법에 의해 보호됩니다. 사전 서면 동의 없이 당사 콘텐츠를 복제, 배포하거나 파생 저작물을 제작하실 수 없습니다. 호텔 및 항공편 이미지와 설명은 당사의 파트너(Duffel, Mystifly, TravelgateX, ONDA, Rakuten)와 해당 공급업체가 라이선스에 따라 제공합니다."
+          "body": "CheapestGo 플랫폼의 모든 콘텐츠(로고, 텍스트, 그래픽, 소프트웨어, 디자인 포함)는 CheapestGo 또는 그 라이선스 허여자의 재산이며, 관련 지식재산권법에 의해 보호됩니다. 사전 서면 동의 없이 당사 콘텐츠를 복제, 배포하거나 파생 저작물을 제작하실 수 없습니다. 호텔 및 항공편 이미지와 설명은 당사의 파트너(Duffel, TravelgateX)와 해당 공급업체가 라이선스에 따라 제공합니다."
         },
         "disclaimers": {
           "title": "면책 조항",
@@ -783,7 +783,7 @@
           ],
           "thirdPartyLabel": "제3자로부터 수집된 정보:",
           "thirdPartyItems": [
-            "파트너(Duffel, Mystifly, TravelgateX, ONDA, Rakuten)로부터의 여행 가용성 및 요금 데이터",
+            "파트너(Duffel, TravelgateX)로부터의 여행 가용성 및 요금 데이터",
             "Stripe로부터의 결제 확인 및 사기 감지 신호",
             "플랫폼 개선을 위해 이용하는 서비스 제공업체의 분석 데이터"
           ]
@@ -816,12 +816,12 @@
               "linkHref": "https://stripe.com/privacy"
             },
             {
-              "label": "여행 파트너 (Duffel, Mystifly, TravelgateX, ONDA, Rakuten)",
+              "label": "여행 파트너 (Duffel, TravelgateX)",
               "text": "가용성 및 요금 조회를 위해 검색 쿼리 및 예약 세부 정보를 파트너 API를 통해 처리합니다."
             },
             {
-              "label": "Supabase",
-              "text": "당사의 데이터베이스 인프라는 Supabase에서 호스팅됩니다. 데이터는 저장 및 전송 시 암호화됩니다."
+              "label": "Amazon Web Services (AWS)",
+              "text": "당사의 데이터베이스 인프라는 Amazon Web Services (AWS)에서 호스팅됩니다. 데이터는 저장 및 전송 시 암호화됩니다."
             },
             {
               "label": "법적 요건",
@@ -1023,7 +1023,7 @@
               "heading": "필수 쿠키",
               "body": "이 쿠키는 플랫폼 작동에 필수적입니다. 인증, 세션 관리, 보안 토큰, 결제 처리 등 핵심 기능을 지원합니다. 서비스 운영에 필요하므로 이 쿠키는 거부하실 수 없습니다.",
               "items": [
-                "supabase-auth-token — 인증 세션",
+                "cg-session — 인증 세션",
                 "__stripe_mid / __stripe_sid — Stripe 사기 방지"
               ]
             },
@@ -1874,6 +1874,69 @@
       "backToMyTrips": "내 여행으로 돌아가기",
       "downloadETicket": "전자항공권 다운로드",
       "refundNotice": "환불 가능 여부는 항공사 운임 규정에 따릅니다."
+    }
+  },
+  "support": {
+    "title": "고객지원",
+    "open": "고객지원 채팅 열기",
+    "close": "고객지원 채팅 닫기",
+    "reference": "문의 {reference}",
+    "empty": "메시지를 보내주시면 담당자가 답변드립니다.",
+    "placeholder": "메시지를 입력하세요",
+    "send": "보내기",
+    "sendFailed": "메시지를 보내지 못했습니다. 다시 시도해 주세요.",
+    "translating": "번역 중…",
+    "notTranslated": "번역할 수 없어 원문 그대로 표시합니다.",
+    "showOriginal": "원문 보기",
+    "showTranslation": "번역 보기",
+    "reopens": "지금은 담당자가 없습니다. {when}부터 답변드립니다.",
+    "reopensToday": "지금은 담당자가 없습니다. 오늘 {when}부터 답변드립니다.",
+    "quick": {
+      "confirmation": "예약 확인서가 안 왔어요",
+      "refunds": "환불은 언제 받나요?",
+      "changes": "예약 취소 또는 변경",
+      "priceGap": "결제 단계에서 가격이 달라졌어요",
+      "payment": "결제 문제가 있어요"
+    },
+    "quickHeading": "자주 묻는 질문",
+    "automated": "도움말 센터 · 자동 응답",
+    "thatAnsweredIt": "네, 해결됐어요",
+    "talkToAPerson": "상담원과 대화하기",
+    "solvedNote": "도움이 되었다니 다행입니다. 궁금한 점이 생기면 언제든 문의해 주세요.",
+    "attach": "파일 첨부",
+    "removeFile": "삭제",
+    "fileExpired": "보관 기간 만료"
+  },
+  "help": {
+    "title": "고객지원 | AirangGo",
+    "description": "예약, 환불, 결제에 대한 안내와 문의 방법입니다.",
+    "pageTitle": "고객지원",
+    "pageSubtitle": "자주 묻는 질문과 담당자에게 문의하는 방법입니다.",
+    "chatCta": "문의하기",
+    "chatNote": "고객지원은 계정 안에서 답변드립니다. 언제 다시 오셔도 대화가 그대로 남아 있습니다. 로그인 후 문의해 주세요.",
+    "contactHeading": "이메일을 선호하시나요?",
+    "sections": {
+      "confirmation": {
+        "title": "예약했는데 확인서가 오지 않았습니다",
+        "body": "예약하신 계정으로 로그인한 뒤 여행 내역을 확인해 주세요. 공급사 확인이 끝나면 보통 1분 이내에 표시됩니다. 결제는 되었는데 여행 내역에 아무것도 없다면 바로 알려주세요. 저희가 확인할 수 없는 예약이 존재한다는 뜻이므로 가장 먼저 확인해야 하는 경우입니다."
+      },
+      "refunds": {
+        "title": "환불은 언제 받을 수 있나요?",
+        "body": "환불은 결제하신 카드로 돌려드리며, 소요 기간은 저희가 아니라 카드사에서 결정합니다. 보통 환불 처리 후 영업일 기준 5~10일이 걸립니다. 환불 가능 여부는 선택하신 요금 조건에 따라 다르며, 결제 전과 예약 내역에서 모두 확인하실 수 있습니다.",
+        "link": "환불 정책 보기"
+      },
+      "changes": {
+        "title": "예약을 변경하거나 취소할 수 있나요?",
+        "body": "취소는 여행 내역에서 진행하실 수 있으며, 비용은 요금 조건에 따라 다릅니다. 마감 시각까지 무료인 경우도 있고, 어떤 경우에도 환불되지 않는 요금도 있습니다. 마감 시각은 예약 내역에 표시됩니다. 날짜나 이름 변경은 직접 처리해 드릴 수 없으므로, 요금 조건이 허용한다면 취소 후 다시 예약해 주세요. 확실하지 않으시면 먼저 문의해 주세요."
+      },
+      "priceGap": {
+        "title": "검색했을 때보다 결제 금액이 높은 이유는 무엇인가요?",
+        "body": "검색 결과의 가격은 공급사 가격을 고객님의 통화로 환산한 금액입니다. 저희 수수료는 결제 단계에서 더해지므로 처음 보신 금액보다 총액이 높아지며, 결제 전에 전액이 표시됩니다. 그 이후에 추가되는 금액은 없습니다."
+      },
+      "payment": {
+        "title": "결제는 되었는데 예약이 실패했습니다",
+        "body": "해당 결제는 완료되지 않은 승인 건이며, 보통 며칠 안에 카드사에서 자동으로 취소됩니다. 기간이 지나도 취소되지 않았거나, 의도하지 않은 예약이 결제와 함께 존재한다면 예약 번호와 함께 문의해 주세요. 저희가 추적해 드리겠습니다."
+      }
     }
   }
 }

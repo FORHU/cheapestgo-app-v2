@@ -349,7 +349,7 @@
   "footer": {
     "tagline": "Engineered for the discerning traveler.",
     "taglinePrecision": "Precision data. Zero compromise.",
-    "poweredBy": "Powered by Duffel, Mystifly, TravelgateX, ONDA & Rakuten.",
+    "poweredBy": "Powered by Duffel & TravelgateX.",
     "module": "Module",
     "flights": "Flights",
     "hotels": "Hotels",
@@ -721,7 +721,7 @@
         },
         "intellectualProperty": {
           "title": "Intellectual Property",
-          "body": "All content on the CheapestGo Platform — including logos, text, graphics, software, and design — is the property of CheapestGo or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from our content without prior written consent. Hotel and flight images and descriptions are provided by our partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten) and respective suppliers under license."
+          "body": "All content on the CheapestGo Platform — including logos, text, graphics, software, and design — is the property of CheapestGo or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from our content without prior written consent. Hotel and flight images and descriptions are provided by our partners (Duffel, TravelgateX) and respective suppliers under license."
         },
         "disclaimers": {
           "title": "Disclaimers",
@@ -783,7 +783,7 @@
           ],
           "thirdPartyLabel": "Information from third parties:",
           "thirdPartyItems": [
-            "Travel availability and pricing data from our partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten)",
+            "Travel availability and pricing data from our partners (Duffel, TravelgateX)",
             "Payment confirmation and fraud signals from Stripe",
             "Analytics data from service providers we use to improve our platform"
           ]
@@ -816,12 +816,12 @@
               "linkHref": "https://stripe.com/privacy"
             },
             {
-              "label": "Travel Partners (Duffel, Mystifly, TravelgateX, ONDA, Rakuten)",
+              "label": "Travel Partners (Duffel, TravelgateX)",
               "text": "Search queries and booking details are processed through our partner APIs to retrieve availability and pricing."
             },
             {
-              "label": "Supabase",
-              "text": "Our database infrastructure is hosted on Supabase. Data is stored with encryption at rest and in transit."
+              "label": "Amazon Web Services (AWS)",
+              "text": "Our database infrastructure is hosted on Amazon Web Services (AWS). Data is stored with encryption at rest and in transit."
             },
             {
               "label": "Legal requirements",
@@ -1023,7 +1023,7 @@
               "heading": "Strictly Necessary Cookies",
               "body": "These cookies are essential for the Platform to function. They enable core features such as authentication, session management, security tokens, and payment processing. You cannot opt out of these cookies as they are required for the service to operate.",
               "items": [
-                "supabase-auth-token — authentication session",
+                "cg-session — authentication session",
                 "__stripe_mid / __stripe_sid — Stripe fraud prevention"
               ]
             },
@@ -1874,6 +1874,69 @@
       "backToMyTrips": "Back to My Trips",
       "downloadETicket": "Download E-Ticket",
       "refundNotice": "Refund eligibility is subject to airline fare rules."
+    }
+  },
+  "support": {
+    "title": "Support",
+    "open": "Open support chat",
+    "close": "Close support chat",
+    "reference": "Chat {reference}",
+    "empty": "Send us a message and someone will answer.",
+    "placeholder": "Type your message",
+    "send": "Send",
+    "sendFailed": "That message did not send. Try again.",
+    "translating": "Translating…",
+    "notTranslated": "Shown as written — this could not be translated.",
+    "showOriginal": "Show original",
+    "showTranslation": "Show translation",
+    "reopens": "Nobody is at the desk right now. We reply from {when}.",
+    "reopensToday": "Nobody is at the desk right now. We reply from {when} today.",
+    "quick": {
+      "confirmation": "Where's my confirmation?",
+      "refunds": "When do I get my refund?",
+      "changes": "Cancel or change a booking",
+      "priceGap": "The price changed at checkout",
+      "payment": "A payment problem"
+    },
+    "quickHeading": "Common questions",
+    "automated": "Help Centre · automated",
+    "thatAnsweredIt": "That answered it",
+    "talkToAPerson": "Talk to a person",
+    "solvedNote": "Glad that helped. Write to us any time if something else comes up.",
+    "attach": "Attach a file",
+    "removeFile": "Remove",
+    "fileExpired": "no longer stored"
+  },
+  "help": {
+    "title": "Help | CheapestGo",
+    "description": "Answers about bookings, refunds and payments, and how to reach our team.",
+    "pageTitle": "Help",
+    "pageSubtitle": "Answers to the things people ask most, and a way to reach a person.",
+    "chatCta": "Chat with us",
+    "chatNote": "Support is answered inside your account, so your conversation is waiting for you whenever you come back. Sign in to start one.",
+    "contactHeading": "Prefer email?",
+    "sections": {
+      "confirmation": {
+        "title": "I booked, but I have no confirmation",
+        "body": "Check Trips while signed in with the account you booked on — a booking appears there as soon as the supplier confirms it, usually within a minute. If your card was charged and nothing is in Trips, tell us: that is the one case we want to hear about immediately, because it means a booking exists somewhere we cannot see."
+      },
+      "refunds": {
+        "title": "When do I get my refund?",
+        "body": "A refund goes back to the card that paid, and how long it takes is decided by your bank rather than by us — commonly five to ten working days after we send it. Whether a booking can be refunded at all depends on the rate you chose, which is shown before you pay and again on the booking itself.",
+        "link": "Read the refund policy"
+      },
+      "changes": {
+        "title": "Can I change or cancel a booking?",
+        "body": "Cancellation is done from Trips, and what it costs depends on the rate: some are free until a deadline, some are not refundable at any point. The deadline is on the booking. Changing dates or names is not something we can do directly — cancel and rebook if the rate allows it, and message us first if you are unsure."
+      },
+      "priceGap": {
+        "title": "Why is the total higher than the price I searched?",
+        "body": "A search result shows the supplier price converted to your currency. Our fee is added at checkout, so the total is higher than the figure you first saw, and it is shown in full before you pay. Nothing is added after that."
+      },
+      "payment": {
+        "title": "My card was charged but the booking failed",
+        "body": "That charge is an authorisation that was never completed, and your bank releases it on its own, usually within a few days. If it has not cleared, or if you were charged and a booking does exist that you did not intend, message us with the reference and we will trace it."
+      }
     }
   }
 }
