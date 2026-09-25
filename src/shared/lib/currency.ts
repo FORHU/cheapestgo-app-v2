@@ -30,6 +30,31 @@ export const EXCHANGE_RATES: Record<string, number> = { ...STATIC_RATES };
 
 let _lastRefresh = 0;
 
+/**
+ * Whether the rates above came from the server or are still the built-in fallback.
+ *
+ * The fallback is far enough out to matter — PHP sits at 0.018 here against a live 0.0159, 13%
+ * — so a price converted with it is not approximately right, it is wrong. Nothing may convert
+ * until this is true; see `convertForDisplay`.
+ */
+export function ratesAreLive(): boolean {
+    return _lastRefresh > 0;
+}
+
+/**
+ * Told when the rates land.
+ *
+ * `EXCHANGE_RATES` is mutated in place, which React cannot see: a page that rendered before the
+ * fetch returned would otherwise keep its fallback prices until something else happened to
+ * re-render it. Components subscribe through `useLiveRates`.
+ */
+const listeners = new Set<() => void>();
+
+export function subscribeToRates(listener: () => void): () => void {
+    listeners.add(listener);
+    return () => { listeners.delete(listener); };
+}
+
 export async function refreshExchangeRates(): Promise<boolean> {
     if (_lastRefresh && Date.now() - _lastRefresh < 60 * 60 * 1000) return false;
     try {
@@ -39,10 +64,39 @@ export async function refreshExchangeRates(): Promise<boolean> {
             EXCHANGE_RATES[currency] = rate;
         }
         _lastRefresh = Date.now();
+        listeners.forEach(notify => notify());
         return true;
     } catch {
         return false;
     }
+}
+
+/**
+ * A price and the currency to print beside it.
+ *
+ * Returns the amount **in its original currency** when the rates are not live yet, rather than
+ * a converted-looking number that is 13% out. Showing "₱3,198" for a moment and then "₩69,680"
+ * is honest; showing "₩76,752" and charging ₩69,680 is not — and the second is what a silent
+ * fallback conversion produces.
+ *
+ * Callers must print the currency this returns, not the one they asked for. That is the whole
+ * point of handing back both.
+ */
+export function convertForDisplay(
+    amount: number,
+    from: string,
+    to: string,
+): { amount: number; currency: string } {
+    const f = (from || 'USD').toUpperCase();
+    const t = to.toUpperCase();
+    if (f === t) return { amount, currency: t };
+    if (!ratesAreLive()) return { amount, currency: f };
+
+    const fromRate = EXCHANGE_RATES[f];
+    const toRate   = EXCHANGE_RATES[t];
+    if (!fromRate || !toRate) return { amount, currency: f };
+
+    return { amount: (amount * fromRate) / toRate, currency: t };
 }
 
 export function convertCurrency(amount: number, from: string, to: string): number {

@@ -275,9 +275,11 @@ describe('RoomSelection', () => {
         expect(screen.getAllByRole('button', { name: 'Select Room' })).toHaveLength(1);
     });
 
-    it('divides the stay price down to a night', () => {
-        // Suppliers quote the whole stay; the card prints one night of it.
-        render(<RoomSelection {...base} rooms={[room({ price: 600 })]} nights={3} />);
+    it('prints the nightly rate it was given, and does not divide it again', () => {
+        // api-v2 divides the supplier's stay total before sending it, which is v1's own
+        // contract. Dividing here as well quoted a three-night stay at a third of its rate.
+        // The card's own '× N nights' line is where the stay total is rebuilt.
+        render(<RoomSelection {...base} rooms={[room({ price: 200 })]} nights={3} />);
         expect(screen.getByText('$200')).toBeInTheDocument();
     });
 

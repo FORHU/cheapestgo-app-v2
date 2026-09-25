@@ -143,14 +143,14 @@ export function RegisterForm() {
 
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
                 By signing up you agree to our{' '}
-                <Link href="/terms" className="text-blue-600 hover:underline">Terms</Link>
+                <Link href="/terms" className="text-alabaster-accent hover:underline">Terms</Link>
                 {' '}and{' '}
-                <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+                <Link href="/privacy" className="text-alabaster-accent hover:underline">Privacy Policy</Link>.
             </p>
 
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
                 Already have an account?{' '}
-                <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                <Link href="/login" className="text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium">
                     Sign in
                 </Link>
             </p>

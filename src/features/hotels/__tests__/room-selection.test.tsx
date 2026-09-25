@@ -106,8 +106,10 @@ describe('RoomSelection', () => {
 
     it('opens the detail modal from "View more" and can select the room from it', () => {
         const onSelect = vi.fn();
-        // rate.price is the whole-stay figure; over 3 nights that is $200/night.
-        const room = makeRoom({ price: 600, rates: [{ ...makeRoom().rates![0], price: 600 }] });
+        // rate.price arrives per night — api-v2 divides the supplier's stay total before
+        // sending, as v1 does — so the modal multiplies back up for the total line rather
+        // than dividing down for the rate.
+        const room = makeRoom({ price: 200, rates: [{ ...makeRoom().rates![0], price: 200 }] });
         render(<RoomSelection {...baseProps} rooms={[room]} nights={3} onSelect={onSelect} />);
 
         fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);

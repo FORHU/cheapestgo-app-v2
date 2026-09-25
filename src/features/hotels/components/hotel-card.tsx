@@ -6,6 +6,9 @@ import Image from 'next/image';
 import { Bookmark, Building2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency } from '@/shared/lib/format';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
+import { useUserCurrency } from '@/shared/stores/search.store';
 
 export interface HotelResult {
     id: string;
@@ -104,7 +107,15 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
     const locationText =
         [hotel.location, hotel.city, hotel.country].filter(Boolean).join(', ') || hotel.city || '';
     const detailHref = `/property/${hotel.id}${searchQs ? `?${searchQs}` : ''}`;
-    const priceLabel = `${formatCurrency(hotel.price, hotel.currency)}/ night`;
+    const userCurrency = useUserCurrency();
+    // Re-render when the rates land; until they do, `convertForDisplay` declines to convert and
+    // the card shows the supplier's own figure rather than one 13% out.
+    useLiveRates();
+    // In the viewer's own currency, like every other price surface — this one printed the
+    // supplier's, so a card could say ₱ while the page around it said ₩. Per night already:
+    // api-v2 divides the stay total before sending.
+    const shownPrice = convertForDisplay(hotel.price, hotel.currency || 'USD', userCurrency);
+    const priceLabel = `${formatCurrency(shownPrice.amount, shownPrice.currency)}/ night`;
     const rating = hotel.reviewScore ?? 0;
 
     const { saved, toggle } = useSavedHotel(hotel.id);

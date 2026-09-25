@@ -7,10 +7,15 @@ vi.mock('@/stores/searchStore', () => ({
     useUserCurrency: () => 'USD',
 }));
 
-// Stub currency lib — return amount as-is for predictable assertions
+// Stub currency lib — return amount as-is for predictable assertions.
+// `convertForDisplay` hands back the currency the figure is actually in, which the component
+// prints; here that is always the target, so these tests stay about rooms rather than money.
 vi.mock('@/shared/lib/currency', () => ({
     convertCurrency: (amount: number) => amount,
+    convertForDisplay: (amount: number, _from: string, to: string) => ({ amount, currency: to }),
     getCurrencySymbol: () => '$',
+    ratesAreLive: () => true,
+    subscribeToRates: () => () => {},
     EXCHANGE_RATES: { USD: 1 },
 }));
 

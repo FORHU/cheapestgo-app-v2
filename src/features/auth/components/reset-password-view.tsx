@@ -1,11 +1,11 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { Lock, PlaneTakeoff, CheckCircle } from 'lucide-react';
+import { Lock, CheckCircle } from 'lucide-react';
+import { AuthLayout } from '@/features/auth/components/auth-layout';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { http } from '@/shared/lib/http';
@@ -129,7 +129,7 @@ function ResetPasswordForm() {
             <div className="text-center">
                 <Link
                     href="/login"
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    className="text-sm text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium"
                 >
                     Back to sign in
                 </Link>
@@ -140,30 +140,22 @@ function ResetPasswordForm() {
 
 export function ResetPasswordView() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-12">
-            <div className="w-full max-w-sm space-y-8">
-                <div className="text-center space-y-2">
-                    <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
-                        <PlaneTakeoff size={22} className="text-blue-600" />
-                        {BRAND_NAME}
-                    </Link>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Reset your account password</p>
+        <AuthLayout
+            title="Set a new password"
+            subtitle="Choose something you have not used here before"
+            pitch="A new password, and you are back where you left off."
+        >
+            <Suspense fallback={
+                <div className="space-y-4 animate-pulse">
+                    <div className="h-6 w-3/4 rounded-lg bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-4 w-1/2 rounded-lg bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
                 </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-white/10 p-8">
-                    <Suspense fallback={
-                        <div className="space-y-4 animate-pulse">
-                            <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded-lg w-3/4" />
-                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-1/2" />
-                            <div className="h-11 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                            <div className="h-11 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                            <div className="h-11 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                        </div>
-                    }>
-                        <ResetPasswordForm />
-                    </Suspense>
-                </div>
-            </div>
-        </div>
+            }>
+                <ResetPasswordForm />
+            </Suspense>
+        </AuthLayout>
     );
 }

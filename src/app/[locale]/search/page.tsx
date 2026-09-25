@@ -322,14 +322,14 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, nights, theme, mobile, elementRef, width,
+    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef, width,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
     shiftLeft: number; shiftRight: number;
     onSelect: (id: string) => void; onHover: (id: string | null) => void;
     onViewDetails: (id: string) => void;
-    currency: string; nights: number; theme: 'light' | 'dark';
+    currency: string; theme: 'light' | 'dark';
     /** One card to a screen, edge to edge — the design's phone layout. */
     mobile: boolean;
     /** Hands the card's element up so the rail can scroll it into view when its
@@ -343,7 +343,9 @@ function RailCard({
     width?: number;
 }) {
     const c = railCardPalette(theme);
-    const price = convertCurrency(property.price, property.currency || 'USD', currency) / nights;
+    // Already per night: api-v2 divides the supplier's stay total before sending it, the
+    // same contract v1 has. Dividing again here would quote a third of the real rate.
+    const price = convertCurrency(property.price, property.currency || 'USD', currency);
     const priceStr = formatCurrency(price, currency);
     const rating = property.rating ?? 0;
     /**
@@ -794,6 +796,23 @@ function HotelSearchContent() {
                                 (chunk.data as PriceUpdate[]).map((p) => [p.hotelId, p]),
                             );
                             if (!cancelled) setHotels(prev => prev.map(h => { const p = pm.get(h.id); return p ? { ...h, price: p.price ?? h.price, currency: p.currency ?? h.currency, priceLoading: false } : h; }));
+                        } else if (chunk.type === 'content' && chunk.data) {
+                            // Pictures for cards already on screen. The server sends these
+                            // after the hotels — a listing with no photo reads as broken, and
+                            // waiting for images before showing anything costs more than it
+                            // buys. Patch only what is missing so a card never flickers to a
+                            // different picture than the one being looked at.
+                            const patches = chunk.data as Record<string, { images?: string[]; name?: string }>;
+                            if (!cancelled) setHotels(prev => prev.map(h => {
+                                const patch = patches[h.id];
+                                if (!patch) return h;
+                                return {
+                                    ...h,
+                                    images: h.images?.length ? h.images : (patch.images ?? h.images),
+                                    image:  h.image || patch.images?.[0] || h.image,
+                                    name:   h.name || patch.name || h.name,
+                                };
+                            }));
                         } else if (chunk.type === 'remove' && Array.isArray(chunk.ids)) {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
@@ -878,7 +897,7 @@ function HotelSearchContent() {
     const listHotels = useMemo(() =>
         sorted.map(h => ({
             ...h,
-            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency) / nights),
+            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency)),
             currency,
         })),
     [sorted, currency, nights]);
@@ -891,7 +910,7 @@ function HotelSearchContent() {
     const priceRange = useMemo(() => {
         const prices = sorted
             .filter(h => !h.priceLoading)
-            .map(h => convertCurrency(h.price, h.currency || 'USD', currency) / nights)
+            .map(h => convertCurrency(h.price, h.currency || 'USD', currency))
             .filter(p => p > 0);
         if (prices.length === 0) return { min: 0, max: 1000 };
         const min = Math.floor(Math.min(...prices));
@@ -938,7 +957,7 @@ function HotelSearchContent() {
             // price stream catches up.
             list = list.filter(h => {
                 if (h.priceLoading) return true;
-                const p = convertCurrency(h.price, h.currency || 'USD', currency) / nights;
+                const p = convertCurrency(h.price, h.currency || 'USD', currency);
                 return p >= filterMin && p <= filterMax;
             });
         }
@@ -1757,7 +1776,6 @@ function HotelSearchContent() {
                                             onHover={setHoveredId}
                                             onViewDetails={handleViewDetails}
                                             currency={currency}
-                                            nights={nights}
                                             theme={uiTone}
                                             mobile={isMobile}
                                             elementRef={(el) => {

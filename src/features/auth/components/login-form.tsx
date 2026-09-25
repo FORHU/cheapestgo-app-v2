@@ -71,12 +71,16 @@ export function LoginForm() {
                 </button>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                    <span className="text-slate-600 dark:text-slate-400">Keep me signed in</span>
-                </label>
-                <Link href="/forgot-password" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+            {/*
+                "Keep me signed in" was here and did nothing: it was `defaultChecked`, never
+                read, and never sent — the login call carries an email and a password and
+                nothing else. Honouring it means deciding how long a session lives, which is
+                api-v2's to answer and not a checkbox's to imply. Removed rather than left
+                lying to the customer about what ticking it does.
+            */}
+            <div className="flex justify-end text-sm">
+                <Link href="/forgot-password"
+                      className="font-medium text-alabaster-accent hover:underline dark:text-obsidian-accent">
                     Forgot password?
                 </Link>
             </div>
@@ -92,7 +96,8 @@ export function LoginForm() {
 
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
                 Don&apos;t have an account?{' '}
-                <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                <Link href="/register"
+                      className="font-medium text-alabaster-accent hover:underline dark:text-obsidian-accent">
                     Create one
                 </Link>
             </p>

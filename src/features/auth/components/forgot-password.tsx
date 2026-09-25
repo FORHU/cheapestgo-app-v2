@@ -43,7 +43,7 @@ export function ForgotPasswordForm() {
                     Didn&apos;t receive it? Check your spam folder or{' '}
                     <button
                         onClick={() => setSent(false)}
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-alabaster-accent dark:text-obsidian-accent hover:underline"
                     >
                         try again
                     </button>.
@@ -84,7 +84,7 @@ export function ForgotPasswordForm() {
             <div className="text-center">
                 <Link
                     href="/login"
-                    className="flex items-center justify-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    className="flex items-center justify-center gap-1 text-sm text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium"
                 >
                     <ArrowLeft size={14} />
                     Back to sign in

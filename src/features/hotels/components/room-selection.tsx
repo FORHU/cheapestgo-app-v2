@@ -737,9 +737,14 @@ function RoomRateCard({
 }) {
     const [modalOpen, setModalOpen] = useState(false);
 
-    // The hotel's photo, not the room's: `roomImages` are the banner's
-    // pagination now, where a set of them can actually be looked through.
-    const photo = image;
+    // The room's own photo where there is one, the hotel's where there is not.
+    //
+    // This used to take the hotel's unconditionally, which made every row on a property
+    // identical — the same building shot beside "Deluxe Double" and "Superior Double", so the
+    // one thing a reader is comparing looked the same for both. The expanded panel below has
+    // always preferred the room's gallery and kept the hotel shot as its fallback; the two
+    // disagreeing is what made this look deliberate rather than missed.
+    const photo = card.content?.gallery?.[0] ?? image;
     const symbol = currencySymbol(currency) || currency;
     const pick = () => onSelect({ room: card.room, rate: card.rate });
 
@@ -894,7 +899,9 @@ export function RoomSelection({
                 refundable: isRefundable(rate),
                 cancellation: cancellationSummary(rate),
                 // Supplier prices cover the whole stay; the card prints a night.
-                nightly: convertCurrency(rate.price, rate.currency || 'USD', currency) / Math.max(1, nights ?? 1),
+                // The wire already carries a nightly figure; `stayNights` below multiplies it
+                // back up for the "× N nights" line, which is the only place a total belongs.
+                nightly: convertCurrency(rate.price, rate.currency || 'USD', currency),
                 content: room.content,
             };
         });

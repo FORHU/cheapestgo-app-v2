@@ -24,7 +24,9 @@ import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
 import { useUserCurrency } from '@/stores/searchStore';
-import { convertCurrency } from '@/shared/lib/currency';
+import { checkoutMoney } from '@/features/hotels/lib/checkout-money';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
 import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
@@ -314,6 +316,9 @@ function PropertyContent() {
     /** Everything with a price on this page is drawn in the guest's own
      *  currency, not whichever one the supplier happened to quote in. */
     const currency = useUserCurrency();
+    // See room-selector: the rates land after the first paint and React cannot see the module
+    // object change, so this is what re-prices the page when they do.
+    useLiveRates();
 
     const [data, setData]                     = useState<PropertyApiResponse | null>(null);
     const [loading, setLoading]               = useState(true);
@@ -391,20 +396,37 @@ function PropertyContent() {
 
 
     /**
-     * A supplier price, as the page shows it: the whole stay converted into
-     * the guest's own currency, then divided down to one night.
+     * A supplier price, as the page shows it: converted into the guest's own currency.
      *
-     * TGX quotes the stay, not the night. Printing that figure beside
-     * "/night" was overstating every rate by the length of the trip.
+     * Already per night when it arrives — api-v2 divides the stay total before sending, which
+     * is v1's contract too. It used to divide here as well, and that was right when the wire
+     * carried the stay; doing both would quote a third of the real rate on a three-night trip.
      */
     const toNightly = (price: number, from: string) =>
-        convertCurrency(price, from || 'USD', currency) / nights;
+        convertForDisplay(price, from || 'USD', currency).amount;
+
+    /**
+     * The same figure, with the currency it is actually in.
+     *
+     * Until the rates land nothing is converted, so that is the supplier's currency — and
+     * printing the chosen currency's symbol over it would overstate a peso figure twentyfold
+     * in won. Every place that prints a price takes both halves from here.
+     */
+    const nightlyShown = (price: number, from: string) => {
+        const shown = convertForDisplay(price, from || 'USD', currency);
+        return { amount: shown.amount, currency: shown.currency };
+    };
 
     /**
      * The cheapest night on offer, across every rate of every room — off
      * `ratesOf`, the same list the cards are built from, so the figure in
      * the header is one a card below it actually shows.
      */
+    /** What `lowestPrice` is denominated in — see `nightlyShown`. */
+    const lowestPriceCurrency = rooms.length > 0
+        ? nightlyShown(0, ratesOf(rooms[0])[0]?.currency ?? 'USD').currency
+        : currency;
+
     const lowestPrice = rooms.length > 0
         ? Math.min(...rooms.flatMap(r => ratesOf(r).map(rate => toNightly(rate.price, rate.currency))))
         : null;
@@ -416,11 +438,7 @@ function PropertyContent() {
             roomId:     selectedRoom.id,
             offerId:    selectedRate.offerId,
             rateKey:    selectedRate.offerId,
-            // The rate's own figures, untouched: it is quoted for the whole
-            // stay in the supplier's currency, and that is what is booked.
-            // The conversion above is for display only.
-            currency:   selectedRate.currency,
-            totalPrice: String(selectedRate.price),
+            ...checkoutMoney(selectedRate, currency, nights),
             roomName:   selectedRoom.name,
             hotelName:  content?.name ?? 'Hotel',
         });
@@ -681,7 +699,7 @@ function PropertyContent() {
                         className="mb-8"
                         tone={theme}
                         price={lowestPrice}
-                        currency={currency}
+                        currency={lowestPriceCurrency}
                         rating={reviewScore}
                         checkInTime={content.check_in_time ?? content.check_in}
                         checkOutTime={content.check_out_time ?? content.check_out}
@@ -797,7 +815,10 @@ function PropertyContent() {
                     >
                         Check out
                         <span style={{ fontWeight: 600, opacity: 0.85 }}>
-                            {formatCurrency(toNightly(selectedRate.price, selectedRate.currency), currency)}/night
+                            {(() => {
+                                const shown = nightlyShown(selectedRate.price, selectedRate.currency);
+                                return formatCurrency(shown.amount, shown.currency);
+                            })()}/night
                         </span>
                         <ArrowRight size={18} />
                     </motion.button>
