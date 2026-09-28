@@ -13,7 +13,14 @@ import { hreflangAlternates } from '@/shared/lib/seo';
  * page carries its own.
  */
 export async function generateMetadata(): Promise<Metadata> {
-    return { alternates: await hreflangAlternates('/') };
+    // Without these the landing page falls through to the root layout's default, which is one
+    // fixed English string — the only page in the app whose tab title never changed language.
+    const t = await getTranslations('seo');
+    return {
+        title:       t('homeTitle'),
+        description: t('homeDescription'),
+        alternates:  await hreflangAlternates('/'),
+    };
 }
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';

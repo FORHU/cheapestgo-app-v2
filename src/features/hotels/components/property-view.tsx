@@ -295,6 +295,7 @@ function NearbySection({ coordinates, palette }: { coordinates: { lat: number; l
 // ─── PropertyContent ──────────────────────────────────────────────────────────
 
 function PropertyContent() {
+    const tAll = useTranslations();
     const t = useTranslations('property');
     const params       = useParams();
     const searchParams = useSearchParams();
@@ -487,7 +488,7 @@ function PropertyContent() {
                     onClick={() => router.back()}
                     style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
                 >
-                    Go back
+                    {tAll('property.v2.goBack')}
                 </button>
             </div>
         );
@@ -813,7 +814,7 @@ function PropertyContent() {
                             boxShadow: '0 20px 46px -12px rgba(255,107,75,.55)',
                         }}
                     >
-                        Check out
+                        {tAll('landing.hero.checkOut')}
                         <span style={{ fontWeight: 600, opacity: 0.85 }}>
                             {(() => {
                                 const shown = nightlyShown(selectedRate.price, selectedRate.currency);

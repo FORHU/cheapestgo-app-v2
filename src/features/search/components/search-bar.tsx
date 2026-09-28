@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Search } from 'lucide-react';
@@ -30,6 +31,7 @@ export function SearchBar({
     proximity?: { lat: number; lng: number };
     onSubmit: (name: string, coords?: { lat: number; lng: number }) => void;
 }) {
+    const tAll = useTranslations();
     const [focused, setFocused] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
     const wrapRef = useRef<HTMLDivElement>(null);
@@ -124,7 +126,7 @@ export function SearchBar({
                     onFocus={() => setFocused(true)}
                     onKeyDown={onKeyDown}
                     placeholder={placeholder}
-                    aria-label="Search for hotels"
+                    aria-label={tAll('search.hotelsPlaceholder')}
                     aria-expanded={suggestions.length > 0}
                     aria-controls={listboxId}
                     aria-autocomplete="list"

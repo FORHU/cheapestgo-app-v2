@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { Search, Plane, BedDouble, Sparkles, Calendar, Users, ChevronDown, MapPin } from 'lucide-react';
@@ -29,6 +30,7 @@ function formatTravelers(adults: number, children: number): string {
 }
 
 export function SearchForm() {
+    const tAll = useTranslations();
     const router = useRouter();
     const {
         searchMode, setSearchMode,
@@ -177,7 +179,7 @@ export function SearchForm() {
                             <button type="button" onClick={() => setActiveDropdown(activeDropdown === 'destination' ? null : 'destination')} className={fieldBtn}>
                                 <MapPin size={16} className="text-blue-400 shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <div className={fieldLabel}>Destination</div>
+                                    <div className={fieldLabel}>{tAll('search.destination')}</div>
                                     <div className={fieldValue(!!destination)}>{destination?.title || 'Where are you going?'}</div>
                                 </div>
                             </button>
@@ -189,7 +191,7 @@ export function SearchForm() {
                             <button type="button" data-datepicker-trigger onClick={() => setActiveDropdown(activeDropdown === 'dates-in' ? null : 'dates-in')} className={cn(fieldBtn, 'sm:w-40')}>
                                 <Calendar size={16} className="text-blue-400 shrink-0" />
                                 <div className="min-w-0">
-                                    <div className={fieldLabel}>Check-in</div>
+                                    <div className={fieldLabel}>{tAll('landing.search.checkIn')}</div>
                                     <div className={fieldValue(!!checkIn)}>{formatDate(checkIn)}</div>
                                 </div>
                             </button>
@@ -201,7 +203,7 @@ export function SearchForm() {
                             <button type="button" data-datepicker-trigger onClick={() => setActiveDropdown(activeDropdown === 'dates-out' ? null : 'dates-out')} className={cn(fieldBtn, 'sm:w-40')}>
                                 <Calendar size={16} className="text-blue-400 shrink-0" />
                                 <div className="min-w-0">
-                                    <div className={fieldLabel}>Check-out</div>
+                                    <div className={fieldLabel}>{tAll('landing.search.checkOut')}</div>
                                     <div className={fieldValue(!!checkOut)}>{formatDate(checkOut)}</div>
                                 </div>
                             </button>
@@ -213,7 +215,7 @@ export function SearchForm() {
                             <button type="button" onClick={() => setActiveDropdown(activeDropdown === 'travelers' ? null : 'travelers')} className={cn(fieldBtn, 'sm:w-44')}>
                                 <Users size={16} className="text-blue-400 shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <div className={fieldLabel}>Travelers</div>
+                                    <div className={fieldLabel}>{tAll('landing.search.travelers')}</div>
                                     <div className={fieldValue(true)}>{formatTravelers(adults, children)}</div>
                                 </div>
                                 <ChevronDown size={14} className={cn('text-slate-400 transition-transform shrink-0', activeDropdown === 'travelers' && 'rotate-180')} />
@@ -225,7 +227,7 @@ export function SearchForm() {
                         <div className="shrink-0 p-1.5 flex items-center">
                             <button onClick={handleSearch} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm px-6 h-12 rounded-xl shadow-md shadow-blue-500/20 transition-colors">
                                 <Search size={16} />
-                                Search
+                                {tAll('landing.search.submit')}
                             </button>
                         </div>
                     </div>
@@ -238,7 +240,7 @@ export function SearchForm() {
                             <button type="button" onClick={() => setActiveDropdown(activeDropdown === 'flight-origin' ? null : 'flight-origin')} className={fieldBtn}>
                                 <Plane size={16} className="text-blue-400 shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <div className={fieldLabel}>From</div>
+                                    <div className={fieldLabel}>{tAll('landing.search.from')}</div>
                                     <div className={fieldValue(!!flightState.flights[0]?.origin)}>{flightState.flights[0]?.origin?.title || 'City or airport'}</div>
                                 </div>
                             </button>
@@ -262,7 +264,7 @@ export function SearchForm() {
                             <button type="button" data-datepicker-trigger onClick={() => setActiveDropdown(activeDropdown === 'flight-depart' ? null : 'flight-depart')} className={cn(fieldBtn, 'sm:w-36')}>
                                 <Calendar size={16} className="text-blue-400 shrink-0" />
                                 <div className="min-w-0">
-                                    <div className={fieldLabel}>Depart</div>
+                                    <div className={fieldLabel}>{tAll('landing.search.depart')}</div>
                                     <div className={fieldValue(!!flightState.flights[0]?.date)}>{formatDate(flightState.flights[0]?.date ?? null)}</div>
                                 </div>
                             </button>
@@ -275,7 +277,7 @@ export function SearchForm() {
                                 <button type="button" data-datepicker-trigger onClick={() => setActiveDropdown(activeDropdown === 'flight-return' ? null : 'flight-return')} className={cn(fieldBtn, 'sm:w-36')}>
                                     <Calendar size={16} className="text-blue-400 shrink-0" />
                                     <div className="min-w-0">
-                                        <div className={fieldLabel}>Return</div>
+                                        <div className={fieldLabel}>{tAll('landing.search.return')}</div>
                                         <div className={fieldValue(!!flightState.flights[1]?.date)}>{formatDate(flightState.flights[1]?.date ?? null)}</div>
                                     </div>
                                 </button>
@@ -287,7 +289,7 @@ export function SearchForm() {
                         <div className="shrink-0 p-1.5 flex items-center">
                             <button onClick={handleSearch} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm px-6 h-12 rounded-xl shadow-md shadow-blue-500/20 transition-colors">
                                 <Search size={16} />
-                                Search
+                                {tAll('landing.search.submit')}
                             </button>
                         </div>
                     </div>
@@ -302,7 +304,7 @@ export function SearchForm() {
                                 value={aiQuery}
                                 onChange={e => setAiQuery(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                placeholder="Ask anything — flights, hotels, trip planning..."
+                                placeholder={tAll('search.chatPlaceholder')}
                                 className="flex-1 bg-transparent text-sm text-slate-800 dark:text-white placeholder:text-slate-400 outline-none min-w-0"
                                 autoComplete="off"
                             />
@@ -312,7 +314,7 @@ export function SearchForm() {
                             className="shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 h-11 rounded-xl shadow-md shadow-blue-500/20 transition-colors whitespace-nowrap w-full sm:w-auto justify-center"
                         >
                             <Sparkles size={14} />
-                            Chat with Cheap
+                            {tAll('search.chatWithCheap')}
                         </button>
                     </div>
                 )}

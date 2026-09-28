@@ -5,6 +5,18 @@
       "tokyo": "Luxury hotel in Tokyo under $200/night with pool...",
       "cebu": "Weekend getaway in Cebu for a couple, next month...",
       "manila": "Family resort near Manila, 2 adults 2 kids..."
+    },
+    "newChat": "New chat",
+    "sendHint": "Enter to send · Shift+Enter for new line",
+    "goHome": "Go to home",
+    "askAnything": "Ask anything...",
+    "metaTitle": "Cheap — AI Travel Assistant",
+    "greeting": "What's on the agenda today?",
+    "suggestions": {
+      "1": "Find me cheap flights to Tokyo next month",
+      "2": "What hotels are available in Bali for 2 adults?",
+      "3": "Plan a 5-day trip to Paris on a budget",
+      "4": "What's the cheapest day to fly to NYC?"
     }
   },
   "appBanner": {
@@ -30,7 +42,50 @@
       "terms": "By signing in you agree to our {terms} and {privacy}.",
       "termsLink": "Terms",
       "privacyLink": "Privacy"
-    }
+    },
+    "forgotPasswordQ": "Forgot password?",
+    "createOne": "Create one",
+    "passwordPlaceholder": "Your password",
+    "createAccount": "Create account",
+    "lastNameShort": "Last",
+    "strongPassword": "Create a strong password",
+    "checkInbox": "Check your inbox",
+    "clickLinkSuffix": ". Click the link in the email to set a new password.",
+    "tryAgain": "try again",
+    "resetYourPassword": "Reset your password",
+    "sendResetLink": "Send reset link",
+    "backToSignIn": "Back to sign in",
+    "emailPlaceholder": "your@email.com",
+    "passwordUpdated": "Password updated",
+    "setNewPassword": "Set a new password",
+    "chooseStrong": "Choose a strong password for your account.",
+    "noResetToken": "No reset token found. Please use the link sent to your email.",
+    "resetPassword": "Reset password",
+    "atLeast8": "At least 8 characters",
+    "repeatPassword": "Repeat your password",
+    "notUsedBefore": "Choose something you have not used here before",
+    "firstNameShort": "First",
+    "forgotSubtitle": "We will email you a link to set a new one",
+    "welcomeBack": "Welcome back",
+    "signInToContinue": "Sign in to your account to continue",
+    "createYourAccount": "Create your account",
+    "registerSubtitle": "Start finding the cheapest fares worldwide",
+    "loginPitch": "Your trips, your saved searches, and every booking in one place.",
+    "registerPitch": "One account. Every fare we can find, on every route we cover.",
+    "forgotPitch": "Locked out is temporary. Your trips are still where you left them.",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "agreePrefix": "By signing up you agree to our",
+    "forgotBody": "Enter your email and we'll send you a reset link.",
+    "firstNameRequired": "First name is required",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Enter a valid email",
+    "passwordRequired": "Password is required",
+    "passwordWeak": "Password does not meet requirements"
   },
   "checkout": {
     "back": "Back",
@@ -184,7 +239,8 @@
       "total": "Total",
       "viewMyTrips": "View My Trips",
       "whatsNext": "What's Next",
-      "openingDestination": "Opening your destination…"
+      "openingDestination": "Opening your destination…",
+      "downloadReceipt": "Download receipt"
     },
     "summary": {
       "adult": "Adult",
@@ -215,9 +271,10 @@
       "freeCancellationShort": "Free cancellation",
       "nonRefundable": "Non-refundable",
       "termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
-      "fetchingPolicy": "Fetching cancellation policy…"
+      "fetchingPolicy": "Fetching cancellation policy…",
+      "flight": "Flight"
     },
-    "title": "Checkout | CheapestGo",
+    "title": "Checkout",
     "userDetails": {
       "email": "Email *",
       "emailPlaceholder": "Email",
@@ -300,7 +357,17 @@
     "nightsCount": "{count, plural, one {# night} other {# nights}}",
     "guestsCount": "{count, plural, one {# guest} other {# guests}}",
     "roomFallback": "Standard Room",
-    "confirmingFinalPrice": "Confirming the final price…"
+    "confirmingFinalPrice": "Confirming the final price…",
+    "paymentDetails": "Payment details",
+    "securedByStripe": "Secured by Stripe",
+    "planAnotherTrip": "Plan another trip",
+    "agreePrefix": "By continuing you agree to our",
+    "continueToPayment": "Continue to payment",
+    "signInArrow": "Sign in →",
+    "guestDetails": "Guest details",
+    "paymentInfo": "Payment info",
+    "paymentSecure": "Your payment information is encrypted and never stored on our servers.",
+    "cardNamePlaceholder": "John Doe"
   },
   "currencyPicker": {
     "label": "Select currency"
@@ -316,7 +383,14 @@
     "subtitleDefault": "Low fares on popular routes",
     "subtitlePersonalized": "Low fares departing from {city}",
     "allDealsCount": "All {count} deals",
-    "collapse": "Collapse ↑"
+    "collapse": "Collapse ↑",
+    "limitedTime": "Limited-time offers",
+    "loadError": "Could not load deals",
+    "emptyTitle": "No active deals right now",
+    "emptyBody": "Check back soon — we update our deals regularly.",
+    "todaysBest": "Today's Best Hotel Deals",
+    "subtitle": "Handpicked deals with the lowest prices we could find. Prices update frequently — book early to lock in your rate.",
+    "metaTitle": "Deals"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -336,14 +410,72 @@
         "direct": "Direct",
         "oneStop": "1 stop",
         "twoPlus": "2+ stops"
-      }
+      },
+      "saveUpTo": "Save up to 8%",
+      "slowTitle": "Search is taking longer than usual",
+      "slowBody": "Flight providers are responding slowly. Please try again.",
+      "tryAgain": "Try Again",
+      "newSearch": "New Search",
+      "searchError": "Search Error",
+      "tryAnother": "Try another search",
+      "filtersTitle": "Flight Filters",
+      "bundleActive": "Flight + Hotel Bundle Active",
+      "bundleBody": "Select a flight below — your bundle discount will be applied at checkout.",
+      "slowHint": "Providers are responding slowly. Hang tight.",
+      "noMatch": "No flights match your filters",
+      "noMatchHint": "Try adjusting your filter criteria.",
+      "checkingProviders": "Checking multiple providers",
+      "noFlights": "No flights found",
+      "findingFares": "Finding the best fares…"
     },
     "card": {
       "direct": "Direct",
       "stop": "stop",
       "stops": "stops",
       "viewDeal": "View deal",
-      "perPerson": "per person"
+      "perPerson": "per person",
+      "fareOptions": "Available Fare Options",
+      "currentlySelected": "Currently Selected",
+      "includesTaxes": "includes taxes & fees",
+      "freeCancellation": "Free Cancellation",
+      "nonRefundable": "Non-refundable"
+    },
+    "filters": {
+      "cheapest": "Cheapest",
+      "fastest": "Fastest",
+      "earliest": "Earliest Departure",
+      "stops": "Stops",
+      "fareType": "Fare Type",
+      "refundableOnly": "Refundable fares only",
+      "refundableHint": "Show only fares that can be cancelled for a refund",
+      "airlines": "Airlines",
+      "provider": "Provider",
+      "anyStops": "Any stops",
+      "nonStopOnly": "Non-stop only",
+      "upTo1Stop": "Up to 1 stop"
+    },
+    "priceAlert": {
+      "loading": "Loading",
+      "active": "Price alerts active",
+      "track": "Track Price",
+      "signInRequired": "Sign in required",
+      "remove": "Remove alert",
+      "emailMe": "Email me when price drops"
+    },
+    "header": {
+      "fetching": "Fetching providers...",
+      "sources": "Sources:"
+    },
+    "meta": {
+      "titleRoute": "Flights {origin} → {destination}",
+      "title": "Flight Search Results",
+      "descriptionRoute": "Compare and book the cheapest flights from {origin} to {destination}. Find the best deals on {brand}.",
+      "description": "Compare and book cheap flights worldwide. Find the best deals on {brand}."
+    },
+    "passengers": {
+      "adults": "{count, plural, one {# adult} other {# adults}}",
+      "children": "{count, plural, one {# child} other {# children}}",
+      "infants": "{count, plural, one {# infant} other {# infants}}"
     }
   },
   "footer": {
@@ -371,7 +503,8 @@
     "privacyMinimal": "Privacy Policy",
     "cookiesMinimal": "Cookie preferences",
     "contactMinimal": "Contact us",
-    "reportBug": "Report a Bug"
+    "reportBug": "Report a Bug",
+    "manageBooking": "Manage booking"
   },
   "guestFavorites": {
     "headerMain": "Guest",
@@ -399,7 +532,44 @@
     "subtitleDefault": "Handpicked stays at unbeatable prices",
     "subtitlePersonalized": "Top-rated stays in {country} · updated daily",
     "allHotelsCount": "All {count} hotels",
-    "collapse": "Collapse ↑"
+    "collapse": "Collapse ↑",
+    "filters": {
+      "reset": "Reset",
+      "adjustPrice": "Adjust Price",
+      "minPerNight": "Minimum price per night",
+      "maxPerNight": "Maximum price per night",
+      "hide": "Hide filters",
+      "show": "Show filters",
+      "close": "Close filters",
+      "clear": "Clear filters"
+    },
+    "results": {
+      "searchFailed": "Search failed.",
+      "loadingPrices": "Loading prices…",
+      "noMatchHint": "Try adjusting your filters, dates, or searching a nearby city."
+    },
+    "nearby": {
+      "none": "No places found nearby."
+    },
+    "description": {
+      "rating": "rating",
+      "checkIn": "CHECK-IN",
+      "checkOut": "OUT"
+    },
+    "review": {
+      "thanks": "Thank you for your review!",
+      "shareTitle": "Share your experience",
+      "placeholder": "Tell others about your stay...",
+      "basedOnCount": "Based on <b>{count}</b> {count, plural, one {review} other {reviews}}"
+    },
+    "rooms": {
+      "viewMore": "View more",
+      "noMatch": "No rooms match that rate. Try another filter.",
+      "paymentTerms": "Payment Terms",
+      "pages": "Room pages",
+      "prevPage": "Previous page",
+      "nextPage": "Next page"
+    }
   },
   "invoice": {
     "amount": "Amount",
@@ -430,7 +600,27 @@
       "titleLine2": "Machined for You.",
       "subtitle": "The operating system for the modern voyager.",
       "monoSubtext": "Ask anything. Book everything.",
-      "cta": "Search flights"
+      "cta": "Search flights",
+      "titleTop": "Fly anywhere",
+      "titleBottom": "for less.",
+      "blurb": "Every major flight and hotel supplier, compared at once. Taxes and fees included, no booking fee.",
+      "searchType": "Search type",
+      "tabs": {
+        "flights": "Flights",
+        "hotels": "Hotels",
+        "budget": "Where can I go?"
+      },
+      "flightType": "Flight type",
+      "travelers": "Travelers",
+      "searchFlights": "Search flights",
+      "searchHotels": "Search hotels",
+      "where": "Where",
+      "checkIn": "Check in",
+      "checkOut": "Check out",
+      "guests": "Guests",
+      "maxBudget": "Maximum budget",
+      "maxTripBudget": "Maximum trip budget",
+      "whatAfter": "What are you after?"
     },
     "search": {
       "from": "From",
@@ -553,6 +743,50 @@
       "stay": "Stay",
       "flight": "Flight",
       "showLess": "Show less"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Book your next trip in three simple steps.",
+      "steps": {
+        "search": {
+          "title": "Search",
+          "description": "Enter your destination, dates, and traveler count to find the best flights and hotels."
+        },
+        "compare": {
+          "title": "Compare",
+          "description": "Browse real-time prices across airlines and hotels. Filter by price, rating, or amenities."
+        },
+        "book": {
+          "title": "Book",
+          "description": "Secure your trip in minutes with safe, encrypted checkout. Instant confirmation every time."
+        }
+      }
+    },
+    "popularDestinations": {
+      "title": "Popular Destinations",
+      "subtitle": "Explore top spots across Asia-Pacific — search flights and hotels in seconds."
+    },
+    "deals": {
+      "save": "Save deal"
+    },
+    "quickAccess": "Quick Access",
+    "telemetry": {
+      "systemNominal": "System Nominal",
+      "smartPriceTracking": "Smart Price Tracking",
+      "lowDetected": "24h Low detected. Buy advised.",
+      "gate": "Gate",
+      "confirmed": "CONFIRMED",
+      "viewBoardingPass": "View Boarding Pass",
+      "humidity": "HUM: 45%",
+      "visibility": "VIS: 10mi",
+      "flight": "Flight"
+    },
+    "flightRowSubtitle": "Round trip, all-in, next 60 days",
+    "hotelRowTitle": "Stays travelers are booking",
+    "hotelRowSubtitle": "Total price per night, taxes and resort fees included",
+    "perNight": "/ night",
+    "faq": {
+      "eyebrow": "Before you book"
     }
   },
   "languagePicker": {
@@ -1204,7 +1438,8 @@
         "description": "This property is managed by our partner booking system. Indicative prices are shown below. Please contact us to confirm availability and complete your reservation."
       },
       "showLess": "Show less",
-      "checkAtCheckout": "Check at checkout"
+      "checkAtCheckout": "Check at checkout",
+      "room": "Room"
     },
     "savePercent": "SAVE {percent}%",
     "weather": {
@@ -1297,7 +1532,8 @@
       "mealPlan": "Meal plan",
       "cancellationPolicy": "Cancellation policy",
       "price": "Price"
-    }
+    },
+    "metaDescription": "Rates, rooms and photos for {name}. Compare prices and book with free cancellation where available."
   },
   "propertyGallery": {
     "alt": {
@@ -1426,7 +1662,9 @@
       "body": "Add to your home screen for faster access.",
       "install": "Install",
       "dismiss": "Not now"
-    }
+    },
+    "addToHomeScreen": "Add to Home Screen",
+    "closeGuide": "Close guide"
   },
   "reviewsSection": {
     "aggregatedNote": "Guest score is based on aggregated ratings.",
@@ -1500,7 +1738,40 @@
       "clusterChecking": "checking {count}…",
       "clusterHotels": "{count} hotels",
       "clusterFrom": "from {price}"
-    }
+    },
+    "freeCancel": "Free cancel",
+    "recent": "Recent",
+    "trending": "Trending right now",
+    "clear": "Clear",
+    "cityAirportPlaceholder": "Search cities, airports…",
+    "viewStay": "View Stay",
+    "hotelsPlaceholder": "Search for hotels",
+    "destination": "Destination",
+    "chatWithCheap": "Chat with Cheap",
+    "chatPlaceholder": "Ask anything — flights, hotels, trip planning...",
+    "hotels": "Hotels",
+    "prose": {
+      "flyFrom": "Fly me from ",
+      "to": " to",
+      "stayIn": "Find me a stay in",
+      "onDates": ", on ",
+      "fromDates": ", from ",
+      "withTravelers": ", with ",
+      "anywhere": "somewhere amazing",
+      "sometime": "sometime soon",
+      "justMe": "just me",
+      "ofUs": "{count} of us"
+    },
+    "trendingCities": "Popular cities",
+    "imFlexible": "I'm flexible",
+    "oneWay": "One-way",
+    "roundTrip": "Round-trip",
+    "whenFlying": "When are you flying?",
+    "pickDates": "Pick your dates",
+    "nights": "{count, plural, one {# night} other {# nights}}",
+    "listView": "List View",
+    "mapView": "Map View",
+    "metaTitle": "Search hotels and stays"
   },
   "seo": {
     "orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
@@ -1513,7 +1784,9 @@
       "a3": "Yes, searching and comparing prices on CheapestGo is completely free. You only pay when you book.",
       "q4": "What currencies does CheapestGo support?",
       "a4": "CheapestGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency."
-    }
+    },
+    "homeTitle": "Discover and Book Your Next Global Journey",
+    "homeDescription": "Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world."
   },
   "theme": {
     "switchToDark": "Switch to dark mode",
@@ -1579,7 +1852,11 @@
       "retrying": "Retrying...",
       "title": "Cancel Booking",
       "tryAgain": "Try again",
-      "unableToLoadPolicy": "Unable to load policy"
+      "unableToLoadPolicy": "Unable to load policy",
+      "unableTitle": "Unable to Proceed",
+      "important": "Important:",
+      "confirmQuestion": "Are you absolutely sure you want to cancel this booking?",
+      "confirm": "Confirm Cancellation"
     },
     "cancellationPolicies": {
       "before": "Before: ",
@@ -1724,7 +2001,8 @@
       "voidQuote": "Void quote",
       "departFrom": "Depart from",
       "arriveAt": "Arrive at",
-      "totalFlightDuration": "Total Flight Duration"
+      "totalFlightDuration": "Total Flight Duration",
+      "flight": "Flight"
     },
     "labels": {
       "afterDatePenalty": "After {date}: penalty of {amount}",
@@ -1868,13 +2146,29 @@
     "invoice": {
       "downloadPdf": "Download PDF",
       "generating": "Generating…",
-      "print": "Print"
+      "print": "Print",
+      "pdfError": "Could not build the PDF. You can still print this page.",
+      "loadError": "Unable to load invoice"
     },
     "v2": {
       "backToMyTrips": "Back to My Trips",
       "downloadETicket": "Download E-Ticket",
       "refundNotice": "Refund eligibility is subject to airline fare rules."
-    }
+    },
+    "refund": {
+      "summary": "Refund Summary",
+      "full": "Full Refund",
+      "paid": "Paid",
+      "penalty": "Penalty",
+      "refund": "Refund",
+      "nonRefundable": "Non-Refundable"
+    },
+    "pnr": "PNR:",
+    "eTicket": "E-Ticket",
+    "pageSubtitle": "View and manage all your bookings.",
+    "viewDetails": "View Details",
+    "emptyHint": "Ready to explore? Find flights and hotels at the best prices.",
+    "bookingDetails": "Booking Details"
   },
   "support": {
     "title": "Support",
@@ -1908,7 +2202,7 @@
     "fileExpired": "no longer stored"
   },
   "help": {
-    "title": "Help | CheapestGo",
+    "title": "Help",
     "description": "Answers about bookings, refunds and payments, and how to reach our team.",
     "pageTitle": "Help",
     "pageSubtitle": "Answers to the things people ask most, and a way to reach a person.",
@@ -1938,5 +2232,72 @@
         "body": "That charge is an authorisation that was never completed, and your bank releases it on its own, usually within a few days. If it has not cleared, or if you were charged and a booking does exist that you did not intend, message us with the reference and we will trace it."
       }
     }
+  },
+  "common": {
+    "close": "Close",
+    "openInMaps": "Open in Maps",
+    "currency": "Currency",
+    "language": "Language",
+    "settings": "Settings",
+    "primary": "Primary",
+    "closeSettings": "Close settings",
+    "scrollToTop": "Scroll to top",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right",
+    "filter": "Filter",
+    "share": "Share",
+    "freeCancel": "Free cancel",
+    "back": "Back",
+    "retry": "Retry",
+    "goBack": "Go back"
+  },
+  "account": {
+    "title": "My Account",
+    "subtitle": "Manage your profile, preferences, and saved items.",
+    "preferences": {
+      "title": "Preferences",
+      "subtitle": "Customize your browsing and notification settings.",
+      "displayCurrency": "Display Currency",
+      "language": "Language",
+      "notifications": "Notifications",
+      "emailNotifications": "Email notifications",
+      "emailNotificationsHint": "Booking confirmations, price alerts, and trip reminders"
+    },
+    "priceAlerts": {
+      "title": "Price Alerts",
+      "subtitle": "Get notified when prices drop for your saved routes.",
+      "emptyTitle": "No price alerts",
+      "emptyBody": "Set up alerts from the search results page to track prices.",
+      "alertAt": "Alert at",
+      "delete": "Delete alert"
+    },
+    "profile": {
+      "title": "Profile",
+      "subtitle": "Your personal account information.",
+      "admin": "Admin",
+      "displayName": "Display name",
+      "password": "Password"
+    },
+    "savedTrips": {
+      "title": "Saved Trips",
+      "hint": "Tap the heart icon on any hotel or flight to save it here.",
+      "remove": "Remove from saved"
+    }
+  },
+  "map": {
+    "noPlacesInArea": "No places found in this area",
+    "viewDeal": "View Deal",
+    "details": "Map Details",
+    "mapType": "Map Type",
+    "labels": "Labels",
+    "searchOnMap": "Search on map…",
+    "viewOnGoogleMaps": "View on Google Maps →",
+    "fromProperty": "{distance} from property"
+  },
+  "destinations": {
+    "singular": "Destination",
+    "plural": "Destinations",
+    "hotelsAvailableFor": "Hotels available for {from} — {to}",
+    "metaTitle": "Hotels in {place}"
   }
 }

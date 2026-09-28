@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     Accessibility, AirVent, ArrowUpDown, Baby, Car, Cigarette, Coffee,
@@ -400,6 +401,7 @@ export function PropertyDescription({
     price, currency = 'USD', rating, checkInTime, checkOutTime,
     amenities = [], amenityGroups, description, tone, className,
 }: PropertyDescriptionProps) {
+    const tAll = useTranslations();
     const { theme } = useTheme();
     const palette = descriptionPalette(tone ?? theme);
 
@@ -509,12 +511,12 @@ export function PropertyDescription({
                                     <span className={cn('-ml-1.5 text-[42px] font-bold tracking-[-0.02em] sm:text-[50px]', palette.title)}>
                                         {Math.round(price).toLocaleString()}
                                     </span>
-                                    <span className={cn('text-[21px] sm:text-[24px]', palette.muted)}>/night</span>
+                                    <span className={cn('text-[21px] sm:text-[24px]', palette.muted)}>{tAll('hotels.perNight')}</span>
                                 </>
                             )}
                             {hasRating && (
                                 <span className={cn('text-[22px] sm:text-[25px]', palette.soft)}>
-                                    <b className={cn('font-bold', palette.title)}>{rating.toFixed(1)}</b> rating
+                                    <b className={cn('font-bold', palette.title)}>{rating.toFixed(1)}</b> {tAll('hotels.description.rating')}
                                 </span>
                             )}
                         </div>
@@ -527,13 +529,13 @@ export function PropertyDescription({
                         <dl className={cn('shrink-0 text-right text-[18px] leading-[1.5]', palette.soft)}>
                             {inTime && (
                                 <div className="flex justify-end gap-2">
-                                    <dt className={cn('font-bold', palette.title)}>CHECK-IN</dt>
+                                    <dt className={cn('font-bold', palette.title)}>{tAll('hotels.description.checkIn')}</dt>
                                     <dd>{inTime}</dd>
                                 </div>
                             )}
                             {outTime && (
                                 <div className="flex justify-end gap-2">
-                                    <dt className={cn('font-bold', palette.title)}>OUT</dt>
+                                    <dt className={cn('font-bold', palette.title)}>{tAll('hotels.description.checkOut')}</dt>
                                     <dd>{outTime}</dd>
                                 </div>
                             )}

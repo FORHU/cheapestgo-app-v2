@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { ArrowLeft, Compass, List, Map as MapIcon, Moon, SlidersHorizontal, Sun } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -89,6 +90,7 @@ export function SearchTopBar({
     filters, pois,
     showRegionControls = false,
 }: SearchTopBarProps) {
+    const tAll = useTranslations();
     const chrome = sortPalette(tone);
 
     /** A control at rest, and the inverted chip a toggle takes while it is on. */
@@ -116,7 +118,7 @@ export function SearchTopBar({
             {/* Back — leaves the search, from either view. */}
             <button
                 onClick={onBack}
-                aria-label="Go back"
+                aria-label={tAll('common.goBack')}
                 className={ICON_BTN}
                 style={rest}>
                 <ArrowLeft size={13} className="md:size-[15px]" style={{ color: chrome.text }} />
@@ -148,8 +150,8 @@ export function SearchTopBar({
                     <button
                         onClick={filters.onToggle}
                         aria-expanded={filters.open}
-                        aria-label="Filters"
-                        title="Filters"
+                        aria-label={tAll('flights.results.filters')}
+                        title={tAll('flights.results.filters')}
                         className={cn(ICON_BTN, 'relative transition-colors', filters.mobileOnly && 'lg:hidden')}
                         style={filters.open || (filters.activeCount ?? 0) > 0 ? lit : rest}>
                         <SlidersHorizontal size={13} className="md:size-[15px]" />
@@ -232,7 +234,7 @@ export function SearchTopBar({
                     {view === 'map'
                         ? <List size={13} className="md:size-[15px]" />
                         : <MapIcon size={13} className="md:size-[15px]" />}
-                    <span className="hidden md:inline">{view === 'map' ? 'List View' : 'Map View'}</span>
+                    <span className="hidden md:inline">{view === 'map' ? tAll('search.listView') : tAll('search.mapView')}</span>
                 </button>
             </div>
         </div>

@@ -5,6 +5,18 @@
       "tokyo": "도쿄 럭셔리 호텔, 1박 $200 이하, 수영장 있는 곳...",
       "cebu": "다음 달 세부 커플 주말 여행...",
       "manila": "마닐라 근처 패밀리 리조트, 성인 2명 어린이 2명..."
+    },
+    "newChat": "새 대화",
+    "sendHint": "Enter로 전송 · Shift+Enter로 줄바꿈",
+    "goHome": "홈으로",
+    "askAnything": "무엇이든 물어보세요...",
+    "metaTitle": "Cheap — AI 여행 어시스턴트",
+    "greeting": "오늘은 무엇을 도와드릴까요?",
+    "suggestions": {
+      "1": "다음 달 도쿄행 저렴한 항공편을 찾아줘",
+      "2": "발리에 성인 2명이 묵을 호텔은 어떤 게 있어?",
+      "3": "예산에 맞는 파리 5일 여행을 짜줘",
+      "4": "뉴욕행 항공편이 가장 싼 날은 언제야?"
     }
   },
   "appBanner": {
@@ -30,7 +42,50 @@
       "terms": "로그인 시 {terms} 및 {privacy}에 동의하게 됩니다.",
       "termsLink": "이용약관",
       "privacyLink": "개인정보처리방침"
-    }
+    },
+    "forgotPasswordQ": "비밀번호를 잊으셨나요?",
+    "createOne": "계정 만들기",
+    "passwordPlaceholder": "비밀번호",
+    "createAccount": "계정 만들기",
+    "lastNameShort": "성",
+    "strongPassword": "안전한 비밀번호를 만드세요",
+    "checkInbox": "메일함을 확인해 주세요",
+    "clickLinkSuffix": ". 이메일의 링크를 눌러 새 비밀번호를 설정하세요.",
+    "tryAgain": "다시 시도",
+    "resetYourPassword": "비밀번호 재설정",
+    "sendResetLink": "재설정 링크 보내기",
+    "backToSignIn": "로그인으로 돌아가기",
+    "emailPlaceholder": "your@email.com",
+    "passwordUpdated": "비밀번호가 변경되었습니다",
+    "setNewPassword": "새 비밀번호 설정",
+    "chooseStrong": "계정에 사용할 안전한 비밀번호를 선택하세요.",
+    "noResetToken": "재설정 토큰을 찾을 수 없습니다. 이메일로 보내드린 링크를 사용해 주세요.",
+    "resetPassword": "비밀번호 재설정",
+    "atLeast8": "8자 이상",
+    "repeatPassword": "비밀번호를 다시 입력하세요",
+    "notUsedBefore": "이전에 사용하지 않은 비밀번호를 선택하세요",
+    "firstNameShort": "이름",
+    "forgotSubtitle": "새 비밀번호를 설정할 수 있는 링크를 이메일로 보내드립니다",
+    "welcomeBack": "다시 오신 것을 환영합니다",
+    "signInToContinue": "계속하려면 계정에 로그인하세요",
+    "createYourAccount": "계정을 만드세요",
+    "registerSubtitle": "전 세계 최저가 항공권을 찾아보세요",
+    "loginPitch": "여행, 저장한 검색, 모든 예약을 한곳에서.",
+    "registerPitch": "계정 하나로, 취급하는 모든 노선의 모든 요금을.",
+    "forgotPitch": "잠긴 것은 잠시뿐입니다. 여행 정보는 그대로 있습니다.",
+    "signInWithGoogle": "Google로 로그인",
+    "signUpWithGoogle": "Google로 가입",
+    "noAccount": "계정이 없으신가요?",
+    "haveAccount": "이미 계정이 있으신가요?",
+    "firstName": "이름",
+    "lastName": "성",
+    "agreePrefix": "가입하시면 다음에 동의하는 것으로 간주됩니다:",
+    "forgotBody": "이메일을 입력하시면 재설정 링크를 보내드립니다.",
+    "firstNameRequired": "이름을 입력해 주세요",
+    "emailRequired": "이메일을 입력해 주세요",
+    "emailInvalid": "올바른 이메일을 입력해 주세요",
+    "passwordRequired": "비밀번호를 입력해 주세요",
+    "passwordWeak": "비밀번호가 요구 조건을 충족하지 않습니다"
   },
   "checkout": {
     "back": "뒤로",
@@ -184,7 +239,8 @@
       "hotelSuccess": "호텔이 성공적으로 예약되었습니다.",
       "room": "객실",
       "total": "합계",
-      "whatsNext": "다음 단계"
+      "whatsNext": "다음 단계",
+      "downloadReceipt": "영수증 다운로드"
     },
     "summary": {
       "adult": "명",
@@ -215,9 +271,10 @@
       "freeCancellationShort": "무료 취소",
       "nonRefundable": "환불 불가",
       "termsNotProvided": "공급사가 취소 조건을 제공하지 않았습니다 — 예약 전 숙소에 확인하세요",
-      "fetchingPolicy": "취소 정책을 불러오는 중…"
+      "fetchingPolicy": "취소 정책을 불러오는 중…",
+      "flight": "항공편"
     },
-    "title": "결제 | {brand}",
+    "title": "결제",
     "userDetails": {
       "email": "이메일 *",
       "emailPlaceholder": "이메일",
@@ -300,7 +357,17 @@
     "nightsCount": "{count}박",
     "guestsCount": "{count}명",
     "roomFallback": "스탠다드 룸",
-    "confirmingFinalPrice": "최종 금액을 확인하고 있습니다…"
+    "confirmingFinalPrice": "최종 금액을 확인하고 있습니다…",
+    "paymentDetails": "결제 정보",
+    "securedByStripe": "Stripe 보안 결제",
+    "planAnotherTrip": "다른 여행 계획하기",
+    "agreePrefix": "계속하면 다음에 동의하는 것으로 간주됩니다:",
+    "continueToPayment": "결제로 진행",
+    "signInArrow": "로그인 →",
+    "guestDetails": "투숙객 정보",
+    "paymentInfo": "결제 정보",
+    "paymentSecure": "결제 정보는 암호화되며 당사 서버에 저장되지 않습니다.",
+    "cardNamePlaceholder": "홍길동"
   },
   "currencyPicker": {
     "label": "통화 선택"
@@ -316,7 +383,14 @@
     "subtitleDefault": "인기 노선 최저가 항공권",
     "subtitlePersonalized": "{city} 출발 최저가 항공권",
     "allDealsCount": "전체 {count}개 특가",
-    "collapse": "접기 ↑"
+    "collapse": "접기 ↑",
+    "limitedTime": "한정 기간 특가",
+    "loadError": "특가를 불러오지 못했습니다",
+    "emptyTitle": "현재 진행 중인 특가가 없습니다",
+    "emptyBody": "특가는 자주 업데이트되니 곧 다시 확인해 주세요.",
+    "todaysBest": "오늘의 호텔 특가",
+    "subtitle": "저희가 찾은 최저가를 엄선했습니다. 가격은 자주 바뀌니 서둘러 예약해 요금을 확정하세요.",
+    "metaTitle": "특가"
   },
   "errors": {
     "generic": "오류가 발생했습니다. 다시 시도해 주세요.",
@@ -336,20 +410,78 @@
         "direct": "직항",
         "oneStop": "경유 1회",
         "twoPlus": "경유 2회 이상"
-      }
+      },
+      "saveUpTo": "최대 8% 절약",
+      "slowTitle": "검색이 평소보다 오래 걸리고 있습니다",
+      "slowBody": "항공 공급사 응답이 느립니다. 다시 시도해 주세요.",
+      "tryAgain": "다시 시도",
+      "newSearch": "새로 검색",
+      "searchError": "검색 오류",
+      "tryAnother": "다른 조건으로 검색",
+      "filtersTitle": "항공편 필터",
+      "bundleActive": "항공 + 호텔 묶음 적용 중",
+      "bundleBody": "아래에서 항공편을 선택하세요. 결제 시 묶음 할인이 적용됩니다.",
+      "slowHint": "공급사 응답이 느립니다. 잠시만 기다려 주세요.",
+      "noMatch": "필터에 맞는 항공편이 없습니다",
+      "noMatchHint": "필터 조건을 조정해 보세요.",
+      "checkingProviders": "여러 공급사를 확인하는 중",
+      "noFlights": "항공편을 찾을 수 없습니다",
+      "findingFares": "최적의 요금을 찾는 중…"
     },
     "card": {
       "direct": "직항",
       "stop": "회 경유",
       "stops": "회 경유",
       "viewDeal": "요금 보기",
-      "perPerson": "1인당"
+      "perPerson": "1인당",
+      "fareOptions": "이용 가능한 요금 옵션",
+      "currentlySelected": "현재 선택됨",
+      "includesTaxes": "세금 및 수수료 포함",
+      "freeCancellation": "무료 취소",
+      "nonRefundable": "환불 불가"
+    },
+    "filters": {
+      "cheapest": "최저가",
+      "fastest": "최단 시간",
+      "earliest": "가장 이른 출발",
+      "stops": "경유",
+      "fareType": "요금 종류",
+      "refundableOnly": "환불 가능 요금만",
+      "refundableHint": "취소 시 환불되는 요금만 표시합니다",
+      "airlines": "항공사",
+      "provider": "공급사",
+      "anyStops": "경유 무관",
+      "nonStopOnly": "직항만",
+      "upTo1Stop": "경유 1회까지"
+    },
+    "priceAlert": {
+      "loading": "불러오는 중",
+      "active": "가격 알림 켜짐",
+      "track": "가격 추적",
+      "signInRequired": "로그인이 필요합니다",
+      "remove": "알림 삭제",
+      "emailMe": "가격이 내려가면 이메일로 알려주세요"
+    },
+    "header": {
+      "fetching": "공급사 조회 중...",
+      "sources": "출처:"
+    },
+    "meta": {
+      "titleRoute": "항공편 {origin} → {destination}",
+      "title": "항공편 검색 결과",
+      "descriptionRoute": "{origin}에서 {destination}까지 가장 저렴한 항공편을 비교하고 예약하세요. {brand}에서 최고의 가격을 찾아보세요.",
+      "description": "전 세계 저렴한 항공편을 비교하고 예약하세요. {brand}에서 최고의 가격을 찾아보세요."
+    },
+    "passengers": {
+      "adults": "성인 {count}명",
+      "children": "어린이 {count}명",
+      "infants": "유아 {count}명"
     }
   },
   "footer": {
     "tagline": "안목 있는 여행자를 위해 정밀하게 설계되었습니다.",
     "taglinePrecision": "정밀한 데이터. 타협 없는 서비스.",
-    "poweredBy": "Powered by Duffel & TravelgateX.",
+    "poweredBy": "Duffel 및 TravelgateX 제공.",
     "module": "모듈",
     "flights": "항공편",
     "hotels": "호텔",
@@ -361,7 +493,7 @@
     "network": "네트워크",
     "flightsApi": "항공편 API",
     "paymentGateway": "결제 게이트웨이",
-    "copyright": "© 2026 FORHU Inc. All rights reserved.",
+    "copyright": "© 2026 FORHU Inc. 모든 권리 보유.",
     "terms": "이용약관",
     "privacy": "개인정보",
     "cookies": "쿠키",
@@ -371,7 +503,8 @@
     "privacyMinimal": "개인정보처리방침",
     "cookiesMinimal": "쿠키 설정",
     "contactMinimal": "문의하기",
-    "reportBug": "버그 신고"
+    "reportBug": "버그 신고",
+    "manageBooking": "예약 관리"
   },
   "guestFavorites": {
     "headerMain": "고객",
@@ -399,7 +532,44 @@
     "subtitleDefault": "엄선된 호텔을 최저가에 제공",
     "subtitlePersonalized": "{country} 인기 호텔 · 매일 업데이트",
     "allHotelsCount": "전체 {count}개 호텔",
-    "collapse": "접기 ↑"
+    "collapse": "접기 ↑",
+    "filters": {
+      "reset": "초기화",
+      "adjustPrice": "가격 조정",
+      "minPerNight": "1박 최저 가격",
+      "maxPerNight": "1박 최고 가격",
+      "hide": "필터 숨기기",
+      "show": "필터 보기",
+      "close": "필터 닫기",
+      "clear": "필터 초기화"
+    },
+    "results": {
+      "searchFailed": "검색에 실패했습니다.",
+      "loadingPrices": "가격 불러오는 중…",
+      "noMatchHint": "필터나 날짜를 조정하거나 가까운 도시를 검색해 보세요."
+    },
+    "nearby": {
+      "none": "근처에서 장소를 찾을 수 없습니다."
+    },
+    "description": {
+      "rating": "평점",
+      "checkIn": "체크인",
+      "checkOut": "체크아웃"
+    },
+    "review": {
+      "thanks": "리뷰를 남겨 주셔서 감사합니다!",
+      "shareTitle": "경험을 공유해 주세요",
+      "placeholder": "숙박 경험을 다른 분들께 알려주세요...",
+      "basedOnCount": "리뷰 <b>{count}</b>건 기준"
+    },
+    "rooms": {
+      "viewMore": "더 보기",
+      "noMatch": "해당 요금에 맞는 객실이 없습니다. 다른 필터를 사용해 보세요.",
+      "paymentTerms": "결제 조건",
+      "pages": "객실 페이지",
+      "prevPage": "이전 페이지",
+      "nextPage": "다음 페이지"
+    }
   },
   "invoice": {
     "amount": "금액",
@@ -430,7 +600,27 @@
       "titleLine2": "당신만을 위한 설계.",
       "subtitle": "현대 여행자를 위한 운영체제.",
       "monoSubtext": "무엇이든 물어보고, 모든 것을 예약하세요.",
-      "cta": "항공편 검색"
+      "cta": "항공편 검색",
+      "titleTop": "어디든 떠나세요",
+      "titleBottom": "더 저렴하게.",
+      "blurb": "주요 항공사와 호텔 공급사를 한 번에 비교합니다. 세금과 수수료 포함, 예약 수수료 없음.",
+      "searchType": "검색 유형",
+      "tabs": {
+        "flights": "항공편",
+        "hotels": "호텔",
+        "budget": "어디로 갈 수 있나요?"
+      },
+      "flightType": "항공편 종류",
+      "travelers": "탑승객",
+      "searchFlights": "항공편 검색",
+      "searchHotels": "호텔 검색",
+      "where": "목적지",
+      "checkIn": "체크인",
+      "checkOut": "체크아웃",
+      "guests": "인원",
+      "maxBudget": "최대 예산",
+      "maxTripBudget": "최대 여행 예산",
+      "whatAfter": "무엇을 찾으시나요?"
     },
     "search": {
       "from": "출발지",
@@ -553,6 +743,50 @@
       "stay": "숙소",
       "flight": "항공편",
       "showLess": "접기"
+    },
+    "howItWorks": {
+      "title": "이용 방법",
+      "subtitle": "세 단계로 다음 여행을 예약하세요.",
+      "steps": {
+        "search": {
+          "title": "검색",
+          "description": "목적지, 날짜, 인원을 입력해 가장 좋은 항공편과 호텔을 찾아보세요."
+        },
+        "compare": {
+          "title": "비교",
+          "description": "항공사와 호텔의 실시간 가격을 살펴보고 가격·평점·편의시설로 걸러보세요."
+        },
+        "book": {
+          "title": "예약",
+          "description": "안전한 암호화 결제로 몇 분 만에 예약하고, 즉시 확정을 받으세요."
+        }
+      }
+    },
+    "popularDestinations": {
+      "title": "인기 여행지",
+      "subtitle": "아시아·태평양의 인기 지역을 둘러보고 항공편과 호텔을 몇 초 만에 검색하세요."
+    },
+    "deals": {
+      "save": "특가 저장"
+    },
+    "quickAccess": "바로가기",
+    "telemetry": {
+      "systemNominal": "시스템 정상",
+      "smartPriceTracking": "스마트 가격 추적",
+      "lowDetected": "24시간 최저가 감지. 지금 구매 권장.",
+      "gate": "게이트",
+      "confirmed": "확정",
+      "viewBoardingPass": "탑승권 보기",
+      "humidity": "습도: 45%",
+      "visibility": "시정: 10mi",
+      "flight": "항공편"
+    },
+    "flightRowSubtitle": "왕복, 총액, 향후 60일",
+    "hotelRowTitle": "여행자들이 예약 중인 숙소",
+    "hotelRowSubtitle": "1박 총액, 세금 및 리조트 요금 포함",
+    "perNight": "/ 박",
+    "faq": {
+      "eyebrow": "예약 전에"
     }
   },
   "languagePicker": {
@@ -1204,7 +1438,8 @@
         "description": "이 숙소는 파트너 예약 시스템을 통해 운영됩니다. 아래 가격은 참고용입니다. 가용성 확인 및 예약 완료를 위해 문의해 주세요."
       },
       "showLess": "간략히 보기",
-      "checkAtCheckout": "결제 단계에서 확인"
+      "checkAtCheckout": "결제 단계에서 확인",
+      "room": "객실"
     },
     "savePercent": "{percent}% 절약",
     "weather": {
@@ -1297,7 +1532,8 @@
       "mealPlan": "식사 조건",
       "cancellationPolicy": "취소 정책",
       "price": "요금"
-    }
+    },
+    "metaDescription": "{name}의 요금, 객실, 사진을 확인하세요. 가격을 비교하고 가능한 경우 무료 취소로 예약하실 수 있습니다."
   },
   "propertyGallery": {
     "alt": {
@@ -1426,7 +1662,9 @@
       "body": "홈 화면에 추가하면 더 빠르게 이용할 수 있습니다.",
       "install": "설치",
       "dismiss": "나중에"
-    }
+    },
+    "addToHomeScreen": "홈 화면에 추가",
+    "closeGuide": "안내 닫기"
   },
   "reviewsSection": {
     "aggregatedNote": "게스트 점수는 집계된 평점을 기반으로 합니다.",
@@ -1500,7 +1738,40 @@
       "clusterChecking": "{count}곳 확인 중…",
       "clusterHotels": "호텔 {count}곳",
       "clusterFrom": "{price}부터"
-    }
+    },
+    "freeCancel": "무료 취소",
+    "recent": "최근",
+    "trending": "지금 인기",
+    "clear": "지우기",
+    "cityAirportPlaceholder": "도시, 공항 검색…",
+    "viewStay": "숙소 보기",
+    "hotelsPlaceholder": "호텔 검색",
+    "destination": "여행지",
+    "chatWithCheap": "Cheap와 채팅",
+    "chatPlaceholder": "무엇이든 물어보세요 — 항공, 호텔, 여행 계획...",
+    "hotels": "호텔",
+    "prose": {
+      "flyFrom": "출발 ",
+      "to": " 도착",
+      "stayIn": "숙소",
+      "onDates": ", 날짜 ",
+      "fromDates": ", 날짜 ",
+      "withTravelers": ", 인원 ",
+      "anywhere": "어딘가 멋진 곳",
+      "sometime": "언젠가 곧",
+      "justMe": "혼자",
+      "ofUs": "{count}명"
+    },
+    "trendingCities": "인기 도시",
+    "imFlexible": "날짜 미정",
+    "oneWay": "편도",
+    "roundTrip": "왕복",
+    "whenFlying": "언제 출발하시나요?",
+    "pickDates": "날짜를 선택하세요",
+    "nights": "{count}박",
+    "listView": "목록 보기",
+    "mapView": "지도 보기",
+    "metaTitle": "호텔·숙소 검색"
   },
   "seo": {
     "orgDescription": "CheapestGo는 전 세계 최저가 항공권과 호텔을 찾는 현대적인 여행 예약 플랫폼입니다.",
@@ -1513,7 +1784,9 @@
       "a3": "네, 가격 검색과 비교는 완전히 무료입니다. 예약할 때만 비용이 발생합니다.",
       "q4": "CheapestGo는 어떤 통화를 지원하나요?",
       "a4": "CheapestGo는 다양한 통화를 지원하며 설정에 따라 자동으로 가격을 변환해 현지 통화로 확인할 수 있습니다."
-    }
+    },
+    "homeTitle": "다음 여행지를 찾아 예약하세요",
+    "homeDescription": "전 세계 최고의 여행 특가를 만나보세요. 항공편과 호텔을 손쉽게 계획하고, 비용을 아끼고, 세계를 탐험해 보세요."
   },
   "theme": {
     "switchToDark": "다크 모드로 전환",
@@ -1579,7 +1852,11 @@
       "retrying": "재시도 중...",
       "title": "예약 취소",
       "tryAgain": "다시 시도",
-      "unableToLoadPolicy": "정책을 불러올 수 없습니다"
+      "unableToLoadPolicy": "정책을 불러올 수 없습니다",
+      "unableTitle": "진행할 수 없습니다",
+      "important": "중요:",
+      "confirmQuestion": "이 예약을 정말 취소하시겠습니까?",
+      "confirm": "취소 확정"
     },
     "cancellationPolicies": {
       "before": "이전: ",
@@ -1724,7 +2001,8 @@
       "voidNotAvailable": "보이드 불가",
       "voidNotAvailablePolicy": "보이드 불가 (항공사 정책)",
       "voidQuote": "보이드 견적",
-      "totalFlightDuration": "총 비행 시간"
+      "totalFlightDuration": "총 비행 시간",
+      "flight": "항공편"
     },
     "labels": {
       "afterDatePenalty": "{date} 이후: {amount} 위약금",
@@ -1868,13 +2146,29 @@
     "invoice": {
       "downloadPdf": "PDF 다운로드",
       "generating": "생성 중…",
-      "print": "인쇄"
+      "print": "인쇄",
+      "pdfError": "PDF를 만들지 못했습니다. 이 페이지를 인쇄할 수 있습니다.",
+      "loadError": "청구서를 불러올 수 없습니다"
     },
     "v2": {
       "backToMyTrips": "내 여행으로 돌아가기",
       "downloadETicket": "전자항공권 다운로드",
       "refundNotice": "환불 가능 여부는 항공사 운임 규정에 따릅니다."
-    }
+    },
+    "refund": {
+      "summary": "환불 요약",
+      "full": "전액 환불",
+      "paid": "결제 금액",
+      "penalty": "위약금",
+      "refund": "환불액",
+      "nonRefundable": "환불 불가"
+    },
+    "pnr": "예약번호:",
+    "eTicket": "전자항공권",
+    "pageSubtitle": "모든 예약을 확인하고 관리하세요.",
+    "viewDetails": "상세 보기",
+    "emptyHint": "떠날 준비가 되셨나요? 최저가 항공편과 호텔을 찾아보세요.",
+    "bookingDetails": "예약 상세"
   },
   "support": {
     "title": "고객지원",
@@ -1908,7 +2202,7 @@
     "fileExpired": "보관 기간 만료"
   },
   "help": {
-    "title": "고객지원 | AirangGo",
+    "title": "고객지원",
     "description": "예약, 환불, 결제에 대한 안내와 문의 방법입니다.",
     "pageTitle": "고객지원",
     "pageSubtitle": "자주 묻는 질문과 담당자에게 문의하는 방법입니다.",
@@ -1938,5 +2232,72 @@
         "body": "해당 결제는 완료되지 않은 승인 건이며, 보통 며칠 안에 카드사에서 자동으로 취소됩니다. 기간이 지나도 취소되지 않았거나, 의도하지 않은 예약이 결제와 함께 존재한다면 예약 번호와 함께 문의해 주세요. 저희가 추적해 드리겠습니다."
       }
     }
+  },
+  "common": {
+    "close": "닫기",
+    "openInMaps": "지도에서 열기",
+    "currency": "통화",
+    "language": "언어",
+    "settings": "설정",
+    "primary": "기본",
+    "closeSettings": "설정 닫기",
+    "scrollToTop": "맨 위로",
+    "scrollLeft": "왼쪽으로 스크롤",
+    "scrollRight": "오른쪽으로 스크롤",
+    "filter": "필터",
+    "share": "공유",
+    "freeCancel": "무료 취소",
+    "back": "뒤로",
+    "retry": "다시 시도",
+    "goBack": "뒤로 가기"
+  },
+  "account": {
+    "title": "내 계정",
+    "subtitle": "프로필, 환경설정, 저장한 항목을 관리하세요.",
+    "preferences": {
+      "title": "환경설정",
+      "subtitle": "탐색 및 알림 설정을 원하는 대로 바꿔보세요.",
+      "displayCurrency": "표시 통화",
+      "language": "언어",
+      "notifications": "알림",
+      "emailNotifications": "이메일 알림",
+      "emailNotificationsHint": "예약 확인, 가격 알림, 여행 리마인더"
+    },
+    "priceAlerts": {
+      "title": "가격 알림",
+      "subtitle": "저장한 노선의 가격이 내려가면 알려드립니다.",
+      "emptyTitle": "가격 알림 없음",
+      "emptyBody": "검색 결과 페이지에서 알림을 설정해 가격을 추적하세요.",
+      "alertAt": "알림 기준",
+      "delete": "알림 삭제"
+    },
+    "profile": {
+      "title": "프로필",
+      "subtitle": "개인 계정 정보입니다.",
+      "admin": "관리자",
+      "displayName": "표시 이름",
+      "password": "비밀번호"
+    },
+    "savedTrips": {
+      "title": "저장한 여행",
+      "hint": "호텔이나 항공편의 하트 아이콘을 누르면 여기에 저장됩니다.",
+      "remove": "저장 목록에서 제거"
+    }
+  },
+  "map": {
+    "noPlacesInArea": "이 지역에서 장소를 찾을 수 없습니다",
+    "viewDeal": "특가 보기",
+    "details": "지도 정보",
+    "mapType": "지도 유형",
+    "labels": "라벨",
+    "searchOnMap": "지도에서 검색…",
+    "viewOnGoogleMaps": "Google 지도에서 보기 →",
+    "fromProperty": "숙소에서 {distance}"
+  },
+  "destinations": {
+    "singular": "여행지",
+    "plural": "여행지",
+    "hotelsAvailableFor": "{from} — {to} 이용 가능한 호텔",
+    "metaTitle": "{place} 호텔"
   }
 }

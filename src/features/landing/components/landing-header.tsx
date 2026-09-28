@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
@@ -17,6 +18,7 @@ import { BRAND_NAME } from '@/shared/lib/brand';
  */
 export function LandingHeader() {
     const user = useAuthStore((s) => s.user);
+    const tAll = useTranslations();
 
     return (
         <header className="relative z-[5]">
@@ -35,7 +37,7 @@ export function LandingHeader() {
                         href={user ? '/account' : '/login'}
                         className="ml-1 rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-[#e2e8f0] transition-colors duration-150 hover:text-[#f8fafc]"
                     >
-                        {user ? 'Account' : 'Sign in'}
+                        {user ? tAll('nav.account') : tAll('nav.signIn')}
                     </Link>
                 </div>
             </div>

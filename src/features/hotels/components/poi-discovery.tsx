@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React, { useRef, useCallback, useState } from 'react';
 import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react';
 import { POI_FILTERS, type PoiCategory } from '@/shared/config/map-discovery';
@@ -16,6 +17,7 @@ interface PoiDiscoveryProps {
 }
 
 export function PoiDiscovery({ coordinates }: PoiDiscoveryProps) {
+    const tAll = useTranslations();
     const [category, setCategory]       = useState<PoiCategory>('all');
     const [radius, setRadius]           = useState(2000);
     const [dropdownOpen, setDropdown]   = useState(false);
@@ -163,7 +165,7 @@ export function PoiDiscovery({ coordinates }: PoiDiscoveryProps) {
 
                     {!loading && gems.length === 0 && (
                         <p className="text-xs text-slate-400 dark:text-slate-500 py-4">
-                            No places found nearby.
+                            {tAll('hotels.nearby.none')}
                         </p>
                     )}
                 </div>

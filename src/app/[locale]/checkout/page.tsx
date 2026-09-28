@@ -174,7 +174,8 @@ function StripePaymentForm({
     submitting: boolean;
     setSubmitting: (v: boolean) => void;
 }) {
-    const stripe   = useStripe();
+    const t = useTranslations('checkout');
+    const stripe = useStripe();
     const elements = useElements();
 
     const handlePay = useCallback(async () => {
@@ -203,10 +204,10 @@ function StripePaymentForm({
             <div style={{ background: 'rgba(255,255,255,.04)', border: `1px solid ${BORDER}`, borderRadius: 18, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                     <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <CreditCard size={16} color={ACCENT} /> Payment details
+                        <CreditCard size={16} color={ACCENT} /> {t('paymentDetails')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(245,239,228,.5)', fontWeight: 600 }}>
-                        <Lock size={10} /> Secured by Stripe
+                        <Lock size={10} /> {t('securedByStripe')}
                     </div>
                 </div>
                 <PaymentElement
@@ -248,6 +249,7 @@ function ConfirmedScreen({
     onHome:       () => void;
     onTrips:      () => void;
 }) {
+    const tAll = useTranslations();
     const t = useTranslations('checkout');
     const fmtDate = (d: string) => d
         ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
@@ -279,7 +281,7 @@ function ConfirmedScreen({
                     onClick={onHome}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'rgba(245,239,228,.6)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
                 >
-                    <ArrowLeft size={15} /> Home
+                    <ArrowLeft size={15} /> {tAll('property.breadcrumbHome')}
                 </button>
 
                 {/* Stamp */}
@@ -352,7 +354,7 @@ function ConfirmedScreen({
                                 <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>Room</div>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
                                 <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
                                 {nights && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
                             </div>
@@ -390,20 +392,20 @@ function ConfirmedScreen({
                         onClick={() => window.print()}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 100, border: `1.5px solid rgba(255,255,255,.2)`, background: 'rgba(255,255,255,.06)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
                     >
-                        <Download size={15} /> Download receipt
+                        <Download size={15} /> {tAll('checkout.success.downloadReceipt')}
                     </button>
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button
                             onClick={onHome}
                             style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
                         >
-                            Plan another trip
+                            {t('planAnotherTrip')}
                         </button>
                         <button
                             onClick={onTrips}
                             style={{ padding: '12px 24px', borderRadius: 100, border: `1.5px solid rgba(255,255,255,.2)`, background: 'transparent', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "var(--font-jakarta)" }}
                         >
-                            View my trips
+                            {t('success.viewMyTrips')}
                         </button>
                     </div>
                 </div>
@@ -415,7 +417,10 @@ function ConfirmedScreen({
 // ─── Checkout inner ───────────────────────────────────────────────────────────
 
 function CheckoutContent() {
+    const tAll = useTranslations();
     const t            = useTranslations('checkout');
+    // The footer's namespace, for the two link labels in the consent line below.
+    const tRoot        = useTranslations();
     const searchParams = useSearchParams();
     const router       = useRouter();
     const { user }     = useAuthStore();
@@ -704,15 +709,16 @@ function CheckoutContent() {
 
     // ── Not logged in helper ──
     function AuthBanner() {
+    const tAll = useTranslations();
         if (user) return null;
         return (
             <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(255,193,7,.3)', background: 'rgba(255,193,7,.08)', fontSize: 13, color: 'rgba(245,239,228,.85)' }}>
-                <strong style={{ color: '#FFC107' }}>Sign in</strong> to complete your booking.{' '}
+                <strong style={{ color: '#FFC107' }}>{tAll('nav.signIn')}</strong> to complete your booking.{' '}
                 <button
                     onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
                     style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: "var(--font-jakarta)" }}
                 >
-                    Sign in →
+                    {tAll('checkout.signInArrow')}
                 </button>
             </div>
         );
@@ -787,7 +793,7 @@ function CheckoutContent() {
                             {cabin && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)' }}>{cabin}</div>}
                             <div style={{ height: 1, background: BORDER, margin: '14px 0' }} />
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff' }}>
-                                <span>Total</span><span>{flightCurrency} {totalAmount.toLocaleString()}</span>
+                                <span>{tAll('checkout.success.total')}</span><span>{flightCurrency} {totalAmount.toLocaleString()}</span>
                             </div>
                         </>
                     )}
@@ -805,11 +811,11 @@ function CheckoutContent() {
                         onClick={handleBack}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: 'rgba(245,239,228,.6)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
                     >
-                        <ArrowLeft size={15} /> Back
+                        <ArrowLeft size={15} /> {tAll('checkout.back')}
                     </button>
 
                     <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
-                        Complete your booking
+                        {t('completeYourBooking')}
                     </div>
 
                     {errorMsg && (
@@ -828,29 +834,29 @@ function CheckoutContent() {
                                     </div>
                                     <Grid2>
                                         <div>
-                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder="First name" style={mkInput(!!passengerErrors[`${i}.firstName`])} />
+                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} style={mkInput(!!passengerErrors[`${i}.firstName`])} />
                                             <ErrText msg={passengerErrors[`${i}.firstName`]} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder="Last name" style={mkInput(!!passengerErrors[`${i}.lastName`])} />
+                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} style={mkInput(!!passengerErrors[`${i}.lastName`])} />
                                             <ErrText msg={passengerErrors[`${i}.lastName`]} />
                                         </div>
                                     </Grid2>
                                     <FieldRow>
-                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder="Email" style={mkInput(!!passengerErrors[`${i}.email`])} />
+                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} style={mkInput(!!passengerErrors[`${i}.email`])} />
                                         <ErrText msg={passengerErrors[`${i}.email`]} />
                                     </FieldRow>
                                     <FieldRow>
-                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder="Phone" style={mkInput(!!passengerErrors[`${i}.phone`])} />
+                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder={tAll('checkout.userDetails.phone')} style={mkInput(!!passengerErrors[`${i}.phone`])} />
                                         <ErrText msg={passengerErrors[`${i}.phone`]} />
                                     </FieldRow>
                                     <Grid2>
                                         <div>
-                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder="Date of birth" style={mkInput(!!passengerErrors[`${i}.dateOfBirth`])} />
+                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder={tAll('checkout.userDetails.dateOfBirth')} style={mkInput(!!passengerErrors[`${i}.dateOfBirth`])} />
                                             <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder="Passport number" style={mkInput(!!passengerErrors[`${i}.passportNumber`])} />
+                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} style={mkInput(!!passengerErrors[`${i}.passportNumber`])} />
                                             <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
                                         </div>
                                     </Grid2>
@@ -860,7 +866,7 @@ function CheckoutContent() {
                                 Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </PrimaryBtn>
                             <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
-                                By continuing you agree to our <Link href="/terms" style={{ color: ACCENT }}>Terms</Link> and <Link href="/privacy" style={{ color: ACCENT }}>Privacy Policy</Link>.
+                                {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
                             </p>
                         </div>
                         <SummaryCard />
@@ -886,7 +892,7 @@ function CheckoutContent() {
                 </button>
 
                 <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
-                    Complete your booking
+                    {t('completeYourBooking')}
                 </div>
 
                 <ProgressBar step={step} />
@@ -906,28 +912,28 @@ function CheckoutContent() {
                         {step === 'form' && (
                             <>
                                 <div style={formCardStyle}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>Who&rsquo;s checking in?</div>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>{t('whosCheckingIn')}</div>
                                     <Grid2>
                                         <div>
-                                            <input type="text" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="First name" style={mkInput(!!guestErrors.firstName)} />
+                                            <input type="text" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} style={mkInput(!!guestErrors.firstName)} />
                                             <ErrText msg={guestErrors.firstName} />
                                         </div>
                                         <div>
-                                            <input type="text" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Last name" style={mkInput(!!guestErrors.lastName)} />
+                                            <input type="text" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} style={mkInput(!!guestErrors.lastName)} />
                                             <ErrText msg={guestErrors.lastName} />
                                         </div>
                                     </Grid2>
                                     <FieldRow>
-                                        <input type="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="Email address" style={mkInput(!!guestErrors.email)} />
+                                        <input type="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={tAll('auth.signIn.emailLabel')} style={mkInput(!!guestErrors.email)} />
                                         <ErrText msg={guestErrors.email} />
                                     </FieldRow>
                                     <FieldRow>
-                                        <input type="tel" value={guest.phone} onChange={e => onGuest('phone', e.target.value)} placeholder="Phone number" style={mkInput(!!guestErrors.phone)} />
+                                        <input type="tel" value={guest.phone} onChange={e => onGuest('phone', e.target.value)} placeholder={tAll('checkout.userDetails.phoneNumber')} style={mkInput(!!guestErrors.phone)} />
                                         <ErrText msg={guestErrors.phone} />
                                     </FieldRow>
                                 </div>
                                 <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting}>
-                                    Continue to payment
+                                    {t('continueToPayment')}
                                 </PrimaryBtn>
                             </>
                         )}
@@ -953,7 +959,7 @@ function CheckoutContent() {
                         )}
 
                         <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
-                            By continuing you agree to our <Link href="/terms" style={{ color: ACCENT }}>Terms</Link> and <Link href="/privacy" style={{ color: ACCENT }}>Privacy Policy</Link>.
+                            {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
                         </p>
                     </div>
 

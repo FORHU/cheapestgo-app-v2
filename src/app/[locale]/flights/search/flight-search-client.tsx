@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
@@ -99,25 +100,26 @@ function _getProviderCounts(offers: FlightOffer[]): Record<string, number> {
 // ─── Error / Timeout banners ──────────────────────────────────────────────────
 
 function TimeoutBanner({ onRetry }: { onRetry: () => void }) {
+    const tAll = useTranslations();
     return (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-10 text-center space-y-4">
             <div className="text-5xl">⏱️</div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Search is taking longer than usual</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white">{tAll('flights.results.slowTitle')}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                Flight providers are responding slowly. Please try again.
+                {tAll('flights.results.slowBody')}
             </p>
             <div className="flex gap-3 justify-center mt-2">
                 <button
                     onClick={onRetry}
                     className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-full transition-colors"
                 >
-                    Try Again
+                    {tAll('flights.results.tryAgain')}
                 </button>
                 <Link
                     href="/"
                     className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white text-sm font-semibold rounded-full transition-colors"
                 >
-                    New Search
+                    {tAll('flights.results.newSearch')}
                 </Link>
             </div>
         </div>
@@ -125,15 +127,16 @@ function TimeoutBanner({ onRetry }: { onRetry: () => void }) {
 }
 
 function ErrorBanner({ message }: { message: string }) {
+    const tAll = useTranslations();
     return (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-8 rounded-2xl text-center space-y-3">
-            <p className="text-lg font-bold text-red-700 dark:text-red-400">Search Error</p>
+            <p className="text-lg font-bold text-red-700 dark:text-red-400">{tAll('flights.results.searchError')}</p>
             <p className="text-sm text-red-600 dark:text-red-300">{message}</p>
             <Link
                 href="/"
                 className="block mt-2 text-sm font-semibold text-red-700 dark:text-red-400 hover:underline"
             >
-                Try another search
+                {tAll('flights.results.tryAnother')}
             </Link>
         </div>
     );
@@ -142,6 +145,7 @@ function ErrorBanner({ message }: { message: string }) {
 // ─── Main Client Component ────────────────────────────────────────────────────
 
 export function FlightSearchClient() {
+    const tAll = useTranslations();
     const sp = useSearchParams();
     const router = useRouter();
 
@@ -414,7 +418,7 @@ export function FlightSearchClient() {
                             >
                                 <X size={16} className="text-slate-700 dark:text-slate-300" />
                             </button>
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white absolute left-1/2 -translate-x-1/2">Flight Filters</h2>
+                            <h2 className="text-sm font-bold text-slate-900 dark:text-white absolute left-1/2 -translate-x-1/2">{tAll('flights.results.filtersTitle')}</h2>
                             <div className="w-8" />
                         </div>
 
@@ -442,11 +446,13 @@ export function FlightSearchClient() {
         </AnimatePresence>
     );
 
-    const cabinLabel = params.cabin.replace('_', ' ');
+    // `economy` / `premium_economy` in the URL, `landing.search.cabinClass.premiumEconomy` in
+    // the locale file.
+    const cabinLabel = tAll(`landing.search.cabinClass.${params.cabin.replace(/_(.)/g, (_, c) => c.toUpperCase())}`);
     const subtitle = [
         params.departure,
         params.returnDate && `↩ ${params.returnDate}`,
-        `${params.adults} adult${params.adults !== 1 ? 's' : ''}`,
+        tAll('flights.passengers.adults', { count: params.adults }),
         cabinLabel,
     ].filter(Boolean).join(' · ');
 
@@ -475,13 +481,13 @@ export function FlightSearchClient() {
                                 <Plane size={14} className="text-violet-600 dark:text-violet-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-violet-700 dark:text-violet-300">Flight + Hotel Bundle Active</p>
+                                <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{tAll('flights.results.bundleActive')}</p>
                                 <p className="text-[11px] text-violet-600/80 dark:text-violet-400/80">
-                                    Select a flight below — your bundle discount will be applied at checkout.
+                                    {tAll('flights.results.bundleBody')}
                                 </p>
                             </div>
                             <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded-full">
-                                Save up to 8%
+                                {tAll('flights.results.saveUpTo')}
                             </span>
                         </div>
                     )}
@@ -493,7 +499,11 @@ export function FlightSearchClient() {
                         origin={params.origin}
                         destination={params.destination}
                         dateStr={params.returnDate ? `${params.departure} — ${params.returnDate}` : params.departure}
-                        passengersStr={`${params.adults} adult${params.adults !== 1 ? 's' : ''}${params.children > 0 ? `, ${params.children} child${params.children !== 1 ? 'ren' : ''}` : ''}${params.infants > 0 ? `, ${params.infants} infant${params.infants !== 1 ? 's' : ''}` : ''} · ${cabinLabel}`}
+                        passengersStr={[
+                            tAll('flights.passengers.adults', { count: params.adults }),
+                            params.children > 0 && tAll('flights.passengers.children', { count: params.children }),
+                            params.infants > 0 && tAll('flights.passengers.infants', { count: params.infants }),
+                        ].filter(Boolean).join(', ') + ` · ${cabinLabel}`}
                         activeFilterCount={activeFilterCount}
                         statusElement={<ProviderStatus offers={rawOffers} loading={isLoading} />}
                         resultCount={filteredOffers.length}
@@ -508,7 +518,7 @@ export function FlightSearchClient() {
                             <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Still searching&hellip;</p>
-                                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">Providers are responding slowly. Hang tight.</p>
+                                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{tAll('flights.results.slowHint')}</p>
                             </div>
                         </div>
                     )}
@@ -538,8 +548,8 @@ export function FlightSearchClient() {
                         <div className="flex-1 min-w-0 space-y-4">
                             {state.status === 'success' && filteredOffers.length === 0 && allOffers.length > 0 ? (
                                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 text-center space-y-3">
-                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No flights match your filters</p>
-                                    <p className="text-sm text-slate-500">Try adjusting your filter criteria.</p>
+                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{tAll('flights.results.noMatch')}</p>
+                                    <p className="text-sm text-slate-500">{tAll('flights.results.noMatchHint')}</p>
                                 </div>
                             ) : (
                                 <FlightResults

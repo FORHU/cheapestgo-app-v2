@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Input } from '@/shared/components/ui/input';
 import { useResetPassword } from '../hooks/use-auth';
 
 export function ForgotPasswordForm() {
+    const tAll = useTranslations();
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [sent, setSent] = useState(false);
@@ -33,11 +35,10 @@ export function ForgotPasswordForm() {
                 <div className="flex justify-center">
                     <CheckCircle className="h-12 w-12 text-emerald-500" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Check your inbox</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{tAll('auth.checkInbox')}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                     We sent a password reset link to{' '}
-                    <strong className="text-slate-700 dark:text-slate-300">{email}</strong>.
-                    Click the link in the email to set a new password.
+                    <strong className="text-slate-700 dark:text-slate-300">{email}</strong>{tAll('auth.clickLinkSuffix')}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500">
                     Didn&apos;t receive it? Check your spam folder or{' '}
@@ -45,7 +46,7 @@ export function ForgotPasswordForm() {
                         onClick={() => setSent(false)}
                         className="text-alabaster-accent dark:text-obsidian-accent hover:underline"
                     >
-                        try again
+                        {tAll('auth.tryAgain')}
                     </button>.
                 </p>
             </div>
@@ -56,10 +57,10 @@ export function ForgotPasswordForm() {
         <div className="space-y-5">
             <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    Reset your password
+                    {tAll('auth.resetYourPassword')}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Enter your email and we&apos;ll send you a reset link.
+                    {tAll('auth.forgotBody')}
                 </p>
             </div>
 
@@ -70,14 +71,14 @@ export function ForgotPasswordForm() {
                     label="Email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                    placeholder="your@email.com"
+                    placeholder={tAll('auth.emailPlaceholder')}
                     icon={Mail}
                     error={error}
                     disabled={reset.isPending}
                     autoComplete="email"
                 />
                 <Button type="submit" fullWidth isLoading={reset.isPending}>
-                    Send reset link
+                    {tAll('auth.sendResetLink')}
                 </Button>
             </form>
 
@@ -87,7 +88,7 @@ export function ForgotPasswordForm() {
                     className="flex items-center justify-center gap-1 text-sm text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium"
                 >
                     <ArrowLeft size={14} />
-                    Back to sign in
+                    {tAll('auth.backToSignIn')}
                 </Link>
             </div>
         </div>

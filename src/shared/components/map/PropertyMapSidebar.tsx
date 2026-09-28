@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useRef, useState, useCallback } from 'react';
 import { NavigationControl } from 'react-map-gl/mapbox';
 import type { MapRef } from 'react-map-gl/mapbox';
@@ -26,6 +27,7 @@ interface PropertyMapSidebarProps {
  * Used on the property detail page.
  */
 export function PropertyMapSidebar({ property, className }: PropertyMapSidebarProps) {
+    const tAll = useTranslations();
     const mapRef = useRef<MapRef>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -83,7 +85,7 @@ export function PropertyMapSidebar({ property, className }: PropertyMapSidebarPr
                     className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-full px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-colors"
                 >
                     <MapPin size={11} />
-                    Open in Maps
+                    {tAll('common.openInMaps')}
                 </a>
             </div>
         </div>

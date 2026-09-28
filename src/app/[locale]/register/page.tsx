@@ -1,15 +1,21 @@
-import { BRAND_NAME } from '@/shared/lib/brand';
+import type { Metadata } from 'next';
+import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { AuthLayout } from '@/features/auth/components/auth-layout';
 import { RegisterForm } from '@/features/auth/components/register-form';
 
-export const metadata = { title: `Create account — ${BRAND_NAME}` };
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('auth');
+    return { title: t('createAccount') };
+}
 
 export default function RegisterPage() {
+    const t = useTranslations('auth');
     return (
         <AuthLayout
-            title="Create your account"
-            subtitle="Start finding the cheapest fares worldwide"
-            pitch="One account. Every fare we can find, on every route we cover."
+            title={t('createYourAccount')}
+            subtitle={t('registerSubtitle')}
+            pitch={t('registerPitch')}
         >
             <RegisterForm />
         </AuthLayout>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { User, Settings, Heart, Bell } from 'lucide-react';
@@ -21,6 +22,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function AccountView() {
+    const tAll = useTranslations();
     const router = useRouter();
     const { user, isLoading, initSession } = useAuthStore();
     const [activeTab, setActiveTab] = useState<TabId>('profile');
@@ -59,9 +61,9 @@ export function AccountView() {
             <Header />
             <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
                 <div className="mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">My Account</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{tAll('account.title')}</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-                        Manage your profile, preferences, and saved items.
+                        {tAll('account.subtitle')}
                     </p>
                 </div>
 

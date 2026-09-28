@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUp } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
 export const ScrollToTop = () => {
+    const tAll = useTranslations();
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -32,7 +34,7 @@ export const ScrollToTop = () => {
                         // plus air. Move this if the nav's height changes.
                         "right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] lg:bottom-8"
                     )}
-                    aria-label="Scroll to top"
+                    aria-label={tAll('common.scrollToTop')}
                 >
                     <ArrowUp className="w-4 h-4 lg:w-5 lg:h-5" />
                 </motion.button>

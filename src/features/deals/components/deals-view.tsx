@@ -7,6 +7,7 @@
  * cannot export `generateMetadata`, so the page declared no canonical and no hreflang.
  */
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
@@ -21,6 +22,7 @@ interface DealsResponse {
 }
 
 export function DealsView() {
+    const tAll = useTranslations();
     const [deals, setDeals]     = useState<HotelResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError]     = useState<string | null>(null);
@@ -57,13 +59,13 @@ export function DealsView() {
                 <div className="mb-8 space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs font-semibold">
                         <Tag size={11} />
-                        Limited-time offers
+                        {tAll('deals.limitedTime')}
                     </div>
                     <h1 className="text-2xl md:text-4xl font-bold text-slate-900 dark:text-white">
-                        Today&apos;s Best Hotel Deals
+                        {tAll('deals.todaysBest')}
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 max-w-xl">
-                        Handpicked deals with the lowest prices we could find. Prices update frequently — book early to lock in your rate.
+                        {tAll('deals.subtitle')}
                     </p>
                 </div>
 
@@ -82,7 +84,7 @@ export function DealsView() {
                         <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
                             <Hotel className="w-7 h-7 text-red-400" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Could not load deals</h3>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('deals.loadError')}</h3>
                         <p className="text-slate-400 dark:text-slate-500 text-sm">{error}</p>
                     </div>
                 )}
@@ -93,9 +95,9 @@ export function DealsView() {
                         <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
                             <Tag className="w-7 h-7 text-slate-300 dark:text-slate-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">No active deals right now</h3>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('deals.emptyTitle')}</h3>
                         <p className="text-slate-400 dark:text-slate-500 text-sm">
-                            Check back soon — we update our deals regularly.
+                            {tAll('deals.emptyBody')}
                         </p>
                     </div>
                 )}

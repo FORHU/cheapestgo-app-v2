@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +48,7 @@ interface TravelerPickerProps {
 }
 
 export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
+    const tAll = useTranslations();
     const ref = useRef<HTMLDivElement>(null);
     const activeDropdown = useActiveDropdown();
     const { adults, children } = useTravelers();
@@ -105,7 +107,7 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
                     <div className={forceOpen ? 'p-2' : 'p-6'}>
                         {!forceOpen && (
                             <h4 className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-2">
-                                Guests &amp; Rooms
+                                {tAll('landing.search.guestsRooms')}
                             </h4>
                         )}
                         <div className="space-y-1">
@@ -149,7 +151,7 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
                                 </div>
                             )}
                             <div className="flex justify-between items-center py-2">
-                                <span className="text-[10px] font-normal text-slate-900 dark:text-white">Rooms</span>
+                                <span className="text-[10px] font-normal text-slate-900 dark:text-white">{tAll('landing.search.rooms')}</span>
                                 <span className="text-[10.5px] font-normal text-slate-500 dark:text-slate-400 pr-1">1</span>
                             </div>
                         </div>
@@ -165,7 +167,7 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
                                 onClick={onClose}
                                 className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all"
                             >
-                                Done
+                                {tAll('landing.search.done')}
                             </button>
                         </div>
                     )}

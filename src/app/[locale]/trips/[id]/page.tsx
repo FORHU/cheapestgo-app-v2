@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { Header } from '@/shared/components/header';
 import { BookingDetail } from '@/features/trips/components/booking-detail';
 
-export const metadata: Metadata = {
-    title: 'Booking Details',
-    robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('trips');
+    return {
+        title:  t('bookingDetails'),
+        robots: { index: false, follow: false },
+    };
+}
 
 interface PageProps {
     params: Promise<{ id: string }>;

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -141,6 +142,7 @@ export interface FlightCardProps {
 }
 
 export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false, checkingPrice = false }: FlightCardProps) {
+    const tAll = useTranslations();
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
 
@@ -267,7 +269,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                     return (
                                         <span className="inline-flex items-center gap-0.5 px-1 lg:px-2 py-px lg:py-0.5 rounded-full text-[8px] lg:text-xs bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400">
                                             <Shield className="w-2 h-2 lg:w-3 lg:h-3" />
-                                            Free Cancellation
+                                            {tAll('flights.card.freeCancellation')}
                                         </span>
                                     );
                                 } else if (isRefundable) {
@@ -284,7 +286,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                     return (
                                         <span className="inline-flex items-center gap-0.5 px-1 lg:px-2 py-px lg:py-0.5 rounded-full text-[8px] lg:text-xs bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
                                             <XCircle className="w-2 h-2 lg:w-3 lg:h-3" />
-                                            Non-refundable
+                                            {tAll('flights.card.nonRefundable')}
                                         </span>
                                     );
                                 }
@@ -359,7 +361,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                     <div className="bg-slate-50/50 dark:bg-slate-800/20 px-2.5 lg:px-5 py-3 lg:py-4 border-b border-slate-100 dark:border-slate-800">
                                         <h4 className="text-[11px] font-normal text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                             <BadgeDollarSign className="w-3.5 h-3.5 text-indigo-500" />
-                                            Available Fare Options
+                                            {tAll('flights.card.fareOptions')}
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                             {/* Current main offer as one of the options */}
@@ -379,7 +381,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                                     disabled
                                                     className="mt-auto py-1 px-3 rounded bg-indigo-600 text-white text-[10px] font-normal opacity-50 cursor-default"
                                                 >
-                                                    Currently Selected
+                                                    {tAll('flights.card.currentlySelected')}
                                                 </button>
                                             </div>
 
@@ -462,7 +464,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                             {formatPrice(pricePerPerson, currency)}<span className="text-[8px] lg:text-xs text-slate-400 dark:text-slate-500">/person</span>
                         </div>
                         <div className="text-[9px] lg:text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                            includes taxes & fees
+                            {tAll('flights.card.includesTaxes')}
                         </div>
                     </div>
 

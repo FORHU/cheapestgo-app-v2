@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -20,6 +21,7 @@ interface ScrollRowProps {
  * touch keeps its momentum.
  */
 export function ScrollRow({ title, subtitle, aside, id, children }: ScrollRowProps) {
+    const tAll = useTranslations();
     const ref = useRef<HTMLDivElement>(null);
     const [atStart, setAtStart] = useState(true);
     const [atEnd, setAtEnd] = useState(true);
@@ -82,7 +84,7 @@ export function ScrollRow({ title, subtitle, aside, id, children }: ScrollRowPro
                         type="button"
                         onClick={() => scrollBy(-1)}
                         disabled={atStart}
-                        aria-label="Scroll left"
+                        aria-label={tAll('common.scrollLeft')}
                         className={arrowClass}
                     >
                         <ChevronLeft size={16} strokeWidth={2.5} />
@@ -91,7 +93,7 @@ export function ScrollRow({ title, subtitle, aside, id, children }: ScrollRowPro
                         type="button"
                         onClick={() => scrollBy(1)}
                         disabled={atEnd}
-                        aria-label="Scroll right"
+                        aria-label={tAll('common.scrollRight')}
                         className={arrowClass}
                     >
                         <ChevronRight size={16} strokeWidth={2.5} />

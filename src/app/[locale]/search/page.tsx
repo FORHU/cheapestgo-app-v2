@@ -342,6 +342,7 @@ function RailCard({
      */
     width?: number;
 }) {
+    const tAll = useTranslations();
     const c = railCardPalette(theme);
     // Already per night: api-v2 divides the supplier's stay total before sending it, the
     // same contract v1 has. Dividing again here would quote a third of the real rate.
@@ -405,7 +406,7 @@ function RailCard({
                 )}
                 {property.refundableTag === 'RFN' && (
                     <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: '#2FB67F', zIndex: 2 }}>
-                        Free cancel
+                        {tAll('search.freeCancel')}
                     </span>
                 )}
             </div>
@@ -574,6 +575,7 @@ function StatusScreen({
 
 // ─── Main content ─────────────────────────────────────────────────────────────
 function HotelSearchContent() {
+    const tAll = useTranslations();
     const t = useTranslations('search');
     const searchParams = useSearchParams();
     const router       = useRouter();
@@ -1573,7 +1575,7 @@ function HotelSearchContent() {
                                 className="shrink-0 cursor-pointer rounded-full px-3 py-1 transition-opacity hover:opacity-85"
                                 style={{ background: '#D97706', color: '#FFFFFF', fontSize: 11, fontWeight: 700 }}
                             >
-                                Retry
+                                {tAll('common.retry')}
                             </button>
                         </div>
                     </motion.div>
@@ -1637,7 +1639,7 @@ function HotelSearchContent() {
             {status === 'error' && (
                 <StatusScreen
                     theme={uiTone}
-                    title="No accommodations found"
+                    title={tAll('search.v2.noAccommodations')}
                     lines={[
                         destination ? `We couldn’t find hotels in ${destination}` : "We couldn’t find any hotels",
                         'Try adjusting your dates or destination',

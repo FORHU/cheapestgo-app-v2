@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import Image from 'next/image';
 import { Building2 } from 'lucide-react';
@@ -71,6 +72,7 @@ export function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
     onSelect, onHover, onViewDetails, currency, theme,
 }: RailCardProps) {
+    const tAll = useTranslations();
     const c = railCardPalette(theme);
     const price = convertCurrency(property.price, property.currency || 'USD', currency);
     const priceStr = formatCurrency(price, currency);
@@ -109,7 +111,7 @@ export function RailCard({
                 )}
                 {property.refundableTag === 'RFN' && (
                     <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: '#2FB67F', zIndex: 2 }}>
-                        Free cancel
+                        {tAll('search.freeCancel')}
                     </span>
                 )}
             </div>
@@ -142,7 +144,7 @@ export function RailCard({
                         onClick={(e) => { e.stopPropagation(); onViewDetails(property.id); }}
                         style={{ background: c.chipBg, color: c.chipText, border: 'none', borderRadius: 100, padding: `${px(10)}px ${px(21)}px`, fontSize: fpx(12), fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
                     >
-                        View Stay
+                        {tAll('search.viewStay')}
                     </button>
                 </div>
             </div>

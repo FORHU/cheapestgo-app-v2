@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { HOTEL_TOKENS } from '@/features/hotels/types/property.types';
 
@@ -10,6 +11,7 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ hotelId }: ReviewFormProps) {
+    const tAll = useTranslations();
     const [stars, setStars] = useState(0);
     const [hover, setHover] = useState(0);
     const [body, setBody] = useState('');
@@ -34,14 +36,14 @@ export function ReviewForm({ hotelId }: ReviewFormProps) {
     if (status === 'success') {
         return (
             <div style={{ background: 'rgba(47,182,127,.12)', border: `1px solid ${HOTEL_TOKENS.GREEN}`, borderRadius: 12, padding: '20px 24px', textAlign: 'center', color: HOTEL_TOKENS.GREEN, fontWeight: 600 }}>
-                Thank you for your review!
+                {tAll('hotels.review.thanks')}
             </div>
         );
     }
 
     return (
         <div style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, padding: '20px 24px', border: '1px solid rgba(255,255,255,.08)' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: HOTEL_TOKENS.TEXT, marginBottom: 14 }}>Share your experience</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: HOTEL_TOKENS.TEXT, marginBottom: 14 }}>{tAll('hotels.review.shareTitle')}</div>
 
             {/* Stars */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
@@ -67,7 +69,7 @@ export function ReviewForm({ hotelId }: ReviewFormProps) {
             )}
 
             <textarea
-                placeholder="Tell others about your stay..."
+                placeholder={tAll('hotels.review.placeholder')}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={3}
@@ -75,7 +77,7 @@ export function ReviewForm({ hotelId }: ReviewFormProps) {
             />
 
             {status === 'error' && (
-                <div style={{ fontSize: 13, color: '#E07070', marginTop: 6 }}>Something went wrong. Please try again.</div>
+                <div style={{ fontSize: 13, color: '#E07070', marginTop: 6 }}>{tAll('errors.generic')}</div>
             )}
 
             <button

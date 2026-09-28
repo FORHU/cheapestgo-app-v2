@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import {  SlidersHorizontal } from 'lucide-react';
 import type { FlightOffer } from '@/shared/types';
@@ -10,6 +11,7 @@ interface ProviderStatusProps {
 }
 
 export function ProviderStatus({ offers, loading }: ProviderStatusProps) {
+    const tAll = useTranslations();
     const providerCounts = React.useMemo(() => {
         const counts: Record<string, number> = {};
         for (const o of offers) {
@@ -25,7 +27,7 @@ export function ProviderStatus({ offers, loading }: ProviderStatusProps) {
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                 <span className="inline-flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Fetching providers...
+                    {tAll('flights.header.fetching')}
                 </span>
             </div>
         );
@@ -35,7 +37,7 @@ export function ProviderStatus({ offers, loading }: ProviderStatusProps) {
 
     return (
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-normal">
-            <span className="text-blue-600 dark:text-blue-400">Sources:</span>
+            <span className="text-blue-600 dark:text-blue-400">{tAll('flights.header.sources')}</span>
             {entries.map(([provider, count]) => (
                 <span
                     key={provider}

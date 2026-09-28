@@ -1,29 +1,37 @@
 // DEMO ONLY — TelemetryCard renders mock flight/weather data for UI demonstration purposes.
 // Values like "BA0178", "72°", "45% humidity" are illustrative and not sourced from a live API.
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { Activity, Plane, Sun, CloudSun, TrendingDown } from 'lucide-react';
 import { TelemetryData } from '../../../types';
 
-export const StatusBadge = () => (
+export const StatusBadge = () => {
+    const t = useTranslations();
+    return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 backdrop-blur-md">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">System Nominal</span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('landing.telemetry.systemNominal')}</span>
     </div>
-);
+    );
+};
 
-export const VersionBadge = () => (
+export const VersionBadge = () => {
+    const t = useTranslations();
+    return (
     <motion.div
         initial={false}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-full border dark:border-obsidian-accent/20 border-alabaster-accent/20 dark:bg-obsidian-accent/5 bg-alabaster-accent/5 shadow-sm"
     >
         <Activity className="w-3 h-3 dark:text-obsidian-accent text-alabaster-accent" />
-        <span className="text-xs font-display font-semibold dark:text-obsidian-accent text-alabaster-accent tracking-widest uppercase">Smart Price Tracking</span>
+        <span className="text-xs font-display font-semibold dark:text-obsidian-accent text-alabaster-accent tracking-widest uppercase">{t('landing.telemetry.smartPriceTracking')}</span>
     </motion.div>
-);
+    );
+};
 
 export const TelemetryCard: React.FC<{ data: TelemetryData }> = ({ data }) => {
+    const t = useTranslations();
     return (
         <div className="relative overflow-hidden p-6 rounded-lg 
       bg-white/60 dark:bg-white/5 
@@ -54,20 +62,20 @@ export const TelemetryCard: React.FC<{ data: TelemetryData }> = ({ data }) => {
                         <div className="w-full bg-slate-200 dark:bg-slate-700 h-1 rounded-full overflow-hidden mt-2">
                             <div className="bg-emerald-500 h-full w-[75%]"></div>
                         </div>
-                        <p className="text-xs text-slate-500 mt-2 font-mono">24h Low detected. Buy advised.</p>
+                        <p className="text-xs text-slate-500 mt-2 font-mono">{t('landing.telemetry.lowDetected')}</p>
                     </>
                 ) : data.icon === 'plane' ? (
                     <div className="flex flex-col gap-3">
                         <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Flight</span>
+                            <span className="text-slate-500 dark:text-slate-400">{t('landing.telemetry.flight')}</span>
                             <span className="font-mono text-slate-900 dark:text-white">BA0178</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-slate-500 dark:text-slate-400">Gate</span>
-                            <span className="font-mono text-slate-900 dark:text-white">A12 <span className="text-emerald-500 text-[10px] ml-1">CONFIRMED</span></span>
+                            <span className="text-slate-500 dark:text-slate-400">{t('landing.telemetry.gate')}</span>
+                            <span className="font-mono text-slate-900 dark:text-white">A12 <span className="text-emerald-500 text-[10px] ml-1">{t('landing.telemetry.confirmed')}</span></span>
                         </div>
                         <button className="mt-2 w-full py-2 bg-slate-900 dark:bg-slate-800 hover:opacity-90 border border-slate-700 dark:border-slate-600 rounded text-xs font-display font-semibold text-white transition-colors">
-                            View Boarding Pass
+                            {t('landing.telemetry.viewBoardingPass')}
                         </button>
                     </div>
                 ) : (
@@ -75,8 +83,8 @@ export const TelemetryCard: React.FC<{ data: TelemetryData }> = ({ data }) => {
                         <div className="flex items-center gap-4 mb-2">
                             <div className="text-[clamp(1.5rem,5vw,2.25rem)] font-display font-bold text-slate-900 dark:text-white">72°</div>
                             <div className="flex flex-col text-xs text-slate-500 font-mono">
-                                <span>HUM: 45%</span>
-                                <span>VIS: 10mi</span>
+                                <span>{t('landing.telemetry.humidity')}</span>
+                                <span>{t('landing.telemetry.visibility')}</span>
                             </div>
                         </div>
                         <div className="grid grid-cols-4 gap-1 mt-2">

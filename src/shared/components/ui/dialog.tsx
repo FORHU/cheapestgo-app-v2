@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { XIcon } from 'lucide-react';
@@ -67,6 +68,7 @@ function DialogContent({
     showCloseButton = true,
     ...props
 }: React.HTMLAttributes<HTMLDivElement> & { showCloseButton?: boolean }) {
+    const tAll = useTranslations();
     const { open, setOpen } = React.useContext(DialogContext);
     return (
         <AnimatePresence>
@@ -98,7 +100,7 @@ function DialogContent({
                                     className="absolute top-6 right-6 rounded-xl opacity-70 transition-opacity hover:opacity-100 focus:outline-none text-slate-400 hover:text-slate-900 dark:hover:text-white"
                                 >
                                     <XIcon className="size-5" />
-                                    <span className="sr-only">Close</span>
+                                    <span className="sr-only">{tAll('common.close')}</span>
                                 </button>
                             )}
                         </motion.div>

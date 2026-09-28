@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Suspense, useEffect, useState } from 'react';
 import { Download, Loader2, Printer } from 'lucide-react';
 import { BRAND_NAME } from '@/shared/lib/brand';
@@ -37,6 +38,7 @@ function fmtDate(dateStr: string): string {
  * still carries the session cookie so a signed-in reader is recognised.
  */
 function ReceiptActions() {
+    const tAll = useTranslations();
     const params       = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const bookingId    = params?.id ?? '';
@@ -77,7 +79,7 @@ function ReceiptActions() {
         <div className="flex items-center gap-2">
             {failed && (
                 <span className="text-sm text-rose-600 dark:text-rose-400">
-                    Could not build the PDF. You can still print this page.
+                    {tAll('trips.invoice.pdfError')}
                 </span>
             )}
             <button
@@ -95,7 +97,7 @@ function ReceiptActions() {
                 className="inline-flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-white px-4 py-2 text-sm font-semibold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
             >
                 <Printer className="w-4 h-4" />
-                Print
+                {tAll('trips.invoice.print')}
             </button>
         </div>
     );
@@ -112,6 +114,7 @@ interface InvoiceReceiptProps {
 }
 
 function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps) {
+    const tAll = useTranslations();
     const invoiceNumber = `INV-${booking.id.slice(0, 8).toUpperCase()}`;
     const issuedDate = new Date(booking.created_at).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
@@ -130,10 +133,10 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
             <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div>
                     <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">{BRAND_NAME}</h1>
-                    <p className="text-xs text-slate-400 mt-0.5">Your Travel Partner</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{tAll('invoice.yourTravelPartner')}</p>
                 </div>
                 <div className="text-right">
-                    <p className="text-xl font-bold text-slate-800 dark:text-white">RECEIPT</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-white">{tAll('invoice.receipt')}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{invoiceNumber}</p>
                     <p className="text-xs text-slate-400">Issued: {issuedDate}</p>
                 </div>
@@ -141,7 +144,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
 
             {/* Billed to */}
             <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Billed to</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{tAll('invoice.billedTo')}</p>
                 {isHotel && hotel ? (
                     <>
                         <p className="text-sm font-semibold text-slate-800 dark:text-white">
@@ -161,14 +164,14 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
 
             {/* Booking details */}
             <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Booking Details</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">{tAll('invoice.bookingDetails')}</p>
 
                 {isHotel && hotel ? (
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="text-[10px] text-slate-400 uppercase tracking-wide border-b border-slate-100 dark:border-slate-800">
-                                <th className="text-left pb-2 font-medium">Description</th>
-                                <th className="text-right pb-2 font-medium">Amount</th>
+                                <th className="text-left pb-2 font-medium">{tAll('invoice.description')}</th>
+                                <th className="text-right pb-2 font-medium">{tAll('invoice.amount')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -200,9 +203,9 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="text-[10px] text-slate-400 uppercase tracking-wide border-b border-slate-100 dark:border-slate-800">
-                                <th className="text-left pb-2 font-medium">Flight</th>
-                                <th className="text-left pb-2 font-medium">Route</th>
-                                <th className="text-left pb-2 font-medium">Date</th>
+                                <th className="text-left pb-2 font-medium">{tAll('invoice.flight')}</th>
+                                <th className="text-left pb-2 font-medium">{tAll('invoice.route')}</th>
+                                <th className="text-left pb-2 font-medium">{tAll('invoice.date')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -226,7 +229,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
                 {/* Passengers for flights */}
                 {!isHotel && flight?.passengers && flight.passengers.length > 0 && (
                     <div className="mt-4">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Passengers</p>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{tAll('trips.sections.passengers')}</p>
                         <div className="space-y-1">
                             {flight.passengers.map((p, i) => (
                                 <div key={i} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
@@ -249,32 +252,32 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
             {/* Booking reference */}
             <div className="px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap gap-6 text-xs text-slate-500">
                 <div>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">Booking Ref</span>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">{tAll('invoice.bookingRef')}</span>
                     <span className="font-mono text-slate-700 dark:text-slate-300">
                         {isHotel ? (hotel?.booking_id ?? booking.id.slice(0, 8).toUpperCase()) : flight?.pnr}
                     </span>
                 </div>
                 <div>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">Type</span>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">{tAll('invoice.type')}</span>
                     <span className="text-slate-700 dark:text-slate-300 capitalize">
                         {isHotel ? 'Hotel' : `Flight · ${flight?.trip_type ?? 'one-way'}`}
                     </span>
                 </div>
                 <div>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">Provider</span>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">{tAll('trips.labels.provider')}</span>
                     <span className="text-slate-700 dark:text-slate-300 capitalize">
                         {isHotel ? 'Hotel Partner' : (flight?.provider ?? '—')}
                     </span>
                 </div>
                 <div>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">Payment</span>
-                    <span className="text-slate-700 dark:text-slate-300">Stripe (Card)</span>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-0.5">{tAll('trips.sections.payment')}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{tAll('invoice.paymentMethod')}</span>
                 </div>
             </div>
 
             {/* Total */}
             <div className="px-8 py-5 flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-500">Total Paid</p>
+                <p className="text-sm font-semibold text-slate-500">{tAll('invoice.totalPaid')}</p>
                 <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
                     {formatCurrency(totalPrice, currency)}
                 </p>
@@ -294,6 +297,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
 // ─── Inner page — uses useParams + useSearchParams ────────────────────────────
 
 function InvoicePageContent() {
+    const tAll = useTranslations();
     const params = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const id = params.id;
@@ -334,7 +338,7 @@ function InvoicePageContent() {
         return (
             <div className="max-w-3xl mx-auto">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg px-8 py-12 text-center space-y-3">
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">Unable to load invoice</p>
+                    <p className="text-lg font-bold text-slate-800 dark:text-white">{tAll('trips.invoice.loadError')}</p>
                     <p className="text-sm text-slate-500">{fetchError}</p>
                 </div>
             </div>

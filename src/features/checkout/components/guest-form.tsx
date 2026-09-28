@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { User, Plane } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -70,13 +71,14 @@ function HotelGuestFields({
     errors: Partial<Record<keyof GuestInfo, string>>;
     onChange: (field: keyof GuestInfo, value: string) => void;
 }) {
+    const tAll = useTranslations();
     return (
         <div className="rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
                 <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
                     <User size={14} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <h2 className="font-bold text-slate-900 dark:text-white text-base">Guest details</h2>
+                <h2 className="font-bold text-slate-900 dark:text-white text-base">{tAll('checkout.guestDetails')}</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -84,7 +86,7 @@ function HotelGuestFields({
                     <SectionLabel label="First name" required />
                     <input
                         type="text"
-                        placeholder="First name"
+                        placeholder={tAll('checkout.userDetails.firstNamePlaceholder')}
                         value={guest.firstName}
                         onChange={(e) => onChange('firstName', e.target.value)}
                         className={fieldClass(!!errors.firstName)}
@@ -96,7 +98,7 @@ function HotelGuestFields({
                     <SectionLabel label="Last name" required />
                     <input
                         type="text"
-                        placeholder="Last name"
+                        placeholder={tAll('checkout.userDetails.lastNamePlaceholder')}
                         value={guest.lastName}
                         onChange={(e) => onChange('lastName', e.target.value)}
                         className={fieldClass(!!errors.lastName)}
@@ -108,7 +110,7 @@ function HotelGuestFields({
                     <SectionLabel label="Email" required />
                     <input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={tAll('auth.signIn.emailPlaceholder')}
                         value={guest.email}
                         onChange={(e) => onChange('email', e.target.value)}
                         className={fieldClass(!!errors.email)}

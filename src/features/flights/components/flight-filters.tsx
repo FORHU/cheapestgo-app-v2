@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { FlightOffer } from '@/shared/types';
@@ -56,6 +57,7 @@ function getProviders(offers: FlightOffer[]): string[] {
 // ─── FlightFilters ────────────────────────────────────────────────────────────
 
 export function FlightFilters({ filters, onChange, allOffers = [], className }: FlightFiltersProps) {
+    const tAll = useTranslations();
     const [airlines, setAirlines] = useState<string[]>([]);
     const [providers, setProviders] = useState<string[]>([]);
 
@@ -70,7 +72,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
         <div className={cn('flex flex-col gap-4', className)}>
             {/* Sorting */}
             <div className="space-y-1.5 lg:space-y-2">
-                <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Sort by</p>
+                <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">{tAll('flights.results.sortBy')}</p>
                 <div className="flex flex-col gap-0.5 lg:gap-1">
                     <button
                         onClick={() => onChange({ sortBy: 'price' })}
@@ -81,7 +83,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         )}
                     >
-                        Cheapest
+                        {tAll('flights.filters.cheapest')}
                     </button>
                     <button
                         onClick={() => onChange({ sortBy: 'duration' })}
@@ -92,7 +94,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         )}
                     >
-                        Fastest
+                        {tAll('flights.filters.fastest')}
                     </button>
                     <button
                         onClick={() => onChange({ sortBy: 'departure' })}
@@ -103,19 +105,19 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         )}
                     >
-                        Earliest Departure
+                        {tAll('flights.filters.earliest')}
                     </button>
                 </div>
             </div>
 
             {/* Stops */}
             <div className="space-y-1.5 lg:space-y-2">
-                <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Stops</p>
+                <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">{tAll('flights.filters.stops')}</p>
                 <div className="flex flex-col gap-0.5 lg:gap-1">
                     {([
-                        { label: 'Any stops', value: null },
-                        { label: 'Non-stop only', value: 0 },
-                        { label: 'Up to 1 stop', value: 1 },
+                        { label: tAll('flights.filters.anyStops'), value: null },
+                        { label: tAll('flights.filters.nonStopOnly'), value: 0 },
+                        { label: tAll('flights.filters.upTo1Stop'), value: 1 },
                     ] as { label: string; value: MaxStops }[]).map(({ label, value }) => (
                         <button
                             key={label}
@@ -135,13 +137,13 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
 
             {/* Fare Type: Refundable */}
             <div className="space-y-1.5 lg:space-y-2">
-                <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Fare Type</p>
+                <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">{tAll('flights.filters.fareType')}</p>
                 <label className="flex items-center justify-between cursor-pointer group">
                     <div>
                         <span className="text-[11px] lg:text-xs font-normal text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                            Refundable fares only
+                            {tAll('flights.filters.refundableOnly')}
                         </span>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Show only fares that can be cancelled for a refund</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{tAll('flights.filters.refundableHint')}</p>
                     </div>
                     <button
                         role="switch"
@@ -165,7 +167,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
             {/* Provider */}
             {process.env.NODE_ENV !== 'production' && providers.length > 0 && (
                 <div className="space-y-1.5 lg:space-y-2">
-                    <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Provider</p>
+                    <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">{tAll('flights.filters.provider')}</p>
                     <div className="flex flex-col gap-1">
                         {providers.map((provider) => {
                             const active = filters.selectedProviders.includes(provider);
@@ -199,7 +201,7 @@ export function FlightFilters({ filters, onChange, allOffers = [], className }: 
             {/* Airlines */}
             {airlines.length > 0 && (
                 <div className="space-y-1.5 lg:space-y-2">
-                    <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">Airlines</p>
+                    <p className="text-[10px] lg:text-[11px] font-normal text-slate-400 uppercase tracking-widest">{tAll('flights.filters.airlines')}</p>
                     <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
                         {airlines.map((airline) => (
                             <label key={airline} className="flex items-center gap-2 cursor-pointer group">

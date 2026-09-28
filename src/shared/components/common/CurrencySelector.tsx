@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -56,6 +57,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   iconOnly = false,
   triggerClassName,
 }) => {
+    const tAll = useTranslations();
   const tone = SELECTOR_TONES[variant];
   /**
    * Row hover, in state rather than in CSS.
@@ -144,7 +146,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
             role="listbox"
-            aria-label="Currency"
+            aria-label={tAll('common.currency')}
             className={cn(
               "absolute top-full mt-1.5 min-w-[124px] overflow-hidden z-[1001]",
               chrome ? "rounded-2xl" : cn(tone.menu, tone.divider),

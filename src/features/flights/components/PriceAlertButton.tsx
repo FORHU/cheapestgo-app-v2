@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { Bell, BellOff, Loader2, Check } from 'lucide-react';
 import { http } from '@/shared/lib/http';
@@ -19,6 +20,7 @@ export function PriceAlertButton({
     adults = 1,
     cabin = 'economy',
 }: PriceAlertButtonProps) {
+    const tAll = useTranslations();
     const [state, setState] = useState<AlertState>('loading');
     const [alertId, setAlertId] = useState<string | null>(null);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -95,7 +97,7 @@ export function PriceAlertButton({
             <button
                 onClick={() => { setFeedback('Sign in required'); setTimeout(() => setFeedback(''), 3000); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 transition-colors"
-                title="Sign in required"
+                title={tAll('flights.priceAlert.signInRequired')}
             >
                 <Bell size={13} />
                 Track Price
@@ -108,7 +110,7 @@ export function PriceAlertButton({
         return (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-400">
                 <Loader2 size={13} className="animate-spin" />
-                <span>Loading</span>
+                <span>{tAll('flights.priceAlert.loading')}</span>
             </div>
         );
     }
@@ -119,10 +121,10 @@ export function PriceAlertButton({
                 <button
                     onClick={removeAlert}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
-                    title="Remove alert"
+                    title={tAll('flights.priceAlert.remove')}
                 >
                     <BellOff size={13} />
-                    Price alerts active
+                    {tAll('flights.priceAlert.active')}
                 </button>
                 {feedback && <span className="text-xs text-emerald-600 dark:text-emerald-400">{feedback}</span>}
             </div>
@@ -134,10 +136,10 @@ export function PriceAlertButton({
             <button
                 onClick={createAlert}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-colors"
-                title="Email me when price drops"
+                title={tAll('flights.priceAlert.emailMe')}
             >
                 <Bell size={13} />
-                Track Price
+                {tAll('flights.priceAlert.track')}
             </button>
             {feedback && (
                 <span className={`text-xs flex items-center gap-1 ${feedback === 'Price alerts enabled' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>

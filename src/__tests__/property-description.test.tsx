@@ -1,4 +1,6 @@
 import React from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import enMessages from '@/locales/en.json';
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { render as rtlRender, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,7 +29,12 @@ afterEach(cleanup);
  * the app mounts at its root — supplied here rather than worked around, since
  * every real caller has one above it.
  */
-const render = (ui: React.ReactElement) => rtlRender(<ThemeProvider>{ui}</ThemeProvider>);
+const render = (ui: React.ReactElement) =>
+    rtlRender(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <ThemeProvider>{ui}</ThemeProvider>
+        </NextIntlClientProvider>,
+    );
 
 /** The property page hardcodes its own dark, so it hands the tone in; these
  *  tests do the same, which keeps them off the theme default. */

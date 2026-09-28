@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, RefreshCw, Send, Undo2, CheckCircle2, Paperclip, FileText, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -264,6 +265,7 @@ function ReplyBox({ busy, conversationId, onSend }: {
     conversationId: string;
     onSend: (body: string, attachmentIds: string[]) => void;
 }) {
+    const tAll = useTranslations();
     const [draft, setDraft] = useState('');
     const [staged, setStaged] = useState<{ id: string; fileName: string }[]>([]);
     const [attaching, setAttaching] = useState(false);
@@ -295,7 +297,7 @@ function ReplyBox({ busy, conversationId, onSend }: {
                     <li key={f.id} className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
                         <FileText className="h-3 w-3" />
                         <span className="max-w-[10rem] truncate">{f.fileName}</span>
-                        <button type="button" aria-label="Remove" onClick={() => setStaged(p => p.filter(x => x.id !== f.id))}>
+                        <button type="button" aria-label={tAll('support.removeFile')} onClick={() => setStaged(p => p.filter(x => x.id !== f.id))}>
                             <X className="h-3 w-3" />
                         </button>
                     </li>
@@ -316,7 +318,7 @@ function ReplyBox({ busy, conversationId, onSend }: {
             />
             <label className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
                 {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
-                <span className="sr-only">Attach a file</span>
+                <span className="sr-only">{tAll('support.attach')}</span>
                 <input type="file" className="hidden"
                        accept="image/jpeg,image/png,image/webp,image/gif,image/heic,application/pdf"
                        onChange={e => { const f = e.target.files?.[0]; if (f) void attach(f); e.target.value = ''; }} />

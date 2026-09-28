@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useMemo, useState } from 'react';
 import { HotelCard, HotelCardSkeleton, type HotelResult } from './hotel-card';
 import { HotelFilters, type HotelFiltersState } from './hotel-filters';
@@ -63,6 +64,7 @@ export function HotelResults({
     hotels, loading, error, destination, searchQs,
     filters: controlledFilters, onFiltersChange, onFiltersReset,
 }: HotelResultsProps) {
+    const tAll = useTranslations();
     const [ownFilters, setOwnFilters] = useState<HotelFiltersState>(DEFAULT_FILTERS);
     const [page, setPage] = useState(1);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -165,7 +167,7 @@ export function HotelResults({
     if (error && hotels.length === 0) {
         return (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-20 text-center dark:border-white/10 dark:bg-[#1A1A1A]">
-                <p className="text-sm font-medium text-slate-500 dark:text-white/70">Search failed.</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-white/70">{tAll('hotels.results.searchFailed')}</p>
                 <p className="mt-1 text-xs text-slate-400 dark:text-white/40">{error}</p>
             </div>
         );
@@ -199,8 +201,8 @@ export function HotelResults({
                                 key="show-filters"
                                 type="button"
                                 onClick={() => setFiltersCollapsed(false)}
-                                aria-label="Show filters"
-                                title="Show filters"
+                                aria-label={tAll('hotels.filters.show')}
+                                title={tAll('hotels.filters.show')}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
@@ -259,7 +261,7 @@ export function HotelResults({
                             className="no-scrollbar relative ml-auto h-full w-[320px] max-w-full overflow-y-auto bg-slate-50 p-4 dark:bg-[#141414]"
                         >
                             <div className="mb-3 flex items-center justify-end">
-                                <button onClick={() => setMobileFiltersOpen(false)} aria-label="Close filters">
+                                <button onClick={() => setMobileFiltersOpen(false)} aria-label={tAll('hotels.filters.close')}>
                                     <X size={18} className="text-slate-500 dark:text-white/60" />
                                 </button>
                             </div>
@@ -294,14 +296,14 @@ export function HotelResults({
                             className="flex items-center gap-2 self-start rounded-full border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-slate-400 lg:hidden dark:border-white/15 dark:text-white/80 dark:hover:border-white/35"
                         >
                             <SlidersHorizontal size={13} />
-                            Filters
+                            {tAll('flights.results.filters')}
                         </button>
                     )}
                 </div>
 
                 {loading && hotels.length > 0 && (
                     <div className="mb-4 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600 dark:bg-white/8 dark:text-white/70">
-                        Loading prices…
+                        {tAll('hotels.results.loadingPrices')}
                     </div>
                 )}
 
@@ -318,14 +320,14 @@ export function HotelResults({
                             {destination ? `No hotels found in ${destination}` : 'No properties found'}
                         </h3>
                         <p className="mt-1 text-sm text-slate-400 dark:text-white/50">
-                            Try adjusting your filters, dates, or searching a nearby city.
+                            {tAll('hotels.results.noMatchHint')}
                         </p>
                         {(filters.starRatings.length > 0 || priceFiltered) && (
                             <button
                                 onClick={resetFilters}
                                 className="mt-3 text-xs text-slate-600 underline-offset-2 hover:underline dark:text-white/70"
                             >
-                                Clear filters
+                                {tAll('hotels.filters.clear')}
                             </button>
                         )}
                     </div>

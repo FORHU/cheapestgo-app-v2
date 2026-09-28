@@ -7,6 +7,7 @@
  * cannot export `generateMetadata`, so the page declared no canonical and no hreflang.
  */
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState, use } from 'react';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function DestinationView({ params }: Props) {
+    const tAll = useTranslations();
     const { slug } = use(params);
 
     const destination = slugToDestination(slug);
@@ -104,11 +106,11 @@ export function DestinationView({ params }: Props) {
                 <div className="relative max-w-2xl mx-auto space-y-3">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 rounded-full text-xs font-medium backdrop-blur-sm">
                         <MapPin size={11} />
-                        Destination
+                        {tAll('destinations.singular')}
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold drop-shadow-lg">{destination}</h1>
                     <p className="text-white/80 text-sm">
-                        Hotels available for {checkIn} — {checkOut}
+                        {tAll('destinations.hotelsAvailableFor', { from: checkIn, to: checkOut })}
                     </p>
                 </div>
             </div>
@@ -117,9 +119,9 @@ export function DestinationView({ params }: Props) {
             <main className="flex-1 px-4 py-8 max-w-[1200px] mx-auto w-full">
                 {/* Breadcrumb */}
                 <nav className="text-xs text-slate-400 dark:text-slate-500 mb-6">
-                    <Link href="/" className="hover:text-blue-500 transition-colors">Home</Link>
+                    <Link href="/" className="hover:text-blue-500 transition-colors">{tAll('property.breadcrumbHome')}</Link>
                     <span className="mx-1.5">›</span>
-                    <span>Destinations</span>
+                    <span>{tAll('destinations.plural')}</span>
                     <span className="mx-1.5">›</span>
                     <span className="text-slate-600 dark:text-slate-300">{destination}</span>
                 </nav>

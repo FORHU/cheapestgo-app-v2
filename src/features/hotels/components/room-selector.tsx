@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { HOTEL_TOKENS } from '@/features/hotels/types/property.types';
 import type { RoomOption } from '@/features/hotels/types/property.types';
@@ -22,6 +23,7 @@ function boardLabel(boardType: string | undefined): string | null {
 }
 
 export function RoomSelector({ rooms, selectedRoomId, onSelect }: RoomSelectorProps) {
+    const tAll = useTranslations();
     const [expanded, setExpanded] = useState(false);
     const currency = useUserCurrency();
     // Subscribed, not read once: the rates arrive after the first paint, and a price left on
@@ -51,7 +53,7 @@ export function RoomSelector({ rooms, selectedRoomId, onSelect }: RoomSelectorPr
                             <div style={{ fontSize: 14, fontWeight: 600, color: HOTEL_TOKENS.TEXT }}>{room.name}</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                                 {isRefundable && (
-                                    <span style={{ background: 'rgba(47,182,127,.15)', color: '#2FB67F', fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5 }}>Free cancellation</span>
+                                    <span style={{ background: 'rgba(47,182,127,.15)', color: '#2FB67F', fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5 }}>{tAll('property.rooms.freeCancellation')}</span>
                                 )}
                                 {breakfast && (
                                     <span style={{ background: 'rgba(255,107,75,.15)', color: HOTEL_TOKENS.ACCENT, fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5 }}>{breakfast}</span>

@@ -1,4 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { render as rtlRender, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import enMessages from '@/locales/en.json';
+
+/** The component translates now, so every render needs the messages above it. */
+const render = (ui: ReactElement) =>
+    rtlRender(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>{ui}</NextIntlClientProvider>,
+    );
 import { describe, it, expect, vi } from 'vitest';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 

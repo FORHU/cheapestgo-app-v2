@@ -24,6 +24,7 @@ interface SignInDropdownProps {
 }
 
 const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', collapsible = false, onNavigate, onToggleOpen }) => {
+    const tAll = useTranslations();
     const { user, logout } = useAuthStore();
     const t = useTranslations('nav');
     const [isOpen, setIsOpen] = useState(false);
@@ -140,7 +141,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
         return (
             <div ref={dropdownRef} className="relative">
                 <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shrink-0">
-                    Sign in
+                    {tAll('nav.signIn')}
                 </button>
                 <AnimatePresence>
                     {isOpen && (

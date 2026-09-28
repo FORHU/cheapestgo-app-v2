@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Suspense, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -11,6 +12,7 @@ import { Input } from '@/shared/components/ui/input';
 import { http } from '@/shared/lib/http';
 
 function ResetPasswordForm() {
+    const tAll = useTranslations();
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token') ?? '';
@@ -65,7 +67,7 @@ function ResetPasswordForm() {
                 <div className="flex justify-center">
                     <CheckCircle className="h-12 w-12 text-emerald-500" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Password updated</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{tAll('auth.passwordUpdated')}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                     Your password has been reset. Redirecting you to sign in&hellip;
                 </p>
@@ -77,10 +79,10 @@ function ResetPasswordForm() {
         <div className="space-y-5">
             <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    Set a new password
+                    {tAll('auth.setNewPassword')}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Choose a strong password for your account.
+                    {tAll('auth.chooseStrong')}
                 </p>
             </div>
 
@@ -92,7 +94,7 @@ function ResetPasswordForm() {
 
             {!token && !error && (
                 <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
-                    No reset token found. Please use the link sent to your email.
+                    {tAll('auth.noResetToken')}
                 </div>
             )}
 
@@ -103,7 +105,7 @@ function ResetPasswordForm() {
                     label="New password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
-                    placeholder="At least 8 characters"
+                    placeholder={tAll('auth.atLeast8')}
                     icon={Lock}
                     error={fieldErrors.password}
                     disabled={isLoading || !token}
@@ -115,14 +117,14 @@ function ResetPasswordForm() {
                     label="Confirm password"
                     value={confirm}
                     onChange={(e) => { setConfirm(e.target.value); setFieldErrors((p) => ({ ...p, confirm: undefined })); }}
-                    placeholder="Repeat your password"
+                    placeholder={tAll('auth.repeatPassword')}
                     icon={Lock}
                     error={fieldErrors.confirm}
                     disabled={isLoading || !token}
                     autoComplete="new-password"
                 />
                 <Button type="submit" fullWidth isLoading={isLoading} disabled={!token}>
-                    Reset password
+                    {tAll('auth.resetPassword')}
                 </Button>
             </form>
 
@@ -131,7 +133,7 @@ function ResetPasswordForm() {
                     href="/login"
                     className="text-sm text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium"
                 >
-                    Back to sign in
+                    {tAll('auth.backToSignIn')}
                 </Link>
             </div>
         </div>
@@ -139,10 +141,11 @@ function ResetPasswordForm() {
 }
 
 export function ResetPasswordView() {
+    const tAll = useTranslations();
     return (
         <AuthLayout
-            title="Set a new password"
-            subtitle="Choose something you have not used here before"
+            title={tAll('auth.setNewPassword')}
+            subtitle={tAll('auth.notUsedBefore')}
             pitch="A new password, and you are back where you left off."
         >
             <Suspense fallback={

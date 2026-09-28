@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
@@ -294,6 +295,7 @@ function DestPanel({
     placeholder = 'Search cities, countries, anywhere…',
     trendingLabel = 'Trending right now',
 }: DestPanelProps) {
+    const tAll = useTranslations();
     const showSuggestions = query.trim().length >= 2 && suggestions.length > 0;
     const showRecent = !query.trim() && recentDestinations.length > 0 && onPickRecent;
     const showTrending = trending.length > 0;
@@ -337,7 +339,7 @@ function DestPanel({
             {showRecent && (
                 <>
                     <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)', marginBottom: '10px' }}>
-                        Pick up where you left off
+                        {tAll('landing.recentlyViewed.subtitle')}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '20px' }}>
                         {recentDestinations.slice(0, 3).map((dest, i) => (
@@ -382,6 +384,7 @@ function DestPanel({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinations?: TrendingDest[] }) {
+    const tAll = useTranslations();
     const activeTrending = trendingDestinations?.length ? trendingDestinations : TRENDING;
     const router = useRouter();
     const { recentSearches, setDestination, setDates, setTravelers, setIsSearching, addRecentSearch, setSearchMode, setFlightSegment } = useSearchStore();
@@ -661,7 +664,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
     // ── Derived ───────────────────────────────────────────────────────────────
 
     const originValue = pickedOrigin ? pickedOrigin.name : 'wherever you are';
-    const destValue   = pickedDest   ? pickedDest.name   : 'somewhere amazing';
+    const destValue   = pickedDest   ? pickedDest.name   : tAll('search.prose.anywhere');
 
     const isOneway = tripType === 'oneway';
 
@@ -671,14 +674,14 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
             : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : 'your dates'))
         : (flexible
             ? (flexOption ?? 'a flexible trip')
-            : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : 'sometime soon'));
+            : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : tAll('search.prose.sometime')));
 
     const totalTravelers = adults + children;
-    const travelersValue = totalTravelers === 1 ? 'just me' : `${totalTravelers} of us`;
+    const travelersValue = totalTravelers === 1 ? tAll('search.prose.justMe') : tAll('search.prose.ofUs', { count: totalTravelers });
     const resultsLabel   = mode === 'stays' ? 'stays' : 'flights';
 
     const datesHeading = mode === 'flights'
-        ? (isOneway ? 'When are you flying?' : 'Pick your dates')
+        ? (isOneway ? tAll('search.whenFlying') : tAll('search.pickDates'))
         : (flexible ? "How long's the trip?" : 'Pick your dates');
 
     const nights = nightsBetween(checkIn, checkOut);
@@ -770,7 +773,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                             {/* FLIGHTS MODE */}
                             {mode === 'flights' && (
                                 <>
-                                    {'Fly me from '}
+                                    {tAll('search.prose.flyFrom')}
                                     {/* Origin token */}
                                     <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
                                         <Token filled={!!pickedOrigin} hint={hint} onClick={openPanel('origin')}>
@@ -786,18 +789,18 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                     onPickSuggestion={pickOriginSuggestion}
                                                     trending={activeTrending}
                                                     onPickTrending={pickOriginTrending}
-                                                    placeholder="Search cities, airports…"
-                                                    trendingLabel="Popular cities"
+                                                    placeholder={tAll('search.cityAirportPlaceholder')}
+                                                    trendingLabel={tAll('search.trendingCities')}
                                                 />
                                             </NotePanel>
                                         )}
                                     </span>
-                                    {' to'}
+                                    {tAll('search.prose.to')}
                                 </>
                             )}
 
                             {/* STAYS MODE */}
-                            {mode === 'stays' && 'Find me a stay in'}
+                            {mode === 'stays' && tAll('search.prose.stayIn')}
 
                             {' '}
 
@@ -823,7 +826,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                 )}
                             </span>
 
-                            {mode === 'flights' ? ', on ' : ', from '}
+                            {mode === 'flights' ? tAll('search.prose.onDates') : tAll('search.prose.fromDates')}
 
                             {/* Dates token */}
                             <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
@@ -840,12 +843,12 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                     <button
                                                         style={{ border: 'none', background: 'transparent', color: ACCENT, fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
                                                         onClick={e => { e.stopPropagation(); setCheckIn(null); setCheckOut(null); setFlexOption(null); }}
-                                                    >Clear</button>
+                                                    >{tAll('search.clear')}</button>
                                                 )}
                                                 {/* Stays: flexible toggle */}
                                                 {mode === 'stays' && (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setFlexible(f => !f); setCheckIn(null); setCheckOut(null); setFlexOption(null); }}>
-                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(241,245,249,0.6)' }}>I&apos;m flexible</span>
+                                                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(241,245,249,0.6)' }}>{tAll('search.imFlexible')}</span>
                                                         <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: flexible ? ACCENT : 'rgba(255,255,255,0.08)', position: 'relative', transition: 'background .25s', flexShrink: 0 }}>
                                                             <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: flexible ? '18px' : '2px', transition: 'left .25s', boxShadow: '0 1px 3px rgba(0,0,0,.3)' }} />
                                                         </div>
@@ -856,7 +859,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                     <div style={{ display: 'flex', gap: '6px' }}>
                                                         {(['oneway', 'roundtrip'] as TripType[]).map(tt => {
                                                             const active = tripType === tt;
-                                                            const label = tt === 'oneway' ? 'One-way' : 'Round-trip';
+                                                            const label = tt === 'oneway' ? tAll('search.oneWay') : tAll('search.roundTrip');
                                                             return (
                                                                 <button
                                                                     key={tt}
@@ -883,7 +886,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                         {/* Nights counter */}
                                         {!flexible && nights && (
                                             <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 600, color: 'rgba(241,245,249,0.6)', textAlign: 'center' }}>
-                                                {nights} night{nights === 1 ? '' : 's'}
+                                                {tAll('search.nights', { count: nights })}
                                             </div>
                                         )}
 
@@ -906,7 +909,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                 )}
                             </span>
 
-                            {', with '}
+                            {tAll('search.prose.withTravelers')}
 
                             {/* Travelers token */}
                             <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>

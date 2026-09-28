@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
@@ -103,6 +104,7 @@ const IMAGE_BG = 'bg-[#F1F1F1] dark:bg-white/5';
 const CHIP    = 'bg-[#1A1A1A] text-white dark:bg-white dark:text-[#111111]';
 
 export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
+    const tAll = useTranslations();
     const image = hotel.images?.[0];
     const locationText =
         [hotel.location, hotel.city, hotel.country].filter(Boolean).join(', ') || hotel.city || '';
@@ -188,7 +190,7 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
                                 CHIP,
                             )}
                         >
-                            Book Now
+                            {tAll('hotels.bookNow')}
                         </Link>
                     </div>
                 </div>

@@ -1,21 +1,23 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { POPULAR_DESTINATIONS } from '@/shared/lib/destinations';
 import { useDragScroll } from '@/shared/hooks/useDragScroll';
 
 export function PopularDestinationsSection() {
+    const tAll = useTranslations();
     const { ref, dragProps } = useDragScroll<HTMLDivElement>();
 
     return (
         <section className="w-full py-8 md:py-12">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1">
-                    Popular Destinations
+                    {tAll('landing.popularDestinations.title')}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 mb-5 text-sm md:text-base">
-                    Explore top spots across Asia-Pacific — search flights and hotels in seconds.
+                    {tAll('landing.popularDestinations.subtitle')}
                 </p>
             </div>
 

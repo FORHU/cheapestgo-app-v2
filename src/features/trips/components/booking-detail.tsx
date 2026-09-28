@@ -89,6 +89,7 @@ function fmtTime(s: string) {
 // ─── Hotel Detail ─────────────────────────────────────────────────────────────
 
 function HotelDetail({ booking }: { booking: HotelBooking }) {
+    const tAll = useTranslations();
     const [cancelling, setCancelling] = useState(false);
     const [cancelled, setCancelled] = useState(false);
     const [cancelError, setCancelError] = useState<string | null>(null);
@@ -145,14 +146,14 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
                     <div className={cn('flex flex-col gap-1', !booking.property_image ? 'items-end' : 'w-full flex-row items-center justify-between')}>
                         <StatusBadge status={cancelled ? 'cancelled' : booking.status} isHotel={true} />
                         {booking.booking_id && (
-                            <p className="text-xs text-slate-400 mt-0.5">Ref: <span className="font-mono">{booking.booking_id}</span></p>
+                            <p className="text-xs text-slate-400 mt-0.5">{tAll('trips.pages.ref')} <span className="font-mono">{booking.booking_id}</span></p>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* Stay Details */}
-            <Section title="Stay Details" icon={<Calendar size={15} />}>
+            <Section title={tAll('trips.sections.stayDetails')} icon={<Calendar size={15} />}>
                 <InfoRow label="Check-in" value={fmtDate(booking.check_in)} />
                 <InfoRow label="Check-out" value={fmtDate(booking.check_out)} />
                 <InfoRow label="Duration" value={`${nights} night${nights !== 1 ? 's' : ''}`} />
@@ -166,7 +167,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
 
             {/* Guest info */}
             {(booking.holder_first_name || booking.holder_email) && (
-                <Section title="Guest Information" icon={<Users size={15} />}>
+                <Section title={tAll('trips.sections.guestInformation')} icon={<Users size={15} />}>
                     {(booking.holder_first_name || booking.holder_last_name) && (
                         <InfoRow label="Name" value={`${booking.holder_first_name ?? ''} ${booking.holder_last_name ?? ''}`.trim()} />
                     )}
@@ -175,7 +176,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
             )}
 
             {/* Cancellation policy */}
-            <Section title="Cancellation Policy" icon={<Shield size={15} />}>
+            <Section title={tAll('trips.sections.cancellationPolicy')} icon={<Shield size={15} />}>
                 <div className="py-3">
                     <div className={cn('flex items-center gap-2 mb-3 p-3 rounded-xl', refundable ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-red-50 dark:bg-red-900/20')}>
                         {refundable
@@ -201,12 +202,12 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
                     {policy?.hotelRemarks?.map((r, i) => (
                         <p key={i} className="mt-1.5 text-xs text-slate-400 italic">{r}</p>
                     ))}
-                    {!policy && <p className="text-xs text-slate-400">Cancellation policy details not available.</p>}
+                    {!policy && <p className="text-xs text-slate-400">{tAll('trips.labels.policyNotAvailable')}</p>}
                 </div>
             </Section>
 
             {/* Payment */}
-            <Section title="Payment" icon={<CreditCard size={15} />}>
+            <Section title={tAll('trips.sections.payment')} icon={<CreditCard size={15} />}>
                 <InfoRow label="Total Paid" value={<span className="text-base font-bold">{formatCurrency(booking.total_price, booking.currency)}</span>} />
                 <InfoRow label="Payment Method" value="Card (Stripe)" />
                 <InfoRow label="Booked On" value={fmtDate(booking.created_at)} />
@@ -233,7 +234,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
             {cancelled && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
                     <CheckCircle size={16} />
-                    Booking cancelled successfully.
+                    {tAll('trips.flightBookingCard.successBanners.cancelled')}
                 </div>
             )}
         </div>
@@ -248,6 +249,7 @@ interface FlightDetailProps {
 }
 
 function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
+    const tAll = useTranslations();
     const t = useTranslations('trips');
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
@@ -277,14 +279,14 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
                     <StatusBadge status={booking.status} isHotel={false} />
                     {booking.pnr && (
                         <span className="text-xs text-slate-500">
-                            PNR: <span className="font-mono font-semibold text-slate-800 dark:text-white tracking-wider">{booking.pnr}</span>
+                            {tAll('trips.pnr')} <span className="font-mono font-semibold text-slate-800 dark:text-white tracking-wider">{booking.pnr}</span>
                         </span>
                     )}
                 </div>
             </div>
 
             {/* Itinerary */}
-            <Section title="Itinerary" icon={<Plane size={15} />}>
+            <Section title={tAll('trips.sections.itinerary')} icon={<Plane size={15} />}>
                 <div className="py-2 space-y-0">
                     {segments.map((seg, i) => (
                         <div key={i} className="flex gap-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
@@ -315,14 +317,14 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
                         </div>
                     ))}
                     {segments.length === 0 && (
-                        <p className="text-sm text-slate-400 py-3">No segment details available.</p>
+                        <p className="text-sm text-slate-400 py-3">{tAll('trips.noSegmentDetails')}</p>
                     )}
                 </div>
             </Section>
 
             {/* Passengers */}
             {passengers.length > 0 && (
-                <Section title="Passengers" icon={<Users size={15} />}>
+                <Section title={tAll('trips.sections.passengers')} icon={<Users size={15} />}>
                     {passengers.map((p, i) => (
                         <div key={i} className="py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
                             <div className="flex items-center justify-between gap-2">
@@ -347,7 +349,7 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
             )}
 
             {/* Payment */}
-            <Section title="Payment" icon={<CreditCard size={15} />}>
+            <Section title={tAll('trips.sections.payment')} icon={<CreditCard size={15} />}>
                 <InfoRow label="Total Paid" value={<span className="text-base font-bold">{formatCurrency(booking.charged_price ?? booking.total_price, booking.currency)}</span>} />
                 {booking.provider && <InfoRow label="Provider" value={<span className="capitalize">{booking.provider}</span>} />}
                 <InfoRow label="Booked On" value={fmtDate(booking.created_at)} />
@@ -361,7 +363,7 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
                     >
                         <XCircle size={14} />
-                        Cancel Booking
+                        {tAll('trips.cancellationModal.cancelBooking')}
                     </button>
                     <p className="mt-2 text-[10px] text-slate-400 text-center">
                         {t('v2.refundNotice')}
@@ -389,6 +391,7 @@ interface BookingDetailProps {
 }
 
 export function BookingDetail({ id }: BookingDetailProps) {
+    const tAll = useTranslations();
     const t = useTranslations('trips');
     const router = useRouter();
     const [booking, setBooking] = useState<AnyBooking | null>(null);
@@ -424,7 +427,7 @@ export function BookingDetail({ id }: BookingDetailProps) {
                         className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft size={15} />
-                        My Trips
+                        {tAll('trips.myTrips')}
                     </Link>
                 </div>
 

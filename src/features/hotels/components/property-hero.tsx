@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
 import { HOTEL_TOKENS, ratingInfo } from '@/features/hotels/types/property.types';
@@ -19,6 +20,7 @@ export function PropertyHero({
     reviewScore, reviewCount,
     saved, onBack, onSave,
 }: PropertyHeroProps) {
+    const tAll = useTranslations();
     const rinfo = ratingInfo(reviewScore);
 
     return (
@@ -37,7 +39,7 @@ export function PropertyHero({
             {/* Back */}
             <button
                 onClick={onBack}
-                aria-label="Back"
+                aria-label={tAll('common.back')}
                 style={{ position: 'absolute', top: 20, left: 20, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.25)', background: 'rgba(255,255,255,.14)', backdropFilter: 'blur(8px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
                 <ArrowLeft size={16} />

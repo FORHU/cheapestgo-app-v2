@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { Popup } from 'react-map-gl/mapbox';
 import { X, Navigation, Car, Footprints } from 'lucide-react';
@@ -15,6 +16,7 @@ interface PoiPopupProps {
 }
 
 export const PoiPopup = React.memo(({ poi, distance, carDuration, walkDuration, onClose }: PoiPopupProps) => {
+    const tAll = useTranslations();
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${poi.coordinates.lat},${poi.coordinates.lng}`;
     const [_imgStatus, _setImgStatus] = useState<'loading' | 'loaded' | 'error'>('error');
 
@@ -57,7 +59,7 @@ export const PoiPopup = React.memo(({ poi, distance, carDuration, walkDuration, 
                         <div className="flex items-center justify-center w-5 h-5 bg-slate-100 dark:bg-slate-800 rounded-full shrink-0">
                             <Navigation size={9} className="text-slate-600 dark:text-slate-300 rotate-45 -ml-px -mt-px" fill="currentColor" />
                         </div>
-                        <span>{distance || '—'} from property</span>
+                        <span>{tAll('map.fromProperty', { distance: distance || '—' })}</span>
                     </div>
 
                     {(carDuration || walkDuration) && (
@@ -83,7 +85,7 @@ export const PoiPopup = React.memo(({ poi, distance, carDuration, walkDuration, 
                         rel="noopener noreferrer"
                         className="text-[11px] font-semibold text-blue-500 hover:text-blue-600 transition-colors"
                     >
-                        View on Google Maps →
+                        {tAll('map.viewOnGoogleMaps')}
                     </a>
                 </div>
             </div>

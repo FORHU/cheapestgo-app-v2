@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { type RecentSearch } from '@/shared/types';
 
 export const YourRecentSearches: React.FC<{ searches?: RecentSearch[] }> = ({ searches }) => {
+    const tAll = useTranslations();
   const displaySearches = searches || [];
   
   if (displaySearches.length === 0) return null;
@@ -14,7 +16,7 @@ export const YourRecentSearches: React.FC<{ searches?: RecentSearch[] }> = ({ se
     <section className="w-full pb-4">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 mt-6 sm:mt-8 landscape-compact:mt-2">
         <SectionHeader
-          title="Quick Access"
+          title={tAll('landing.quickAccess')}
           size="sm"
         />
 

@@ -1,8 +1,13 @@
-import { BRAND_NAME } from '@/shared/lib/brand';
+import type { Metadata } from 'next';
+import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { AuthLayout } from '@/features/auth/components/auth-layout';
 import { ForgotPasswordForm } from '@/features/auth/components/forgot-password';
 
-export const metadata = { title: `Reset your password — ${BRAND_NAME}` };
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('auth');
+    return { title: t('resetYourPassword') };
+}
 
 /**
  * The route the sign-in page has always linked to.
@@ -11,11 +16,12 @@ export const metadata = { title: `Reset your password — ${BRAND_NAME}` };
  * 404 — on the one screen reached by people who cannot get in by any other means.
  */
 export default function ForgotPasswordPage() {
+    const t = useTranslations('auth');
     return (
         <AuthLayout
-            title="Reset your password"
-            subtitle="We will email you a link to set a new one"
-            pitch="Locked out is temporary. Your trips are still where you left them."
+            title={t('resetYourPassword')}
+            subtitle={t('forgotSubtitle')}
+            pitch={t('forgotPitch')}
         >
             <ForgotPasswordForm />
         </AuthLayout>

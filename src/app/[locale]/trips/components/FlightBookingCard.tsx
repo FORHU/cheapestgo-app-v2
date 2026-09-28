@@ -40,6 +40,7 @@ interface FlightBookingCardProps {
 }
 
 export function FlightBookingCard({ booking }: FlightBookingCardProps) {
+    const tAll = useTranslations();
     const tTrips = useTranslations('trips');
     const segments = booking.flight_segments ?? [];
     const first = segments[0];
@@ -91,7 +92,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                     </div>
                     <div className="text-center hidden sm:block">
                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                            Flight
+                            {tAll('trips.flightBookingCard.flight')}
                         </span>
                     </div>
                 </div>
@@ -126,7 +127,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                     {booking.pnr && (
                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
                             <Ticket size={12} className="text-slate-400" />
-                            <span>PNR: <strong className="text-slate-700 dark:text-slate-300 font-semibold tracking-wider">{booking.pnr}</strong></span>
+                            <span>{tAll('trips.pnr')} <strong className="text-slate-700 dark:text-slate-300 font-semibold tracking-wider">{booking.pnr}</strong></span>
                         </div>
                     )}
 
@@ -146,7 +147,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                                     title={tTrips('v2.downloadETicket')}
                                 >
                                     <Download size={13} />
-                                    <span>E-Ticket</span>
+                                    <span>{tAll('trips.eTicket')}</span>
                                 </button>
                             )}
 
@@ -154,7 +155,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                                 href={`/trips/${booking.id}`}
                                 className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                             >
-                                <span>Details</span>
+                                <span>{tAll('trips.flightBookingCard.details')}</span>
                                 <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                             </Link>
                         </div>

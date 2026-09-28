@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Check, X } from 'lucide-react';
@@ -42,6 +43,7 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export function RegisterForm() {
+    const tAll = useTranslations();
     const [form, setForm] = useState({ email: '', firstName: '', lastName: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<Partial<typeof form>>({});
@@ -55,11 +57,11 @@ export function RegisterForm() {
 
     const validate = () => {
         const e: typeof errors = {};
-        if (!form.email) e.email = 'Email is required';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email';
-        if (!form.firstName) e.firstName = 'First name is required';
-        if (!form.password) e.password = 'Password is required';
-        else if (!PASSWORD_RULES.every((r) => r.test(form.password))) e.password = 'Password does not meet requirements';
+        if (!form.email) e.email = tAll('auth.emailRequired');
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = tAll('auth.emailInvalid');
+        if (!form.firstName) e.firstName = tAll('auth.firstNameRequired');
+        if (!form.password) e.password = tAll('auth.passwordRequired');
+        else if (!PASSWORD_RULES.every((r) => r.test(form.password))) e.password = tAll('auth.passwordWeak');
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -72,25 +74,25 @@ export function RegisterForm() {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <SocialLoginButtons label="Sign up with Google" />
+            <SocialLoginButtons label={tAll('auth.signUpWithGoogle')} />
 
             <div className="grid grid-cols-2 gap-3">
                 <Input
                     id="firstName"
-                    label="First name"
+                    label={tAll('auth.firstName')}
                     value={form.firstName}
                     onChange={set('firstName')}
-                    placeholder="First"
+                    placeholder={tAll('auth.firstNameShort')}
                     icon={User}
                     error={errors.firstName}
                     autoComplete="given-name"
                 />
                 <Input
                     id="lastName"
-                    label="Last name"
+                    label={tAll('auth.lastName')}
                     value={form.lastName}
                     onChange={set('lastName')}
-                    placeholder="Last"
+                    placeholder={tAll('auth.lastNameShort')}
                     error={errors.lastName}
                     autoComplete="family-name"
                 />
@@ -102,7 +104,7 @@ export function RegisterForm() {
                 label="Email"
                 value={form.email}
                 onChange={set('email')}
-                placeholder="you@example.com"
+                placeholder={tAll('auth.signIn.emailPlaceholder')}
                 icon={Mail}
                 error={errors.email}
                 autoComplete="email"
@@ -115,7 +117,7 @@ export function RegisterForm() {
                     label="Password"
                     value={form.password}
                     onChange={set('password')}
-                    placeholder="Create a strong password"
+                    placeholder={tAll('auth.strongPassword')}
                     icon={Lock}
                     error={errors.password}
                     autoComplete="new-password"
@@ -138,20 +140,20 @@ export function RegisterForm() {
                 isLoading={register.isPending}
                 rightIcon={<ArrowRight size={16} />}
             >
-                Create account
+                {tAll('auth.createAccount')}
             </Button>
 
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-                By signing up you agree to our{' '}
-                <Link href="/terms" className="text-alabaster-accent hover:underline">Terms</Link>
+                {tAll('auth.agreePrefix')}{' '}
+                <Link href="/terms" className="text-alabaster-accent hover:underline">{tAll('auth.signIn.termsLink')}</Link>
                 {' '}and{' '}
-                <Link href="/privacy" className="text-alabaster-accent hover:underline">Privacy Policy</Link>.
+                <Link href="/privacy" className="text-alabaster-accent hover:underline">{tAll('legal.termsGate.privacyLink')}</Link>.
             </p>
 
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                Already have an account?{' '}
+                {tAll('auth.haveAccount')}{' '}
                 <Link href="/login" className="text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium">
-                    Sign in
+                    {tAll('nav.signIn')}
                 </Link>
             </p>
         </form>

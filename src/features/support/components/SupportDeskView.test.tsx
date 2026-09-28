@@ -8,6 +8,8 @@
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import enMessages from '@/locales/en.json';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SupportDeskView } from '@/features/support/components/SupportDeskView';
@@ -57,7 +59,11 @@ describe('SupportDeskView', () => {
     });
 
     it('opens on Waiting, which is the queue that needs triaging', async () => {
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await waitFor(() => expect(api.fetchInbox).toHaveBeenCalledWith('unassigned'));
         expect(await screen.findByText('traveller@example.com')).toBeInTheDocument();
     });
@@ -69,14 +75,22 @@ describe('SupportDeskView', () => {
             row({ id: 'c1', customerEmail: 'zoe@example.com',  urgency: 'travelling_now' }),
             row({ id: 'c2', customerEmail: 'adam@example.com', urgency: 'upcoming' }),
         ]);
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
 
         const emails = await screen.findAllByText(/@example\.com/);
         expect(emails.map(e => e.textContent)).toEqual(['zoe@example.com', 'adam@example.com']);
     });
 
     it('reads a Korean message in English, with the customer’s own words still there', async () => {
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await userEvent.click(await screen.findByText('traveller@example.com'));
 
         expect(await screen.findByText('My flight was cancelled.')).toBeInTheDocument();
@@ -85,7 +99,11 @@ describe('SupportDeskView', () => {
     });
 
     it('lets an admin hand a chat to someone', async () => {
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await userEvent.click(await screen.findByText('traveller@example.com'));
 
         await userEvent.selectOptions(await screen.findByLabelText('Assign to'), 'a2');
@@ -94,7 +112,11 @@ describe('SupportDeskView', () => {
 
     it('offers an Agent no way to assign one to themselves (ADR-0041)', async () => {
         signIn('support_agent');
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await userEvent.click(await screen.findByText('traveller@example.com'));
 
         // Anchored, or it also matches the "Resolved" filter tab.
@@ -103,7 +125,11 @@ describe('SupportDeskView', () => {
     });
 
     it('lets the holder reply', async () => {
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await userEvent.click(await screen.findByText('traveller@example.com'));
 
         await userEvent.type(await screen.findByLabelText('Reply'), 'Looking into it now.');
@@ -113,7 +139,11 @@ describe('SupportDeskView', () => {
 
     it('and says plainly why someone else’s chat cannot be answered', async () => {
         api.fetchConversationForAgent.mockResolvedValue(transcript({ canWrite: false }));
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await userEvent.click(await screen.findByText('traveller@example.com'));
 
         expect(await screen.findByText(/only they can reply/i)).toBeInTheDocument();
@@ -121,7 +151,11 @@ describe('SupportDeskView', () => {
     });
 
     it('returns a chat to the queue rather than to a named colleague', async () => {
-        render(<SupportDeskView />);
+        render(
+        <NextIntlClientProvider locale="en" messages={enMessages as never}>
+            <SupportDeskView />
+        </NextIntlClientProvider>,
+    );
         await userEvent.click(await screen.findByText('traveller@example.com'));
 
         await userEvent.click(await screen.findByRole('button', { name: /return/i }));

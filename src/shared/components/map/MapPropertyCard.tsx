@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import Image from 'next/image';
 import { MapPin, Building2 } from 'lucide-react';
@@ -75,6 +76,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
     index,
     immersive = false,
 }: MapPropertyCardProps) {
+    const tAll = useTranslations();
     const targetCurrency = useUserCurrency();
     const sourceCurrency = property.currency || 'USD';
     const displayPrice = React.useMemo(
@@ -145,7 +147,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
                     )}
                     {property.refundableTag === 'RFN' && (
                         <span className="absolute bottom-1 left-1 text-[7px] font-semibold bg-emerald-500 text-white px-1 py-px rounded-full shadow z-10">
-                            Free cancel
+                            {tAll('common.freeCancel')}
                         </span>
                     )}
                 </div>
@@ -187,7 +189,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
                                     <span className={cn('text-[13px] font-bold truncate', !immersive && 'text-blue-600 dark:text-blue-400')} style={{ color: priceColor }}>
                                         {formatCurrency(displayPrice, targetCurrency)}
                                     </span>
-                                    <span className={cn('text-[8px] shrink-0', !immersive && 'text-slate-400')} style={{ color: dimColor }}>/night</span>
+                                    <span className={cn('text-[8px] shrink-0', !immersive && 'text-slate-400')} style={{ color: dimColor }}>{tAll('hotels.perNight')}</span>
                                 </>
                             )}
                         </div>
@@ -197,7 +199,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
                                 onClick={(e) => { e.stopPropagation(); onViewDetails(property.id); }}
                                 className={cn('shrink-0 active:scale-95 text-white text-[9px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap', !immersive && 'bg-blue-600 hover:bg-blue-700')}
                                 style={immersive ? { background: ACCENT } : undefined}>
-                                View Deal
+                                {tAll('map.viewDeal')}
                             </button>
                         )}
                     </div>
@@ -222,7 +224,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
                     )}
                     {property.refundableTag === 'RFN' && (
                         <span className="absolute top-1 left-1 text-[9px] font-semibold bg-emerald-500 text-white px-1.5 py-0.5 rounded z-10">
-                            Free cancel
+                            {tAll('common.freeCancel')}
                         </span>
                     )}
                 </div>
@@ -288,7 +290,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
                                     <span className={cn('text-[clamp(0.6875rem,1.5vw,0.875rem)] font-bold', !immersive && 'text-blue-600 dark:text-blue-400')} style={{ color: priceColor }}>
                                         {formatCurrency(displayPrice, targetCurrency)}
                                     </span>
-                                    <span className={cn('text-[10px] ml-0.5', !immersive && 'text-slate-400')} style={{ color: dimColor }}>/night</span>
+                                    <span className={cn('text-[10px] ml-0.5', !immersive && 'text-slate-400')} style={{ color: dimColor }}>{tAll('hotels.perNight')}</span>
                                 </>
                             )}
                         </div>
