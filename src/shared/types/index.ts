@@ -277,6 +277,27 @@ export interface HotelBooking {
         hotelRemarks?: string[];
     };
     provider?: string;
+
+    // ── What a guest shows at the front desk ──────────────────────────────────
+    //
+    // These already arrive: `listForUser` spreads the whole row, so they have been on
+    // the wire all along without being declared. The voucher is the first thing to need
+    // them by name.
+
+    /** Ours, the `GG-` series. Not what the property's system holds. */
+    booking_reference?: string;
+    /** The supplier's own reference, and `provider_metadata.supplierRef` is where it lives. */
+    provider_metadata?: {
+        supplierRef?: string;
+        hotelCode?: string;
+        clientReference?: string;
+        /** Snapshotted at booking: part of the rate bought, not of the property today. */
+        board?: string;
+        checkInTime?: string;
+        checkOutTime?: string;
+    };
+    voucher_code?: string;
+    charged_price?: number;
 }
 
 /** Extended flight booking as returned by GET /api/bookings */
@@ -312,6 +333,17 @@ export interface FlightBooking {
         refundPenaltyAmount?: number;
         refundPenaltyCurrency?: string;
     };
+
+    /**
+     * When the airline actually issued the ticket — not when the order was placed.
+     *
+     * A PNR exists before issuance, so it is not evidence of a ticket. Nothing may call
+     * itself an e-ticket, or print a ticket number, until this is set.
+     */
+    ticketed_at?: string | null;
+    ticket_numbers?: string[];
+    booking_reference?: string;
+    provider_order_id?: string;
 }
 
 export type AnyBooking = HotelBooking | FlightBooking;

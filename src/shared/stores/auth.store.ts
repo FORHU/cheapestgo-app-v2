@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { claimRecentSearches, stashRecentSearches } from '@/shared/lib/recentSearchHandoff';
+import { clearBookingInProgress } from '@/shared/lib/bookingInProgress';
 import type { User, AuthStep } from "@/types/auth";
 import { loginSchema, registerSchema, emailSchema, profileSchema, updatePasswordSchema, type RegisterInput, type ProfileInput } from "@/lib/schemas/auth";
 import { http } from "@/shared/lib/http";
@@ -51,12 +53,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
         closeAuthModal: () => set({ isAuthModalOpen: false, redirectTo: null }),
         setUser: (user) => set({ user, isLoading: false }),
 
+        /**
+         * Bounded for the same reason as the other store's `fetchUser`: every sign-in screen
+         * disables itself on `isLoading`, which starts `true` and clears only here, so a stalled
+         * request left them disabled with no way out (QA BG-15). Ten seconds, then "not signed
+         * in" — the server still decides on every real request.
+         */
         initSession: async () => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10_000);
             try {
-                const res = await http.get<{ user: User }>('/auth/me');
+                const res = await http.get<{ user: User }>('/auth/me', { signal: controller.signal });
                 set({ user: res.user ?? null, isLoading: false });
             } catch {
                 set({ user: null, isLoading: false });
+            } finally {
+                clearTimeout(timer);
             }
         },
 
@@ -103,8 +115,17 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         logout: () =>
             withLoading(async () => {
-                await http.post<void>('/auth/logout', {});
-                set({ user: null });
+                try {
+                    await http.post<void>('/auth/logout', {});
+                    set({ user: null });
+                    // Filed under this account, not thrown away: signing back in brings it
+                    // back, and nobody else at this browser sees it (BG-12).
+                    stashRecentSearches();
+                } finally {
+                    // Even if the request failed: the person clicked sign out, and the next
+                    // one at this browser must not pick up their booking (BG-1).
+                    clearBookingInProgress();
+                }
             }),
 
         socialLogin: async (provider) => {
@@ -180,6 +201,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
         },
     };
 });
+
+// Whichever way an account becomes the signed-in one — password, sign-up, the OAuth
+// return, or a session restored on load — the recent searches on screen must belong to
+// it. One subscription covers every path that sets `user`.
+//
+// app-v2 carries two auth stores today and a sign-in through either one has to do this,
+// so both subscribe. Consolidating them is its own job.
+if (typeof window !== 'undefined') {
+    useAuthStore.subscribe((state, prev) => {
+        const id = state.user?.id;
+        if (id && id !== prev.user?.id) claimRecentSearches(id);
+    });
+}
 
 export const useUser = () => useAuthStore((s) => s.user);
 export const useAuthStep = () => useAuthStore((s) => s.authStep);

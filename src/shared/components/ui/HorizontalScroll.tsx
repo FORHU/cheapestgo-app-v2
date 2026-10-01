@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React, { useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -19,6 +20,7 @@ export const HorizontalScroll: React.FC<HorizontalScrollProps> = ({
     gap = 5,
     className = '',
 }) => {
+    const tAll = useTranslations();
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const scroll = useCallback((direction: 'left' | 'right') => {
@@ -39,7 +41,7 @@ export const HorizontalScroll: React.FC<HorizontalScrollProps> = ({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => scroll('left')}
-                        aria-label="Scroll left"
+                        aria-label={tAll('common.scrollLeft')}
                         className="p-1.5 sm:p-2.5 rounded-full bg-white/50 dark:bg-obsidian-surface backdrop-blur-xl border border-alabaster-border dark:border-obsidian-border hover:bg-white dark:hover:bg-white/10 transition-colors shadow-sm"
                     >
                         <ChevronLeft className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-300" />
@@ -48,7 +50,7 @@ export const HorizontalScroll: React.FC<HorizontalScrollProps> = ({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => scroll('right')}
-                        aria-label="Scroll right"
+                        aria-label={tAll('common.scrollRight')}
                         className="p-1.5 sm:p-2.5 rounded-full bg-white/50 dark:bg-obsidian-surface backdrop-blur-xl border border-alabaster-border dark:border-obsidian-border hover:bg-white dark:hover:bg-white/10 transition-colors shadow-sm"
                     >
                         <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-300" />

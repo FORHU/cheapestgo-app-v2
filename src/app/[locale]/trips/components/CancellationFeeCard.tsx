@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { formatCurrency } from '@/shared/lib/format';
 import { ShieldCheck, AlertCircle } from 'lucide-react';
@@ -18,6 +19,7 @@ export function CancellationFeeCard({
     refundAmount,
     currency,
 }: CancellationFeeCardProps) {
+    const tAll = useTranslations();
     const isFullRefund = penaltyAmount === 0 && refundAmount > 0;
     const isNonRefundable = refundAmount === 0;
 
@@ -25,18 +27,18 @@ export function CancellationFeeCard({
         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/60 dark:border-white/10 p-5 space-y-4">
             <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Refund Summary
+                    {tAll('trips.refund.summary')}
                 </h4>
                 {isFullRefund && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
                         <ShieldCheck size={12} />
-                        Full Refund
+                        {tAll('trips.refund.full')}
                     </span>
                 )}
                 {isNonRefundable && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">
                         <AlertCircle size={12} />
-                        Non-Refundable
+                        {tAll('trips.refund.nonRefundable')}
                     </span>
                 )}
             </div>
@@ -45,7 +47,7 @@ export function CancellationFeeCard({
                 {/* Original Amount */}
                 <div className="space-y-1">
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">
-                        Paid
+                        {tAll('trips.refund.paid')}
                     </span>
                     <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                         {formatCurrency(originalAmount, currency)}
@@ -55,7 +57,7 @@ export function CancellationFeeCard({
                 {/* Penalty */}
                 <div className="space-y-1 border-x border-slate-200/50 dark:border-slate-800">
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">
-                        Penalty
+                        {tAll('trips.refund.penalty')}
                     </span>
                     <p className={cn(
                         "text-sm font-semibold",
@@ -68,7 +70,7 @@ export function CancellationFeeCard({
                 {/* Net Refund */}
                 <div className="space-y-1">
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">
-                        Refund
+                        {tAll('trips.refund.refund')}
                     </span>
                     <p className={cn(
                         "text-sm font-bold",

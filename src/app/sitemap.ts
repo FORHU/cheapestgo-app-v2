@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { POPULAR_DESTINATIONS } from '@/shared/lib/destinations';
-import { NON_DEFAULT_LOCALES, localePath } from '@/shared/lib/seo';
+import { servedLocalePaths } from '@/shared/lib/seo';
 
 /**
  * Every public page, once per language.
@@ -8,6 +8,12 @@ import { NON_DEFAULT_LOCALES, localePath } from '@/shared/lib/seo';
  * This is what makes per-language indexing real: internal links carry the
  * locale prefix (see i18n/navigation), and the sitemap gives a crawler a
  * prefixed entry point for each page so it never has to find one by guessing.
+ *
+ * One entry per locale this deployment actually serves — so AirangGo lists its Korean pages
+ * only, and CheapestGo lists English, Japanese and Chinese. That list comes from
+ * `@/shared/lib/seo`, the same one the pages build their canonical and alternate URLs from.
+ * Keeping a second copy here is how v1 came to advertise a `/ko` its own pages no longer
+ * claimed.
  *
  * Route names here are v2's, not v1's — v2 owns its own URLs (/terms, not
  * /terms-of-service). See ADR-0016.
@@ -22,19 +28,12 @@ function localeVariants(
     path: string,
     opts?: { changeFrequency?: Entry['changeFrequency']; priority?: number },
 ): MetadataRoute.Sitemap {
-    const base: Entry = {
-        url:             `${baseUrl}${path === '/' ? '' : path}` || `${baseUrl}/`,
+    return servedLocalePaths(path).map(({ path: at }): Entry => ({
+        url:             `${baseUrl}${at}` || `${baseUrl}/`,
         lastModified:    now,
         changeFrequency: opts?.changeFrequency ?? 'weekly',
         priority:        opts?.priority ?? 0.7,
-    };
-    return [
-        base,
-        ...NON_DEFAULT_LOCALES.map(locale => ({
-            ...base,
-            url: `${baseUrl}${localePath(path, locale)}`,
-        })),
-    ];
+    }));
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -4,13 +4,14 @@ import { render as rtlRender, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RoomSelection } from '@/features/hotels/components/room-selection';
 import { ThemeProvider } from '@/shared/components/ThemeContext';
+import { withIntl } from '@/shared/testing/renderWithIntl';
 import type { RateRow, RoomOption } from '@/features/hotels/types/property.types';
 
 afterEach(cleanup);
 
 /** The section reads the app theme as its `tone` default, so it wants the
  *  provider the app mounts at its root. */
-const render = (ui: React.ReactElement) => rtlRender(<ThemeProvider>{ui}</ThemeProvider>);
+const render = (ui: React.ReactElement) => rtlRender(<ThemeProvider>{withIntl(ui)}</ThemeProvider>);
 
 const room = (over: Partial<RoomOption> = {}): RoomOption => ({
     id: 'r1',
@@ -129,7 +130,7 @@ describe('RoomSelection', () => {
 
     it('names the board code on the card', () => {
         render(<RoomSelection {...base} rooms={[room({ boardType: 'RO' })]} />);
-        expect(screen.getByText('No Breakfast Included')).toBeInTheDocument();
+        expect(screen.getByText('Room Only')).toBeInTheDocument();
     });
 
     it('draws no board row for a code it does not recognise', () => {
@@ -161,14 +162,19 @@ describe('RoomSelection', () => {
         expect(screen.queryByText(/bed/i)).not.toBeInTheDocument();
     });
 
-    it('falls back to the in-room half of the hotel amenities', () => {
+    it('falls back to the in-room half of the hotel amenities', async () => {
+        const user = userEvent.setup();
         render(
             <RoomSelection
                 {...base}
-                rooms={[room()]}
+                rooms={[room({ bedType: '1 double bed' })]}
                 hotelAmenities={['Free Wi-Fi', 'Air conditioning', 'Outdoor pool', 'Free parking']}
             />,
         );
+
+        // The card face carries the structural rows only, so the fallback has
+        // to be read where the amenities actually land: the room-detail modal.
+        await user.click(screen.getByRole('button', { name: 'View more' }));
         expect(screen.getByText('Free Wi-Fi')).toBeInTheDocument();
         expect(screen.getByText('Air conditioning')).toBeInTheDocument();
         // A pool and a car park are the building's, not the room's.
@@ -176,26 +182,23 @@ describe('RoomSelection', () => {
         expect(screen.queryByText('Free parking')).not.toBeInTheDocument();
     });
 
-    it('leaves the hotel list alone when the rate brought its own', () => {
+    it('leaves the hotel list alone when the rate brought its own', async () => {
+        const user = userEvent.setup();
         render(
             <RoomSelection
                 {...base}
-                rooms={[room({ amenities: ['Rainfall shower'] })]}
+                rooms={[room({ bedType: '1 double bed', amenities: ['Rainfall shower'] })]}
                 hotelAmenities={['Free Wi-Fi', 'Air conditioning']}
             />,
         );
+
+        await user.click(screen.getByRole('button', { name: 'View more' }));
         expect(screen.getByText('Rainfall shower')).toBeInTheDocument();
         expect(screen.queryByText('Free Wi-Fi')).not.toBeInTheDocument();
     });
 
-    it('offers View more only once the features outrun the card', async () => {
+    it('keeps the amenities off the card face, behind View more', async () => {
         const user = userEvent.setup();
-        const { unmount } = render(
-            <RoomSelection {...base} rooms={[room({ bedType: '1 double bed', amenities: ['City view', 'Wi-Fi'] })]} />,
-        );
-        expect(screen.queryByRole('button', { name: 'View more' })).not.toBeInTheDocument();
-        unmount();
-
         render(
             <RoomSelection
                 {...base}
@@ -205,10 +208,16 @@ describe('RoomSelection', () => {
                 })]}
             />,
         );
+
+        // However many amenities the rate carried, the face draws the
+        // structural rows and nothing else — every card is one height in the
+        // grid, and the rest is the modal's to list.
+        expect(screen.getAllByRole('listitem').map(li => li.textContent)).toEqual(['1 double bed']);
         expect(screen.queryByText('Private bathroom')).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('button', { name: 'View more' }));
         expect(screen.getByText('Private bathroom')).toBeInTheDocument();
+        expect(screen.getByText('City view')).toBeInTheDocument();
     });
 
     it('hands back the room and the rate, without the card swallowing the click', async () => {
@@ -246,11 +255,12 @@ describe('RoomSelection', () => {
         expect(shownRooms()).toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
         expect(screen.getByText('$169')).toBeInTheDocument();
         expect(screen.getByText('$200')).toBeInTheDocument();
-        // Asserted on the cards' own rows: "Breakfast Included" is also the
-        // name of a filter chip above them.
-        const rows = screen.getAllByRole('listitem').map(li => li.textContent);
-        expect(rows).toContain('No Breakfast Included');
-        expect(rows).toContain('Breakfast Included');
+        // Each card names its own board on its pill. The pill wording is a
+        // size shorter than the filter chip's on purpose — "Breakfast" beside
+        // the room name, "Breakfast Included" on the chip above — so an exact
+        // match here cannot pick up the chip by accident.
+        expect(screen.getByText('Room Only')).toBeInTheDocument();
+        expect(screen.getByText('Breakfast')).toBeInTheDocument();
     });
 
     it('lights only the rate that was picked, not its sibling', () => {
@@ -265,9 +275,11 @@ describe('RoomSelection', () => {
         expect(screen.getAllByRole('button', { name: 'Select Room' })).toHaveLength(1);
     });
 
-    it('divides the stay price down to a night', () => {
-        // Suppliers quote the whole stay; the card prints one night of it.
-        render(<RoomSelection {...base} rooms={[room({ price: 600 })]} nights={3} />);
+    it('prints the nightly rate it was given, and does not divide it again', () => {
+        // api-v2 divides the supplier's stay total before sending it, which is v1's own
+        // contract. Dividing here as well quoted a three-night stay at a third of its rate.
+        // The card's own '× N nights' line is where the stay total is rebuilt.
+        render(<RoomSelection {...base} rooms={[room({ price: 200 })]} nights={3} />);
         expect(screen.getByText('$200')).toBeInTheDocument();
     });
 

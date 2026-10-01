@@ -1,10 +1,13 @@
 'use client';
 
 import React from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatDate } from '@/shared/lib/format';
+import { useTranslations } from 'next-intl';
+import { formatBookingTime as formatTime } from '@/features/flights/lib/flight-utils';
 import type { FlightBooking } from '@/shared/types';
 import { toast } from 'sonner';
 
@@ -37,6 +40,8 @@ interface FlightBookingCardProps {
 }
 
 export function FlightBookingCard({ booking }: FlightBookingCardProps) {
+    const tAll = useTranslations();
+    const tTrips = useTranslations('trips');
     const segments = booking.flight_segments ?? [];
     const first = segments[0];
     const last = segments[segments.length - 1];
@@ -46,11 +51,8 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
     const departDate = first?.departure ? formatDate(new Date(first.departure), { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
     const tripTypeLabel = booking.trip_type === 'round-trip' ? 'Round-trip' : booking.trip_type === 'multi-city' ? 'Multi-city' : 'One-way';
 
-    // Format times
-    const formatTime = (iso?: string) => {
-        if (!iso) return '';
-        return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
+    // formatBookingTime, not the flights one: these come out of a timestamptz column as real
+    // instants, where an offer's times are Local Airport Time digits that must not meet a Date.
 
     const handleDownloadTicket = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -58,7 +60,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
         toast.success('Downloading E-Ticket...');
         
         // Trigger download of mock e-ticket text
-        const text = `CHEAPESTGO FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with CheapestGo!`;
+        const text = `${BRAND_NAME.toUpperCase()} FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with ${BRAND_NAME}!`;
         const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -90,7 +92,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                     </div>
                     <div className="text-center hidden sm:block">
                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                            Flight
+                            {tAll('trips.flightBookingCard.flight')}
                         </span>
                     </div>
                 </div>
@@ -125,7 +127,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                     {booking.pnr && (
                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
                             <Ticket size={12} className="text-slate-400" />
-                            <span>PNR: <strong className="text-slate-700 dark:text-slate-300 font-semibold tracking-wider">{booking.pnr}</strong></span>
+                            <span>{tAll('trips.pnr')} <strong className="text-slate-700 dark:text-slate-300 font-semibold tracking-wider">{booking.pnr}</strong></span>
                         </div>
                     )}
 
@@ -142,10 +144,10 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                                 <button
                                     onClick={handleDownloadTicket}
                                     className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-xl"
-                                    title="Download E-Ticket"
+                                    title={tTrips('v2.downloadETicket')}
                                 >
                                     <Download size={13} />
-                                    <span>E-Ticket</span>
+                                    <span>{tAll('trips.eTicket')}</span>
                                 </button>
                             )}
 
@@ -153,7 +155,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
                                 href={`/trips/${booking.id}`}
                                 className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                             >
-                                <span>Details</span>
+                                <span>{tAll('trips.flightBookingCard.details')}</span>
                                 <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                             </Link>
                         </div>

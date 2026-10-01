@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +24,7 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, onDone, mode, segmentIndex }: DatePickerProps) {
+    const tAll = useTranslations();
     const ref = useRef<HTMLDivElement>(null);
     const activeDropdown = useActiveDropdown();
     const { checkIn: rawCheckIn, checkOut: rawCheckOut } = useDates();
@@ -219,7 +221,7 @@ export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, on
                         <div className="relative min-h-[220px]">
                             {view === 'month' && (
                                 <div className="absolute inset-0 bg-white dark:bg-slate-900 z-20 overflow-y-auto pr-1">
-                                    <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mb-3 sticky top-0 bg-white dark:bg-slate-900 py-1">Month</div>
+                                    <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mb-3 sticky top-0 bg-white dark:bg-slate-900 py-1">{tAll('landing.search.month')}</div>
                                     <div className="grid grid-cols-1 gap-1">
                                         {MONTHS.map((m, i) => (
                                             <button
@@ -241,7 +243,7 @@ export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, on
                             )}
                             {view === 'year' && (
                                 <div className="absolute inset-0 bg-white dark:bg-slate-900 z-20 overflow-y-auto pr-1">
-                                    <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mb-3 sticky top-0 bg-white dark:bg-slate-900 py-1">Year</div>
+                                    <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mb-3 sticky top-0 bg-white dark:bg-slate-900 py-1">{tAll('landing.search.year')}</div>
                                     <div className="grid grid-cols-3 gap-2">
                                         {years.map((y) => (
                                             <button
@@ -276,7 +278,7 @@ export function DatePicker({ triggerDropdown, initialCheckOutMode, forceOpen, on
                                 onClick={handleClose}
                                 className="px-6 py-1.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                             >
-                                Done
+                                {tAll('landing.search.done')}
                             </button>
                         </div>
                     </div>

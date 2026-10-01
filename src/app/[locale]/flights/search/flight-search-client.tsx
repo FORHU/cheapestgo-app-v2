@@ -1,16 +1,18 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, X } from 'lucide-react';
+import { Plane, X, CalendarClock } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { createPortal } from 'react-dom';
 import BackButton from '@/shared/components/common/BackButton';
 import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { http } from '@/shared/lib/http';
+import { resolveDepartureDate } from '@/features/landing/lib/links';
 import { FlightResults } from '@/features/flights/components/flight-results';
 import { FlightFilters, DEFAULT_FLIGHT_FILTERS, type FlightFilterState } from '@/features/flights/components/flight-filters';
 import { ResponsiveFlightHeader, ProviderStatus } from '@/features/flights/components/ResponsiveFlightHeader';
@@ -99,25 +101,26 @@ function _getProviderCounts(offers: FlightOffer[]): Record<string, number> {
 // ─── Error / Timeout banners ──────────────────────────────────────────────────
 
 function TimeoutBanner({ onRetry }: { onRetry: () => void }) {
+    const tAll = useTranslations();
     return (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-10 text-center space-y-4">
             <div className="text-5xl">⏱️</div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Search is taking longer than usual</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white">{tAll('flights.results.slowTitle')}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                Flight providers are responding slowly. Please try again.
+                {tAll('flights.results.slowBody')}
             </p>
             <div className="flex gap-3 justify-center mt-2">
                 <button
                     onClick={onRetry}
                     className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-full transition-colors"
                 >
-                    Try Again
+                    {tAll('flights.results.tryAgain')}
                 </button>
                 <Link
                     href="/"
                     className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white text-sm font-semibold rounded-full transition-colors"
                 >
-                    New Search
+                    {tAll('flights.results.newSearch')}
                 </Link>
             </div>
         </div>
@@ -125,15 +128,16 @@ function TimeoutBanner({ onRetry }: { onRetry: () => void }) {
 }
 
 function ErrorBanner({ message }: { message: string }) {
+    const tAll = useTranslations();
     return (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-8 rounded-2xl text-center space-y-3">
-            <p className="text-lg font-bold text-red-700 dark:text-red-400">Search Error</p>
+            <p className="text-lg font-bold text-red-700 dark:text-red-400">{tAll('flights.results.searchError')}</p>
             <p className="text-sm text-red-600 dark:text-red-300">{message}</p>
             <Link
                 href="/"
                 className="block mt-2 text-sm font-semibold text-red-700 dark:text-red-400 hover:underline"
             >
-                Try another search
+                {tAll('flights.results.tryAnother')}
             </Link>
         </div>
     );
@@ -142,13 +146,21 @@ function ErrorBanner({ message }: { message: string }) {
 // ─── Main Client Component ────────────────────────────────────────────────────
 
 export function FlightSearchClient() {
+    const tAll = useTranslations();
     const sp = useSearchParams();
     const router = useRouter();
+
+    // A route can be named without a date, and a link can sit in a chat window until its
+    // date has gone. Neither is worth refusing to search over — the airline rejects a past
+    // departure, and the page then reads as though the route has no flights at all.
+    const { departure: resolvedDeparture, chosen: departureChosen } = resolveDepartureDate(
+        sp.get('depart') ?? sp.get('departure'),
+    );
 
     const params: SearchParams = {
         origin: sp.get('origin') ?? '',
         destination: sp.get('destination') ?? '',
-        departure: sp.get('depart') ?? sp.get('departure') ?? '',
+        departure: resolvedDeparture,
         returnDate: sp.get('return') ?? undefined,
         adults: Math.max(1, parseInt(sp.get('adults') ?? '1', 10)),
         children: Math.max(0, parseInt(sp.get('children') ?? '0', 10)),
@@ -219,15 +231,54 @@ export function FlightSearchClient() {
     const isLoading = state.status === 'loading' || state.status === 'loading_slow';
     const isSlowSearch = state.status === 'loading_slow';
 
-    const handleSelect = useCallback((offer: FlightOffer) => {
-        sessionStorage.setItem('selectedFlight', JSON.stringify(offer));
+    /**
+     * Check the fare is still what it says before sending anyone to pay for it.
+     *
+     * An airline fare moves between the search and the booking. Without this the traveller
+     * finds out at the moment the order is placed — card details in, nothing to decide.
+     * Asking first turns it into a question: this fare went up, still want it? A fare that
+     * has gone *down* is taken silently at the lower price, and a provider that cannot
+     * answer never blocks the booking.
+     */
+    const [revalidating, setRevalidating] = useState<string | null>(null);
+
+    const handleSelect = useCallback(async (offer: FlightOffer) => {
+        let chosen = offer;
+        try {
+            setRevalidating(offer.offerId);
+            const check = await http.post<{ priceChanged?: boolean; newPrice?: number }>(
+                '/api/flights/revalidate',
+                { provider: offer.provider, flightPayload: offer },
+            );
+
+            if (check.priceChanged && typeof check.newPrice === 'number') {
+                const currency = offer.price?.currency ?? '';
+                const ok = window.confirm(
+                    `The price for this flight has changed to ${currency} ${check.newPrice.toLocaleString()}.`
+                    + '\n\nContinue at the new price?',
+                );
+                if (!ok) return;
+            }
+            if (typeof check.newPrice === 'number' && check.newPrice > 0) {
+                // Including a drop: the booking charges what the supplier now quotes, so the
+                // checkout has to show that rather than the figure from the search.
+                chosen = { ...offer, price: { ...offer.price, total: check.newPrice } };
+            }
+        } catch {
+            // The order path re-quotes and surfaces the real error; a failed check here is
+            // not a reason to stop someone booking.
+        } finally {
+            setRevalidating(null);
+        }
+
+        sessionStorage.setItem('selectedFlight', JSON.stringify(chosen));
         sessionStorage.setItem('flightSearchPassengers', JSON.stringify({
             adults: params.adults,
             children: params.children,
             infants: params.infants,
         }));
         const qs = new URLSearchParams();
-        qs.set('offerId', offer.offerId);
+        qs.set('offerId', chosen.offerId);
         if (bundleHotelId) {
             qs.set('bundleHotelId', bundleHotelId);
         }
@@ -246,8 +297,10 @@ export function FlightSearchClient() {
         const resolvedOrigin = resolveIATA(params.origin);
         const resolvedDestination = resolveIATA(params.destination);
 
-        if (!resolvedOrigin || !resolvedDestination || !params.departure) {
-            setState({ status: 'error', message: 'Missing search parameters. Please go back and fill in origin, destination, and departure date.' });
+        // The date is always resolvable; a route is not. Nothing can guess where someone
+        // meant to fly, so that is the only case left worth refusing.
+        if (!resolvedOrigin || !resolvedDestination) {
+            setState({ status: 'error', message: tAll('flights.results.missingRoute') });
             return;
         }
 
@@ -275,7 +328,7 @@ export function FlightSearchClient() {
                     tripType: params.tripType,
                 };
 
-                const data = await http.post<{ offers: FlightOffer[] }>(
+                const data = await http.post<{ offers: FlightOffer[]; providersFailed?: boolean; failedProviders?: string[] }>(
                     '/api/flights/search',
                     body,
                     { signal: controller.signal }
@@ -291,7 +344,18 @@ export function FlightSearchClient() {
 
                 const offers = data.offers ?? [];
                 setAllOffers(offers);
-                setState(offers.length > 0 ? { status: 'success', offers } : { status: 'empty' });
+                // No offers because an airline's system could not answer is not the same as no
+                // flights on the route. Shown as "no flights found", an outage reads as a fact
+                // about the route and leaves the traveller nothing to do; the error state has a
+                // retry.
+                if (offers.length === 0 && data.providersFailed) {
+                    setState({
+                        status: 'error',
+                        message: 'We could not reach the airlines just now. Your search has not been run — please try again.',
+                    });
+                } else {
+                    setState(offers.length > 0 ? { status: 'success', offers } : { status: 'empty' });
+                }
             } catch (err: unknown) {
                 clearTimeout(timeoutId);
                 clearTimeout(slowId);
@@ -364,7 +428,7 @@ export function FlightSearchClient() {
                             >
                                 <X size={16} className="text-slate-700 dark:text-slate-300" />
                             </button>
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white absolute left-1/2 -translate-x-1/2">Flight Filters</h2>
+                            <h2 className="text-sm font-bold text-slate-900 dark:text-white absolute left-1/2 -translate-x-1/2">{tAll('flights.results.filtersTitle')}</h2>
                             <div className="w-8" />
                         </div>
 
@@ -392,11 +456,13 @@ export function FlightSearchClient() {
         </AnimatePresence>
     );
 
-    const cabinLabel = params.cabin.replace('_', ' ');
+    // `economy` / `premium_economy` in the URL, `landing.search.cabinClass.premiumEconomy` in
+    // the locale file.
+    const cabinLabel = tAll(`landing.search.cabinClass.${params.cabin.replace(/_(.)/g, (_, c) => c.toUpperCase())}`);
     const subtitle = [
         params.departure,
         params.returnDate && `↩ ${params.returnDate}`,
-        `${params.adults} adult${params.adults !== 1 ? 's' : ''}`,
+        tAll('flights.passengers.adults', { count: params.adults }),
         cabinLabel,
     ].filter(Boolean).join(' · ');
 
@@ -419,19 +485,29 @@ export function FlightSearchClient() {
                         />
                     </div>
 
+                    {/* The same disclosure the narrow layout makes. This one carries the
+                        date in SectionHeader's subtitle, so without it the widest screen
+                        was the one that never said the date had been chosen for you. */}
+                    {!departureChosen && (
+                        <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                            <CalendarClock size={13} className="shrink-0 text-blue-500" aria-hidden />
+                            {tAll('flights.results.datePicked')}
+                        </p>
+                    )}
+
                     {bundleHotelId && (
                         <div className="mt-4 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700/50">
                             <div className="p-1.5 bg-violet-100 dark:bg-violet-900/40 rounded-lg shrink-0">
                                 <Plane size={14} className="text-violet-600 dark:text-violet-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-violet-700 dark:text-violet-300">Flight + Hotel Bundle Active</p>
+                                <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{tAll('flights.results.bundleActive')}</p>
                                 <p className="text-[11px] text-violet-600/80 dark:text-violet-400/80">
-                                    Select a flight below — your bundle discount will be applied at checkout.
+                                    {tAll('flights.results.bundleBody')}
                                 </p>
                             </div>
                             <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded-full">
-                                Save up to 8%
+                                {tAll('flights.results.saveUpTo')}
                             </span>
                         </div>
                     )}
@@ -443,7 +519,12 @@ export function FlightSearchClient() {
                         origin={params.origin}
                         destination={params.destination}
                         dateStr={params.returnDate ? `${params.departure} — ${params.returnDate}` : params.departure}
-                        passengersStr={`${params.adults} adult${params.adults !== 1 ? 's' : ''}${params.children > 0 ? `, ${params.children} child${params.children !== 1 ? 'ren' : ''}` : ''}${params.infants > 0 ? `, ${params.infants} infant${params.infants !== 1 ? 's' : ''}` : ''} · ${cabinLabel}`}
+                        datePicked={!departureChosen}
+                        passengersStr={[
+                            tAll('flights.passengers.adults', { count: params.adults }),
+                            params.children > 0 && tAll('flights.passengers.children', { count: params.children }),
+                            params.infants > 0 && tAll('flights.passengers.infants', { count: params.infants }),
+                        ].filter(Boolean).join(', ') + ` · ${cabinLabel}`}
                         activeFilterCount={activeFilterCount}
                         statusElement={<ProviderStatus offers={rawOffers} loading={isLoading} />}
                         resultCount={filteredOffers.length}
@@ -458,7 +539,7 @@ export function FlightSearchClient() {
                             <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Still searching&hellip;</p>
-                                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">Providers are responding slowly. Hang tight.</p>
+                                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{tAll('flights.results.slowHint')}</p>
                             </div>
                         </div>
                     )}
@@ -488,14 +569,15 @@ export function FlightSearchClient() {
                         <div className="flex-1 min-w-0 space-y-4">
                             {state.status === 'success' && filteredOffers.length === 0 && allOffers.length > 0 ? (
                                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 text-center space-y-3">
-                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No flights match your filters</p>
-                                    <p className="text-sm text-slate-500">Try adjusting your filter criteria.</p>
+                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{tAll('flights.results.noMatch')}</p>
+                                    <p className="text-sm text-slate-500">{tAll('flights.results.noMatchHint')}</p>
                                 </div>
                             ) : (
                                 <FlightResults
                                     offers={filteredOffers}
                                     loading={isLoading}
                                     onSelect={handleSelect}
+                                    checkingOfferId={revalidating}
                                     skeletonCount={8}
                                 />
                             )}

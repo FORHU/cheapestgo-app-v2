@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { routing, isLocale } from '@/i18n/routing';
+import { SupportWidget } from '@/features/support/components/SupportWidget';
 
 /**
  * Everything the visitor sees lives under this segment. /admin does not: it is
@@ -35,5 +36,13 @@ export default async function LocaleLayout({
     // segment is forced dynamic, which is most of what the segment buys us.
     setRequestLocale(locale);
 
-    return <>{children}</>;
+    // On every page under the segment, because a customer needs support from wherever they
+    // got stuck — mid-checkout most of all. It renders nothing for a signed-out visitor
+    // (ADR-0032), so it costs a marker element and no more.
+    return (
+        <>
+            {children}
+            <SupportWidget />
+        </>
+    );
 }

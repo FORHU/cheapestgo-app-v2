@@ -1,0 +1,65 @@
+name: CI
+
+# Mirrors v1's CI (cheapest-go-app/.github/workflows/ci.yml) so all three repos gate on
+# the same idea, with two deliberate differences: pnpm instead of npm, and a wider set of
+# checks. v1 runs type check and test only; this runs lint and build as well, so a deploy
+# workflow added later cannot fail on something CI never looked at.
+
+on:
+  push:
+    branches: [main, staging, updates]
+  pull_request:
+    branches: [main, staging, updates]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    # `src/shared/lib/env.ts` validates these with a zod schema at module load —
+    # NEXT_PUBLIC_API_URL and NEXT_PUBLIC_SITE_URL must parse as URLs and the Stripe key
+    # must be non-empty — so `next build` throws without them. Stubs, not secrets: the
+    # build only needs them to satisfy the schema, and .env is gitignored so CI has none.
+    # Same values vitest.config.ts already uses for the test run.
+    env:
+      NEXT_PUBLIC_API_URL:                http://localhost:4000/api/v2
+      NEXT_PUBLIC_SITE_URL:               http://localhost:3000
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_stub
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Before setup-node: `cache: pnpm` needs the pnpm binary to resolve the store path.
+      # Version 9 matches pnpm-lock.yaml's lockfileVersion 9.0.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # pnpm, not npm: this repo has only pnpm-lock.yaml, so `npm ci` — what v1 and
+      # api-v2 use — would fail outright. Scripts are left enabled, unlike v1: Next.js
+      # relies on postinstall for its platform binaries.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Each check runs even when an earlier one failed, so one red run lists everything
+      # that needs fixing instead of revealing the next problem only after the last is
+      # fixed. `!cancelled()` rather than `always()`: a cancelled run should stop.
+      - name: Type check
+        if: '!cancelled()'
+        run: pnpm type-check
+
+      - name: Lint
+        if: '!cancelled()'
+        run: pnpm lint
+
+      - name: Test
+        if: '!cancelled()'
+        run: pnpm test
+
+      - name: Build
+        if: '!cancelled()'
+        run: pnpm build

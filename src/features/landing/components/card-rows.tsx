@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useMemo } from 'react';
 import { ScrollRow } from './scroll-row';
 import { BundleCard, FlightDealCard, StayCard } from './cards';
@@ -11,13 +12,14 @@ import type { TripDates } from '@/features/landing/lib/links';
 import type { BundleItem, FlightDealItem, StayItem } from '@/features/landing/lib/landing-data';
 
 export function FlightDealsRow({ deals, dates }: { deals: FlightDealItem[]; dates: TripDates }) {
+    const tAll = useTranslations();
     if (deals.length === 0) return null;
 
     const origins = Array.from(new Set(deals.map((d) => d.origin)));
     const from = origins.length === 1 ? ` from ${origins[0]}` : '';
 
     return (
-        <ScrollRow title={`Flight deals${from}`} subtitle="Round trip, all-in, next 60 days">
+        <ScrollRow title={`Flight deals${from}`} subtitle={tAll('landing.flightRowSubtitle')}>
             {deals.map((deal, i) => (
                 <FlightDealCard key={deal.id} deal={deal} dates={dates} priority={i < 3} />
             ))}
@@ -26,12 +28,13 @@ export function FlightDealsRow({ deals, dates }: { deals: FlightDealItem[]; date
 }
 
 export function StaysRow({ stays, dates }: { stays: StayItem[]; dates: TripDates }) {
+    const tAll = useTranslations();
     if (stays.length === 0) return null;
 
     return (
         <ScrollRow
-            title="Stays travelers are booking"
-            subtitle="Total price per night, taxes and resort fees included"
+            title={tAll('landing.hotelRowTitle')}
+            subtitle={tAll('landing.hotelRowSubtitle')}
         >
             {stays.map((stay) => (
                 <StayCard key={stay.id} stay={stay} dates={dates} />

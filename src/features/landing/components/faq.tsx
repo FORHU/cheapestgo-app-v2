@@ -13,13 +13,14 @@ import { cn } from '@/shared/lib/cn';
 const KEYS = ['1', '2', '3', '4'] as const;
 
 export function FaqSection() {
+    const tAll = useTranslations();
     const t = useTranslations('seo.faq');
     const [open, setOpen] = useState<number>(-1);
 
     return (
         <section id="faq" className="max-w-[1240px] mx-auto px-6 pt-[clamp(64px,8vw,104px)] w-full">
             <h2 className="font-display font-semibold tracking-[-0.03em] leading-tight text-[clamp(22px,2.6vw,28px)] text-slate-900 dark:text-white mb-6">
-                Before you book
+                {tAll('landing.faq.eyebrow')}
             </h2>
 
             <div className="max-w-[980px] border-t border-slate-200/70 dark:border-white/10">

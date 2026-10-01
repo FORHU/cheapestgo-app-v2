@@ -13,6 +13,7 @@ import { ExchangeRateListener } from '@/shared/components/ExchangeRateListener';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
 import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
 
@@ -35,6 +36,14 @@ const openSans = Open_Sans({ subsets: ['latin'], variable: '--font-open-sans', d
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cheapestgo.com';
 
+// Every string below names the brand. Served from the Korean domain under a literal
+// "CheapestGo" the tab title, the share card and the app name all name a company the
+// visitor has never heard of — and a share card is the one surface a visitor sees
+// before they ever reach the site.
+const BRAND = BRAND_NAME;
+const TAGLINE = `${BRAND} | Discover and Book Your Next Global Journey`;
+const DESCRIPTION = `Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with ${BRAND} — your modern travel OS.`;
+
 export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
@@ -43,10 +52,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
     metadataBase: new URL(SITE_URL),
     title: {
-        default: 'CheapestGo | Discover and Book Your Next Global Journey',
-        template: '%s | CheapestGo',
+        default: TAGLINE,
+        template: `%s | ${BRAND}`,
     },
-    description: 'Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with CheapestGo — your modern travel OS.',
+    description: DESCRIPTION,
     icons: {
         icon: '/Fav_Icon_Light.png',
         apple: '/Fav_Icon_Light.png',
@@ -54,26 +63,26 @@ export const metadata: Metadata = {
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',
-        title: 'CheapestGo',
+        title: BRAND,
     },
     openGraph: {
-        title: 'CheapestGo | Discover and Book Your Next Global Journey',
-        description: 'Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with CheapestGo — your modern travel OS.',
+        title: TAGLINE,
+        description: DESCRIPTION,
         url: SITE_URL,
-        siteName: 'CheapestGo',
+        siteName: BRAND,
         images: [{
             url: `${SITE_URL}/Web_Logo_Light.png`,
             width: 1200,
             height: 630,
-            alt: 'CheapestGo - Ultimate Travel Booking Platform',
+            alt: `${BRAND} - Ultimate Travel Booking Platform`,
         }],
         locale: 'en_US',
         type: 'website',
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'CheapestGo | Discover and Book Your Next Global Journey',
-        description: 'Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with CheapestGo — your modern travel OS.',
+        title: TAGLINE,
+        description: DESCRIPTION,
         images: [`${SITE_URL}/Web_Logo_Light.png`],
     },
 };

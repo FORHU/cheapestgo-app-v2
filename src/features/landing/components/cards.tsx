@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
@@ -73,6 +74,7 @@ export function FlightDealCard({
 export function StayCard({
     stay, dates, priority,
 }: { stay: StayItem; dates: TripDates; priority?: boolean }) {
+    const tAll = useTranslations();
     const money = useMoney();
     const { adults, children, rooms } = useLinkTravelers();
 
@@ -100,7 +102,7 @@ export function StayCard({
             <div className="text-xs text-slate-600 dark:text-slate-400 mt-[3px] truncate">{stay.location}</div>
             <div className="font-mono text-[13px] font-bold mt-1.5 text-slate-900 dark:text-white">
                 {money(stay.price, stay.currency)}{' '}
-                <span className="font-normal text-slate-600 dark:text-slate-400">/ night</span>
+                <span className="font-normal text-slate-600 dark:text-slate-400">{tAll('landing.perNight')}</span>
             </div>
         </Link>
     );

@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { Check, Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { useHydrated } from '@/shared/hooks/useHydrated';
 import {
@@ -21,10 +22,12 @@ import { TicketStub, TICKET_SURFACE } from '@/shared/components/ui/ticket-stub';
 
 type Tab = 'flights' | 'hotels' | 'budget';
 
-const TABS: { id: Tab; label: string }[] = [
-    { id: 'flights', label: 'Flights' },
-    { id: 'hotels', label: 'Hotels' },
-    { id: 'budget', label: 'Where can I go?' },
+// Labels as keys: the array is built at module load, before any component can read the
+// locale, so the text is resolved where it is rendered.
+const TABS: { id: Tab; labelKey: string }[] = [
+    { id: 'flights', labelKey: 'tabs.flights' },
+    { id: 'hotels', labelKey: 'tabs.hotels' },
+    { id: 'budget', labelKey: 'tabs.budget' },
 ];
 
 /** Anchor the "Show N destinations" button scrolls to. */
@@ -139,10 +142,12 @@ function TripTypePicker() {
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
 export function LandingHero() {
+    const tAll = useTranslations();
     const router = useRouter();
     const hydrated = useHydrated();
     const money = useMoney();
 
+    const t = useTranslations('landing.hero');
     const [tab, setTab] = useState<Tab>('flights');
     const [error, setError] = useState<string | null>(null);
 
@@ -243,30 +248,30 @@ export function LandingHero() {
     return (
         <section className="max-w-[1240px] mx-auto px-6 pt-[clamp(40px,6vw,72px)] pb-[clamp(40px,5vw,64px)] flex flex-col items-center text-center">
             <h1 className="font-display font-bold tracking-[-0.035em] leading-[1.03] text-[clamp(38px,5vw,56px)] text-slate-900 dark:text-white">
-                Fly anywhere
+                {t('titleTop')}
                 <br />
-                for less.
+                {t('titleBottom')}
             </h1>
             <p className="mt-[22px] text-[17px] leading-relaxed text-slate-600 dark:text-slate-400 max-w-[500px]">
-                Every major flight and hotel supplier, compared at once. Taxes and fees included, no booking fee.
+                {t('blurb')}
             </p>
 
             {/* Tabs */}
-            <div role="tablist" aria-label="Search type" className="flex justify-center gap-7 mt-[26px]">
-                {TABS.map((t) => (
+            <div role="tablist" aria-label={t('searchType')} className="flex justify-center gap-7 mt-[26px]">
+                {TABS.map((tab_) => (
                     <button
-                        key={t.id}
+                        key={tab_.id}
                         role="tab"
-                        aria-selected={tab === t.id}
-                        onClick={() => selectTab(t.id)}
+                        aria-selected={tab === tab_.id}
+                        onClick={() => selectTab(tab_.id)}
                         className={cn(
                             'text-sm font-semibold pb-[7px] transition-colors border-b-2',
-                            tab === t.id
+                            tab === tab_.id
                                 ? 'text-slate-900 dark:text-white border-slate-900 dark:border-white'
                                 : 'text-slate-400 dark:text-slate-500 border-transparent hover:text-slate-600 dark:hover:text-slate-300'
                         )}
                     >
-                        {t.label}
+                        {t(tab_.labelKey)}
                     </button>
                 ))}
             </div>
@@ -279,14 +284,14 @@ export function LandingHero() {
                         action={
                             <button type="button" onClick={searchFlights} className={SUBMIT}>
                                 <Search size={17} strokeWidth={2.5} />
-                                Search flights
+                                {t('searchFlights')}
                             </button>
                         }
                     >
                         <div className="grid grid-cols-1 md:grid-cols-[1.1fr_1.1fr_0.95fr_0.95fr_0.95fr_1fr]">
                             <div className="relative">
                                 <button type="button" onClick={() => toggle('flight-origin')} className={FIELD}>
-                                    <div className={LABEL}>From</div>
+                                    <div className={LABEL}>{tAll('landing.search.from')}</div>
                                     <div className={fieldValue(!!flightLeg?.origin)}>
                                         {flightLeg?.origin?.title ?? 'City or airport'}
                                     </div>
@@ -311,7 +316,7 @@ export function LandingHero() {
                                     onClick={() => toggle('flight-depart')}
                                     className={FIELD}
                                 >
-                                    <div className={LABEL}>Depart</div>
+                                    <div className={LABEL}>{tAll('landing.search.depart')}</div>
                                     <div className={cn('font-mono', fieldValue(!!flightLeg?.date))}>
                                         {shortDate(flightLeg?.date)}
                                     </div>
@@ -327,7 +332,7 @@ export function LandingHero() {
                                     onClick={() => toggle('flight-return')}
                                     className={cn(FIELD, 'disabled:hover:bg-transparent')}
                                 >
-                                    <div className={LABEL}>Return</div>
+                                    <div className={LABEL}>{tAll('landing.search.return')}</div>
                                     <div className={cn('font-mono', fieldValue(roundTrip && !!returnLeg?.date))}>
                                         {roundTrip ? shortDate(returnLeg?.date) : '—'}
                                     </div>
@@ -339,7 +344,7 @@ export function LandingHero() {
 
                             <div className={cn('relative', DIVIDER)}>
                                 <button type="button" onClick={() => toggle('flight-type')} className={FIELD}>
-                                    <div className={LABEL}>Flight type</div>
+                                    <div className={LABEL}>{t('flightType')}</div>
                                     <div className={fieldValue(true)}>{roundTrip ? 'Round trip' : 'One way'}</div>
                                 </button>
                                 <TripTypePicker />
@@ -347,7 +352,7 @@ export function LandingHero() {
 
                             <div className={cn('relative', DIVIDER)}>
                                 <button type="button" onClick={() => toggle('travelers')} className={FIELD}>
-                                    <div className={LABEL}>Travelers</div>
+                                    <div className={LABEL}>{t('travelers')}</div>
                                     <div className={fieldValue(true)}>
                                         {adults} adult{adults !== 1 ? 's' : ''}
                                         {children > 0 ? `, ${children} child${children !== 1 ? 'ren' : ''}` : ''}
@@ -366,14 +371,14 @@ export function LandingHero() {
                         action={
                             <button type="button" onClick={searchHotels} className={SUBMIT}>
                                 <Search size={17} strokeWidth={2.5} />
-                                Search hotels
+                                {t('searchHotels')}
                             </button>
                         }
                     >
                         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_0.9fr_0.9fr_1.1fr]">
                             <div className="relative">
                                 <button type="button" onClick={() => toggle('destination')} className={FIELD}>
-                                    <div className={LABEL}>Where</div>
+                                    <div className={LABEL}>{t('where')}</div>
                                     <div className={fieldValue(!!hotelDestination)}>
                                         {hotelDestination?.title ?? 'City, region or country'}
                                     </div>
@@ -388,7 +393,7 @@ export function LandingHero() {
                                     onClick={() => toggle('dates-in')}
                                     className={FIELD}
                                 >
-                                    <div className={LABEL}>Check in</div>
+                                    <div className={LABEL}>{t('checkIn')}</div>
                                     <div className={cn('font-mono', fieldValue(!!checkIn))}>{shortDate(checkIn)}</div>
                                 </button>
                                 <DatePicker triggerDropdown="dates-in" />
@@ -401,7 +406,7 @@ export function LandingHero() {
                                     onClick={() => toggle('dates-out')}
                                     className={FIELD}
                                 >
-                                    <div className={LABEL}>Check out</div>
+                                    <div className={LABEL}>{t('checkOut')}</div>
                                     <div className={cn('font-mono', fieldValue(!!checkOut))}>{shortDate(checkOut)}</div>
                                 </button>
                                 <DatePicker triggerDropdown="dates-out" initialCheckOutMode />
@@ -409,7 +414,7 @@ export function LandingHero() {
 
                             <div className={cn('relative', DIVIDER)}>
                                 <button type="button" onClick={() => toggle('travelers')} className={FIELD}>
-                                    <div className={LABEL}>Guests</div>
+                                    <div className={LABEL}>{t('guests')}</div>
                                     <div className={fieldValue(true)}>
                                         {adults + children} guest{adults + children !== 1 ? 's' : ''}, {rooms} room
                                         {rooms !== 1 ? 's' : ''}
@@ -440,13 +445,13 @@ export function LandingHero() {
                     >
                         <div className="px-4 pt-3 pb-4 grid grid-cols-1 md:grid-cols-[minmax(0,320px)_1fr] gap-x-8 gap-y-4 items-center">
                             <div>
-                                <div className={LABEL}>Maximum budget</div>
+                                <div className={LABEL}>{t('maxBudget')}</div>
                                 <span className="font-mono font-bold text-[30px] tracking-[-0.02em] text-slate-900 dark:text-white">
                                     {money(budget)}
                                 </span>
                                 <input
                                     type="range"
-                                    aria-label="Maximum trip budget"
+                                    aria-label={tAll('landing.hero.maxTripBudget')}
                                     min={BUDGET_MIN}
                                     max={BUDGET_MAX}
                                     step={BUDGET_STEP}
@@ -457,7 +462,7 @@ export function LandingHero() {
                             </div>
 
                             <div>
-                                <div className={LABEL}>What are you after?</div>
+                                <div className={LABEL}>{tAll('landing.hero.whatAfter')}</div>
                                 <div className="flex flex-wrap gap-2">
                                     {BUDGET_FILTERS.map((f) => {
                                         const on = chips.includes(f.id);

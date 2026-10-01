@@ -1,15 +1,18 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Suspense, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { Lock, PlaneTakeoff, CheckCircle } from 'lucide-react';
+import { Lock, CheckCircle } from 'lucide-react';
+import { AuthLayout } from '@/features/auth/components/auth-layout';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { http } from '@/shared/lib/http';
 
 function ResetPasswordForm() {
+    const tAll = useTranslations();
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token') ?? '';
@@ -64,7 +67,7 @@ function ResetPasswordForm() {
                 <div className="flex justify-center">
                     <CheckCircle className="h-12 w-12 text-emerald-500" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Password updated</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{tAll('auth.passwordUpdated')}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                     Your password has been reset. Redirecting you to sign in&hellip;
                 </p>
@@ -76,10 +79,10 @@ function ResetPasswordForm() {
         <div className="space-y-5">
             <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    Set a new password
+                    {tAll('auth.setNewPassword')}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Choose a strong password for your account.
+                    {tAll('auth.chooseStrong')}
                 </p>
             </div>
 
@@ -91,7 +94,7 @@ function ResetPasswordForm() {
 
             {!token && !error && (
                 <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
-                    No reset token found. Please use the link sent to your email.
+                    {tAll('auth.noResetToken')}
                 </div>
             )}
 
@@ -102,7 +105,7 @@ function ResetPasswordForm() {
                     label="New password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
-                    placeholder="At least 8 characters"
+                    placeholder={tAll('auth.atLeast8')}
                     icon={Lock}
                     error={fieldErrors.password}
                     disabled={isLoading || !token}
@@ -114,23 +117,23 @@ function ResetPasswordForm() {
                     label="Confirm password"
                     value={confirm}
                     onChange={(e) => { setConfirm(e.target.value); setFieldErrors((p) => ({ ...p, confirm: undefined })); }}
-                    placeholder="Repeat your password"
+                    placeholder={tAll('auth.repeatPassword')}
                     icon={Lock}
                     error={fieldErrors.confirm}
                     disabled={isLoading || !token}
                     autoComplete="new-password"
                 />
                 <Button type="submit" fullWidth isLoading={isLoading} disabled={!token}>
-                    Reset password
+                    {tAll('auth.resetPassword')}
                 </Button>
             </form>
 
             <div className="text-center">
                 <Link
                     href="/login"
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    className="text-sm text-alabaster-accent dark:text-obsidian-accent hover:underline font-medium"
                 >
-                    Back to sign in
+                    {tAll('auth.backToSignIn')}
                 </Link>
             </div>
         </div>
@@ -138,31 +141,24 @@ function ResetPasswordForm() {
 }
 
 export function ResetPasswordView() {
+    const tAll = useTranslations();
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-12">
-            <div className="w-full max-w-sm space-y-8">
-                <div className="text-center space-y-2">
-                    <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
-                        <PlaneTakeoff size={22} className="text-blue-600" />
-                        CheapestGo
-                    </Link>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Reset your account password</p>
+        <AuthLayout
+            title={tAll('auth.setNewPassword')}
+            subtitle={tAll('auth.notUsedBefore')}
+            pitch="A new password, and you are back where you left off."
+        >
+            <Suspense fallback={
+                <div className="space-y-4 animate-pulse">
+                    <div className="h-6 w-3/4 rounded-lg bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-4 w-1/2 rounded-lg bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
                 </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-white/10 p-8">
-                    <Suspense fallback={
-                        <div className="space-y-4 animate-pulse">
-                            <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded-lg w-3/4" />
-                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-1/2" />
-                            <div className="h-11 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                            <div className="h-11 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                            <div className="h-11 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                        </div>
-                    }>
-                        <ResetPasswordForm />
-                    </Suspense>
-                </div>
-            </div>
-        </div>
+            }>
+                <ResetPasswordForm />
+            </Suspense>
+        </AuthLayout>
     );
 }

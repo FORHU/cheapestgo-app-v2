@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { DetailSectionGrid, KeyFactsRow } from '@/features/hotels/components/room-content';
+import { DetailSectionGrid, KeyFactsRow, type PaletteLike } from '@/features/hotels/components/room-content';
 import type { DetailSection, DetailItem } from '@/features/hotels/types/property.types';
 
-const palette = { heading: '', feature: 'text-x', columnHeading: '', columnDot: '', empty: '' } as any;
+const palette: PaletteLike = { feature: 'text-x', columnHeading: '', empty: '' };
 
 describe('DetailSectionGrid', () => {
     it('renders one header per section and its items', () => {

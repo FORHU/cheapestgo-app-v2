@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,7 +15,7 @@ import { env } from '@/shared/lib/env';
 import { useUserCurrency } from '@/stores/searchStore';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
-import { Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, ChevronDown, ChevronUp, CalendarClock } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { useDeclareChromeTone } from '@/shared/components/ChromeToneContext';
 import { useIsMobile } from '@/shared/hooks/useMediaQuery';
@@ -22,6 +23,7 @@ import { cn } from '@/shared/lib/cn';
 import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
+import { resolveStayDates } from '@/shared/lib/stay';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
@@ -312,14 +314,14 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, nights, theme, mobile, elementRef, width,
+    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef, width,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
     shiftLeft: number; shiftRight: number;
     onSelect: (id: string) => void; onHover: (id: string | null) => void;
     onViewDetails: (id: string) => void;
-    currency: string; nights: number; theme: 'light' | 'dark';
+    currency: string; theme: 'light' | 'dark';
     /** One card to a screen, edge to edge — the design's phone layout. */
     mobile: boolean;
     /** Hands the card's element up so the rail can scroll it into view when its
@@ -332,8 +334,11 @@ function RailCard({
      */
     width?: number;
 }) {
+    const tAll = useTranslations();
     const c = railCardPalette(theme);
-    const price = convertCurrency(property.price, property.currency || 'USD', currency) / nights;
+    // Already per night: api-v2 divides the supplier's stay total before sending it, the
+    // same contract v1 has. Dividing again here would quote a third of the real rate.
+    const price = convertCurrency(property.price, property.currency || 'USD', currency);
     const priceStr = formatCurrency(price, currency);
     const rating = property.rating ?? 0;
     /**
@@ -393,7 +398,7 @@ function RailCard({
                 )}
                 {property.refundableTag === 'RFN' && (
                     <span className="absolute top-2 left-2 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ background: '#2FB67F', zIndex: 2 }}>
-                        Free cancel
+                        {tAll('search.freeCancel')}
                     </span>
                 )}
             </div>
@@ -562,12 +567,29 @@ function StatusScreen({
 
 // ─── Main content ─────────────────────────────────────────────────────────────
 function HotelSearchContent() {
+    const tAll = useTranslations();
+    const t = useTranslations('search');
     const searchParams = useSearchParams();
     const router       = useRouter();
 
     const destination  = searchParams.get('destination')  ?? '';
-    const checkIn      = searchParams.get('checkIn')      ?? '';
-    const checkOut     = searchParams.get('checkOut')     ?? '';
+    // Resolved, not read raw. A landing card names a city and no stay, and a link can sit
+    // in a chat window until its dates have passed; both used to reach the supplier as
+    // written, which answers with rooms nobody can book and reads as a full city.
+    // `chosen` is false when these are ours, which is what the notice below discloses.
+    const askedCheckIn  = searchParams.get('checkIn');
+    const askedCheckOut = searchParams.get('checkOut');
+    const stay = useMemo(
+        () => resolveStayDates(askedCheckIn, askedCheckOut),
+        [askedCheckIn, askedCheckOut],
+    );
+    const checkIn      = stay.checkIn;
+    const checkOut     = stay.checkOut;
+    // Two ways these can be ours rather than the traveller's: the link carried nothing
+    // usable and the resolver chose, or a landing card already chose and said so with
+    // `datesAuto`. The card's dates are perfectly valid, so `chosen` alone reads them as
+    // the traveller's and the notice would never appear on the journey it exists for.
+    const datesArePicked = !stay.chosen || searchParams.get('datesAuto') === '1';
     const adults       = searchParams.get('adults')       ?? '2';
     const children     = searchParams.get('children')     ?? '0';
     const rooms        = searchParams.get('rooms')        ?? '1';
@@ -577,18 +599,23 @@ function HotelSearchContent() {
     const bboxParam    = searchParams.get('bbox')         ?? '';
     const districtName = searchParams.get('districtName') ?? '';
     const canonicalCity = searchParams.get('canonicalCity') ?? '';
+    const rung          = searchParams.get('rung')         ?? '';
     const searchQs    = searchParams.toString();
 
-    const nights = useMemo(() => {
-        const ci = new Date(checkIn);
-        const co = new Date(checkOut);
-        if (isNaN(ci.getTime()) || isNaN(co.getTime())) return 1;
-        const n = Math.round((co.getTime() - ci.getTime()) / 86_400_000);
-        return n > 0 ? n : 1;
-    }, [checkIn, checkOut]);
+    // From the same resolver the dates came from, never derived separately — a price and
+    // the stay it covers travel together, and deriving the divisor apart from the dates is
+    // what doubled the nightly rate in v1 (ADR-0020).
+    const nights = stay.nights;
 
     const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
     const [status, setStatus]                   = useState<StreamStatus>('idle');
+    /**
+     * The supplier never answered — see "Unanswered Search" in cheapest-go-app's
+     * CONTEXT.md. The catalog stays on the map because nothing has been learned about
+     * availability, but every card is priceless, and a card with no price reads as free.
+     * Distinct from `status === 'error'`, which means we have nothing at all to show.
+     */
+    const [pricesUnavailable, setPricesUnavailable] = useState(false);
     const [viewMode, setViewMode]               = useState<ViewMode>('map');
     const [sortBy, setSortBy]                   = useState<SortValue>('recommended');
     const [selectedId, setSelectedId]           = useState<string | null>(null);
@@ -689,9 +716,13 @@ function HotelSearchContent() {
         if (!destination && !lat) return;
         let cancelled = false;
         let accumulated = 0;
+        // Set once the server has sent `done` with more still coming. Everything after that
+        // point is the collecting pass, which must not put the page back into searching.
+        let collecting  = false;
         const ctrl = new AbortController();
         setStatus('loading');
         setHotels([]);
+        setPricesUnavailable(false);
         setSelectedId(null);
         setMapCenter(lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined);
 
@@ -715,6 +746,20 @@ function HotelSearchContent() {
             if (lat) body.lat = Number(lat);
             if (lng) body.lng = Number(lng);
             if (countryCode) body.countryCode = countryCode;
+            // The extent the traveller picked, which the URL has carried all along and this
+            // request did not. Without it a borough is searched as a 50km circle around its
+            // centre — for Camden Town, the whole of Greater London — and the map opens on
+            // the city rather than the place that was asked for.
+            //
+            // `cityName` is the city whose inventory is searched, because OTV serves only
+            // the City rung (ADR-0006); `rung` and `bbox` are how that answer is cut back to
+            // the borough. Both are needed: the city alone answers with the city.
+            if (rung) body.rung = rung;
+            if (bboxParam) body.bbox = bboxParam;
+            if (canonicalCity) {
+                body.canonicalCity = canonicalCity;
+                body.cityName      = canonicalCity;
+            }
 
             const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/hotels/search/stream`, {
                 method: 'POST',
@@ -746,17 +791,48 @@ function HotelSearchContent() {
                         if ((chunk.type === 'instant' || chunk.type === 'hotels') && list.length > 0) {
                             accumulated += list.length;
                             const mapped = list.map(toMappable).filter((h): h is MappableProperty => !!h && isNearby(h));
-                            if (!cancelled) { setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); }); setStatus('streaming'); }
+                            if (!cancelled) {
+                                setHotels(prev => { const m = new Map(prev.map(h => [h.id, h])); for (const h of mapped) m.set(h.id, h); return Array.from(m.values()); });
+                                // After `done` the search is answered and these are extras, so
+                                // they land on the list and map without reviving the spinner.
+                                setStatus(collecting ? 'done' : 'streaming');
+                                // Priced hotels arriving is proof prices are not unavailable —
+                                // the first pass may have said otherwise before it timed out.
+                                if (collecting) setPricesUnavailable(false);
+                            }
                         } else if (chunk.type === 'prices' && Array.isArray(chunk.data)) {
                             const pm = new Map<string, PriceUpdate>(
                                 (chunk.data as PriceUpdate[]).map((p) => [p.hotelId, p]),
                             );
                             if (!cancelled) setHotels(prev => prev.map(h => { const p = pm.get(h.id); return p ? { ...h, price: p.price ?? h.price, currency: p.currency ?? h.currency, priceLoading: false } : h; }));
+                        } else if (chunk.type === 'content' && chunk.data) {
+                            // Pictures for cards already on screen. The server sends these
+                            // after the hotels — a listing with no photo reads as broken, and
+                            // waiting for images before showing anything costs more than it
+                            // buys. Patch only what is missing so a card never flickers to a
+                            // different picture than the one being looked at.
+                            const patches = chunk.data as Record<string, { images?: string[]; name?: string }>;
+                            if (!cancelled) setHotels(prev => prev.map(h => {
+                                const patch = patches[h.id];
+                                if (!patch) return h;
+                                return {
+                                    ...h,
+                                    images: h.images?.length ? h.images : (patch.images ?? h.images),
+                                    image:  h.image || patch.images?.[0] || h.image,
+                                    name:   h.name || patch.name || h.name,
+                                };
+                            }));
                         } else if (chunk.type === 'remove' && Array.isArray(chunk.ids)) {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
                         } else if (chunk.type === 'done' || chunk.type === 'error') {
-                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setStatus(accumulated > 0 ? 'done' : 'error'); } return;
+                            if (!cancelled) { setHotels(prev => prev.map(h => h.priceLoading ? { ...h, priceLoading: false } : h)); setPricesUnavailable(Boolean(chunk.tgxUnanswered)); setStatus(accumulated > 0 ? 'done' : 'error'); }
+                            // `done` answers the search; it no longer means the stream is over.
+                            // When the first pass came back truncated the server keeps the
+                            // connection open and sends the hotels it collects afterwards, so
+                            // returning here threw them away. The stream closing ends the loop.
+                            if (chunk.type === 'error' || !chunk.collecting) return;
+                            collecting = true;
                         }
                     } catch { /* skip */ }
                 }
@@ -830,7 +906,7 @@ function HotelSearchContent() {
     const listHotels = useMemo(() =>
         sorted.map(h => ({
             ...h,
-            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency) / nights),
+            price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency)),
             currency,
         })),
     [sorted, currency, nights]);
@@ -843,7 +919,7 @@ function HotelSearchContent() {
     const priceRange = useMemo(() => {
         const prices = sorted
             .filter(h => !h.priceLoading)
-            .map(h => convertCurrency(h.price, h.currency || 'USD', currency) / nights)
+            .map(h => convertCurrency(h.price, h.currency || 'USD', currency))
             .filter(p => p > 0);
         if (prices.length === 0) return { min: 0, max: 1000 };
         const min = Math.floor(Math.min(...prices));
@@ -890,7 +966,7 @@ function HotelSearchContent() {
             // price stream catches up.
             list = list.filter(h => {
                 if (h.priceLoading) return true;
-                const p = convertCurrency(h.price, h.currency || 'USD', currency) / nights;
+                const p = convertCurrency(h.price, h.currency || 'USD', currency);
                 return p >= filterMin && p <= filterMax;
             });
         }
@@ -1124,6 +1200,23 @@ function HotelSearchContent() {
         setRailPage(Math.max(0, Math.min(railPageCount - 1, page)));
     }, [railPageCount, railPageW]);
 
+    /**
+     * The handler above was never attached to anything, so the counter only moved
+     * when a page step moved it — a swipe, a drag, or the scroll that centres the
+     * card behind a clicked pin all left it reading the old page.
+     *
+     * Attached from an effect rather than inside `attachRailScroll`: that callback
+     * ref is deliberately `[]`-dep and would capture a stale handler, since this one
+     * changes identity with the page geometry. `railScrollEpoch` is the signal the
+     * callback ref already publishes for "the scroller genuinely exists now".
+     */
+    useEffect(() => {
+        const el = railScrollRef.current;
+        if (!el) return;
+        el.addEventListener('scroll', handleRailScroll, { passive: true });
+        return () => el.removeEventListener('scroll', handleRailScroll);
+    }, [handleRailScroll, railScrollEpoch]);
+
     // A narrowed filter or a new search can leave the counter past the end.
     useEffect(() => {
         setRailPage(p => Math.min(p, railPageCount - 1));
@@ -1284,6 +1377,16 @@ function HotelSearchContent() {
                             showRegionControls
                         />
 
+                        {/* A Default Stay is disclosed, never silent — the traveller asked
+                            for a city, so they are told which dates they are being quoted
+                            for and that moving them is how to see other prices. */}
+                        {datesArePicked && (
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
+                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                                {tAll('hotels.results.datesPicked')}
+                            </p>
+                        )}
+
                         {/* The map view's filter dropdown, on the list's toolbar.
                             Same motion, same offset off the bar, and it keeps its
                             Sort By section — unlike the map's, this toolbar has no
@@ -1442,6 +1545,70 @@ function HotelSearchContent() {
                         showRegionControls
                     />
 
+                        {/* A Default Stay is disclosed, never silent — the traveller asked
+                            for a city, so they are told which dates they are being quoted
+                            for and that moving them is how to see other prices. */}
+                        {datesArePicked && (
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
+                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                                {tAll('hotels.results.datesPicked')}
+                            </p>
+                        )}
+
+            {/* ── Prices unavailable ───────────────────────────── */}
+            {/* The supplier never answered, so the catalog stays on the map —
+                nothing has been learned about availability and removing it would
+                claim the destination is empty. But every card is priceless, and a
+                card with no price reads as free, so say what happened.
+
+                Takes the streaming toast's slot and geometry: the two never
+                coexist, since this is set when the stream ends and that is only
+                shown while it runs. Unlike that one it is persistent and
+                interactive, so the inner box takes pointer events back. */}
+            <AnimatePresence>
+                {pricesUnavailable && hotels.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        style={{ pointerEvents: 'none' }}
+                        role="status"
+                    >
+                        <div
+                            className="flex items-center gap-2.5 rounded-full px-4 py-2"
+                            style={{
+                                background: chrome.surface,
+                                border: `1px solid ${chrome.border}`,
+                                boxShadow: chrome.shadow,
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                                pointerEvents: 'auto',
+                            }}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="shrink-0 rounded-full"
+                                style={{ width: 8, height: 8, background: '#D97706' }}
+                            />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                                Live prices didn’t load
+                                {destination ? ` · showing stays in ${destination}` : ' · showing stays in this area'}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => window.location.reload()}
+                                className="shrink-0 cursor-pointer rounded-full px-3 py-1 transition-opacity hover:opacity-85"
+                                style={{ background: '#D97706', color: '#FFFFFF', fontSize: 11, fontWeight: 700 }}
+                            >
+                                {tAll('common.retry')}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
                     {/* ── Filter panel ─────────────────────────── */}
                     {/* Hangs off the toolbar's left edge, clearing its own
                         height: full width on a phone, the sidebar's own 300px
@@ -1499,7 +1666,7 @@ function HotelSearchContent() {
             {status === 'error' && (
                 <StatusScreen
                     theme={uiTone}
-                    title="No accommodations found"
+                    title={tAll('search.v2.noAccommodations')}
                     lines={[
                         destination ? `We couldn’t find hotels in ${destination}` : "We couldn’t find any hotels",
                         'Try adjusting your dates or destination',
@@ -1553,7 +1720,9 @@ function HotelSearchContent() {
                                             }} />
                                         )}
                                         <span className="whitespace-nowrap text-[11.5px] font-semibold md:text-[13px]" style={{ color: chrome.text }}>
-                                            {isStreaming ? `${count}+` : count} Stays
+                                            {/* While streaming this counts places being checked, not stays found.
+                                                "107+ Stays" collapsing to 2 is the difference between the two. */}
+                                            {isStreaming ? t('v2.checkingCount', { count }) : t('v2.staysCount', { count })}
                                         </span>
                                     </div>
 
@@ -1592,8 +1761,8 @@ function HotelSearchContent() {
                                             lining up. */}
                                         <button
                                             onClick={() => setRailHidden(true)}
-                                            aria-label="Hide stay cards"
-                                            title="Hide cards"
+                                            aria-label={t('v2.hideStayCards')}
+                                            title={t('v2.hideCards')}
                                             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-10"
                                             style={{
                                                 background: chrome.surface, border: `1px solid ${chrome.border}`,
@@ -1634,7 +1803,6 @@ function HotelSearchContent() {
                                             onHover={setHoveredId}
                                             onViewDetails={handleViewDetails}
                                             currency={currency}
-                                            nights={nights}
                                             theme={uiTone}
                                             mobile={isMobile}
                                             elementRef={(el) => {

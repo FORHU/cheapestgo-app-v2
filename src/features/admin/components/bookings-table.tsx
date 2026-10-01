@@ -110,10 +110,10 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
                             className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
                         >
                             <td className="px-4 py-3 font-mono text-xs text-slate-500">
-                                {booking.reference ?? booking.id.slice(0, 8).toUpperCase()}
+                                {booking.reference ?? booking.id?.slice(0, 8).toUpperCase() ?? '—'}
                             </td>
                             <td className="px-4 py-3 text-xs text-slate-600 max-w-[160px] truncate">
-                                {userEmailMap[booking.userId] ?? booking.userId.slice(0, 8) + '…'}
+                                {userEmailMap[booking.userId] ?? (booking.userId ? booking.userId.slice(0, 8) + '…' : '—')}
                             </td>
                             <td className="px-4 py-3">
                                 <Badge variant="secondary" size="sm" className="capitalize">
@@ -131,7 +131,7 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
                             </td>
                             <td className="px-4 py-3 font-semibold text-slate-900 tabular-nums">
                                 {booking.currency}&nbsp;
-                                {booking.totalAmount.toLocaleString('en-US', {
+                                {(booking.totalAmount ?? 0).toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                 })}

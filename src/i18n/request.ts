@@ -1,5 +1,6 @@
 import { getRequestConfig } from 'next-intl/server';
 import { routing, isLocale } from './routing';
+import { applyBrand } from './applyBrand';
 
 /**
  * Merge a locale's messages over English so a missing key falls back to the
@@ -43,13 +44,15 @@ export default getRequestConfig(async ({ requestLocale }) => {
     const enMessages = (await import('../locales/en.json')).default;
 
     if (locale === routing.defaultLocale) {
-        return { locale, messages: enMessages };
+        return { locale, messages: applyBrand(enMessages) };
     }
 
     const localeMessages = (await import(`../locales/${locale}.json`)).default;
 
+    // Brand after merging, so keys a locale hasn't translated yet inherit the English
+    // string and get branded too rather than falling back to the wrong name.
     return {
         locale,
-        messages: deepMerge(enMessages, localeMessages),
+        messages: applyBrand(deepMerge(enMessages, localeMessages)),
     };
 });

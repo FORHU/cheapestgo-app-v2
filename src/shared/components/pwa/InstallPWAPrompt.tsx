@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Share, Plus, ArrowDownToLine } from 'lucide-react';
 import Image from 'next/image';
@@ -28,12 +30,13 @@ const IOS_STEPS = [
   {
     number: 4,
     title: 'Tap "Add" to confirm',
-    description: 'CheapestGo will appear on your home screen',
+    description: `${BRAND_NAME} will appear on your home screen`,
     Icon: Download,
   },
 ] as const;
 
 export default function InstallPWAPrompt() {
+    const tAll = useTranslations();
   const { isInstalled, isGuideOpen, closeGuide } = usePWAInstall();
 
   if (isInstalled) return null;
@@ -70,7 +73,7 @@ export default function InstallPWAPrompt() {
                   <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm ring-1 ring-black/5">
                     <Image
                       src="/cheapestgo.png"
-                      alt="CheapestGo"
+                      alt={BRAND_NAME}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
@@ -78,15 +81,15 @@ export default function InstallPWAPrompt() {
                   </div>
                   <div>
                     <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
-                      Add to Home Screen
+                      {tAll('pwa.addToHomeScreen')}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">CheapestGo · iOS Safari</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{BRAND_NAME} · iOS Safari</p>
                   </div>
                 </div>
                 <button
                   onClick={closeGuide}
                   className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                  aria-label="Close guide"
+                  aria-label={tAll('pwa.closeGuide')}
                 >
                   <X size={18} className="text-slate-500 dark:text-slate-400" />
                 </button>
@@ -122,7 +125,7 @@ export default function InstallPWAPrompt() {
                 <p className="text-xs text-blue-700 dark:text-blue-300 leading-snug">
                   Tap the{' '}
                   <span className="font-semibold">
-                    <Share size={11} className="inline mb-0.5" /> Share
+                    <Share size={11} className="inline mb-0.5" /> {tAll('common.share')}
                   </span>{' '}
                   icon at the bottom center of Safari to get started
                 </p>

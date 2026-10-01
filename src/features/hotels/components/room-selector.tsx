@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { HOTEL_TOKENS } from '@/features/hotels/types/property.types';
 import type { RoomOption } from '@/features/hotels/types/property.types';
-import { convertCurrency, getCurrencySymbol } from '@/shared/lib/currency';
+import { convertForDisplay, getCurrencySymbol } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
 import { useUserCurrency } from '@/shared/stores/search.store';
 
 const INITIAL_VISIBLE = 4;
@@ -21,9 +23,12 @@ function boardLabel(boardType: string | undefined): string | null {
 }
 
 export function RoomSelector({ rooms, selectedRoomId, onSelect }: RoomSelectorProps) {
+    const tAll = useTranslations();
     const [expanded, setExpanded] = useState(false);
     const currency = useUserCurrency();
-    const symbol = getCurrencySymbol(currency);
+    // Subscribed, not read once: the rates arrive after the first paint, and a price left on
+    // the built-in fallback is wrong by more than a rounding — 13% on PHP.
+    useLiveRates();
     const visible = expanded ? rooms : rooms.slice(0, INITIAL_VISIBLE);
     const hidden = rooms.length - INITIAL_VISIBLE;
 
@@ -31,7 +36,11 @@ export function RoomSelector({ rooms, selectedRoomId, onSelect }: RoomSelectorPr
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {visible.map((room) => {
                 const isSelected = room.id === selectedRoomId;
-                const price = convertCurrency(room.price, room.currency as never, currency as never);
+                // Whatever currency comes back is the one printed beside it — until the rates
+                // land that is the supplier's own, which is true rather than merely converted.
+                const shown  = convertForDisplay(room.price, room.currency ?? 'USD', currency);
+                const price  = shown.amount;
+                const symbol = getCurrencySymbol(shown.currency);
                 const isRefundable = room.refundableTag === 'RFN';
                 const breakfast = boardLabel(room.boardType);
 
@@ -44,7 +53,7 @@ export function RoomSelector({ rooms, selectedRoomId, onSelect }: RoomSelectorPr
                             <div style={{ fontSize: 14, fontWeight: 600, color: HOTEL_TOKENS.TEXT }}>{room.name}</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                                 {isRefundable && (
-                                    <span style={{ background: 'rgba(47,182,127,.15)', color: '#2FB67F', fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5 }}>Free cancellation</span>
+                                    <span style={{ background: 'rgba(47,182,127,.15)', color: '#2FB67F', fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5 }}>{tAll('property.rooms.freeCancellation')}</span>
                                 )}
                                 {breakfast && (
                                     <span style={{ background: 'rgba(255,107,75,.15)', color: HOTEL_TOKENS.ACCENT, fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 5 }}>{breakfast}</span>

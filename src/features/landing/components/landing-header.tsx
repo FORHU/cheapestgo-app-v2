@@ -1,10 +1,12 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { LogoWordmark } from './logo-wordmark';
+import { BRAND_NAME } from '@/shared/lib/brand';
 
 /**
  * The landing page's own header: transparent over the dark canvas, carrying the
@@ -16,11 +18,12 @@ import { LogoWordmark } from './logo-wordmark';
  */
 export function LandingHeader() {
     const user = useAuthStore((s) => s.user);
+    const tAll = useTranslations();
 
     return (
         <header className="relative z-[5]">
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">
-                <Link href="/" aria-label="CheapestGo home" className="flex shrink-0 items-center">
+                <Link href="/" aria-label={`${BRAND_NAME} home`} className="flex shrink-0 items-center">
                     <LogoWordmark height={24} />
                 </Link>
 
@@ -34,7 +37,7 @@ export function LandingHeader() {
                         href={user ? '/account' : '/login'}
                         className="ml-1 rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-[#e2e8f0] transition-colors duration-150 hover:text-[#f8fafc]"
                     >
-                        {user ? 'Account' : 'Sign in'}
+                        {user ? tAll('nav.account') : tAll('nav.signIn')}
                     </Link>
                 </div>
             </div>

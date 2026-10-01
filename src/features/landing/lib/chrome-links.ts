@@ -1,24 +1,24 @@
 /**
  * The links the landing page's own header and footer point at.
  *
- * The design names the labels; these are the routes that actually exist —
- * `/search` is the hotel results page and Help is the support mailbox, since
- * neither `/hotels/search` nor `/help` is a route in this app.
+ * The design names the labels; these are the routes that actually exist. Each link carries a
+ * translation key rather than a label, because the footer is on every page in four languages.
  */
 
 export interface ChromeLink {
-    label: string;
+    /** A key into the locale file, resolved by whichever chrome renders the link. */
+    key:  string;
     href: string;
 }
 
 /** The header carries no links — only the locale, currency and sign-in controls. */
 export const FOOTER_LINKS: ChromeLink[] = [
-    { label: 'Flights', href: '/flights/search' },
-    { label: 'Hotels', href: '/search' },
-    { label: 'Help', href: 'mailto:support@cheapestgo.com' },
-    { label: 'Manage booking', href: '/trips' },
-    { label: 'Terms', href: '/terms' },
-    { label: 'Privacy', href: '/privacy' },
+    { key: 'footer.flights',       href: '/flights/search' },
+    { key: 'footer.hotels',        href: '/search' },
+    { key: 'help.title',           href: '/help' },
+    { key: 'footer.manageBooking', href: '/trips' },
+    { key: 'footer.terms',         href: '/terms' },
+    { key: 'footer.privacy',       href: '/privacy' },
 ];
 
 /** Muted slate that lifts to near-white on hover, per the design's `a` rule. */

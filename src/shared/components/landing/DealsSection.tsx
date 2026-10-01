@@ -107,6 +107,7 @@ interface DealCardProps {
 }
 
 const DealCardImpl: React.FC<DealCardProps> = ({ deal, index, variant = 'carousel' }) => {
+    const tAll = useTranslations();
   const router     = useRouter();
   const t          = useTranslations();
 
@@ -157,7 +158,7 @@ const DealCardImpl: React.FC<DealCardProps> = ({ deal, index, variant = 'carouse
           <button
             onClick={e => { e.stopPropagation(); setIsSaved(v => !v); }}
             className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer"
-            aria-label="Save deal"
+            aria-label={tAll('landing.deals.save')}
           >
             <Heart
               className={`w-3.5 h-3.5 transition-colors ${isSaved ? 'text-red-400 fill-red-400' : 'text-white'}`}

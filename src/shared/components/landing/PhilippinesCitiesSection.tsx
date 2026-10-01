@@ -8,33 +8,38 @@ import { MapPin } from 'lucide-react';
 import { useDragScroll } from '@/shared/hooks/useDragScroll';
 import { cityImagePath } from '@/shared/lib/destination-images';
 import { useTranslations } from 'next-intl';
+import { defaultStay } from '@/shared/lib/stay';
 
 interface City {
   name: string;
   country: string;
   tagline: string;
   searchQuery: string;
+  /** City centre. Without it the results page has to geocode the name first, and the map
+   *  opens on whatever the hotel cluster happens to average out to. */
+  lat: number;
+  lng: number;
 }
 
 const TOP_CITIES: City[] = [
-  { name: 'Tokyo',         country: 'Japan',           tagline: 'Where Tradition Meets the Future',     searchQuery: 'Tokyo, Japan' },
-  { name: 'Paris',         country: 'France',          tagline: 'The City of Light & Love',             searchQuery: 'Paris, France' },
-  { name: 'New York',      country: 'USA',             tagline: 'The City That Never Sleeps',           searchQuery: 'New York, USA' },
-  { name: 'London',        country: 'United Kingdom',  tagline: 'History, Culture & Iconic Landmarks',  searchQuery: 'London, United Kingdom' },
-  { name: 'Bangkok',       country: 'Thailand',        tagline: 'Temple of Wonder & Street Food',       searchQuery: 'Bangkok, Thailand' },
-  { name: 'Singapore',     country: 'Singapore',       tagline: 'Garden City of Southeast Asia',        searchQuery: 'Singapore' },
-  { name: 'Dubai',         country: 'UAE',             tagline: 'Luxury in the Desert',                 searchQuery: 'Dubai, UAE' },
-  { name: 'Barcelona',     country: 'Spain',           tagline: 'Art, Architecture & the Mediterranean',searchQuery: 'Barcelona, Spain' },
-  { name: 'Bali',          country: 'Indonesia',       tagline: 'Island of the Gods',                   searchQuery: 'Bali, Indonesia' },
-  { name: 'Istanbul',      country: 'Turkey',          tagline: 'Where Europe Meets Asia',              searchQuery: 'Istanbul, Turkey' },
-  { name: 'Sydney',        country: 'Australia',       tagline: 'Harbour City of the Southern Hemisphere', searchQuery: 'Sydney, Australia' },
-  { name: 'Manila',        country: 'Philippines',     tagline: 'Capital & Cultural Heart',             searchQuery: 'Manila, Philippines' },
-  { name: 'Seoul',         country: 'South Korea',     tagline: 'K-Culture & Culinary Capital',         searchQuery: 'Seoul, South Korea' },
-  { name: 'Rome',          country: 'Italy',           tagline: 'The Eternal City',                     searchQuery: 'Rome, Italy' },
-  { name: 'Kuala Lumpur',  country: 'Malaysia',        tagline: 'Twin Towers & Tropical Markets',       searchQuery: 'Kuala Lumpur, Malaysia' },
-  { name: 'Amsterdam',     country: 'Netherlands',     tagline: 'Canals, Bikes & Golden Age Art',       searchQuery: 'Amsterdam, Netherlands' },
-  { name: 'Hong Kong',     country: 'China',           tagline: 'East Meets West Skyline',              searchQuery: 'Hong Kong' },
-  { name: 'Los Angeles',   country: 'USA',             tagline: 'Hollywood, Beaches & Sun',             searchQuery: 'Los Angeles, USA' },
+  { name: 'Tokyo',         country: 'Japan',           tagline: 'Where Tradition Meets the Future',     searchQuery: 'Tokyo, Japan',              lat:  35.6895, lng: 139.6917 },
+  { name: 'Paris',         country: 'France',          tagline: 'The City of Light & Love',             searchQuery: 'Paris, France',             lat:  48.8566, lng:   2.3522 },
+  { name: 'New York',      country: 'USA',             tagline: 'The City That Never Sleeps',           searchQuery: 'New York, USA',             lat:  40.7128, lng: -74.0060 },
+  { name: 'London',        country: 'United Kingdom',  tagline: 'History, Culture & Iconic Landmarks',  searchQuery: 'London, United Kingdom',    lat:  51.5072, lng:  -0.1276 },
+  { name: 'Bangkok',       country: 'Thailand',        tagline: 'Temple of Wonder & Street Food',       searchQuery: 'Bangkok, Thailand',         lat:  13.7563, lng: 100.5018 },
+  { name: 'Singapore',     country: 'Singapore',       tagline: 'Garden City of Southeast Asia',        searchQuery: 'Singapore',                 lat:   1.3521, lng: 103.8198 },
+  { name: 'Dubai',         country: 'UAE',             tagline: 'Luxury in the Desert',                 searchQuery: 'Dubai, UAE',                lat:  25.2048, lng:  55.2708 },
+  { name: 'Barcelona',     country: 'Spain',           tagline: 'Art, Architecture & the Mediterranean',searchQuery: 'Barcelona, Spain',          lat:  41.3874, lng:   2.1686 },
+  { name: 'Bali',          country: 'Indonesia',       tagline: 'Island of the Gods',                   searchQuery: 'Bali, Indonesia',           lat:  -8.4095, lng: 115.1889 },
+  { name: 'Istanbul',      country: 'Turkey',          tagline: 'Where Europe Meets Asia',              searchQuery: 'Istanbul, Turkey',          lat:  41.0082, lng:  28.9784 },
+  { name: 'Sydney',        country: 'Australia',       tagline: 'Harbour City of the Southern Hemisphere', searchQuery: 'Sydney, Australia',      lat: -33.8688, lng: 151.2093 },
+  { name: 'Manila',        country: 'Philippines',     tagline: 'Capital & Cultural Heart',             searchQuery: 'Manila, Philippines',       lat:  14.5995, lng: 120.9842 },
+  { name: 'Seoul',         country: 'South Korea',     tagline: 'K-Culture & Culinary Capital',         searchQuery: 'Seoul, South Korea',        lat:  37.5665, lng: 126.9780 },
+  { name: 'Rome',          country: 'Italy',           tagline: 'The Eternal City',                     searchQuery: 'Rome, Italy',               lat:  41.9028, lng:  12.4964 },
+  { name: 'Kuala Lumpur',  country: 'Malaysia',        tagline: 'Twin Towers & Tropical Markets',       searchQuery: 'Kuala Lumpur, Malaysia',    lat:   3.1390, lng: 101.6869 },
+  { name: 'Amsterdam',     country: 'Netherlands',     tagline: 'Canals, Bikes & Golden Age Art',       searchQuery: 'Amsterdam, Netherlands',    lat:  52.3676, lng:   4.9041 },
+  { name: 'Hong Kong',     country: 'China',           tagline: 'East Meets West Skyline',              searchQuery: 'Hong Kong',                 lat:  22.3193, lng: 114.1694 },
+  { name: 'Los Angeles',   country: 'USA',             tagline: 'Hollywood, Beaches & Sun',             searchQuery: 'Los Angeles, USA',          lat:  34.0522, lng: -118.2437 },
 ];
 
 
@@ -48,10 +53,20 @@ const CityCard: React.FC<CityCardProps> = ({ city, index }) => {
   const t = useTranslations('topCities');
 
   function navigate() {
+    // A card names a place, not a stay, so the dates are ours to pick — and they were
+    // picked badly: no dates at all, which the search store then filled in as tomorrow,
+    // the one window OTV has almost no inventory in. `datesAuto` is what tells the
+    // results page to say the dates were chosen, and to offer the change.
+    const { checkIn, checkOut } = defaultStay();
     const p = new URLSearchParams({
       destination: city.searchQuery,
       destinationType: 'city',
       country: city.country,
+      checkIn,
+      checkOut,
+      datesAuto: '1',
+      lat: String(city.lat),
+      lng: String(city.lng),
     });
     router.push(`/search?${p.toString()}`);
   }

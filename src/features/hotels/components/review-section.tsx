@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { HOTEL_TOKENS, ratingInfo } from '@/features/hotels/types/property.types';
 import type { ReviewItem } from '@/features/hotels/types/property.types';
@@ -11,11 +12,12 @@ interface ReviewSectionProps {
 }
 
 export function ReviewSection({ hotelId, reviewScore, reviewCount, reviewItems }: ReviewSectionProps) {
+    const tAll = useTranslations();
     const rinfo = reviewScore > 0 ? ratingInfo(reviewScore) : null;
 
     return (
         <section style={{ marginTop: 32 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: HOTEL_TOKENS.TEXT, marginBottom: 16 }}>What guests say</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: HOTEL_TOKENS.TEXT, marginBottom: 16 }}>{tAll('property.v2.whatGuestsSay')}</div>
 
             {/* Overall score summary */}
             {rinfo && reviewScore > 0 && (
@@ -26,7 +28,7 @@ export function ReviewSection({ hotelId, reviewScore, reviewCount, reviewItems }
                     <div>
                         <div style={{ fontSize: 16, fontWeight: 700, color: rinfo.color }}>{rinfo.label}</div>
                         <div style={{ fontSize: 13, color: 'rgba(245,239,228,.55)', marginTop: 2 }}>
-                            Based on <span style={{ color: HOTEL_TOKENS.TEXT, fontWeight: 600 }}>{reviewCount}</span> {reviewCount === 1 ? 'review' : 'reviews'}
+                            {tAll.rich('hotels.review.basedOnCount', { count: reviewCount, b: (c) => <span style={{ color: HOTEL_TOKENS.TEXT, fontWeight: 600 }}>{c}</span> })}
                         </div>
                     </div>
                 </div>

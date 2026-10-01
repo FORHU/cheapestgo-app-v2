@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { ChevronUp, ChevronLeft, SlidersHorizontal, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -205,6 +206,7 @@ function PriceRangeSlider({
     palette: Palette;
     onChange: (low: number, high: number) => void;
 }) {
+    const tAll = useTranslations();
     const span = Math.max(1, max - min);
     const step = Math.max(1, Math.round(span / 100));
     const lowPct = ((low - min) / span) * 100;
@@ -234,7 +236,7 @@ function PriceRangeSlider({
 
             <input
                 type="range"
-                aria-label="Minimum price per night"
+                aria-label={tAll('hotels.filters.minPerNight')}
                 min={min} max={max} step={step} value={low}
                 onChange={(e) => onChange(Math.min(Number(e.target.value), high), high)}
                 className={cn(input, thumb)}
@@ -242,7 +244,7 @@ function PriceRangeSlider({
             />
             <input
                 type="range"
-                aria-label="Maximum price per night"
+                aria-label={tAll('hotels.filters.maxPerNight')}
                 min={min} max={max} step={step} value={high}
                 onChange={(e) => onChange(low, Math.max(Number(e.target.value), low))}
                 className={cn(input, thumb)}
@@ -278,6 +280,7 @@ function SortRow({
 export function HotelFilters({
     filters, onChange, onReset, priceRange, currency = 'USD', onCollapse, tone, showSort = true, sort,
 }: HotelFiltersProps) {
+    const tAll = useTranslations();
     const [open, setOpen] = useState({ sort: true, stars: true, price: true });
     const section = (k: keyof typeof open) => () => setOpen((s) => ({ ...s, [k]: !s[k] }));
     const { theme } = useTheme();
@@ -314,14 +317,14 @@ export function HotelFilters({
                     {/* Header */}
                     <div className="flex items-center gap-2.5 px-1">
                         <SlidersHorizontal size={17} strokeWidth={1.75} className={cn('shrink-0', palette.icon)} />
-                        <span className={cn('text-[17px]', palette.heading)}>Filters</span>
+                        <span className={cn('text-[17px]', palette.heading)}>{tAll('flights.results.filters')}</span>
                         {hasActiveFilters && (
                             <button
                                 type="button"
                                 onClick={onReset}
                                 className={cn('ml-auto text-[12px] underline-offset-2 hover:underline', palette.reset)}
                             >
-                                Reset
+                                {tAll('hotels.filters.reset')}
                             </button>
                         )}
                     </div>
@@ -385,7 +388,7 @@ export function HotelFilters({
                         <Section label="Price / Night" open={open.price} onToggle={section('price')} palette={palette}>
                             <div className="px-1">
                                 <div className="flex items-baseline justify-between gap-2">
-                                    <span className={cn('text-[15px]', palette.body)}>Adjust Price</span>
+                                    <span className={cn('text-[15px]', palette.body)}>{tAll('hotels.filters.adjustPrice')}</span>
                                     <span className={cn('text-[15px] whitespace-nowrap', palette.body)}>
                                         {sym}{Math.round(filters.minPrice).toLocaleString()}-{Math.round(filters.maxPrice).toLocaleString()}
                                     </span>
@@ -412,7 +415,7 @@ export function HotelFilters({
                 <button
                     type="button"
                     onClick={onCollapse}
-                    aria-label="Hide filters"
+                    aria-label={tAll('hotels.filters.hide')}
                     className={cn(
                         'absolute top-1/2 -right-5 z-10 flex h-[42px] w-[42px] -translate-y-1/2 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-85',
                         palette.handle,

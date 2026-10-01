@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
@@ -439,6 +441,7 @@ function DetailColumn({
     /** `false` drops the "View more" link (the Payment Terms column). */
     showViewMore?: boolean;
 }) {
+    const tAll = useTranslations();
     if (rows.length === 0) return null;
     return (
         <div className="min-w-0">
@@ -464,7 +467,7 @@ function DetailColumn({
                     onClick={(e) => { e.stopPropagation(); onViewMore(); }}
                     className={cn('mt-2 cursor-pointer text-[12px] font-bold transition-colors', palette.viewMore)}
                 >
-                    View more
+                    {tAll('hotels.rooms.viewMore')}
                 </button>
             )}
         </div>
@@ -512,6 +515,8 @@ function RoomDetailDialog({
     /** The hotel photo, shown when the matched room-group carried no images. */
     galleryFallback?: string | null;
 }) {
+    const tAll = useTranslations();
+    const t = useTranslations('property');
     const [lightboxStart, setLightboxStart] = useState<number | null>(null);
 
     useEffect(() => {
@@ -566,7 +571,7 @@ function RoomDetailDialog({
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={tAll('trips.cancellationModal.close')}
                     className={cn('absolute right-5 top-5 cursor-pointer transition-colors', palette.modalClose)}
                 >
                     <X size={18} />
@@ -609,7 +614,7 @@ function RoomDetailDialog({
                             <div className="mt-4">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
-                                <p className={cn('mt-1 text-[12px]', palette.empty)}>Photo of the property</p>
+                                <p className={cn('mt-1 text-[12px]', palette.empty)}>{t('v2.photoOfProperty')}</p>
                             </div>
                         )}
 
@@ -622,7 +627,7 @@ function RoomDetailDialog({
                 ) : (
                     card.allFeatures.length > 0 && (
                         <section className="mt-6">
-                            <p className={sectionLabel}>Room</p>
+                            <p className={sectionLabel}>{tAll('property.rooms.room')}</p>
                             <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 {card.allFeatures.map((feature, i) => (
                                     <FeatureRow key={`${feature.label}-${i}`} feature={feature} palette={palette} />
@@ -640,7 +645,7 @@ function RoomDetailDialog({
 
                 {card.boardName && (
                     <section className="mt-6">
-                        <p className={sectionLabel}>Meal plan</p>
+                        <p className={sectionLabel}>{t('v2.mealPlan')}</p>
                         <p className={cn('mt-2 flex items-center gap-2 text-[15px]', palette.feature)}>
                             <UtensilsCrossed size={17} strokeWidth={1.75} className="shrink-0" />
                             {card.boardName}
@@ -649,7 +654,7 @@ function RoomDetailDialog({
                 )}
 
                 <section className="mt-6">
-                    <p className={sectionLabel}>Cancellation policy</p>
+                    <p className={sectionLabel}>{t('v2.cancellationPolicy')}</p>
                     <p className={cn('mt-2 flex items-start gap-2 text-[15px]', palette.feature)}>
                         <ShieldCheck size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
                         <span>{card.cancellation}</span>
@@ -670,13 +675,13 @@ function RoomDetailDialog({
 
                 {additionalInfo && (
                     <section className="mt-6">
-                        <p className={sectionLabel}>Additional information</p>
+                        <p className={sectionLabel}>{t('v2.additionalInfo')}</p>
                         <p className={cn('mt-2 whitespace-pre-line text-[14px]', palette.feature)}>{additionalInfo}</p>
                     </section>
                 )}
 
                 <section className="mt-6">
-                    <p className={sectionLabel}>Price</p>
+                    <p className={sectionLabel}>{t('v2.price')}</p>
                     <p className={cn('mt-2 text-[15px]', palette.feature)}>
                         {`${symbol}${Math.round(card.nightly).toLocaleString()} / night × ${stayNights} night${stayNights === 1 ? '' : 's'}`}
                     </p>
@@ -694,7 +699,7 @@ function RoomDetailDialog({
                         onClick={onClose}
                         className={cn('cursor-pointer rounded-full px-6 py-2.5 text-[14px] font-medium', palette.pillOn)}
                     >
-                        Close
+                        {tAll('trips.cancellationModal.close')}
                     </button>
                     <button
                         type="button"
@@ -733,11 +738,17 @@ function RoomRateCard({
     propertySections?: DetailSection[];
     additionalInfo?: string;
 }) {
+    const tAll = useTranslations();
     const [modalOpen, setModalOpen] = useState(false);
 
-    // The hotel's photo, not the room's: `roomImages` are the banner's
-    // pagination now, where a set of them can actually be looked through.
-    const photo = image;
+    // The room's own photo where there is one, the hotel's where there is not.
+    //
+    // This used to take the hotel's unconditionally, which made every row on a property
+    // identical — the same building shot beside "Deluxe Double" and "Superior Double", so the
+    // one thing a reader is comparing looked the same for both. The expanded panel below has
+    // always preferred the room's gallery and kept the hotel shot as its fallback; the two
+    // disagreeing is what made this look deliberate rather than missed.
+    const photo = card.content?.gallery?.[0] ?? image;
     const symbol = currencySymbol(currency) || currency;
     const pick = () => onSelect({ room: card.room, rate: card.rate });
 
@@ -780,7 +791,7 @@ function RoomRateCard({
                         <span className={cn('text-[19px] font-bold sm:text-[21px]', palette.price)}>
                             {symbol}{Math.round(card.nightly).toLocaleString()}
                         </span>
-                        <span className={cn('text-[12px]', palette.unit)}>/night</span>
+                        <span className={cn('text-[12px]', palette.unit)}>{tAll('hotels.perNight')}</span>
                     </p>
                 </div>
 
@@ -789,13 +800,13 @@ function RoomRateCard({
                 <div className="flex flex-1 items-start justify-between gap-3">
                     <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
                         <DetailColumn
-                            title="Room Details"
+                            title={tAll('property.bookingWidget.roomDetails')}
                             rows={card.roomDetails}
                             palette={palette}
                             onViewMore={() => setModalOpen(true)}
                         />
                         <DetailColumn
-                            title="Payment Terms"
+                            title={tAll('hotels.rooms.paymentTerms')}
                             rows={card.paymentTerms}
                             palette={palette}
                             onViewMore={() => setModalOpen(true)}
@@ -854,6 +865,8 @@ export function RoomSelection({
     rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
     selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
 }: RoomSelectionProps) {
+    const tAll = useTranslations();
+    const t = useTranslations('property');
     const { theme } = useTheme();
     const palette = roomPalette(tone ?? theme);
     const [filter, setFilter] = useState<RoomFilter>('all');
@@ -891,7 +904,9 @@ export function RoomSelection({
                 refundable: isRefundable(rate),
                 cancellation: cancellationSummary(rate),
                 // Supplier prices cover the whole stay; the card prints a night.
-                nightly: convertCurrency(rate.price, rate.currency || 'USD', currency) / Math.max(1, nights ?? 1),
+                // The wire already carries a nightly figure; `stayNights` below multiplies it
+                // back up for the "× N nights" line, which is the only place a total belongs.
+                nightly: convertCurrency(rate.price, rate.currency || 'USD', currency),
                 content: room.content,
             };
         });
@@ -929,7 +944,7 @@ export function RoomSelection({
 
     return (
         <section id={id} className={className}>
-            <h2 className={cn(SECTION_HEADING, palette.heading)}>Available Rooms</h2>
+            <h2 className={cn(SECTION_HEADING, palette.heading)}>{t('v2.availableRooms')}</h2>
 
             <div className="mt-4 flex flex-wrap gap-2">
                 {FILTERS.map((f) => (
@@ -985,17 +1000,17 @@ export function RoomSelection({
 
             {filtered.length === 0 && (
                 <p className={cn('mt-4 py-8 text-center text-[18px]', palette.empty)}>
-                    No rooms match that rate. Try another filter.
+                    {tAll('hotels.rooms.noMatch')}
                 </p>
             )}
 
             {pageCount > 1 && (
-                <nav className="mt-4 flex items-center justify-end gap-3" aria-label="Room pages">
+                <nav className="mt-4 flex items-center justify-end gap-3" aria-label={tAll('hotels.rooms.pages')}>
                     <button
                         type="button"
                         onClick={() => goToPage(safePage - 1)}
                         disabled={safePage === 0}
-                        aria-label="Previous page"
+                        aria-label={tAll('hotels.rooms.prevPage')}
                         className={cn(
                             'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-30',
                             palette.filterIdle,
@@ -1011,7 +1026,7 @@ export function RoomSelection({
                         type="button"
                         onClick={() => goToPage(safePage + 1)}
                         disabled={safePage === pageCount - 1}
-                        aria-label="Next page"
+                        aria-label={tAll('hotels.rooms.nextPage')}
                         className={cn(
                             'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-30',
                             palette.filterIdle,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { X } from 'lucide-react';
 
@@ -112,13 +113,14 @@ export function MapDetailsPanel({
     showLabels,
     onLabelsToggle,
 }: MapDetailsPanelProps) {
+    const tAll = useTranslations();
     if (!isOpen) return null;
 
     return (
         <div className="absolute z-[60] bg-white dark:bg-slate-900 rounded-md shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden w-[210px] md:w-[300px] left-4 top-[80px] lg:top-[38px]">
             {/* Header */}
             <div className="flex items-center justify-between px-2.5 pt-2.5 pb-1.5 md:px-4 md:pt-4 md:pb-2">
-                <h3 className="text-xs md:text-base font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Map Details</h3>
+                <h3 className="text-xs md:text-base font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">{tAll('map.details')}</h3>
                 <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
                     <X className="w-4 h-4 md:w-5 md:h-5 text-slate-500" />
                 </button>
@@ -159,7 +161,7 @@ export function MapDetailsPanel({
 
             {/* Map type */}
             <div className="px-2.5 pb-2 md:px-4 md:pb-3">
-                <p className="text-[8px] md:text-xs mb-1 md:mb-2 font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-0.5">Map Type</p>
+                <p className="text-[8px] md:text-xs mb-1 md:mb-2 font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-0.5">{tAll('map.mapType')}</p>
                 <div className="grid grid-cols-3 gap-1 md:gap-2">
                     {MAP_TYPE_TILES.map((tile) => (
                         <button
@@ -184,7 +186,7 @@ export function MapDetailsPanel({
 
             {/* Labels toggle */}
             <div className="px-3 pb-2 pt-1.5 md:px-5 md:pb-5 md:pt-1 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 mt-0.5">
-                <span className="text-[10px] md:text-sm font-medium text-slate-700 dark:text-slate-300">Labels</span>
+                <span className="text-[10px] md:text-sm font-medium text-slate-700 dark:text-slate-300">{tAll('map.labels')}</span>
                 <button
                     onClick={onLabelsToggle}
                     className={`relative rounded-full transition-colors cursor-pointer w-8 h-4 md:w-11 md:h-6 ${showLabels ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}

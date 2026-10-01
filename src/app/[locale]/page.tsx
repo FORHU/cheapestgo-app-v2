@@ -1,6 +1,27 @@
 export const revalidate = 300;
 
+import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
+import { hreflangAlternates } from '@/shared/lib/seo';
+
+/**
+ * The homepage names itself, per locale.
+ *
+ * Without this every language declared no canonical at all and the root layout could not
+ * supply one — a canonical set there would name `/` for every page beneath it, so each
+ * page carries its own.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+    // Without these the landing page falls through to the root layout's default, which is one
+    // fixed English string — the only page in the app whose tab title never changed language.
+    const t = await getTranslations('seo');
+    return {
+        title:       t('homeTitle'),
+        description: t('homeDescription'),
+        alternates:  await hreflangAlternates('/'),
+    };
+}
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
 import { ImmersiveSearchBar, type TrendingDest } from '@/features/search/components/immersive-search-bar';
@@ -62,7 +83,7 @@ export default async function HomePage() {
     const organizationJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Organization',
-        name: 'CheapestGo',
+        name: `${BRAND_NAME}`,
         url: 'https://cheapestgo.com',
         logo: 'https://cheapestgo.com/icon-192.png',
         sameAs: [],

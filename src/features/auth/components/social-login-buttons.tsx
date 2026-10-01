@@ -9,9 +9,9 @@ const GoogleIcon = () => (
     </svg>
 );
 
-interface Props { label?: string; }
+interface Props { label: string; }
 
-export function SocialLoginButtons({ label = 'Sign in with Google' }: Props) {
+export function SocialLoginButtons({ label }: Props) {
     return (
         <div className="space-y-3">
             <a

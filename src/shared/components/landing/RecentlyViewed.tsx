@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { resolveDepartureDate } from '@/features/landing/lib/links';
 import { motion } from 'framer-motion';
 import { History, Clock, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
@@ -42,7 +43,13 @@ const RecentCard: React.FC<RecentCardProps> = ({ item, destination, index }) => 
     setDestination(destination);
     setDestinationQuery(destination.title);
     if (destination.type === 'airport') {
-      router.push('/flights');
+      // `/flights` is not a route — there is no page directly under it, only `[slug]`,
+      // `book` and `search` — so tapping a recently-viewed airport answered 404. Send
+      // them to the search with the airport already filled in and a departure date;
+      // the origin is the one thing nothing here can know, so the page asks for it.
+      const p = new URLSearchParams({ destination: destination.code ?? destination.title });
+      p.set('depart', resolveDepartureDate(null).departure);
+      router.push(`/flights/search?${p.toString()}`);
     } else {
       const params = new URLSearchParams({ destination: destination.title });
       if (destination.countryCode) params.set('countryCode', destination.countryCode);

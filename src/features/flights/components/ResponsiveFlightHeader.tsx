@@ -1,7 +1,8 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
-import {  SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, CalendarClock } from 'lucide-react';
 import type { FlightOffer } from '@/shared/types';
 
 interface ProviderStatusProps {
@@ -10,6 +11,7 @@ interface ProviderStatusProps {
 }
 
 export function ProviderStatus({ offers, loading }: ProviderStatusProps) {
+    const tAll = useTranslations();
     const providerCounts = React.useMemo(() => {
         const counts: Record<string, number> = {};
         for (const o of offers) {
@@ -25,7 +27,7 @@ export function ProviderStatus({ offers, loading }: ProviderStatusProps) {
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                 <span className="inline-flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Fetching providers...
+                    {tAll('flights.header.fetching')}
                 </span>
             </div>
         );
@@ -35,7 +37,7 @@ export function ProviderStatus({ offers, loading }: ProviderStatusProps) {
 
     return (
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-normal">
-            <span className="text-blue-600 dark:text-blue-400">Sources:</span>
+            <span className="text-blue-600 dark:text-blue-400">{tAll('flights.header.sources')}</span>
             {entries.map(([provider, count]) => (
                 <span
                     key={provider}
@@ -56,6 +58,8 @@ interface ResponsiveFlightHeaderProps {
     origin: string;
     destination: string;
     dateStr: string;
+    /** The date is one we chose, not one the traveller asked for — so the page says so. */
+    datePicked?: boolean;
     passengersStr: string;
     activeFilterCount: number;
     statusElement?: React.ReactNode;
@@ -69,6 +73,7 @@ export function ResponsiveFlightHeader({
     origin,
     destination,
     dateStr,
+    datePicked = false,
     passengersStr,
     activeFilterCount,
     statusElement,
@@ -77,6 +82,7 @@ export function ResponsiveFlightHeader({
     onSearchEdit,
     className: _className,
 }: ResponsiveFlightHeaderProps) {
+    const tAll = useTranslations();
     return (
         <>
             {/* Mobile: header */}
@@ -91,7 +97,10 @@ export function ResponsiveFlightHeader({
                                 {origin} → {destination}
                             </span>
                             <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 truncate w-full text-left">
-                                {dateStr} • {passengersStr}
+                                <span className={datePicked ? 'text-blue-600 dark:text-blue-400 underline decoration-dotted underline-offset-2' : undefined}>
+                                    {dateStr}
+                                </span>
+                                {' • '}{passengersStr}
                             </span>
                         </button>
 
@@ -108,12 +117,22 @@ export function ResponsiveFlightHeader({
                         </button>
                     </div>
 
+                    {/* A date nobody asked for is disclosed, not applied quietly — the
+                        traveller named a route, so they should be told which day they are
+                        being quoted for and that moving it is how to see other fares. */}
+                    {datePicked && (
+                        <p className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+                            <CalendarClock size={11} className="shrink-0 text-blue-500" aria-hidden />
+                            {tAll('flights.results.datePicked')}
+                        </p>
+                    )}
+
                     {(statusElement || resultCount != null) && (
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">{statusElement}</div>
                             {resultCount != null && (
                                 <span className="text-[11px] font-normal text-slate-400 shrink-0">
-                                    {resultCount} {resultCount === 1 ? 'flight' : 'flights'}
+                                    {tAll('flights.results.countFlights', { count: resultCount })}
                                 </span>
                             )}
                         </div>

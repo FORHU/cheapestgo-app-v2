@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { Heart, Plane, Hotel as HotelIcon, Trash2, ExternalLink, ArrowRight } from 'lucide-react';
@@ -9,6 +10,7 @@ import { formatCurrency } from '@/shared/lib/format';
 import type { SavedTrip } from '@/shared/types';
 
 export function SavedTripsSection() {
+    const tAll = useTranslations();
     const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
     const [loading, setLoading] = useState(true);
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function SavedTripsSection() {
     return (
         <div className="space-y-4">
             <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Saved Trips</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('account.savedTrips.title')}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Hotels and flights you&apos;ve bookmarked.</p>
             </div>
 
@@ -57,15 +59,15 @@ export function SavedTripsSection() {
                     <div className="w-14 h-14 mb-4 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center">
                         <Heart size={24} className="text-rose-300" />
                     </div>
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">No saved trips yet</h3>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{tAll('trips.wishlist.emptyTitle')}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
-                        Tap the heart icon on any hotel or flight to save it here.
+                        {tAll('account.savedTrips.hint')}
                     </p>
                     <Link
                         href="/"
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
                     >
-                        Explore destinations
+                        {tAll('trips.exploreDestinations')}
                         <ArrowRight size={14} />
                     </Link>
                 </div>
@@ -103,7 +105,7 @@ export function SavedTripsSection() {
                                     <p className="text-sm font-bold text-slate-900 dark:text-white">
                                         {formatCurrency(trip.price, trip.currency)}
                                     </p>
-                                    <p className="text-[10px] text-slate-400">per person</p>
+                                    <p className="text-[10px] text-slate-400">{tAll('trips.wishlist.perPerson')}</p>
                                 </div>
                             )}
 
@@ -113,7 +115,7 @@ export function SavedTripsSection() {
                                     <Link
                                         href={trip.deep_link}
                                         className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors"
-                                        title="Search again"
+                                        title={tAll('trips.wishlist.searchAgain')}
                                     >
                                         <ExternalLink size={13} />
                                     </Link>
@@ -122,7 +124,7 @@ export function SavedTripsSection() {
                                     onClick={() => handleRemove(trip.id)}
                                     disabled={removingId === trip.id}
                                     className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-500 transition-colors disabled:opacity-50"
-                                    title="Remove from saved"
+                                    title={tAll('account.savedTrips.remove')}
                                 >
                                     <Trash2 size={13} />
                                 </button>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { Save, Loader2, CheckCircle } from 'lucide-react';
 import { http } from '@/shared/lib/http';
@@ -15,6 +16,7 @@ const LANGUAGES = [
 ] as const;
 
 export function PreferencesSection() {
+    const tAll = useTranslations();
     const [prefs, setPrefs] = useState<UserPreferences>({
         currency: 'USD',
         language: 'en',
@@ -65,14 +67,14 @@ export function PreferencesSection() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Preferences</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Customize your browsing and notification settings.</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('account.preferences.title')}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{tAll('account.preferences.subtitle')}</p>
             </div>
 
             {/* Currency */}
             <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                    Display Currency
+                    {tAll('account.preferences.displayCurrency')}
                 </label>
                 <select
                     value={prefs.currency ?? 'USD'}
@@ -90,7 +92,7 @@ export function PreferencesSection() {
             {/* Language */}
             <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                    Language
+                    {tAll('account.preferences.language')}
                 </label>
                 <div className="flex flex-wrap gap-2">
                     {LANGUAGES.map(lang => (
@@ -113,13 +115,13 @@ export function PreferencesSection() {
             {/* Notifications */}
             <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                    Notifications
+                    {tAll('account.preferences.notifications')}
                 </label>
                 <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-xl">
                     <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Email notifications</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{tAll('account.preferences.emailNotifications')}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Booking confirmations, price alerts, and trip reminders
+                            {tAll('account.preferences.emailNotificationsHint')}
                         </p>
                     </div>
                     <button

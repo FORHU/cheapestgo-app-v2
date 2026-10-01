@@ -1,120 +1,343 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useRouter } from '@/i18n/navigation';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+/**
+ * The property page, as a component.
+ *
+ * It lived in `page.tsx`, which made that file a client component — and a client component
+ * cannot export `generateMetadata`, so the single most indexable page in the site (one per
+ * hotel, the whole long tail) shipped with no canonical and no hreflang at all. Moving the
+ * client work here leaves the route file free to be a server component that declares them.
+ */
+
+import React, { useEffect, useState, useMemo, Suspense } from 'react';
+import { useTranslations } from 'next-intl';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
-import { useUserCurrency } from '@/shared/stores/search.store';
-import { convertCurrency, getCurrencySymbol, EXCHANGE_RATES } from '@/shared/lib/currency';
-import { HOTEL_TOKENS, ratingInfo } from '@/features/hotels/types/property.types';
-import type { PropertyApiResponse } from '@/features/hotels/types/property.types';
-import { PropertyHero } from '@/features/hotels/components/property-hero';
-import { ReviewSection } from '@/features/hotels/components/review-section';
-import { RoomSelector } from '@/features/hotels/components/room-selector';
-import { NearbySection } from '@/features/hotels/components/nearby-section';
+import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
+import { Map } from '@/shared/components/ui/map';
+import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
+import { PropertyDescription } from '@/features/hotels/components/property-description';
+import { cn } from '@/shared/lib/cn';
+import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
+import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
+import { useUserCurrency } from '@/stores/searchStore';
+import { checkoutMoney } from '@/features/hotels/lib/checkout-money';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
+import { formatCurrency } from '@/shared/lib/format';
+import { useTheme } from '@/shared/components/ThemeContext';
+import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
+import { resolveStayDates } from '@/shared/lib/stay';
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-function Spinner({ size = 32 }: { size?: number }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
-            <style>{`/keyframes spin{to{transform:rotate(360deg)}}`}</style>
-            <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="3" />
-            <circle cx="12" cy="12" r="9" fill="none" stroke={HOTEL_TOKENS.ACCENT} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
-        </svg>
-    );
+interface HotelContent {
+    hotel_id: string;
+    name: string | null;
+    address: string | null;
+    city: string | null;
+    country: string | null;
+    star_rating: number | null;
+    description: string | null;
+    images: string[];
+    amenities: string[] | null;
+    lat: number | null;
+    lng: number | null;
+    /**
+     * Front-desk hours, under both of the names suppliers give them.
+     *
+     * Optional because it is not certain every supplier sends either — the
+     * description panel draws the IN / OUT pair only once one arrives, rather
+     * than printing a plausible 3:00 PM nobody has confirmed.
+     */
+    check_in_time?: string | null;
+    check_out_time?: string | null;
+    check_in?: string | null;
+    check_out?: string | null;
+    /** ETG-sourced extras for the room-detail modal + description panel. */
+    amenityGroups?: AmenityGroup[];
+    roomPolicySections?: DetailSection[];
+    additionalInfo?: string;
 }
 
-// ─── Lightbox ─────────────────────────────────────────────────────────────────
+interface PropertyApiResponse {
+    content?: HotelContent;
+    reviews?: { rating: number | string | null; reviews_count: number } | null;
+    reviewItems?: Array<{
+        reviewer_name: string | null;
+        score: number | string | null;
+        pros: string | null;
+        cons: string | null;
+        headline: string | null;
+        country: string | null;
+    }>;
+    rooms?: RoomOption[];
+    error?: string;
+}
 
-function Lightbox({ images, startIndex, onClose }: { images: string[]; startIndex: number; onClose: () => void }) {
-    const [idx, setIdx] = useState(startIndex);
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
-    const prev = useCallback(() => setIdx((i) => (i - 1 + images.length) % images.length), [images.length]);
-    const next = useCallback(() => setIdx((i) => (i + 1) % images.length), [images.length]);
+const ACCENT = '#FF6B4B';
+const GREEN  = '#2FB67F';
 
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-            if (e.key === 'ArrowLeft')  prev();
-            if (e.key === 'ArrowRight') next();
-        };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [onClose, prev, next]);
+/**
+ * Every colour the page below the Hero paints with, picked by theme rather
+ * than a `dark:` variant — same reasoning as `descriptionPalette` next door
+ * in `property-description.tsx`, which this now matches instead of
+ * overriding with a hardcoded `tone="dark"`.
+ *
+ * The Hero itself is deliberately not in here. It draws on top of a
+ * photograph of unknown brightness behind a fixed dark gradient, not on the
+ * page ground — white text and dark-translucent chrome is the legibility
+ * choice for that, independent of which theme the rest of the page is in,
+ * the same way a photo app's overlay controls don't invert with the system
+ * theme either.
+ */
+function propertyPalette(theme: 'light' | 'dark') {
+    const dark = theme === 'dark';
+    return {
+        bg:          dark ? '#000000' : '#FFFFFF',
+        title:       dark ? '#FFFFFF' : '#111111',
+        text:        dark ? '#F5EFE4' : '#111111',
+        muted:       dark ? 'rgba(245,239,228,.5)'  : 'rgba(17,17,17,.5)',
+        soft:        dark ? 'rgba(245,239,228,.7)'  : 'rgba(17,17,17,.65)',
+        hairline:    dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.1)',
+        cardBg:      dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)',
+        cardBorder:  dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)',
+        iconBg:      dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)',
+        mapStyle:    dark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12',
+    };
+}
 
+type PropertyPalette = ReturnType<typeof propertyPalette>;
+
+/**
+ * The page's column — one edge for every section on it, so the hero's name, the
+ * description, the rooms and the bar at the bottom all start on the same line.
+ *
+ * It is the app shell's, shared with the search page: 16/24px of gutter, capped
+ * at 1400px. A stay therefore occupies the same column in the results as it
+ * does on its own page, and does not slide sideways when it is opened.
+ *
+ * A pair of nested elements rather than one, because the cap has to land inside
+ * the padding — see `SHELL_GUTTER`. Held here as a component so the four places
+ * that need it do not each write the nesting out and get it half right.
+ */
+function PageColumn({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
     return (
-        <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1 }}>
-                <X size={18} />
-            </button>
-            <div style={{ position: 'absolute', top: 24, left: '50%', transform: 'translateX(-50%)', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.6)' }}>
-                {idx + 1} / {images.length}
-            </div>
-            {images.length > 1 && (
-                <button onClick={(e) => { e.stopPropagation(); prev(); }} style={{ position: 'absolute', left: 16, width: 44, height: 44, borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                    <ChevronLeft size={22} />
-                </button>
-            )}
-            <img src={images[idx]} alt="" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '88vw', maxHeight: '84vh', borderRadius: 16, objectFit: 'contain', boxShadow: '0 24px 80px rgba(0,0,0,.7)', userSelect: 'none' }} />
-            {images.length > 1 && (
-                <button onClick={(e) => { e.stopPropagation(); next(); }} style={{ position: 'absolute', right: 16, width: 44, height: 44, borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                    <ChevronRight size={22} />
-                </button>
-            )}
-            {images.length > 1 && (
-                <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
-                    {images.map((_, i) => (
-                        <div key={i} onClick={(e) => { e.stopPropagation(); setIdx(i); }} style={{ width: i === idx ? 20 : 7, height: 7, borderRadius: 4, background: i === idx ? '#fff' : 'rgba(255,255,255,.35)', cursor: 'pointer', transition: 'all .2s' }} />
-                    ))}
-                </div>
-            )}
+        // A wider gutter than the shared shell — this page reads better with more
+        // air down its sides. `cn` lets the wider `sm:`/`lg:` steps win over
+        // `SHELL_GUTTER`'s while its `px-5` mobile value stays.
+        <div className={cn(SHELL_GUTTER, 'sm:px-12 lg:px-20 xl:px-28')} style={style}>
+            <div className={SHELL_CAP}>{children}</div>
         </div>
     );
 }
 
-// ─── PhotoGallery ─────────────────────────────────────────────────────────────
-
-function PhotoGallery({ images }: { images: string[] }) {
-    const [lightbox, setLightbox] = useState<number | null>(null);
-    const [thumbFailed, setThumbFailed] = useState(false);
-    const thumb = images[1];
-    if (!thumb || thumbFailed) return null;
-
+/**
+ * A body section that fades and rises 32px as it enters the viewport. No
+ * `once` — it replays whichever way you scroll across it, and resets to
+ * hidden when it leaves.
+ */
+function Reveal({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
     return (
-        <>
-            <div onClick={() => setLightbox(1)} style={{ margin: '28px 0', borderRadius: 18, overflow: 'hidden', height: 280, position: 'relative', cursor: 'pointer' }}>
-                <img src={thumb} alt="" onError={() => setThumbFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s' }} onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} />
-                {images.length > 1 && (
-                    <div style={{ position: 'absolute', bottom: 14, right: 14, background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', pointerEvents: 'none' }}>
-                        View all {images.length} photos
-                    </div>
-                )}
-            </div>
-            {lightbox !== null && <Lightbox images={images} startIndex={lightbox} onClose={() => setLightbox(null)} />}
-        </>
+        <motion.div
+            className={className}
+            style={style}
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ amount: 0.15 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+            {children}
+        </motion.div>
     );
 }
 
-// ─── PropertyView ─────────────────────────────────────────────────────────────
+/**
+ * The banner's prev/next buttons, which differ only in which edge they sit on.
+ *
+ * A bare chevron over the photo, not a button — the design's arrows carry no
+ * circular backdrop or blur, so the plate the earlier version drew behind them
+ * is dropped in favor of a drop-shadow that keeps the glyph legible on a light
+ * patch of sky the same way the badge/pill chrome elsewhere on the page does.
+ */
+const HERO_ARROW: React.CSSProperties = {
+    position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 2,
+    width: 44, height: 44, borderRadius: '50%',
+    background: 'transparent', border: 'none',
+    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer',
+    filter: 'drop-shadow(0 1px 6px rgba(0,0,0,.6))',
+};
 
-export function PropertyView() {
+function ratingInfo(score: number): { label: string; color: string } {
+    // Keys, not words: this runs outside a component, where a hook cannot.
+    if (score >= 9) return { label: 'ratings.exceptional', color: GREEN };
+    if (score >= 8) return { label: 'ratings.excellent',   color: '#4FA8E0' };
+    return                  { label: 'Good',        color: '#E0A23C' };
+}
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+
+function Spinner({ size = 32, accent = 'rgba(255,255,255,.2)' }: { size?: number; accent?: string }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <circle cx="12" cy="12" r="9" fill="none" stroke={accent} strokeWidth="3" />
+            <circle cx="12" cy="12" r="9" fill="none" stroke={ACCENT} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+// ─── Haversine distance (miles) ───────────────────────────────────────────────
+
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R    = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a    = Math.sin(dLat / 2) ** 2
+               + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function categoryDotColor(cat: string): string {
+    const c = cat.toLowerCase();
+    if (c.includes('park') || c.includes('garden') || c.includes('nature'))      return '#10b981';
+    if (c.includes('restaurant') || c.includes('cafe') || c.includes('food') || c.includes('bar')) return '#f97316';
+    if (c.includes('museum') || c.includes('landmark') || c.includes('attraction')) return '#818cf8';
+    if (c.includes('shop') || c.includes('market'))                               return '#ec4899';
+    if (c.includes('hospital') || c.includes('pharmacy'))                         return '#60a5fa';
+    return '#94a3b8';
+}
+
+// ─── NearbySection ────────────────────────────────────────────────────────────
+
+function NearbySection({ coordinates, palette }: { coordinates: { lat: number; lng: number }; palette: PropertyPalette }) {
+    const t = useTranslations('property');
+    const { gems } = useNearbyGems({ coordinates, category: 'all', radiusMeters: 2000 });
+    const topGems  = gems.slice(0, 5);
+
+    return (
+        // The map over its list rather than beside it: in the design this
+        // section is a column of its own next to the rooms, and a map given
+        // 42% of *that* would be a thumbnail.
+        <div>
+            {/* Map — the column's full width, at the placeholder's proportions */}
+            <div style={{ width: '100%', height: 360, borderRadius: 12, overflow: 'hidden', background: '#1e293b' }}>
+                <Map
+                    mapStyle={palette.mapStyle}
+                    initialViewState={{ longitude: coordinates.lng, latitude: coordinates.lat, zoom: 14 }}
+                    interactive={false}
+                    className="rounded-2xl"
+                >
+                    {/* Hotel pin */}
+                    <Marker longitude={coordinates.lng} latitude={coordinates.lat} anchor="center">
+                        <div style={{ width: 14, height: 14, borderRadius: '50%', background: ACCENT, border: '2.5px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,.55)' }} />
+                    </Marker>
+                    {/* POI pins */}
+                    {topGems.map(gem => (
+                        <Marker key={gem.id} longitude={gem.coordinates.lng} latitude={gem.coordinates.lat} anchor="center">
+                            <div style={{ width: 9, height: 9, borderRadius: '50%', background: categoryDotColor(gem.category), border: '1.5px solid rgba(255,255,255,.75)', boxShadow: '0 1px 4px rgba(0,0,0,.4)' }} />
+                        </Marker>
+                    ))}
+                </Map>
+            </div>
+
+            {/* Place list. The design shows only the map box, but the map is
+                non-interactive and draws its places as unlabelled dots — on its
+                own it says there is something nearby without saying what. The
+                names and distances stay under it. */}
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
+                {topGems.length === 0 && (
+                    <p style={{ color: palette.muted, fontSize: 18 }}>{t('v2.loadingNearby')}</p>
+                )}
+                {topGems.map((gem, i) => {
+                    const dist = haversine(coordinates.lat, coordinates.lng, gem.coordinates.lat, gem.coordinates.lng);
+                    const Icon = gem.icon;
+                    const dot  = categoryDotColor(gem.category);
+                    return (
+                        <div
+                            key={gem.id}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '11px 0',
+                                borderBottom: i < topGems.length - 1 ? `1px solid ${palette.hairline}` : 'none',
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 34, height: 34, borderRadius: 10, background: palette.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Icon size={21} color={dot} />
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 600, fontSize: 18, color: palette.title, lineHeight: 1.25 }}>{gem.name}</div>
+                                    <div style={{ fontSize: 15, color: palette.muted, marginTop: 2, textTransform: 'capitalize' }}>
+                                        {gem.displayCategory || gem.category}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ fontSize: 17, color: palette.soft, fontWeight: 600, paddingLeft: 12, flexShrink: 0 }}>
+                                {dist.toFixed(1)} mi
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ─── PropertyContent ──────────────────────────────────────────────────────────
+
+function PropertyContent() {
+    const tAll = useTranslations();
+    const t = useTranslations('property');
     const params       = useParams();
     const searchParams = useSearchParams();
     const router       = useRouter();
+    const { theme, toggleTheme } = useTheme();
+    const palette = propertyPalette(theme);
 
     const hotelId  = params.id as string;
-    const checkIn  = searchParams.get('checkIn')  ?? '';
-    const checkOut = searchParams.get('checkOut') ?? '';
+    // One derivation of the stay for the whole page: the dates the supplier is asked
+    // for, and the night count anything restating the price per night divides by. A
+    // link that has been sitting in a chat window names dates in the past, which the
+    // supplier simply rejects — so those fall back to a stay that can be booked.
+    const { checkIn, checkOut, nights } = resolveStayDates(
+        searchParams.get('checkIn'), searchParams.get('checkOut'),
+    );
     const adults   = Number(searchParams.get('adults')   ?? 2);
     const children = Number(searchParams.get('children') ?? 0);
+
+    /** Everything with a price on this page is drawn in the guest's own
+     *  currency, not whichever one the supplier happened to quote in. */
+    const currency = useUserCurrency();
+    // See room-selector: the rates land after the first paint and React cannot see the module
+    // object change, so this is what re-prices the page when they do.
+    useLiveRates();
 
     const [data, setData]                     = useState<PropertyApiResponse | null>(null);
     const [loading, setLoading]               = useState(true);
     const [error, setError]                   = useState<string | null>(null);
-    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-    const [saved, setSaved]                   = useState(false);
+    /**
+     * The offer the guest picked — a room *and* one of its rates.
+     * `selectedRoomId` was not enough: the same room comes back several
+     * times over at different boards and prices, and only the rate carries
+     * the `offerId` that checkout books against.
+     */
+    const [selectedOffer, setSelectedOffer] = useState<SelectedOffer | null>(null);
+    /** Which of the banner images is showing, and which way the last page went
+     *  (−1 prev, +1 next) so the crossfade can lean that direction. */
+    const [heroIndex, setHeroIndex] = useState(0);
+    const [heroDir, setHeroDir] = useState(1);
+    /** The banner src that has finished decoding — anything else shows the
+     *  loading shimmer until its own `onLoad`. */
+    const [loadedHeroSrc, setLoadedHeroSrc] = useState<string | null>(null);
 
     useEffect(() => {
         if (!hotelId) return;
@@ -123,77 +346,136 @@ export function PropertyView() {
         setError(null);
 
         const qs = new URLSearchParams();
-        if (checkIn)   qs.set('checkIn',   checkIn);
-        if (checkOut)  qs.set('checkOut',  checkOut);
+        qs.set('checkIn',  checkIn);
+        qs.set('checkOut', checkOut);
         if (adults)    qs.set('adults',    String(adults));
         if (children)  qs.set('children',  String(children));
 
-        http.get<PropertyApiResponse>(`/api/hotels/property/${hotelId}?${qs.toString()}`)
-            .then((res)  => { if (!cancelled) setData(res); })
-            .catch((err) => { if (!cancelled) setError(err.message ?? 'Failed to load property'); })
-            .finally(()  => { if (!cancelled) setLoading(false); });
+        http.get<PropertyApiResponse>(`/hotels/property/${hotelId}?${qs.toString()}`)
+            .then(res  => { if (!cancelled) setData(res); })
+            .catch(err => { if (!cancelled) setError(err.message ?? t('v2.loadFailed')); })
+            .finally(()=> { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
     }, [hotelId, checkIn, checkOut, adults, children]);
 
-    const userCurrency = useUserCurrency();
     const content      = data?.content;
     const rooms        = data?.rooms ?? [];
     const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
     const reviewScore  = Number(data?.reviews?.rating ?? 0);
-    const reviewCount  = data?.reviews?.reviews_count ?? 0;
-    const selectedRoom = rooms.find((r) => r.id === selectedRoomId) ?? null;
-    const allImages    = content?.images ?? [];
-    const amenities    = (Array.isArray(content?.amenities) ? content!.amenities as string[] : []).slice(0, 5);
-    const lowestPrice  = rooms.length > 0 ? Math.min(...rooms.map((r) => r.price)) : null;
-    const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
-    const nights       = (checkIn && checkOut)
-        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
-        : null;
+    const selectedRoom = selectedOffer?.room ?? null;
+    const selectedRate = selectedOffer?.rate ?? null;
+    const heroImage     = content?.images?.[0] ?? null;
+    const allImages     = content?.images ?? [];
+    /**
+     * What the banner pages through: the hotel's own photographs, then every
+     * room shot the supplier sent.
+     *
+     * The room shots used to sit one-per-card, where a card has room for
+     * exactly one of them and no way to see the rest. Here a set of six for a
+     * single room is something you can actually look through — and the cards
+     * keep the hotel photo, which is what they were showing most of the time
+     * anyway.
+     *
+     * De-duplicated because a supplier that has one photograph tends to return
+     * it as both the hotel's and the room's.
+     */
+    const heroImages = useMemo<string[]>(() => {
+        const roomShots = rooms.flatMap(r => r.roomImages ?? []);
+        return Array.from(new Set([...allImages, ...roomShots])).filter(Boolean);
+    }, [allImages, rooms]);
+    const heroCount = heroImages.length;
+    // Clamped rather than trusted: the rooms arrive after the content does, so
+    // the set grows under an index that has already been moved.
+    const heroShown = heroImages[Math.min(heroIndex, Math.max(0, heroCount - 1))] ?? heroImage;
+    const heroLoaded = !!heroShown && loadedHeroSrc === heroShown;
+    // Whole list, not the first five: the description panel draws the row the
+    // design shows and keeps the rest behind its own "See all amenities".
+    const amenities    = content?.amenities ?? [];
 
-    const fmt = (amount: number, fromCurrency: string): string => {
-        const to    = userCurrency || 'USD';
-        const from  = (fromCurrency || 'USD').toUpperCase();
-        const known = from in EXCHANGE_RATES && to in EXCHANGE_RATES;
-        const value = known ? convertCurrency(amount, from, to) : amount;
-        const sym   = getCurrencySymbol(known ? to : from);
-        return `${sym}${Math.round(value).toLocaleString()}`;
+    const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
+
+
+    /**
+     * A supplier price, as the page shows it: converted into the guest's own currency.
+     *
+     * Already per night when it arrives — api-v2 divides the stay total before sending, which
+     * is v1's contract too. It used to divide here as well, and that was right when the wire
+     * carried the stay; doing both would quote a third of the real rate on a three-night trip.
+     */
+    const toNightly = (price: number, from: string) =>
+        convertForDisplay(price, from || 'USD', currency).amount;
+
+    /**
+     * The same figure, with the currency it is actually in.
+     *
+     * Until the rates land nothing is converted, so that is the supplier's currency — and
+     * printing the chosen currency's symbol over it would overstate a peso figure twentyfold
+     * in won. Every place that prints a price takes both halves from here.
+     */
+    const nightlyShown = (price: number, from: string) => {
+        const shown = convertForDisplay(price, from || 'USD', currency);
+        return { amount: shown.amount, currency: shown.currency };
     };
 
+    /**
+     * The cheapest night on offer, across every rate of every room — off
+     * `ratesOf`, the same list the cards are built from, so the figure in
+     * the header is one a card below it actually shows.
+     */
+    /** What `lowestPrice` is denominated in — see `nightlyShown`. */
+    const lowestPriceCurrency = rooms.length > 0
+        ? nightlyShown(0, ratesOf(rooms[0])[0]?.currency ?? 'USD').currency
+        : currency;
+
+    const lowestPrice = rooms.length > 0
+        ? Math.min(...rooms.flatMap(r => ratesOf(r).map(rate => toNightly(rate.price, rate.currency))))
+        : null;
+
     function goCheckout() {
-        if (!selectedRoom || !content) return;
+        if (!selectedRoom || !selectedRate) return;
         const p = new URLSearchParams({
             hotelId,
             roomId:     selectedRoom.id,
-            offerId:    selectedRoom.offerId ?? selectedRoom.id,
-            rateKey:    selectedRoom.offerId ?? selectedRoom.id,
-            currency:   selectedRoom.currency,
-            totalPrice: String(nights ? selectedRoom.price * nights : selectedRoom.price),
+            offerId:    selectedRate.offerId,
+            rateKey:    selectedRate.offerId,
+            ...checkoutMoney(selectedRate, currency, nights),
             roomName:   selectedRoom.name,
-            hotelName:  content.name ?? 'Hotel',
+            hotelName:  content?.name ?? 'Hotel',
         });
         if (checkIn)          p.set('checkIn',      checkIn);
         if (checkOut)         p.set('checkOut',     checkOut);
         if (adults)           p.set('adults',        String(adults));
         if (children)         p.set('children',      String(children));
-        if (content.address)  p.set('hotelAddress',  content.address);
-        if (content.city)     p.set('hotelCity',     content.city);
-        if (content.country)  p.set('hotelCountry',  content.country);
+        if (content?.address) p.set('hotelAddress',  content.address);
+        if (content?.city)    p.set('hotelCity',     content.city);
+        if (content?.country) p.set('hotelCountry',  content.country);
         if (allImages[0])     p.set('hotelImage',    allImages[0]);
         router.push(`/checkout?${p.toString()}`);
     }
 
+    /**
+     * No `fontFamily` here on purpose: the page inherits `font-sans` off the
+     * body, which is what the search page does and what makes the two read as
+     * one product.
+     *
+     * It used to name `--font-jakarta` — a *second* next/font instance of Plus
+     * Jakarta Sans that the layout loads beside `--font-plus-jakarta`, the one
+     * `font-sans` is bound to. Same family, separately hosted and separately
+     * fetched, and pinned here at a fixed weight range while the shell's is
+     * variable across 400–800. Inheriting drops the duplicate rather than
+     * matching it.
+     */
     const rootStyle: React.CSSProperties = {
         minHeight: '100vh',
-        background: HOTEL_TOKENS.BG,
-        color: HOTEL_TOKENS.TEXT,
-        fontFamily: "var(--font-jakarta), 'Plus Jakarta Sans', sans-serif",
+        background: palette.bg,
+        color: palette.text,
     };
 
     if (loading) {
         return (
             <div style={{ ...rootStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Spinner />
+                <Spinner accent={palette.hairline} />
             </div>
         );
     }
@@ -201,9 +483,12 @@ export function PropertyView() {
     if (error || !content) {
         return (
             <div style={{ ...rootStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-                <p style={{ color: 'rgba(245,239,228,.6)', textAlign: 'center' }}>{error ?? 'Property not found.'}</p>
-                <button onClick={() => router.back()} style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: HOTEL_TOKENS.ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                    Go back
+                <p style={{ color: palette.muted, textAlign: 'center' }}>{error ?? t('v2.notFound')}</p>
+                <button
+                    onClick={() => router.back()}
+                    style={{ padding: '10px 22px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
+                >
+                    {tAll('property.v2.goBack')}
                 </button>
             </div>
         );
@@ -211,114 +496,352 @@ export function PropertyView() {
 
     return (
         <div style={rootStyle}>
-            <PropertyHero
-                name={content.name ?? ''}
-                city={content.city}
-                country={content.country}
-                heroImage={allImages[0] ?? null}
-                reviewScore={reviewScore}
-                reviewCount={reviewCount}
-                saved={saved}
-                onBack={() => router.back()}
-                onSave={() => setSaved((s) => !s)}
-            />
 
-            <div style={{ maxWidth: 760, margin: '0 auto', padding: 'clamp(20px,4vw,40px)', paddingBottom: 140 }}>
-
-                {/* Price + amenity chips */}
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderBottom: '1px solid rgba(255,255,255,.1)', paddingBottom: 20, marginBottom: 24 }}>
-                    {lowestPrice !== null && (
-                        <div>
-                            <span style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>
-                                {fmt(lowestPrice, rooms[0]?.currency ?? 'USD')}
-                            </span>
-                            <span style={{ fontSize: 13, color: 'rgba(245,239,228,.5)' }}> /night</span>
-                        </div>
+            {/* ── Hero ──────────────────────────────────────────────────────── */}
+            <div style={{ position: 'relative', height: '100vh', minHeight: 320, overflow: 'hidden' }}>
+                {/* The plate every image sits on: a dark ground, and while the
+                    current src is still decoding, a slow shimmer over it so a
+                    blank banner never reads as "broken". */}
+                <div style={{ position: 'absolute', inset: 0, background: '#22383A' }}>
+                    {heroShown && !heroLoaded && (
+                        <motion.div
+                            style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.05)' }}
+                            initial={{ opacity: 0.25 }}
+                            animate={{ opacity: [0.25, 0.75, 0.25] }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        />
                     )}
-                    {amenities.length > 0 && (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {amenities.map((am) => (
-                                <div key={am} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.06)', borderRadius: 100, padding: '6px 12px', fontSize: 12, fontWeight: 600, color: HOTEL_TOKENS.TEXT }}>
-                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: HOTEL_TOKENS.ACCENT, display: 'inline-block', flexShrink: 0 }} />
-                                    {am}
-                                </div>
+                </div>
+
+                {/* One image at a time, keyed by src. The incoming photo fades up
+                    from a slight over-scale once it has decoded; the outgoing one
+                    fades and drifts a touch opposite the paging direction. The
+                    over-scale on both keeps the drift from baring the dark plate
+                    at the edge. */}
+                {heroShown && (
+                    <AnimatePresence initial={false}>
+                        <motion.img
+                            key={heroShown}
+                            src={heroShown}
+                            alt={content.name ?? ''}
+                            onLoad={() => setLoadedHeroSrc(heroShown)}
+                            initial={{ opacity: 0, scale: 1.06, x: heroDir * 18 }}
+                            animate={{ opacity: heroLoaded ? 1 : 0, scale: heroLoaded ? 1 : 1.06, x: 0 }}
+                            exit={{ opacity: 0, scale: 1.04, x: heroDir * -18 }}
+                            transition={{
+                                opacity: { duration: 0.5, ease: 'easeInOut' },
+                                scale:   { duration: 0.7, ease: 'easeOut' },
+                                x:       { duration: 0.5, ease: 'easeOut' },
+                            }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                    </AnimatePresence>
+                )}
+                {/* Deeper and reaching further up than before — the name and
+                    address below are now twice their old size, and need more
+                    of the photo's bottom darkened to stay legible over it. */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.18) 0%,rgba(10,8,14,.42) 35%,rgba(10,8,14,.96) 100%)' }} />
+
+                {/* Back. Over the photo rather than in the page below it — the
+                    banner is the first thing on screen, and a control to leave
+                    should not be something you scroll to find. */}
+                <button
+                    onClick={() => router.back()}
+                    aria-label={t('v2.goBack')}
+                    className="left-5 sm:left-8 lg:left-12"
+                    style={{
+                        position: 'absolute', top: 20, zIndex: 2,
+                        width: 44, height: 44, borderRadius: '50%',
+                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                    }}
+                >
+                    <ArrowLeft size={20} />
+                </button>
+
+                {/* Top-right controls: the currency picker, then the theme
+                    toggle — both drawn as the same 44px circle as the back
+                    button on the opposite corner. The theme toggle flips the
+                    real app-wide theme (see `propertyPalette` above): the Hero
+                    itself stays as drawn regardless, everything below it
+                    switches. */}
+                <div
+                    className="right-5 sm:right-8 lg:right-12"
+                    style={{ position: 'absolute', top: 20, zIndex: 3, display: 'flex', alignItems: 'center', gap: 10 }}
+                >
+                    <CurrencySelector
+                        align="right"
+                        iconOnly
+                        triggerClassName="h-11 w-11 md:h-11 md:w-11 backdrop-blur-md"
+                        chrome={{
+                            surface: 'rgba(20,20,20,.45)',
+                            border:  'transparent',
+                            text:    '#fff',
+                            menu:    'rgba(18,18,20,.96)',
+                            hover:   'rgba(255,255,255,.12)',
+                            shadow:  '0 24px 55px -18px rgba(0,0,0,.7)',
+                        }}
+                    />
+                    <button
+                        onClick={toggleTheme}
+                        aria-label={theme === 'dark' ? t('v2.switchToLight') : t('v2.switchToDark')}
+                        title={theme === 'dark' ? t('v2.lightMode') : t('v2.darkMode')}
+                        style={{
+                            width: 44, height: 44, borderRadius: '50%', border: 'none',
+                            background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+                    </button>
+                </div>
+
+                {/* Pagination arrows. Only once there is more than one
+                    photograph to page through — a single-image banner with
+                    arrows and a lone dot is chrome promising something it
+                    cannot do. The idle pulse is a continuous, gentle scale
+                    loop rather than a hover/press-only cue — it's the one
+                    place on the page drawing the eye to "there's more here"
+                    before any interaction at all. */}
+                {heroCount > 1 && (
+                    <>
+                        <motion.button
+                            onClick={() => { setHeroDir(-1); setHeroIndex(i => (i - 1 + heroCount) % heroCount); }}
+                            aria-label={t('v2.previousPhoto')}
+                            className="left-5 sm:left-8 lg:left-12"
+                            style={HERO_ARROW}
+                            animate={{ scale: [1, 1.12, 1] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                            <ChevronLeft size={34} strokeWidth={2.25} />
+                        </motion.button>
+                        <motion.button
+                            onClick={() => { setHeroDir(1); setHeroIndex(i => (i + 1) % heroCount); }}
+                            aria-label={t('v2.nextPhoto')}
+                            className="right-5 sm:right-8 lg:right-12"
+                            style={HERO_ARROW}
+                            animate={{ scale: [1, 1.12, 1] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.15 }}
+                        >
+                            <ChevronRight size={34} strokeWidth={2.25} />
+                        </motion.button>
+                    </>
+                )}
+
+                {/* Name + location, and the dots under them. The photo stays
+                    full-bleed; only the type over it takes the column, so the
+                    hotel's name starts on the same line as the price under it.
+                    The dots sit under the address rather than floating mid-photo,
+                    centered on the whole banner rather than the column, which is
+                    why they sit outside PageColumn. */}
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 'clamp(28px,4.5vw,52px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <PageColumn>
+                        {/* Twice the previous size on both — clamp bounds
+                            doubled, not just the fluid step between them, so
+                            the floor and ceiling grow with it too. */}
+                        <div style={{ fontWeight: 500, fontSize: 'clamp(44px,5.2vw,60px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
+                            {content.name}
+                        </div>
+                        {/* The street address, as the design has it, and only
+                            falling back to city/country when the supplier sent
+                            no address at all — the two together read as a
+                            duplicate whenever the address already names the
+                            city, which it usually does. */}
+                        <div style={{ fontSize: 28, color: 'rgba(255,255,255,.9)', marginTop: 4, textShadow: '0 2px 12px rgba(0,0,0,.45)' }}>
+                            {content.address || [content.city, content.country].filter(Boolean).join(', ')}
+                        </div>
+                    </PageColumn>
+
+                    {/* Dots — one per photograph, however many there are. */}
+                    {heroCount > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, zIndex: 2 }}>
+                            {heroImages.map((src, i) => (
+                                <button
+                                    key={src}
+                                    onClick={() => { setHeroDir(i >= heroIndex ? 1 : -1); setHeroIndex(i); }}
+                                    aria-label={`Photo ${i + 1} of ${heroCount}`}
+                                    aria-current={i === heroIndex || undefined}
+                                    style={{
+                                        width: 8, height: 8, borderRadius: '50%',
+                                        border: 'none', padding: 0, cursor: 'pointer',
+                                        background: i === heroIndex ? '#fff' : 'rgba(255,255,255,.45)',
+                                        transition: 'background .2s ease',
+                                    }}
+                                />
                             ))}
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* Description */}
-                {content.description && (
-                    <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(245,239,228,.82)', margin: '0 0 8px' }}>
-                        {content.description.slice(0, 300)}{content.description.length > 300 ? '…' : ''}
-                    </p>
-                )}
+            {/* ── Body ──────────────────────────────────────────────────────── */}
+            <PageColumn style={{ paddingTop: 'clamp(20px,4vw,40px)', paddingBottom: 96 }}>
 
-                {/* Photo gallery */}
-                {allImages.length > 1 && <PhotoGallery images={allImages} />}
+                {/* ── Description ────────────────────────────────────────────
+                    The rate, the desk's hours, what the stay comes with, and
+                    the supplier's own write-up — drawn straight onto the page
+                    ground, with no plate of its own, as the design has it.
 
-                {/* Room selection */}
-                {rooms.length > 0 && (
-                    <div id="rooms-section" style={{ margin: '0 0 36px' }}>
-                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
-                            Choose your room
-                        </div>
-                        <RoomSelector
-                            rooms={rooms}
-                            selectedRoomId={selectedRoomId}
-                            onSelect={setSelectedRoomId}
-                        />
-                    </div>
-                )}
+                    It replaces two blocks that were the same information split
+                    across the page and half-told: a price row whose chips
+                    stopped at five amenities with no way to reach the rest, and
+                    a paragraph cut at 300 characters with an ellipsis and no
+                    way to open it. Both now disclose in place.
 
-                {/* Guest reviews */}
-                <ReviewSection
-                    hotelId={hotelId}
-                    reviewScore={reviewScore}
-                    reviewCount={reviewCount}
-                    reviewItems={reviewItems}
+                    `tone={theme}` rather than a hardcoded `"dark"` — the page
+                    ground now follows the app theme (`propertyPalette`
+                    above), so the section it sits on does too. */}
+                {/* A soft handoff from the full-bleed banner into the page's
+                    own column. */}
+                <Reveal>
+                    <PropertyDescription
+                        className="mb-8"
+                        tone={theme}
+                        price={lowestPrice}
+                        currency={lowestPriceCurrency}
+                        rating={reviewScore}
+                        checkInTime={content.check_in_time ?? content.check_in}
+                        checkOutTime={content.check_out_time ?? content.check_out}
+                        amenities={amenities}
+                        amenityGroups={content.amenityGroups}
+                        description={content.description}
+                    />
+                </Reveal>
+
+                {/* ── Rooms, and what is around them ─────────────────────────
+                    One row of two columns, as the design lays it out: the rate
+                    stack on the left at roughly five parts to the map's four,
+                    stacking under it below `lg` where neither half has the
+                    width to be half of anything. */}
+                <Reveal className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1fr] lg:gap-12">
+
+                {/* ── Room selection ─────────────────────────────────────────
+                    The design's own section: a filter row over a stack of
+                    plates, each carrying a photo, the rate's features and its
+                    price. It replaces a hand-rolled list with no filters, no
+                    photo, and a rate's features shown as at most two badges.
+
+                    The photo is the hotel's own — suppliers return rates, not
+                    room photography — which is why one picture runs across the
+                    cards rather than a different one per room. The amenity list
+                    is the hotel's for the same reason, and is read only by rates
+                    that carry none of their own. */}
+                <RoomSelection
+                    id="rooms-section"
+                    className="min-w-0"
+                    tone={theme}
+                    rooms={rooms}
+                    image={heroImage}
+                    hotelAmenities={amenities}
+                    nights={nights}
+                    checkIn={checkIn}
+                    occupancy={{ adults, children }}
+                    currency={currency}
+                    propertySections={content.roomPolicySections}
+                    additionalInfo={content.additionalInfo}
+                    selectedOfferId={selectedRate?.offerId ?? null}
+                    onSelect={(offer) => setSelectedOffer(
+                        prev => prev?.rate.offerId === offer.rate.offerId ? null : offer,
+                    )}
                 />
 
-                {/* Nearby */}
+                {/* ── Nearby places ────────────────────────────────────────── */}
                 {coordinates && (
-                    <div style={{ margin: '36px 0 0' }}>
-                        <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 22, color: '#fff', marginBottom: 16 }}>
-                            Nearby
+                    <section className="min-w-0">
+                        <h2 className={SECTION_HEADING} style={{ color: palette.title }}>{t('v2.nearbyPlaces')}</h2>
+                        <div className="mt-4">
+                            <NearbySection coordinates={coordinates} palette={palette} />
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,.03)', borderRadius: 18, border: '1px solid rgba(255,255,255,.08)', padding: 16 }}>
-                            <NearbySection coordinates={coordinates} />
-                        </div>
-                    </div>
+                    </section>
                 )}
-            </div>
+                </Reveal>
 
-            {/* Fixed bottom bar */}
-            <div
-                className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-30"
-                style={{ background: 'rgba(21,17,30,.96)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,.1)', padding: '14px clamp(16px,4vw,40px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
-            >
-                <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(245,239,228,.5)', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700 }}>
-                        {selectedRoom ? 'Selected room' : 'Starting from'}
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {selectedRoom
-                            ? `${selectedRoom.name} · ${fmt(selectedRoom.price, selectedRoom.currency ?? 'USD')}/night`
-                            : lowestPrice !== null
-                                ? `${fmt(lowestPrice, rooms[0]?.currency ?? 'USD')}/night`
-                                : '—'}
-                    </div>
-                </div>
-                {selectedRoom ? (
-                    <button onClick={goCheckout} style={{ padding: '12px 22px', borderRadius: 100, border: 'none', background: HOTEL_TOKENS.ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        Continue to checkout
-                    </button>
-                ) : (
-                    <a href="#rooms-section" style={{ padding: '12px 22px', borderRadius: 100, border: '1px solid rgba(255,255,255,.2)', background: 'rgba(255,255,255,.1)', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        Check rooms ↓
-                    </a>
+                {/* ── Guest reviews ──────────────────────────────────────────── */}
+                {reviewItems.length > 0 && (
+                    <Reveal style={{ margin: '44px 0 0' }}>
+                        <h2 className={cn(SECTION_HEADING, 'mb-4')} style={{ color: palette.title }}>{t('v2.whatGuestsSay')}</h2>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                            {reviewItems.map((rev, i) => {
+                                const score = Number(rev.score ?? 0);
+                                const ri    = ratingInfo(score);
+                                const blurb = rev.pros || rev.headline || t('v2.greatStay');
+                                return (
+                                    <div
+                                        key={i}
+                                        style={{ flex: '1 1 260px', background: palette.cardBg, borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
+                                    >
+                                        {score > 0 && (
+                                            <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 17, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
+                                                {score.toFixed(1)}
+                                            </div>
+                                        )}
+                                        <p style={{ fontSize: 20, lineHeight: 1.55, color: palette.soft, margin: '0 0 12px' }}>
+                                            &ldquo;{blurb}&rdquo;
+                                        </p>
+                                        <div style={{ fontSize: 17, fontWeight: 700, color: palette.title }}>{rev.reviewer_name ?? 'Guest'}</div>
+                                        {rev.country && <div style={{ fontSize: 15, color: palette.muted }}>{rev.country}</div>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </Reveal>
                 )}
-            </div>
+            </PageColumn>
+
+            {/* ── Floating checkout ─────────────────────────────────────────────
+                Only once a room is picked — a single pill held to the corner of
+                the window, not a bar docked across it. It slides up as the
+                selection lands and drops back out when it is cleared. The
+                persistent "starting from" price the old docked bar carried is
+                already at the top of the page, in the description panel. */}
+            <AnimatePresence>
+                {selectedRoom && selectedRate && (
+                    <motion.button
+                        key="checkout-fab"
+                        onClick={goCheckout}
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 24 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="fixed right-5 bottom-20 z-40 sm:right-8 lg:right-12 lg:bottom-8"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '15px 26px', borderRadius: 100, border: 'none',
+                            background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 18,
+                            cursor: 'pointer', whiteSpace: 'nowrap',
+                            boxShadow: '0 20px 46px -12px rgba(255,107,75,.55)',
+                        }}
+                    >
+                        {tAll('landing.hero.checkOut')}
+                        <span style={{ fontWeight: 600, opacity: 0.85 }}>
+                            {(() => {
+                                const shown = nightlyShown(selectedRate.price, selectedRate.currency);
+                                return formatCurrency(shown.amount, shown.currency);
+                            })()}/night
+                        </span>
+                        <ArrowRight size={18} />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </div>
+    );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export function PropertyView() {
+    const { theme } = useTheme();
+    return (
+        <Suspense
+            fallback={
+                <div style={{ minHeight: '100vh', background: propertyPalette(theme).bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Spinner accent={propertyPalette(theme).hairline} />
+                </div>
+            }
+        >
+            <PropertyContent />
+        </Suspense>
     );
 }

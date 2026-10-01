@@ -7,6 +7,7 @@
  * Full POI functionality is a separate task.
  */
 
+import { useTranslations } from 'next-intl';
 import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Search, Star, MapPin, Loader2 } from 'lucide-react';
@@ -74,6 +75,7 @@ export function MapGemsPanel({
     activeGemName,
     onGemClick,
 }: MapGemsPanelProps) {
+    const tAll = useTranslations();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [imageStatus, setImageStatus] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
@@ -114,7 +116,7 @@ export function MapGemsPanel({
                             <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                             <div className="absolute bottom-full left-0 mb-2 w-44 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
                                 <div className="p-1.5 space-y-0.5">
-                                    <div className="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Filter</div>
+                                    <div className="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">{tAll('common.filter')}</div>
                                     {POI_FILTERS.map(f => {
                                         const active = selectedCategory === f.id;
                                         const Icon = f.icon;
@@ -189,7 +191,7 @@ export function MapGemsPanel({
 
                     {!isLoading && gems.length === 0 && (
                         <div className="flex items-center justify-center w-full min-w-[200px] h-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <span className="text-xs text-slate-400">No places found in this area</span>
+                            <span className="text-xs text-slate-400">{tAll('map.noPlacesInArea')}</span>
                         </div>
                     )}
 

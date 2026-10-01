@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect } from 'react';
 import {  AnimatePresence } from 'framer-motion';
 import { Plane, Search } from 'lucide-react';
@@ -72,6 +73,8 @@ interface FlightResultsProps {
     skeletonCount?: number;
     emptyMessage?: string;
     className?: string;
+    /** The offer whose fare is being checked with the airline right now. */
+    checkingOfferId?: string | null;
 }
 
 export function FlightResults({
@@ -83,7 +86,9 @@ export function FlightResults({
     skeletonCount = 5,
     emptyMessage,
     className,
+    checkingOfferId = null,
 }: FlightResultsProps) {
+    const tAll = useTranslations();
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [isAutoLoading, setIsAutoLoading] = useState(false);
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -127,8 +132,8 @@ export function FlightResults({
                         <div className="absolute inset-0 w-8 h-8 lg:w-12 lg:h-12 border-2 lg:border-[3px] border-indigo-500 border-t-transparent rounded-full animate-spin" />
                     </div>
                     <div>
-                        <p className="text-[10px] lg:text-sm font-medium text-slate-700 dark:text-slate-200">Finding the best fares&hellip;</p>
-                        <p className="text-[9px] lg:text-xs text-slate-400 dark:text-slate-500">Checking multiple providers</p>
+                        <p className="text-[10px] lg:text-sm font-medium text-slate-700 dark:text-slate-200">{tAll('flights.results.findingFares')}</p>
+                        <p className="text-[9px] lg:text-xs text-slate-400 dark:text-slate-500">{tAll('flights.results.checkingProviders')}</p>
                     </div>
                 </div>
 
@@ -150,7 +155,7 @@ export function FlightResults({
                     </svg>
                 </div>
                 <div className="text-center">
-                    <h3 className="text-xs lg:text-lg font-semibold text-slate-800 dark:text-slate-200">Search Error</h3>
+                    <h3 className="text-xs lg:text-lg font-semibold text-slate-800 dark:text-slate-200">{tAll('flights.results.searchError')}</h3>
                     <p className="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm">{error}</p>
                 </div>
                 {onRetry && (
@@ -158,7 +163,7 @@ export function FlightResults({
                         onClick={onRetry}
                         className="mt-1 px-4 lg:px-6 py-1.5 lg:py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-[10px] lg:text-sm transition-colors"
                     >
-                        Try Again
+                        {tAll('flights.results.tryAgain')}
                     </button>
                 )}
             </div>
@@ -173,7 +178,7 @@ export function FlightResults({
                     <Search className="w-4.5 h-4.5 lg:w-7 lg:h-7 text-slate-400 dark:text-slate-500" />
                 </div>
                 <div className="text-center">
-                    <h3 className="text-xs lg:text-lg font-semibold text-slate-700 dark:text-slate-300">No flights found</h3>
+                    <h3 className="text-xs lg:text-lg font-semibold text-slate-700 dark:text-slate-300">{tAll('flights.results.noFlights')}</h3>
                     <p className="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm">{emptyMessage ?? 'Try adjusting your search dates or nearby airports.'}</p>
                 </div>
             </div>
@@ -190,6 +195,7 @@ export function FlightResults({
                         offer={offer}
                         index={idx}
                         onSelect={onSelect}
+                        checkingPrice={checkingOfferId === offer.offerId}
                     />
                 ))}
             </AnimatePresence>

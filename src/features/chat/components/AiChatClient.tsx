@@ -1,6 +1,8 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { Send, Sparkles, Loader2, Plus, Globe, PanelLeftClose, PanelLeft, Home, MessageSquare } from 'lucide-react';
@@ -26,19 +28,15 @@ const LANGUAGES = [
     { code: 'en',  label: 'English' },
     { code: 'tl',  label: 'Tagalog' },
     { code: 'ceb', label: 'Cebuano' },
-    { code: 'ilo', label: 'Ilocano' },
-    { code: 'es',  label: 'Spanish' },
-    { code: 'ja',  label: 'Japanese' },
-    { code: 'ko',  label: 'Korean' },
-    { code: 'zh',  label: 'Chinese' },
+    { code: 'ilo', label: 'Ilokano' },
+    { code: 'es',  label: 'Español' },
+    { code: 'ja',  label: '日本語' },
+    { code: 'ko',  label: '한국어' },
+    { code: 'zh',  label: '中文' },
 ] as const;
 
-const SUGGESTIONS = [
-    'Find me cheap flights to Tokyo next month',
-    'What hotels are available in Bali for 2 adults?',
-    'Plan a 5-day trip to Paris on a budget',
-    "What's the cheapest day to fly to NYC?",
-];
+/** The four starter prompts, by key — the text itself is read in the language being served. */
+const SUGGESTIONS = ['1', '2', '3', '4'] as const;
 
 function newConversationId() {
     return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -75,6 +73,7 @@ function groupByDate(convos: Conversation[]) {
 }
 
 export function AiChatClient() {
+    const tAll = useTranslations();
     const searchParams = useSearchParams();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -211,7 +210,7 @@ export function AiChatClient() {
                         <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shadow-blue-600/30">
                             <Sparkles size={13} className="text-white" />
                         </div>
-                        <span className="font-bold text-sm text-slate-900 dark:text-white">CheapestGo AI</span>
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">{BRAND_NAME} AI</span>
                     </div>
 
                     {/* New chat */}
@@ -220,7 +219,7 @@ export function AiChatClient() {
                         className="flex items-center gap-2 w-full px-3 h-9 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors mb-3"
                     >
                         <Plus size={15} />
-                        New chat
+                        {tAll('ai.newChat')}
                     </button>
 
                     {/* Conversation history */}
@@ -279,14 +278,14 @@ export function AiChatClient() {
                             className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-sm"
                         >
                             <Plus size={15} />
-                            New chat
+                            {tAll('ai.newChat')}
                         </button>
                     )}
                     <div className="flex-1" />
                     <Link
                         href="/"
                         className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                        title="Go to home"
+                        title={tAll('ai.goHome')}
                     >
                         <Home size={18} />
                     </Link>
@@ -297,11 +296,11 @@ export function AiChatClient() {
                     {empty ? (
                         <div className="flex flex-col items-center justify-center h-full gap-8 px-4 text-center">
                             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-                                What&apos;s on the agenda today?
+                                {tAll('ai.greeting')}
                             </h1>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
-                                {SUGGESTIONS.map(s => (
+                                {SUGGESTIONS.map(n => tAll(`ai.suggestions.${n}`)).map(s => (
                                     <button
                                         key={s}
                                         onClick={() => send(s)}
@@ -358,7 +357,7 @@ export function AiChatClient() {
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask anything..."
+                            placeholder={tAll('ai.askAnything')}
                             rows={1}
                             className="flex-1 resize-none bg-transparent text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none max-h-40"
                             onInput={e => {
@@ -375,7 +374,7 @@ export function AiChatClient() {
                             <Send size={14} className="text-white" />
                         </button>
                     </div>
-                    <p className="text-center text-[10px] text-slate-400 mt-2">Enter to send · Shift+Enter for new line</p>
+                    <p className="text-center text-[10px] text-slate-400 mt-2">{tAll('ai.sendHint')}</p>
                 </div>
             </div>
         </div>

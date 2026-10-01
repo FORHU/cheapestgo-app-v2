@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import { BRAND_NAME } from '@/shared/lib/brand';
 import { Suspense } from 'react';
 import { FlightSearchClient } from './flight-search-client';
 import { Header } from '@/shared/components/header';
@@ -14,13 +16,15 @@ export async function generateMetadata({
     const origin = (sp.origin as string) ?? '';
     const destination = (sp.destination as string) ?? '';
 
+    const t = await getTranslations('flights.meta');
+
     const title = origin && destination
-        ? `Flights ${origin} → ${destination} | CheapestGo`
-        : 'Flight Search Results | CheapestGo';
+        ? t('titleRoute', { origin, destination })
+        : t('title');
 
     const description = origin && destination
-        ? `Compare and book the cheapest flights from ${origin} to ${destination}. Find the best deals on CheapestGo.`
-        : 'Compare and book cheap flights worldwide. Find the best deals on CheapestGo.';
+        ? t('descriptionRoute', { origin, destination, brand: BRAND_NAME })
+        : t('description', { brand: BRAND_NAME });
 
     return {
         title,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { ChevronDown } from 'lucide-react';
@@ -39,6 +40,7 @@ export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }
      */
     iconOnly?: boolean;
 } = {}) {
+    const tAll = useTranslations();
     const tone = SELECTOR_TONES[variant];
     const [mounted, setMounted] = useState(false);
     const [open, setOpen] = useState(false);
@@ -125,7 +127,7 @@ export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
                         role="listbox"
-                        aria-label="Language"
+                        aria-label={tAll('common.language')}
                         className={cn(
                             "absolute right-0 top-full mt-1.5 min-w-[124px] overflow-hidden z-[1001]",
                             chrome ? "rounded-2xl" : cn(tone.menu, tone.divider)

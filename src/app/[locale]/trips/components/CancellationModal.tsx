@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { X, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ export function CancellationModal({
     currency,
     onSuccess,
 }: CancellationModalProps) {
+    const tAll = useTranslations();
     const [step, setStep] = useState<1 | 2>(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -122,12 +124,12 @@ export function CancellationModal({
                         <div className="flex gap-3 p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl">
                             <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={18} />
                             <div className="space-y-1">
-                                <h4 className="text-sm font-semibold text-rose-700 dark:text-rose-400">Unable to Proceed</h4>
+                                <h4 className="text-sm font-semibold text-rose-700 dark:text-rose-400">{tAll('trips.cancellationModal.unableTitle')}</h4>
                                 <p className="text-xs text-rose-600 dark:text-rose-300 leading-relaxed">{error}</p>
                             </div>
                         </div>
                         <Button onClick={onClose} className="w-full">
-                            Close
+                            {tAll('trips.cancellationModal.close')}
                         </Button>
                     </div>
                 )}
@@ -147,14 +149,14 @@ export function CancellationModal({
 
                         <div className="flex gap-3 pt-2">
                             <Button variant="outline" onClick={onClose} className="flex-1">
-                                Keep Booking
+                                {tAll('trips.cancellationModal.keepBooking')}
                             </Button>
                             <Button 
                                 variant="destructive" 
                                 onClick={() => setStep(2)}
                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                             >
-                                Continue
+                                {tAll('checkout.continue')}
                             </Button>
                         </div>
                     </div>
@@ -165,24 +167,24 @@ export function CancellationModal({
                         <div className="flex gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 rounded-2xl text-amber-800 dark:text-amber-400">
                             <AlertTriangle className="shrink-0 mt-0.5" size={18} />
                             <p className="text-xs leading-relaxed">
-                                <strong>Important:</strong> Cancellation requests cannot be undone. Once submitted, the airline will release your seats and begin the refund process.
+                                <strong>{tAll('trips.cancellationModal.important')}</strong> Cancellation requests cannot be undone. Once submitted, the airline will release your seats and begin the refund process.
                             </p>
                         </div>
 
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Are you absolutely sure you want to cancel this booking?
+                            {tAll('trips.cancellationModal.confirmQuestion')}
                         </p>
 
                         <div className="flex gap-3 pt-2">
                             <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                                Back
+                                {tAll('checkout.back')}
                             </Button>
                             <Button 
                                 variant="destructive" 
                                 onClick={handleConfirmCancel}
                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                             >
-                                Confirm Cancellation
+                                {tAll('trips.cancellationModal.confirm')}
                             </Button>
                         </div>
                     </div>

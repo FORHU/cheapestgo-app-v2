@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import type { MapRef } from 'react-map-gl/mapbox';
 
 import React, { useEffect, useState } from 'react';
@@ -73,6 +74,7 @@ const MapPopup = React.memo(function MapPopup({
     mapRef,
     isCentered = false
 }: MapPopupProps) {
+    const tAll = useTranslations();
     const isLandscape = useIsLandscapeMobile();
     const targetCurrency = useUserCurrency();
     const sourceCurrency = property.currency || 'USD';
@@ -161,13 +163,13 @@ const MapPopup = React.memo(function MapPopup({
                         <span className={`font-bold text-blue-600 dark:text-blue-400 ${isLandscape ? 'text-xs' : 'text-[13px]'}`}>
                             {formatCurrency(displayPrice, targetCurrency)}
                         </span>
-                        <span className="text-[8px] text-slate-400 ml-0.5">/night</span>
+                        <span className="text-[8px] text-slate-400 ml-0.5">{tAll('hotels.perNight')}</span>
                     </div>
                     <button
                         onClick={() => onViewDetails(property.id)}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap text-[9px] px-2 py-1"
                     >
-                        View Deal
+                        {tAll('map.viewDeal')}
                     </button>
                 </div>
             </div>

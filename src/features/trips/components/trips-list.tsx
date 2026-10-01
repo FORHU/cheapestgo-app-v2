@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
@@ -39,6 +40,7 @@ const TABS: { id: TabValue; label: string; icon: React.ReactNode }[] = [
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyState({ tab }: { tab: TabValue }) {
+    const tAll = useTranslations();
     const msg = tab === 'hotels' ? 'No hotel bookings yet' : tab === 'flights' ? 'No flight bookings yet' : 'No trips yet';
     return (
         <div className="flex flex-col items-center text-center py-20 px-4">
@@ -47,13 +49,13 @@ function EmptyState({ tab }: { tab: TabValue }) {
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{msg}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                Ready to explore? Find flights and hotels at the best prices.
+                {tAll('trips.emptyHint')}
             </p>
             <Link
                 href="/"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
             >
-                Explore destinations
+                {tAll('trips.exploreDestinations')}
                 <ArrowRight size={14} />
             </Link>
         </div>

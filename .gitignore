@@ -1,5 +1,7 @@
 node_modules/
 .next/
+# Brand-switched dev runs get their own build dir — see distDir in next.config.ts.
+.next-*/
 out/
 dist/
 .env

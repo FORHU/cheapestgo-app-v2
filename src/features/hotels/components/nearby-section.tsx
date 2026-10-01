@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { Marker } from 'react-map-gl/mapbox';
 import { Map } from '@/shared/components/ui/map';
@@ -36,6 +37,7 @@ function formatCategory(cat: string) {
 }
 
 export function NearbySection({ coordinates }: NearbySectionProps) {
+    const tAll = useTranslations();
     const [category, setCategory] = useState<PoiCategory>('all');
     const [activeId, setActiveId] = useState<string | null>(null);
     const { gems, loading } = useNearbyGems({ coordinates, category, radiusMeters: 2000 });
@@ -85,10 +87,10 @@ export function NearbySection({ coordinates }: NearbySectionProps) {
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {loading && topGems.length === 0 && (
-                        <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 13 }}>Loading nearby places…</p>
+                        <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 13 }}>{tAll('property.v2.loadingNearby')}</p>
                     )}
                     {!loading && topGems.length === 0 && (
-                        <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 13 }}>No places found nearby.</p>
+                        <p style={{ color: 'rgba(245,239,228,.3)', fontSize: 13 }}>{tAll('hotels.nearby.none')}</p>
                     )}
                     {topGems.map((gem, i) => {
                         const dist     = haversine(coordinates.lat, coordinates.lng, gem.coordinates.lat, gem.coordinates.lng);

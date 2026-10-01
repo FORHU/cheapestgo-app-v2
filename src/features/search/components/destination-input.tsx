@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { MapPin, History, Plane, Building2, Globe, X, Hotel } from 'lucide-react';
@@ -48,6 +49,7 @@ interface TrendingDestination {
 }
 
 export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: DestinationInputProps) {
+    const tAll = useTranslations();
     const router = useRouter();
     const ref = useRef<HTMLDivElement>(null);
     const [localQuery, setLocalQuery] = useState('');
@@ -144,7 +146,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                     {/* Search input inside the dropdown */}
                     <div className="p-4 border-b border-slate-100 dark:border-white/5">
                         <span className="text-[9px] text-slate-500 font-mono font-medium uppercase tracking-wider block mb-1">
-                            Where to?
+                            {tAll('search.results.whereTo')}
                         </span>
                         <div className="flex items-center gap-2">
                             <MapPin className="text-slate-400 shrink-0" size={18} />
@@ -154,7 +156,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                                 value={activeQuery}
                                 onChange={(e) => handleQueryChange(e.target.value)}
                                 onFocus={(e) => e.target.select()}
-                                placeholder="Search destinations..."
+                                placeholder={tAll('landing.search.searchDestinationsPlaceholder')}
                                 className="bg-transparent border-none p-0 text-[13px] font-bold focus:ring-0 outline-none w-full text-slate-900 dark:text-white placeholder:font-normal placeholder:text-slate-400"
                             />
                             {isFetching && (
@@ -180,7 +182,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                         {!activeQuery && recentSearches.length > 0 && (
                             <>
                                 <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">
-                                    Recent
+                                    {tAll('search.recent')}
                                 </div>
                                 {recentSearches.map((item, i) => (
                                     <div
@@ -214,7 +216,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                         {!activeQuery && !isFlightField && trendingData && trendingData.length > 0 && (
                             <div className="px-4 pb-3 pt-1">
                                 <div className="px-2 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">
-                                    Trending right now
+                                    {tAll('search.trending')}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-1">
                                     {trendingData.map((item, i) => (
@@ -247,7 +249,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                         {/* Autocomplete results */}
                         {activeQuery && suggestions.length === 0 && !isFetching && (
                             <div className="px-6 py-4 text-center text-slate-400 text-sm">
-                                No results found
+                                {tAll('landing.search.noResults')}
                             </div>
                         )}
                         {activeQuery && suggestions.length > 0 && (() => {
@@ -317,19 +319,19 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
                                 <>
                                     {countries.length > 0 && (
                                         <>
-                                            <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">Countries</div>
+                                            <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">{tAll('landing.search.countries')}</div>
                                             {countries.map(renderDestItem)}
                                         </>
                                     )}
                                     {cities.length > 0 && (
                                         <>
-                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', countries.length > 0 && 'mt-1')}>Cities</div>
+                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', countries.length > 0 && 'mt-1')}>{tAll('landing.search.cities')}</div>
                                             {cities.map(renderDestItem)}
                                         </>
                                     )}
                                     {hotels.length > 0 && (
                                         <>
-                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', (countries.length > 0 || cities.length > 0) && 'mt-1')}>Hotels</div>
+                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', (countries.length > 0 || cities.length > 0) && 'mt-1')}>{tAll('search.hotels')}</div>
                                             {hotels.map(renderHotelItem)}
                                         </>
                                     )}

@@ -15,6 +15,40 @@ _Avoid_: "UI Migration" — the port is not a UI migration. _Avoid_: judging a s
 Every visitor-facing page lives under `app/[locale]`, so the language is part of the URL: `/ko/property/123`. English is unprefixed. The locale is never read from a cookie — a cookie that outranked the prefix would make a link someone shares render in the recipient's language rather than the sender's. `/admin` sits outside the segment: it is staff-facing and English-only.
 _Avoid_: `next/link` and `next/navigation` for `Link`, `useRouter`, `usePathname` or `redirect` — those come from `@/i18n/navigation` and carry the prefix. `useSearchParams`, `useParams` and `notFound` are not locale-aware and stay on `next/navigation`.
 
+## Stay Total
+What the supplier quotes: the price of the **whole stay**, however many nights that is. The only
+figure a supplier states and the only one a booking is made against.
+_Avoid_: printing it beside "/ night" — a three-night stay then advertises at three times its
+rate, which is what happened on the search card and the deals row on 2026-09-25.
+
+## Nightly Rate
+The **Stay Total** divided by the nights in the stay — what every price surface in the storefront
+shows, because that is how travellers compare places to sleep. Divided **server-side**, so no
+screen can forget and none can do it twice.
+_Avoid_: dividing again in a component; the wire already carries this. _Avoid_: sending it to
+checkout as though it were the stay — a summary prices a stay, so it is multiplied back up there.
+
+## Display Currency
+What a price is *shown* in across the storefront — the one the viewer picked, and the one every
+screen from search to the payment button must agree on. The picker offers only currencies that
+can actually be charged, so the currency on screen is always one Stripe can bill.
+_Avoid_: computing a price from it in the browser — api-v2 converts its own recorded quote, and
+two independent conversions drift apart into a price-changed prompt. What the browser converts
+is a placeholder to fill the gap before the server answers, never a figure anyone pays.
+
+## Supplier Currency
+What the provider (OTV/TGX, Duffel) quoted. Authoritative for the *price* and the basis api-v2
+charges from — and invisible to the customer, who never chose it.
+_Avoid_: carrying it into checkout as though it were the **Charge Currency**. A room advertised
+at ₩69,680 a night opened a checkout quoting PHP on 2026-09-25, because the link to it named the
+supplier's currency: the same money, with nothing on screen to say why it had changed.
+
+## Charge Currency
+What Stripe bills, which is the customer's **Display Currency**. One booking has exactly one,
+and a refund is issued in it so the customer sees no FX drift.
+_Avoid_: reading it off the rate table — holding a rate for a currency does not make it
+chargeable.
+
 ## Functional Parity
 The bar the Feature Port is held to: every capability V1 has, V2 has, behaving the same way. It is parity of behaviour and API surface, not of appearance. V2-unique AI features (ChatWonder, Voice Layer) remain Phase 2 and are outside it.
 _Avoid_: treating parity as finished because the endpoint exists — it is parity of behaviour, and an endpoint that is a version behind is not at parity.

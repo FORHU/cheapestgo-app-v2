@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { Link } from '@/i18n/navigation';
 import { usePathname } from '@/i18n/navigation';
@@ -52,6 +53,7 @@ const navItems = [
 ] as const;
 
 export const MobileBottomNav = () => {
+    const tAll = useTranslations();
     const pathname = usePathname();
     const skin = NAV_SKIN[useChromeTone()];
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
@@ -69,7 +71,7 @@ export const MobileBottomNav = () => {
         <>
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
                 <nav
-                    aria-label="Primary"
+                    aria-label={tAll('common.primary')}
                     className="flex items-stretch rounded-full"
                     style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow }}
                 >
@@ -132,8 +134,8 @@ export const MobileBottomNav = () => {
                         <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed bottom-0 left-0 right-0 z-[102] bg-white dark:bg-slate-900 rounded-t-[24px] shadow-2xl lg:hidden max-h-[85vh] overflow-hidden flex flex-col">
                             <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto my-3 shrink-0" />
                             <div className="flex items-center justify-between px-6 py-2 border-b border-slate-100 dark:border-slate-800">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Settings</h2>
-                                <button onClick={() => setIsSheetOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Close settings">
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{tAll('common.settings')}</h2>
+                                <button onClick={() => setIsSheetOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label={tAll('common.closeSettings')}>
                                     <X size={20} className="text-slate-500" />
                                 </button>
                             </div>

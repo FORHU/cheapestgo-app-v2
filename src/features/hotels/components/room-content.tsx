@@ -24,7 +24,7 @@ function iconFor(key?: IconId): LucideIcon {
     return (key && SECTION_ICONS[key]) || Check;
 }
 
-interface PaletteLike {
+export interface PaletteLike {
     feature: string;
     columnHeading?: string;
     empty?: string;

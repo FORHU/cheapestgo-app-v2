@@ -100,7 +100,7 @@ function useHotelContent(hotelId: string | null) {
         if (!hotelId) return;
 
         let cancelled = false;
-        http.get<PropertyResponse>(`/api/hotels/property/${hotelId}`)
+        http.get<PropertyResponse>(`/hotels/property/${hotelId}`)
             .then((res) => {
                 if (cancelled) return;
                 if (res.content) setContent(res.content);

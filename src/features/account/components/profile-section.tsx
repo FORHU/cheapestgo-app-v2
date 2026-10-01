@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { User, Mail, KeyRound, CheckCircle, Loader2 } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
 
 export function ProfileSection() {
+    const tAll = useTranslations();
     const { user } = useAuthStore();
     const [resetSent, setResetSent] = useState(false);
     const [resetLoading, setResetLoading] = useState(false);
@@ -33,8 +35,8 @@ export function ProfileSection() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Profile</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Your personal account information.</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('account.profile.title')}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{tAll('account.profile.subtitle')}</p>
             </div>
 
             {/* Avatar + Name */}
@@ -47,7 +49,7 @@ export function ProfileSection() {
                     <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
                     {user.role === 'admin' && (
                         <span className="inline-flex items-center mt-1 px-2 py-0.5 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full uppercase tracking-wide">
-                            Admin
+                            {tAll('account.profile.admin')}
                         </span>
                     )}
                 </div>
@@ -57,7 +59,7 @@ export function ProfileSection() {
             <div className="space-y-3">
                 <div>
                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                        Email address
+                        {tAll('auth.signIn.emailLabel')}
                     </label>
                     <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-900 dark:text-white">
                         <Mail size={14} className="text-slate-400 shrink-0" />
@@ -69,7 +71,7 @@ export function ProfileSection() {
                 {(user.first_name || user.last_name) && (
                     <div>
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                            Display name
+                            {tAll('account.profile.displayName')}
                         </label>
                         <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-900 dark:text-white">
                             <User size={14} className="text-slate-400 shrink-0" />
@@ -81,7 +83,7 @@ export function ProfileSection() {
 
             {/* Change Password */}
             <div className="pt-2 border-t border-slate-200 dark:border-white/5">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Password</h3>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{tAll('account.profile.password')}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
                     We&apos;ll send a password reset link to your email.
                 </p>

@@ -2,19 +2,33 @@
 
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ArrowLeft, Check, Download, Calendar, MapPin, Users, CreditCard, Lock, ChevronDown, User, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Check, Download, Calendar, MapPin, Users, CreditCard, Lock } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { env } from '@/shared/lib/env';
-import { buildConfirmGuests, formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
+import type { GuestInfo, PassengerInfo } from '@/features/checkout/components/guest-form';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+/** The server's figures for a hotel checkout — see api-v2 `preBook`. */
+interface HotelDisplay {
+    currency:     string;
+    subtotal:     number;
+    taxes:        number;
+    total:        number;
+    serviceFee:   number;
+    chargedTotal: number;
+    converted:    boolean;
+}
+
 function getStripe() {
     if (!stripePromise) {
         stripePromise = loadStripe(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -323,11 +337,18 @@ function PhoneField({
 
 // ─── Step progress bar ────────────────────────────────────────────────────────
 
-const STEP_LABELS = ['Details', 'Payment', 'Verification'] as const;
+// The label is a key rather than a word: this array is module scope, and a hook cannot run
+// here. ProgressBar resolves it.
+const STEPS = [
+    { key: 'form',      labelKey: 'steps.details',   num: 1 },
+    { key: 'payment',   labelKey: 'steps.payment',   num: 2 },
+    { key: 'confirmed', labelKey: 'steps.confirmed', num: 3 },
+] as const;
 
 type Step = 'form' | 'payment' | 'confirmed';
 
-function ProgressBar({ step, palette }: { step: Step; palette: Palette }) {
+function ProgressBar({ step }: { step: Step }) {
+    const t = useTranslations('checkout');
     const idx = { form: 0, payment: 1, confirmed: 2 }[step];
     return (
         <div style={{ display: 'flex', alignItems: 'flex-start' }}>
@@ -346,12 +367,10 @@ function ProgressBar({ step, palette }: { step: Step; palette: Palette }) {
                             }}>
                                 {done ? <Check size={15} strokeWidth={3} /> : i + 1}
                             </div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: i <= idx ? palette.title : palette.muted }}>
-                                {label}
-                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: i <= idx ? TEXT : 'rgba(245,239,228,.4)' }}>{t(s.labelKey)}</div>
                         </div>
-                        {i < STEP_LABELS.length - 1 && (
-                            <div style={{ width: 44, height: 2, marginTop: 16, background: i < idx ? ACCENT : palette.hairline }} />
+                        {i < STEPS.length - 1 && (
+                            <div style={{ flex: 1, height: 2, background: i < idx ? ACCENT : 'rgba(255,255,255,.12)', marginBottom: 18, marginLeft: 4, marginRight: 4 }} />
                         )}
                     </div>
                 );
@@ -373,7 +392,8 @@ function StripePaymentForm({
     setSubmitting: (v: boolean) => void;
     palette:   Palette;
 }) {
-    const stripe   = useStripe();
+    const t = useTranslations('checkout');
+    const stripe = useStripe();
     const elements = useElements();
 
     const handlePay = useCallback(async () => {
@@ -401,11 +421,11 @@ function StripePaymentForm({
         <>
             <div style={{ background: palette.fieldBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 18, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: palette.title, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <CreditCard size={16} color={ACCENT} /> Payment details
+                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <CreditCard size={16} color={ACCENT} /> {t('paymentDetails')}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: palette.muted, fontWeight: 600 }}>
-                        <Lock size={10} /> Secured by Stripe
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(245,239,228,.5)', fontWeight: 600 }}>
+                        <Lock size={10} /> {t('securedByStripe')}
                     </div>
                 </div>
                 <PaymentElement options={{ layout: 'accordion' }} />
@@ -446,6 +466,8 @@ function ConfirmedScreen({
     onHome:       () => void;
     onTrips:      () => void;
 }) {
+    const tAll = useTranslations();
+    const t = useTranslations('checkout');
     const fmtDate = (d: string) => d
         ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
         : '';
@@ -475,24 +497,24 @@ function ConfirmedScreen({
                     onClick={onHome}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: palette.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
                 >
-                    <ArrowLeft size={15} /> Home
+                    <ArrowLeft size={15} /> {tAll('property.breadcrumbHome')}
                 </button>
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '32px 0 24px' }}>
                     <div style={{ width: 100, height: 100, borderRadius: '50%', background: GREEN, border: '3px dashed rgba(255,255,255,.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', animation: 'fsStamp .6s ease', flexShrink: 0 }}>
                         <Check size={24} strokeWidth={3} />
-                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>BOOKED</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>{t('booked')}</div>
                     </div>
-                    <div style={{ fontWeight: 800, fontSize: 28, color: palette.title, marginTop: 20 }}>
-                        You&rsquo;re all set!
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: '#fff', marginTop: 20 }}>
+                        {t('allSet')}
                     </div>
-                    <div style={{ fontSize: 13, color: palette.muted, marginTop: 6 }}>
-                        Your booking is confirmed. A receipt has been sent to {guestEmail}.
+                    <div style={{ fontSize: 13, color: 'rgba(245,239,228,.55)', marginTop: 6 }}>
+                        {t('receiptSent', { email: guestEmail })}
                     </div>
                 </div>
 
                 <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>Booking Reference</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
                     <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
                 </div>
 
@@ -516,54 +538,54 @@ function ConfirmedScreen({
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginBottom: 24 }}>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>Check-in</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkIn)}
                                 </div>
                                 <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkIn)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>Check-out</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkOut)}
                                 </div>
                                 <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkOut)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>Guest</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Users size={13} color={ACCENT} />
                                     {guestName}
                                 </div>
-                                <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{adults} guest{adults !== 1 ? 's' : ''}</div>
+                                <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>Room</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, lineHeight: 1.3 }}>{roomName || 'Standard Room'}</div>
-                                {nights && <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{nights} night{nights !== 1 ? 's' : ''}</div>}
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
+                                {nights && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
                             </div>
                         </div>
 
                         <div style={{ height: 1, background: palette.hairline, margin: '0 0 20px' }} />
 
                         <div style={{ marginBottom: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 12 }}>Price breakdown</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
                             {nights && nightlyPrice > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
-                                    <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
+                                    <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {(nightlyPrice * nights).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                 </div>
                             )}
                             {fee > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
-                                    <span>Service fee</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
+                                    <span>{t('serviceFee')}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: palette.title, paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
-                                <span>Total paid</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#fff', paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
+                                <span>{t('totalPaid')}</span>
                                 <span style={{ color: GREEN }}>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                             </div>
                         </div>
@@ -575,20 +597,20 @@ function ConfirmedScreen({
                         onClick={() => window.print()}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 100, border: `1.5px solid ${palette.summaryBorder}`, background: palette.fieldBg, color: palette.title, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
-                        <Download size={15} /> Download receipt
+                        <Download size={15} /> {tAll('checkout.success.downloadReceipt')}
                     </button>
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button
                             onClick={onHome}
                             style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
                         >
-                            Plan another trip
+                            {t('planAnotherTrip')}
                         </button>
                         <button
                             onClick={onTrips}
                             style={{ padding: '12px 24px', borderRadius: 100, border: `1.5px solid ${palette.summaryBorder}`, background: 'transparent', color: palette.title, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
                         >
-                            View my trips
+                            {t('success.viewMyTrips')}
                         </button>
                     </div>
                 </div>
@@ -600,6 +622,10 @@ function ConfirmedScreen({
 // ─── Checkout inner ───────────────────────────────────────────────────────────
 
 function CheckoutContent() {
+    const tAll = useTranslations();
+    const t            = useTranslations('checkout');
+    // The footer's namespace, for the two link labels in the consent line below.
+    const tRoot        = useTranslations();
     const searchParams = useSearchParams();
     const router       = useRouter();
     const { user }     = useAuthStore();
@@ -635,9 +661,7 @@ function CheckoutContent() {
     const cabin          = searchParams.get('cabin')          ?? undefined;
 
     // ── Date helpers ──
-    const nights = (checkIn && checkOut)
-        ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000))
-        : null;
+    const nights = nightsBetween(checkIn, checkOut);
     const fmtDate = (d: string) => d
         ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : '';
@@ -649,7 +673,19 @@ function CheckoutContent() {
 
     // Booking state
     const [prebookId, setPrebookId]         = useState<string | null>(null);
+    /** The board the rate was quoted with. Snapshotted on the booking so the voucher can
+     *  state the meal plan that was bought rather than the property's current one. */
+    const [board, setBoard]                 = useState<string | undefined>(undefined);
+    /**
+     * What the customer is shown, as the server worked it out — room total, service fee and
+     * the total they pay, in their own currency. This page used to add a hardcoded 6% itself
+     * while the server charged 5.9%, so the figure on the Pay button was never the one
+     * billed. Null until prebook answers.
+     */
+    const [display, setDisplay] = useState<HotelDisplay | null>(null);
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
+    /** The booking session `/flights/book` opened, which `/flights/confirm` settles. */
+    const [flightSessionId, setFlightSessionId] = useState<string>('');
     const [bookingId, setBookingId]         = useState<string | null>(null);
 
     // Hotel guest form — passenger 1 is the booking holder
@@ -693,7 +729,31 @@ function CheckoutContent() {
         setPassengerErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
     }, []);
 
-    // ── Hotel step 1: guest → prebook → payment intent ──
+    /**
+     * Prebook as soon as the page opens, so the summary shows the server's figures before the
+     * customer types anything. A quote is a valuation, not a reservation (ADR-0021), so
+     * asking for one on arrival costs nothing at the supplier — and a room that has gone
+     * is better learned now than after the form is filled in.
+     */
+    const runPrebook = useCallback(async () => {
+        const pbRes = await http.post<{ success: boolean; data: { prebookId: string; display?: HotelDisplay; boardCode?: string } }>(
+            '/api/hotels/prebook',
+            { offerId: rateKey, roomName, adults, children, currency },
+        );
+        setPrebookId(pbRes.data.prebookId);
+        if (pbRes.data.boardCode) setBoard(pbRes.data.boardCode);
+        setDisplay(pbRes.data.display ?? null);
+        return pbRes.data;
+    }, [rateKey, roomName, adults, children, currency]);
+
+    useEffect(() => {
+        if (mode !== 'hotel' || !rateKey) return;
+        runPrebook().catch((err) => {
+            setErrorMsg(err instanceof Error ? err.message : 'This room is no longer available.');
+        });
+    }, [mode, rateKey, runPrebook]);
+
+    // ── Hotel step 1: guest → payment intent ──
     const handleHotelSubmitForm = useCallback(async () => {
         const gErr = validateGuest(guest);
         const cErr = validateCoGuests(coGuests);
@@ -710,42 +770,68 @@ function CheckoutContent() {
 
         setSubmitting(true); setErrorMsg(null);
         try {
-            // Step 1: Prebook — validate the offer and get a confirmed book token
-            const pbRes = await http.post<{ success: boolean; data: { prebookId: string; price?: number } }>(
-                '/api/hotels/prebook',
-                { offerId: rateKey, roomName, adults, children, currency }
-            );
-            const prebook = pbRes.data;
-            setPrebookId(prebook.prebookId);
+            // The quote may have lapsed while the form was being filled in, or never arrived.
+            const quoted = prebookId && display ? { prebookId, display } : await runPrebook();
+            const shown = quoted.display;
+            if (!shown) {
+                setErrorMsg('We could not confirm the price in your currency just now. Please try again in a moment.');
+                return;
+            }
 
-            // Step 2: Create Stripe payment intent
-            const payRes = await http.post<{ success: boolean; data: { clientSecret: string; paymentIntentId: string } }>(
+            const payRes = await http.post<{ success: boolean; data: { clientSecret: string; paymentIntentId: string; chargedTotal?: number; serviceFee?: number; currency?: string } }>(
                 '/api/hotels/create-payment',
                 {
-                    prebookId:    prebook.prebookId,
-                    amount:       totalPrice,
-                    currency,
-                    holderEmail:  guest.email,
-                    holderPhone:  `${guest.phoneCode} ${guest.phone}`.trim(),
-                    propertyName: hotelName,
+                    prebookId:      quoted.prebookId,
+                    amount:         shown.total,
+                    currency:       shown.currency,
+                    // What the summary showed, fee included — nothing is billed above it.
+                    displayedTotal: shown.chargedTotal,
+                    holderEmail:    guest.email,
+                    propertyName:   hotelName,
                     roomName,
                     checkIn,
                     checkOut,
                 }
             );
+            // The payment step shows what this intent is actually for.
+            if (typeof payRes.data.chargedTotal === 'number') {
+                setDisplay({ ...shown, chargedTotal: payRes.data.chargedTotal, serviceFee: payRes.data.serviceFee ?? shown.serviceFee });
+            }
             setClientSecret(payRes.data.clientSecret);
             setStep('payment');
         } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
+            const body = (err as { body?: { error?: string; serverPrice?: number; currency?: string } })?.body;
+            if (body?.error === 'PRICE_CHANGED' && typeof body.serverPrice === 'number') {
+                // The total moved beyond what can be absorbed. Show the new one and let the
+                // customer decide, rather than billing it or failing without a figure.
+                setDisplay(null);
+                setPrebookId(null);
+                setErrorMsg(`The price has changed to ${body.currency ?? currency} ${body.serverPrice.toLocaleString()}. Please review it before paying.`);
+                runPrebook().catch(() => {});
+            } else {
+                setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
+            }
         } finally {
             setSubmitting(false);
         }
-    }, [guest, coGuests, user, router, rateKey, roomName, adults, children, currency, totalPrice, hotelName, checkIn, checkOut]);
+    }, [guest, user, router, prebookId, display, runPrebook, currency, hotelName, roomName, checkIn, checkOut]);
 
     // ── Hotel step 2: Stripe confirms → then call /confirm ──
     const handleStripeSuccess = useCallback(async (stripePaymentIntentId: string) => {
         setSubmitting(true); setErrorMsg(null);
         try {
+            // A paid flight is turned into a booking by its own endpoint — the airline
+            // order already exists, so this is the step that records the ticket against it.
+            if (mode === 'flight') {
+                const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
+                    '/flights/confirm',
+                    { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
+                );
+                setBookingId(flightRes.bookingId);
+                setStep('confirmed');
+                return;
+            }
+
             const res = await http.post<{ success: boolean; data: { bookingId: string; status: string } }>(
                 '/api/hotels/confirm',
                 {
@@ -765,6 +851,7 @@ function CheckoutContent() {
                     children,
                     currency,
                     quotedPrice: totalPrice,
+                    board,
                 }
             );
             setBookingId(res.data.bookingId);
@@ -774,7 +861,7 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [prebookId, guest, coGuests, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
+    }, [mode, flightSessionId, board, prebookId, guest, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
 
     // ── Flight submit ──
     const handleFlightSubmit = useCallback(async () => {
@@ -788,14 +875,27 @@ function CheckoutContent() {
 
         setSubmitting(true); setErrorMsg(null);
         try {
-            await http.post('/flights/book', {
-                offerId, currency: flightCurrency,
-                passengers: passengers.map(p => ({
-                    firstName: p.firstName, lastName: p.lastName, email: p.email,
-                    phone: p.phone, dateOfBirth: p.dateOfBirth, passportNumber: p.passportNumber, type: 'adult',
-                })),
-            });
-            setStep('confirmed');
+            // `/flights/book` places the airline order and opens a PaymentIntent; it does
+            // not take the money. This used to jump straight to "confirmed" on its
+            // response, so the one step that charges the traveller never ran — the same
+            // two-step the hotel path has always done, missing on the flight path.
+            const res = await http.post<{ clientSecret: string; sessionId: string; paymentIntentId: string }>(
+                '/flights/book',
+                {
+                    offerId, currency: flightCurrency,
+                    contact: { email: passengers[0].email, phone: passengers[0].phone },
+                    // Stable per attempt, so a retry after a dropped response cannot buy a
+                    // second ticket.
+                    idempotencyKey: `flight-${offerId}-${passengers[0].email}`,
+                    passengers: passengers.map(p => ({
+                        firstName: p.firstName, lastName: p.lastName, email: p.email,
+                        phone: p.phone, dateOfBirth: p.dateOfBirth, passportNumber: p.passportNumber, type: 'adult',
+                    })),
+                },
+            );
+            setFlightSessionId(res.sessionId);
+            setClientSecret(res.clientSecret);
+            setStep('payment');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {
@@ -804,9 +904,15 @@ function CheckoutContent() {
     }, [passengers, user, router, offerId, flightCurrency]);
 
     // ── Price helpers ──
-    const nightlyPrice = nights && totalPrice ? totalPrice / nights : totalPrice;
-    const fee          = Math.round(totalPrice * 0.06);
-    const total        = totalPrice + fee;
+    //
+    // Rendered from the server's display block, never worked out here. Until prebook answers
+    // the page shows the room price it arrived with and no fee — a fee line computed in the
+    // browser is exactly what drifted from the charge before.
+    const shownCurrency = display?.currency ?? currency;
+    const roomTotal     = display?.total ?? totalPrice;
+    const nightlyPrice  = nights && roomTotal ? roomTotal / nights : roomTotal;
+    const fee           = display?.serviceFee ?? 0;
+    const total         = display?.chargedTotal ?? roomTotal;
 
     // ── Back handler ──
     function handleBack() {
@@ -872,7 +978,7 @@ function CheckoutContent() {
                 guestEmail={guest.email}
                 adults={adults}
                 roomName={roomName}
-                currency={currency}
+                currency={shownCurrency}
                 nightlyPrice={nightlyPrice}
                 nights={nights}
                 fee={fee}
@@ -885,15 +991,16 @@ function CheckoutContent() {
 
     // ── Not logged in helper ──
     function AuthBanner() {
+    const tAll = useTranslations();
         if (user) return null;
         return (
-            <div style={{ marginBottom: 22, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(255,193,7,.3)', background: 'rgba(255,193,7,.08)', fontSize: 13, color: palette.soft }}>
-                <strong style={{ color: '#FFC107' }}>Sign in</strong> to complete your booking.{' '}
+            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(255,193,7,.3)', background: 'rgba(255,193,7,.08)', fontSize: 13, color: 'rgba(245,239,228,.85)' }}>
+                <strong style={{ color: '#FFC107' }}>{tAll('nav.signIn')}</strong> to complete your booking.{' '}
                 <button
                     onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
                     style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
                 >
-                    Sign in →
+                    {tAll('checkout.signInArrow')}
                 </button>
             </div>
         );
@@ -937,35 +1044,38 @@ function CheckoutContent() {
 
                                 <div style={{ height: 1, background: palette.hairline, margin: '14px 0' }} />
 
-                                {nights && nightlyPrice > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
-                                        <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
-                                        <span style={{ fontWeight: 600 }}>{currency} {totalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                                    </div>
-                                )}
-                                {fee > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 10 }}>
-                                        <span>Service fee</span><span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800, color: palette.title, paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
-                                    <span>Total</span><span>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            {nights && nightlyPrice > 0 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
+                                    <span>{shownCurrency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
+                                    <span style={{ fontWeight: 600 }}>{shownCurrency} {roomTotal.toLocaleString()}</span>
                                 </div>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ fontWeight: 700, fontSize: 15, color: palette.title }}>
-                                    {origin} → {destination}
+                            )}
+                            {display ? (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 10 }}>
+                                    <span>{t('serviceFee')}</span><span style={{ fontWeight: 600 }}>{shownCurrency} {fee.toLocaleString()}</span>
                                 </div>
-                                {departureDate && <div style={{ fontSize: 12, color: palette.muted, marginTop: 2 }}>{fmtDate(departureDate)}</div>}
-                                {cabin && <div style={{ fontSize: 12, color: palette.muted }}>{cabin}</div>}
-                                <div style={{ height: 1, background: palette.hairline, margin: '14px 0' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800, color: palette.title }}>
-                                    <span>Total</span><span>{flightCurrency} {totalAmount.toLocaleString()}</span>
+                            ) : (
+                                <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginBottom: 10 }}>
+                                    {t('confirmingFinalPrice')}
                                 </div>
-                            </>
-                        )}
-                    </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff', paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
+                                <span>{t('summary.total')}</span><span>{shownCurrency} {total.toLocaleString()}</span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 8 }}>
+                                {origin} → {destination}
+                            </div>
+                            {departureDate && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginTop: 2 }}>{fmtDate(departureDate)}</div>}
+                            {cabin && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)' }}>{cabin}</div>}
+                            <div style={{ height: 1, background: BORDER, margin: '14px 0' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff' }}>
+                                <span>{tAll('checkout.success.total')}</span><span>{flightCurrency} {totalAmount.toLocaleString()}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -981,11 +1091,11 @@ function CheckoutContent() {
                         onClick={handleBack}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: palette.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0, fontFamily: 'inherit' }}
                     >
-                        <ArrowLeft size={16} /> Back
+                        <ArrowLeft size={15} /> {tAll('checkout.back')}
                     </button>
 
-                    <div style={{ fontWeight: 800, letterSpacing: '-0.01em', fontSize: 'clamp(28px,4vw,41px)', color: palette.title, margin: '14px 0 26px' }}>
-                        Complete your booking
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
+                        {t('completeYourBooking')}
                     </div>
 
                     {errorMsg && (
@@ -1004,29 +1114,29 @@ function CheckoutContent() {
                                     </div>
                                     <Grid2>
                                         <div>
-                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder="First name" className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.firstName`])} />
+                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} style={mkInput(!!passengerErrors[`${i}.firstName`])} />
                                             <ErrText msg={passengerErrors[`${i}.firstName`]} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder="Last name" className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.lastName`])} />
+                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} style={mkInput(!!passengerErrors[`${i}.lastName`])} />
                                             <ErrText msg={passengerErrors[`${i}.lastName`]} />
                                         </div>
                                     </Grid2>
                                     <FieldRow>
-                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder="Email" className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.email`])} />
+                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} style={mkInput(!!passengerErrors[`${i}.email`])} />
                                         <ErrText msg={passengerErrors[`${i}.email`]} />
                                     </FieldRow>
                                     <FieldRow>
-                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder="Phone" className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.phone`])} />
+                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder={tAll('checkout.userDetails.phone')} style={mkInput(!!passengerErrors[`${i}.phone`])} />
                                         <ErrText msg={passengerErrors[`${i}.phone`]} />
                                     </FieldRow>
                                     <Grid2>
                                         <div>
-                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.dateOfBirth`])} />
+                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder={tAll('checkout.userDetails.dateOfBirth')} style={mkInput(!!passengerErrors[`${i}.dateOfBirth`])} />
                                             <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder="Passport number" className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportNumber`])} />
+                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} style={mkInput(!!passengerErrors[`${i}.passportNumber`])} />
                                             <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
                                         </div>
                                     </Grid2>
@@ -1035,7 +1145,9 @@ function CheckoutContent() {
                             <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
                                 Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </PrimaryBtn>
-                            <TermsLine palette={palette} />
+                            <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
+                                {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
+                            </p>
                         </div>
                         <SummaryCard />
                     </div>
@@ -1058,13 +1170,8 @@ function CheckoutContent() {
                     <ArrowLeft size={17} /> {backLabel}
                 </button>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 36, flexWrap: 'wrap', marginTop: 12, marginBottom: step === 'form' ? 0 : 34 }}>
-                    <h1 style={{ flex: '1 1 auto', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.03, fontSize: 'clamp(34px,5vw,54px)', color: palette.title, margin: 0 }}>
-                        Complete your booking
-                    </h1>
-                    <div style={{ flex: '0 0 auto' }}>
-                        <ProgressBar step={step} palette={palette} />
-                    </div>
+                <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
+                    {t('completeYourBooking')}
                 </div>
 
                 {step === 'form' && (
@@ -1087,65 +1194,30 @@ function CheckoutContent() {
                         {/* Step 1: Guest details */}
                         {step === 'form' && (
                             <>
-                                {/* Guest 1 — the booking holder */}
-                                <div style={{ marginBottom: coGuests.length ? 28 : 4 }}>
-                                    <div style={sectionLabelStyle}>Guest 1 (You)</div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                                <div style={formCardStyle}>
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>{t('whosCheckingIn')}</div>
+                                    <Grid2>
                                         <div>
-                                            <Label palette={palette} icon={User}>First name</Label>
-                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!guestErrors.firstName)} />
+                                            <input type="text" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} style={mkInput(!!guestErrors.firstName)} />
                                             <ErrText msg={guestErrors.firstName} />
                                         </div>
                                         <div>
-                                            <Label palette={palette} icon={User}>Last name</Label>
-                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!guestErrors.lastName)} />
+                                            <input type="text" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} style={mkInput(!!guestErrors.lastName)} />
                                             <ErrText msg={guestErrors.lastName} />
                                         </div>
-                                    </div>
-                                    <div style={{ marginBottom: 16 }}>
-                                        <Label palette={palette} icon={Mail}>Email</Label>
-                                        <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="johndoe@gmail.com" className="cg-field" style={mkField(palette, !!guestErrors.email)} />
+                                    </Grid2>
+                                    <FieldRow>
+                                        <input type="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={tAll('auth.signIn.emailLabel')} style={mkInput(!!guestErrors.email)} />
                                         <ErrText msg={guestErrors.email} />
-                                    </div>
-                                    <div style={{ maxWidth: 'min(280px, 100%)' }}>
-                                        <Label palette={palette} icon={Phone}>Phone Number</Label>
-                                        <PhoneField
-                                            palette={palette}
-                                            code={guest.phoneCode}
-                                            number={guest.phone}
-                                            onCode={v => onGuest('phoneCode', v)}
-                                            onNumber={v => onGuest('phone', v)}
-                                            error={guestErrors.phone}
-                                        />
+                                    </FieldRow>
+                                    <FieldRow>
+                                        <input type="tel" value={guest.phone} onChange={e => onGuest('phone', e.target.value)} placeholder={tAll('checkout.userDetails.phoneNumber')} style={mkInput(!!guestErrors.phone)} />
                                         <ErrText msg={guestErrors.phone} />
-                                    </div>
+                                    </FieldRow>
                                 </div>
-
-                                {/* Guests 2..N — name only */}
-                                {coGuests.map((g, i) => (
-                                    <div key={i} style={{ marginBottom: 22 }}>
-                                        <div style={sectionLabelStyle}>Guest {i + 2}</div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                            <div>
-                                                <Label palette={palette} icon={User}>First name</Label>
-                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.firstName`])} />
-                                                <ErrText msg={coGuestErrors[`${i}.firstName`]} />
-                                            </div>
-                                            <div>
-                                                <Label palette={palette} icon={User}>Last name</Label>
-                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.lastName`])} />
-                                                <ErrText msg={coGuestErrors[`${i}.lastName`]} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                <div style={{ marginTop: 32 }}>
-                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting} palette={palette}>
-                                        Continue to Payment
-                                    </PrimaryBtn>
-                                    <TermsLine palette={palette} />
-                                </div>
+                                <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting}>
+                                    {t('continueToPayment')}
+                                </PrimaryBtn>
                             </>
                         )}
 
@@ -1165,7 +1237,7 @@ function CheckoutContent() {
                                     onSuccess={handleStripeSuccess}
                                     onError={msg => setErrorMsg(msg)}
                                     total={total}
-                                    currency={currency}
+                                    currency={shownCurrency}
                                     submitting={submitting}
                                     setSubmitting={setSubmitting}
                                     palette={palette}
@@ -1173,6 +1245,10 @@ function CheckoutContent() {
                                 <TermsLine palette={palette} />
                             </Elements>
                         )}
+
+                        <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
+                            {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
+                        </p>
                     </div>
 
                     {/* ── Right: summary ── */}

@@ -1,8 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { Calendar, MapPin, Plane, Hotel, Users, Star } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,12 +51,6 @@ function formatDate(dateStr: string): string {
     }
 }
 
-function nightsBetween(checkIn: string, checkOut: string): number {
-    const ci = new Date(checkIn).getTime();
-    const co = new Date(checkOut).getTime();
-    return Math.max(1, Math.round((co - ci) / (1000 * 60 * 60 * 24)));
-}
-
 const CARD =
     'rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm';
 
@@ -63,8 +59,9 @@ const ROW = 'flex items-center justify-between text-sm';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function BookingSummary({ data }: BookingSummaryProps) {
+    const tAll = useTranslations();
     if (data.mode === 'hotel') {
-        const nights = nightsBetween(data.checkIn, data.checkOut);
+        const nights = nightsBetween(data.checkIn, data.checkOut) ?? 1;
         const perNight = nights > 0 ? data.totalPrice / nights : data.totalPrice;
 
         return (
@@ -75,7 +72,7 @@ export function BookingSummary({ data }: BookingSummaryProps) {
                         <Hotel size={16} className="text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Hotel</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">{tAll('checkout.success.hotel')}</p>
                         <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight truncate">
                             {data.hotelName}
                         </h3>
@@ -125,7 +122,7 @@ export function BookingSummary({ data }: BookingSummaryProps) {
                         <span>{data.currency} {perNight.toLocaleString(undefined, { maximumFractionDigits: 0 })} / night</span>
                     </div>
                     <div className={cn(ROW, 'font-bold text-base pt-1 border-t border-slate-200 dark:border-white/10 mt-2')}>
-                        <span className="text-slate-900 dark:text-white">Total</span>
+                        <span className="text-slate-900 dark:text-white">{tAll('checkout.summary.total')}</span>
                         <span className="text-blue-600 dark:text-blue-400">
                             {data.currency} {data.totalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </span>
@@ -144,7 +141,7 @@ export function BookingSummary({ data }: BookingSummaryProps) {
                     <Plane size={16} className="text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Flight</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">{tAll('checkout.summary.flight')}</p>
                     <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                         {data.origin} → {data.destination}
                     </h3>
@@ -185,7 +182,7 @@ export function BookingSummary({ data }: BookingSummaryProps) {
             {/* Total */}
             <div className="border-t border-dashed border-slate-200 dark:border-white/10 pt-4">
                 <div className={cn(ROW, 'font-bold text-base')}>
-                    <span className="text-slate-900 dark:text-white">Total</span>
+                    <span className="text-slate-900 dark:text-white">{tAll('checkout.summary.total')}</span>
                     <span className="text-violet-600 dark:text-violet-400">
                         {data.currency} {parseFloat(data.totalAmount as unknown as string).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>

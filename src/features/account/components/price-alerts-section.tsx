@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { Bell, BellOff, Trash2, Plane, Hotel as HotelIcon } from 'lucide-react';
 import { http } from '@/shared/lib/http';
@@ -8,6 +9,7 @@ import { formatCurrency } from '@/shared/lib/format';
 import type { PriceAlert } from '@/shared/types';
 
 export function PriceAlertsSection() {
+    const tAll = useTranslations();
     const [alerts, setAlerts] = useState<PriceAlert[]>([]);
     const [loading, setLoading] = useState(true);
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -47,9 +49,9 @@ export function PriceAlertsSection() {
     return (
         <div className="space-y-4">
             <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Price Alerts</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('account.priceAlerts.title')}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Get notified when prices drop for your saved routes.
+                    {tAll('account.priceAlerts.subtitle')}
                 </p>
             </div>
 
@@ -58,9 +60,9 @@ export function PriceAlertsSection() {
                     <div className="w-14 h-14 mb-4 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center">
                         <BellOff size={24} className="text-slate-400" />
                     </div>
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">No price alerts</h3>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{tAll('account.priceAlerts.emptyTitle')}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Set up alerts from the search results page to track prices.
+                        {tAll('account.priceAlerts.emptyBody')}
                     </p>
                 </div>
             ) : (
@@ -97,7 +99,7 @@ export function PriceAlertsSection() {
                             {/* Threshold price */}
                             {alert.threshold_price != null && (
                                 <div className="text-right shrink-0">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Alert at</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{tAll('account.priceAlerts.alertAt')}</p>
                                     <p className="text-sm font-bold text-slate-900 dark:text-white">
                                         {formatCurrency(alert.threshold_price, alert.currency)}
                                     </p>
@@ -109,7 +111,7 @@ export function PriceAlertsSection() {
                                 onClick={() => handleDelete(alert.id)}
                                 disabled={removingId === alert.id}
                                 className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-500 transition-colors disabled:opacity-50 opacity-0 group-hover:opacity-100"
-                                title="Delete alert"
+                                title={tAll('account.priceAlerts.delete')}
                             >
                                 <Trash2 size={13} />
                             </button>

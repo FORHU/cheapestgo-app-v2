@@ -22,3 +22,16 @@ This pairs with three smaller changes to the same imperative-marker code:
 - Clustering remains the documented, in-scope Phase 1 feature (`CONTEXT.md`). This decision does not replace or defer it — it solves a narrower problem (marker-count performance) without it, per the client's specific request for this task.
 - The visible marker count can legitimately differ from the search result count while panning. A future reader seeing fewer pins than results should look here, not assume a bug.
 - Selecting a hotel is unaffected: its imperative marker is already hidden in favor of `SelectedPropertyPopup`'s own pin, regardless of whether it falls inside or outside the culled bounds.
+
+## Update — 2026-09-02: superseded by clustering
+
+Clustering has landed, so the culling this ADR describes is gone. That is the outcome this decision named rather than a reversal of it: it called clustering "the documented, in-scope Phase 1 feature" and said it was solving a narrower problem "without reaching for it here". `useHotelClusters` and `ClusterPin` now do both jobs — supercluster's `getClusters(bbox, zoom)` **is** the viewport query, so a second hand-rolled bounds filter would be redundant and worse than redundant: culling before clustering makes a cluster pill at the screen edge count only its on-screen members, and the pill's whole purpose is to say how many hotels it stands for. See [ADR-0022 in cheapest-go-app](../../../cheapest-go-app/docs/adr/0022-dense-map-markers-are-clustered-never-truncated.md), which measured 102 markers at cluster radius 80 — the same DOM budget the culling was holding.
+
+**One caveat for whoever reads this next.** This ADR records that the culling approach was taken *at the client's specific request*. Nobody has been back to the client about it. If that constraint still stands, this update is the thing to raise.
+
+**Two improvements from the culling work were dropped in the rebase and should be re-applied — they are orthogonal to clustering and still worth having.** Both are in commit `3db9027`'s version of `src/shared/components/mapbox/SearchMapContainer.tsx`:
+
+- **The dedicated hover effect.** `hoveredId` sat in the create/remove effect's dependency array, so any hover re-ran a full loop over every marker; `3db9027` split it into its own effect touching only the previously- and newly-hovered marker via `prevHoveredIdRef` / `propertyByIdRef`. Clustering does not fix this — the post-rebase code still lists `hoveredId` in the main effect's deps.
+- **Staggered marker creation.** `MARKER_STAGGER_THRESHOLD = 30` / `MARKER_STAGGER_CHUNK = 15`, staging creation across `requestAnimationFrame` rather than `requestIdleCallback`, which Safari/iOS does not support. This is not truncation — every marker is still created. Clustering bounds the count to roughly 100, so the threshold still fires and still does useful work.
+
+The `will-change: transform` change this ADR also describes is not in the file and needs no action; had it been, clustering bounds the marker count just as culling did, so it would have stayed safe.
