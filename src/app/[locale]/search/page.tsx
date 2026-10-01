@@ -15,7 +15,7 @@ import { env } from '@/shared/lib/env';
 import { useUserCurrency } from '@/stores/searchStore';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency } from '@/shared/lib/currency';
-import { Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, ChevronDown, ChevronUp, CalendarClock } from 'lucide-react';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { useDeclareChromeTone } from '@/shared/components/ChromeToneContext';
 import { useIsMobile } from '@/shared/hooks/useMediaQuery';
@@ -23,7 +23,7 @@ import { cn } from '@/shared/lib/cn';
 import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
-import { nightsBetween } from '@/shared/lib/stay';
+import { resolveStayDates } from '@/shared/lib/stay';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
@@ -581,8 +581,23 @@ function HotelSearchContent() {
     const router       = useRouter();
 
     const destination  = searchParams.get('destination')  ?? '';
-    const checkIn      = searchParams.get('checkIn')      ?? '';
-    const checkOut     = searchParams.get('checkOut')     ?? '';
+    // Resolved, not read raw. A landing card names a city and no stay, and a link can sit
+    // in a chat window until its dates have passed; both used to reach the supplier as
+    // written, which answers with rooms nobody can book and reads as a full city.
+    // `chosen` is false when these are ours, which is what the notice below discloses.
+    const askedCheckIn  = searchParams.get('checkIn');
+    const askedCheckOut = searchParams.get('checkOut');
+    const stay = useMemo(
+        () => resolveStayDates(askedCheckIn, askedCheckOut),
+        [askedCheckIn, askedCheckOut],
+    );
+    const checkIn      = stay.checkIn;
+    const checkOut     = stay.checkOut;
+    // Two ways these can be ours rather than the traveller's: the link carried nothing
+    // usable and the resolver chose, or a landing card already chose and said so with
+    // `datesAuto`. The card's dates are perfectly valid, so `chosen` alone reads them as
+    // the traveller's and the notice would never appear on the journey it exists for.
+    const datesArePicked = !stay.chosen || searchParams.get('datesAuto') === '1';
     const adults       = searchParams.get('adults')       ?? '2';
     const children     = searchParams.get('children')     ?? '0';
     const rooms        = searchParams.get('rooms')        ?? '1';
@@ -595,10 +610,10 @@ function HotelSearchContent() {
     const rung          = searchParams.get('rung')         ?? '';
     const searchQs    = searchParams.toString();
 
-    // Falls back to one night so the cards still show a figure when the URL carries
-    // no dates. Safe here because search is a browse surface, not a quote — the
-    // property page refuses to price a stay it cannot read rather than assuming one.
-    const nights = useMemo(() => nightsBetween(checkIn, checkOut) ?? 1, [checkIn, checkOut]);
+    // From the same resolver the dates came from, never derived separately — a price and
+    // the stay it covers travel together, and deriving the divisor apart from the dates is
+    // what doubled the nightly rate in v1 (ADR-0020).
+    const nights = stay.nights;
 
     const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
     const [status, setStatus]                   = useState<StreamStatus>('idle');
@@ -1370,6 +1385,16 @@ function HotelSearchContent() {
                             showRegionControls
                         />
 
+                        {/* A Default Stay is disclosed, never silent — the traveller asked
+                            for a city, so they are told which dates they are being quoted
+                            for and that moving them is how to see other prices. */}
+                        {datesArePicked && (
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
+                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                                {tAll('hotels.results.datesPicked')}
+                            </p>
+                        )}
+
                         {/* The map view's filter dropdown, on the list's toolbar.
                             Same motion, same offset off the bar, and it keeps its
                             Sort By section — unlike the map's, this toolbar has no
@@ -1527,6 +1552,16 @@ function HotelSearchContent() {
                         // place on the screen these two can be reached from.
                         showRegionControls
                     />
+
+                        {/* A Default Stay is disclosed, never silent — the traveller asked
+                            for a city, so they are told which dates they are being quoted
+                            for and that moving them is how to see other prices. */}
+                        {datesArePicked && (
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
+                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                                {tAll('hotels.results.datesPicked')}
+                            </p>
+                        )}
 
             {/* ── Prices unavailable ───────────────────────────── */}
             {/* The supplier never answered, so the catalog stays on the map —

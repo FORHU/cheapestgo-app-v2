@@ -470,6 +470,9 @@ function CheckoutContent() {
 
     // Booking state
     const [prebookId, setPrebookId]         = useState<string | null>(null);
+    /** The board the rate was quoted with. Snapshotted on the booking so the voucher can
+     *  state the meal plan that was bought rather than the property's current one. */
+    const [board, setBoard]                 = useState<string | undefined>(undefined);
     /**
      * What the customer is shown, as the server worked it out — room total, service fee and
      * the total they pay, in their own currency. This page used to add a hardcoded 6% itself
@@ -478,6 +481,8 @@ function CheckoutContent() {
      */
     const [display, setDisplay] = useState<HotelDisplay | null>(null);
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
+    /** The booking session `/flights/book` opened, which `/flights/confirm` settles. */
+    const [flightSessionId, setFlightSessionId] = useState<string>('');
     const [bookingId, setBookingId]         = useState<string | null>(null);
 
     // Hotel guest form
@@ -517,11 +522,12 @@ function CheckoutContent() {
      * is better learned now than after the form is filled in.
      */
     const runPrebook = useCallback(async () => {
-        const pbRes = await http.post<{ success: boolean; data: { prebookId: string; display?: HotelDisplay } }>(
+        const pbRes = await http.post<{ success: boolean; data: { prebookId: string; display?: HotelDisplay; boardCode?: string } }>(
             '/api/hotels/prebook',
             { offerId: rateKey, roomName, adults, children, currency },
         );
         setPrebookId(pbRes.data.prebookId);
+        if (pbRes.data.boardCode) setBoard(pbRes.data.boardCode);
         setDisplay(pbRes.data.display ?? null);
         return pbRes.data;
     }, [rateKey, roomName, adults, children, currency]);
@@ -595,6 +601,18 @@ function CheckoutContent() {
     const handleStripeSuccess = useCallback(async (stripePaymentIntentId: string) => {
         setSubmitting(true); setErrorMsg(null);
         try {
+            // A paid flight is turned into a booking by its own endpoint — the airline
+            // order already exists, so this is the step that records the ticket against it.
+            if (mode === 'flight') {
+                const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
+                    '/flights/confirm',
+                    { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
+                );
+                setBookingId(flightRes.bookingId);
+                setStep('confirmed');
+                return;
+            }
+
             const res = await http.post<{ success: boolean; data: { bookingId: string; status: string } }>(
                 '/api/hotels/confirm',
                 {
@@ -610,6 +628,7 @@ function CheckoutContent() {
                     children,
                     currency,
                     quotedPrice: totalPrice,
+                    board,
                 }
             );
             setBookingId(res.data.bookingId);
@@ -619,7 +638,7 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [prebookId, guest, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
+    }, [mode, flightSessionId, board, prebookId, guest, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
 
     // ── Flight submit ──
     const handleFlightSubmit = useCallback(async () => {
@@ -633,14 +652,27 @@ function CheckoutContent() {
 
         setSubmitting(true); setErrorMsg(null);
         try {
-            await http.post('/flights/book', {
-                offerId, currency: flightCurrency,
-                passengers: passengers.map(p => ({
-                    firstName: p.firstName, lastName: p.lastName, email: p.email,
-                    phone: p.phone, dateOfBirth: p.dateOfBirth, passportNumber: p.passportNumber, type: 'adult',
-                })),
-            });
-            setStep('confirmed');
+            // `/flights/book` places the airline order and opens a PaymentIntent; it does
+            // not take the money. This used to jump straight to "confirmed" on its
+            // response, so the one step that charges the traveller never ran — the same
+            // two-step the hotel path has always done, missing on the flight path.
+            const res = await http.post<{ clientSecret: string; sessionId: string; paymentIntentId: string }>(
+                '/flights/book',
+                {
+                    offerId, currency: flightCurrency,
+                    contact: { email: passengers[0].email, phone: passengers[0].phone },
+                    // Stable per attempt, so a retry after a dropped response cannot buy a
+                    // second ticket.
+                    idempotencyKey: `flight-${offerId}-${passengers[0].email}`,
+                    passengers: passengers.map(p => ({
+                        firstName: p.firstName, lastName: p.lastName, email: p.email,
+                        phone: p.phone, dateOfBirth: p.dateOfBirth, passportNumber: p.passportNumber, type: 'adult',
+                    })),
+                },
+            );
+            setFlightSessionId(res.sessionId);
+            setClientSecret(res.clientSecret);
+            setStep('payment');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {

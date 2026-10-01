@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { asDay, defaultStay, earliestBookableDay } from '@/shared/lib/stay';
 import { persist } from 'zustand/middleware';
 
 /** How many recent destinations the search bar offers. Shared with the sign-in handoff,
@@ -144,20 +145,22 @@ export const useSearchStore = create<SearchState>()(
             setDestination: (destination) => set({ destination }),
             setDestinationQuery: (destinationQuery) => set({ destinationQuery }),
 
+            /**
+             * A stay that cannot be booked becomes the **Default Stay**.
+             *
+             * It used to become *tomorrow*, which is the other half of the same empty
+             * window — OTV holds near-zero inventory for same-day and next-day stays, so
+             * this rescued an unbookable date into a barely-bookable one and the search
+             * came back with rooms nobody could take. One rule, shared with every other
+             * caller, rather than a second opinion kept here.
+             */
             setDates: (dates) => set((s) => {
                 const next = { ...s.dates, ...dates };
-                if (next.checkIn) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    if (next.checkIn <= today) {
-                        const tomorrow = new Date(today);
-                        tomorrow.setDate(today.getDate() + 1);
-                        next.checkIn = tomorrow;
-                        if (next.checkOut && next.checkOut <= next.checkIn) {
-                            const d2 = new Date(tomorrow);
-                            d2.setDate(tomorrow.getDate() + 1);
-                            next.checkOut = d2;
-                        }
+                if (next.checkIn && asDay(next.checkIn) < earliestBookableDay()) {
+                    const stay = defaultStay();
+                    next.checkIn = new Date(`${stay.checkIn}T00:00:00`);
+                    if (!next.checkOut || next.checkOut <= next.checkIn) {
+                        next.checkOut = new Date(`${stay.checkOut}T00:00:00`);
                     }
                 }
                 return { dates: next };

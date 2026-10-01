@@ -1,6 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { SpecialRequestsForm, ShareBookingForm } from './booking-self-service';
+import { DocumentLinks } from './travel-documents';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -207,6 +209,11 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
             </Section>
 
             {/* Payment */}
+            <DocumentLinks booking={booking} />
+
+            <SpecialRequestsForm booking={booking} />
+            <ShareBookingForm bookingId={booking.id} defaultEmail={booking.holder_email} />
+
             <Section title={tAll('trips.sections.payment')} icon={<CreditCard size={15} />}>
                 <InfoRow label="Total Paid" value={<span className="text-base font-bold">{formatCurrency(booking.total_price, booking.currency)}</span>} />
                 <InfoRow label="Payment Method" value="Card (Stripe)" />
@@ -349,6 +356,8 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
             )}
 
             {/* Payment */}
+            <DocumentLinks booking={booking} />
+
             <Section title={tAll('trips.sections.payment')} icon={<CreditCard size={15} />}>
                 <InfoRow label="Total Paid" value={<span className="text-base font-bold">{formatCurrency(booking.charged_price ?? booking.total_price, booking.currency)}</span>} />
                 {booking.provider && <InfoRow label="Provider" value={<span className="capitalize">{booking.provider}</span>} />}

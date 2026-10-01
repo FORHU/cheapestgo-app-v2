@@ -85,7 +85,12 @@
     "emailRequired": "请填写邮箱",
     "emailInvalid": "请输入有效的邮箱",
     "passwordRequired": "请填写密码",
-    "passwordWeak": "密码不符合要求"
+    "passwordWeak": "密码不符合要求",
+    "staff": {
+      "title": "员工登录",
+      "subtitle": "CheapestGo 客服与管理",
+      "pitch": "与您平时使用的账户相同。这个入口只是知道该把您带到哪里。"
+    }
   },
   "checkout": {
     "back": "返回",
@@ -395,7 +400,14 @@
   "errors": {
     "generic": "出现错误，请重试。",
     "notFound": "页面未找到。",
-    "searchFailed": "搜索失败，请检查网络连接后重试。"
+    "searchFailed": "搜索失败，请检查网络连接后重试。",
+    "auth": {
+      "description": "处理身份验证请求时出错。可能是链接已过期或已被使用。",
+      "goHome": "前往首页",
+      "signInAgain": "重新登录",
+      "title": "身份验证错误",
+      "retryDescription": "身份验证过程中出现问题，请重试。"
+    }
   },
   "flights": {
     "results": {
@@ -426,7 +438,10 @@
       "noMatchHint": "请尝试调整筛选条件。",
       "checkingProviders": "正在查询多家供应商",
       "noFlights": "未找到航班",
-      "findingFares": "正在寻找最优票价…"
+      "findingFares": "正在寻找最优票价…",
+      "missingRoute": "请告诉我们出发地和目的地，我们来为您查找票价。",
+      "countFlights": "{count} 个航班",
+      "datePicked": "这个日期是我们为您选择的 — 更改日期可查看其他票价。"
     },
     "card": {
       "direct": "直飞",
@@ -546,7 +561,8 @@
     "results": {
       "searchFailed": "搜索失败。",
       "loadingPrices": "正在加载价格…",
-      "noMatchHint": "请尝试调整筛选条件、日期，或搜索附近的城市。"
+      "noMatchHint": "请尝试调整筛选条件、日期，或搜索附近的城市。",
+      "datesPicked": "这些日期是我们为您选择的 — 更改日期可查看其他价格。"
     },
     "nearby": {
       "none": "附近未找到地点。"
@@ -2127,7 +2143,8 @@
       "placeholder": "例如：晚上 10 点后入住、加床、高楼层…",
       "saved": "已保存 — 已通知酒店。",
       "saveError": "保存您的要求失败，请重试。",
-      "submit": "保存要求"
+      "submit": "保存要求",
+      "title": "特殊要求"
     },
     "sharePage": {
       "title": "分享预订确认",
@@ -2137,7 +2154,10 @@
       "sendTo": "发送至",
       "sentTo": "已发送至 {email}。",
       "sendError": "发送失败，请重试。",
-      "submit": "发送确认邮件"
+      "submit": "发送确认邮件",
+      "title": "分享此预订",
+      "blurb": "将确认函发送给与您同行的人。",
+      "sent": "已发送至 {email}"
     },
     "hotelConfirmed": {
       "confirming": "正在确认您的预订…",
@@ -2299,5 +2319,105 @@
     "plural": "目的地",
     "hotelsAvailableFor": "{from} — {to} 可预订的酒店",
     "metaTitle": "{place}的酒店"
+  },
+  "documents": {
+    "status": {
+      "ticketed": "已出票",
+      "confirmed": "已确认"
+    },
+    "eticket": {
+      "title": "电子客票与行程",
+      "passenger": "乘客",
+      "pnr": "预订编号",
+      "ticketNumber": "客票号码",
+      "flight": "航班",
+      "from": "出发",
+      "to": "到达",
+      "seat": "座位",
+      "atCheckIn": "值机时分配",
+      "fareConditions": "票价条件",
+      "refundable": "可退款",
+      "nonRefundable": "不可退款",
+      "nonChangeable": "不可更改",
+      "checkInHint": "请通过航空公司办理值机以获取登机牌。值机通常在起飞前 24–48 小时开放。",
+      "footer": "请与预订时使用的护照或身份证件一同出示。姓名须与您的旅行证件一致。"
+    },
+    "voucher": {
+      "title": "酒店预订凭证",
+      "confirmationNumber": "酒店确认号",
+      "ourReference": "我方编号",
+      "checkIn": "入住",
+      "checkOut": "退房",
+      "stay": "住宿",
+      "guests": "入住人数",
+      "occupancy": "{adults} 名成人{children, plural, =0 {} other {，# 名儿童}}",
+      "leadGuest": "主要入住人",
+      "room": "房型",
+      "mealPlan": "餐食安排",
+      "paymentStatus": "支付状态",
+      "paidOnline": "已在线支付",
+      "payAtProperty": "到店支付",
+      "specialRequests": "特殊要求",
+      "requestsNotGuaranteed": "要求会转达给酒店，但不保证满足。",
+      "footer": "入住时请出示此凭证及有效的政府签发证件或护照。酒店可能有额外要求。",
+      "fromTime": "{time} 起",
+      "untilTime": "截至 {time}"
+    },
+    "receipt": {
+      "title": "付款收据",
+      "paid": "支付成功",
+      "receiptNumber": "收据编号",
+      "bookingReference": "预订编号",
+      "paymentDate": "付款日期",
+      "paymentMethod": "支付方式",
+      "card": "银行卡",
+      "totalPaid": "支付总额",
+      "footer": "此收据仅确认付款，并非旅行证件。抵达时请出示电子客票或酒店凭证。"
+    },
+    "pending": {
+      "awaitingTicket": "您的付款已完成。航空公司尚未出票，出票后电子客票会显示在这里。",
+      "awaitingConfirmation": "您的付款已完成。我们正在等待酒店确认，确认后凭证会显示在这里。"
+    },
+    "actions": {
+      "eticket": "查看电子客票",
+      "voucher": "查看酒店凭证",
+      "receipt": "查看付款收据",
+      "checkIn": "前往航空公司值机"
+    },
+    "section": "旅行文件"
+  },
+  "about": {
+    "heroLabel": "关于 CheapestGo",
+    "heroTitle": "尊重您的时间和金钱的旅行。",
+    "heroBody": "CheapestGo 是一个现代旅行平台，帮助您在一个地方发现、比较和预订机票和酒店 — 以您可以真正信赖的价格。",
+    "missionTitle": "我们的使命",
+    "missionBody": "预订旅行应该轻松便捷。太多平台隐藏费用、虚高价格，让您对每次点击都充满疑虑。我们构建 CheapestGo 正是为了做到相反：呈现最真实的最优价格，清晰显示您的支付金额，并以最少的步骤完成预订 — 无论是周末出行还是梦寐以求的旅行。",
+    "whatWeDoTitle": "我们提供什么",
+    "flightsTitle": "机票",
+    "flightsBody": "通过我们的航空合作伙伴搜索和预订全球机票，价格透明，结账时无隐藏费用。",
+    "hotelsTitle": "酒店 & 住宿",
+    "hotelsBody": "来自全球领先供应商的数百万家酒店和独特住宿，让您始终看到真实的可用性和价格。",
+    "dealsTitle": "特惠 & 套餐",
+    "dealsBody": "精心策划的周末出行和旅行特惠，每日更新，让您第一时间看到最超值的选择。",
+    "valuesTitle": "我们的与众不同之处",
+    "transparentTitle": "透明定价",
+    "transparentBody": "我们采用单一、透明的服务加价，已包含在您看到的价格中。绝无隐藏费用。",
+    "secureTitle": "默认安全",
+    "secureBody": "支付由 Stripe 处理，我们从不存储您的卡片信息。您的数据在传输和存储时均已加密。",
+    "builtTitle": "专为本地打造",
+    "builtBody": "我们专注于东南亚旅行者 — 本地货币、本地背景，以及真正了解您旅行方式的支持。",
+    "partnersTitle": "由可信赖的合作伙伴提供支持",
+    "partnersBody": "我们的机票、酒店和支付库存来自成熟的全球供应商，因此您看到的可用性和价格是真实可预订的。",
+    "whoTitle": "谁在运营 CheapestGo",
+    "whoBody": "CheapestGo 由 FORHU Inc. 运营，总部位于美国纽约 NY 10005 华尔街 30 号 8 楼。欢迎随时提出问题、反馈或合作想法。",
+    "contactUs": "联系我们",
+    "startExploring": "开始探索",
+    "terms": "服务条款",
+    "privacy": "隐私政策",
+    "refund": "退款政策",
+    "meta": {
+      "title": "关于我们 — CheapestGo",
+      "description": "CheapestGo 是一家现代化的在线旅行社，帮助东南亚旅客以透明的价格查找并预订机票、酒店和套餐。"
+    }
   }
 }

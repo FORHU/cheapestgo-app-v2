@@ -84,7 +84,21 @@ describe('resolveStayDates', () => {
 
     it('keeps a stay that can still be booked', () => {
         const stay = resolveStayDates(day(10), day(13));
-        expect(stay).toEqual({ checkIn: day(10), checkOut: day(13), nights: 3 });
+        expect(stay).toEqual({ checkIn: day(10), checkOut: day(13), nights: 3, chosen: true });
+    });
+
+    // The rule has always read "not tomorrow", but the guard tested only today, so a
+    // next-day arrival reached the supplier unrescued and every property opened from
+    // those results came back empty.
+    it.each([[0, 'today'], [1, 'tomorrow']])('rescues an arrival %i day(s) out (%s)', (offset) => {
+        const stay = resolveStayDates(day(offset as number), day((offset as number) + 1));
+        expect(stay.checkIn).toBe(defaultStay().checkIn);
+        expect(stay.chosen).toBe(false);
+    });
+
+    it('reports a stay the traveller named as their own', () => {
+        expect(resolveStayDates(day(10), day(12)).chosen).toBe(true);
+        expect(resolveStayDates(null, null).chosen).toBe(false);
     });
 
     it('falls back when the link names dates in the past', () => {
@@ -123,6 +137,6 @@ describe('resolveStayDates', () => {
         const { checkIn, checkOut } = defaultStay();
         expect(new Date(checkIn).getUTCDay()).toBe(5);   // Friday
         expect(new Date(checkOut).getUTCDay()).toBe(0);  // Sunday
-        expect(checkIn > day(0)).toBe(true);
+        expect(checkIn > day(1)).toBe(true);   // not today, not tomorrow
     });
 });

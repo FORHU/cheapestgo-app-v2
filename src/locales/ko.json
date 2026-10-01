@@ -85,7 +85,12 @@
     "emailRequired": "이메일을 입력해 주세요",
     "emailInvalid": "올바른 이메일을 입력해 주세요",
     "passwordRequired": "비밀번호를 입력해 주세요",
-    "passwordWeak": "비밀번호가 요구 조건을 충족하지 않습니다"
+    "passwordWeak": "비밀번호가 요구 조건을 충족하지 않습니다",
+    "staff": {
+      "title": "직원 로그인",
+      "subtitle": "CheapestGo 고객지원 및 관리",
+      "pitch": "평소 사용하시는 계정과 동일합니다. 이 입구는 어디로 안내할지 알고 있을 뿐입니다."
+    }
   },
   "checkout": {
     "back": "뒤로",
@@ -395,7 +400,14 @@
   "errors": {
     "generic": "오류가 발생했습니다. 다시 시도해 주세요.",
     "notFound": "페이지를 찾을 수 없습니다.",
-    "searchFailed": "검색에 실패했습니다. 연결 상태를 확인하고 다시 시도해 주세요."
+    "searchFailed": "검색에 실패했습니다. 연결 상태를 확인하고 다시 시도해 주세요.",
+    "auth": {
+      "description": "인증 요청을 처리하는 중 오류가 발생했습니다. 링크가 만료되었거나 이미 사용된 경우 발생할 수 있습니다.",
+      "goHome": "홈으로 이동",
+      "signInAgain": "다시 로그인해 보기",
+      "title": "인증 오류",
+      "retryDescription": "인증 중 문제가 발생했습니다. 다시 시도해 주세요."
+    }
   },
   "flights": {
     "results": {
@@ -426,7 +438,10 @@
       "noMatchHint": "필터 조건을 조정해 보세요.",
       "checkingProviders": "여러 공급사를 확인하는 중",
       "noFlights": "항공편을 찾을 수 없습니다",
-      "findingFares": "최적의 요금을 찾는 중…"
+      "findingFares": "최적의 요금을 찾는 중…",
+      "missingRoute": "출발지와 도착지를 알려주시면 요금을 찾아드립니다.",
+      "countFlights": "항공편 {count}편",
+      "datePicked": "날짜는 저희가 골랐습니다 — 변경하시면 다른 요금을 보실 수 있습니다."
     },
     "card": {
       "direct": "직항",
@@ -546,7 +561,8 @@
     "results": {
       "searchFailed": "검색에 실패했습니다.",
       "loadingPrices": "가격 불러오는 중…",
-      "noMatchHint": "필터나 날짜를 조정하거나 가까운 도시를 검색해 보세요."
+      "noMatchHint": "필터나 날짜를 조정하거나 가까운 도시를 검색해 보세요.",
+      "datesPicked": "날짜는 저희가 골랐습니다 — 다른 가격을 보시려면 변경해 주세요."
     },
     "nearby": {
       "none": "근처에서 장소를 찾을 수 없습니다."
@@ -2127,7 +2143,8 @@
       "placeholder": "예: 오후 10시 이후 늦은 체크인, 엑스트라 베드, 고층…",
       "saved": "저장되었습니다 — 호텔에 전달되었습니다.",
       "saveError": "요청 사항을 저장하지 못했습니다. 다시 시도해 주세요.",
-      "submit": "요청 사항 저장"
+      "submit": "요청 사항 저장",
+      "title": "요청 사항"
     },
     "sharePage": {
       "title": "예약 확인서 공유",
@@ -2137,7 +2154,10 @@
       "sendTo": "받는 사람",
       "sentTo": "{email}으로 전송했습니다.",
       "sendError": "전송하지 못했습니다. 다시 시도해 주세요.",
-      "submit": "확인서 보내기"
+      "submit": "확인서 보내기",
+      "title": "예약 공유",
+      "blurb": "함께 여행하시는 분에게 예약 확인서를 보내세요.",
+      "sent": "{email}(으)로 보냈습니다"
     },
     "hotelConfirmed": {
       "confirming": "예약을 확정하는 중…",
@@ -2299,5 +2319,105 @@
     "plural": "여행지",
     "hotelsAvailableFor": "{from} — {to} 이용 가능한 호텔",
     "metaTitle": "{place} 호텔"
+  },
+  "documents": {
+    "status": {
+      "ticketed": "발권 완료",
+      "confirmed": "확정"
+    },
+    "eticket": {
+      "title": "전자항공권 및 일정",
+      "passenger": "탑승객",
+      "pnr": "예약번호",
+      "ticketNumber": "항공권 번호",
+      "flight": "항공편",
+      "from": "출발",
+      "to": "도착",
+      "seat": "좌석",
+      "atCheckIn": "체크인 시 배정",
+      "fareConditions": "요금 조건",
+      "refundable": "환불 가능",
+      "nonRefundable": "환불 불가",
+      "nonChangeable": "변경 불가",
+      "checkInHint": "탑승권은 항공사에서 체크인하시면 발급됩니다. 체크인은 보통 출발 24~48시간 전에 열립니다.",
+      "footer": "예약에 사용하신 여권 또는 신분증과 함께 제시해 주세요. 성명은 여행 서류와 일치해야 합니다."
+    },
+    "voucher": {
+      "title": "호텔 예약 바우처",
+      "confirmationNumber": "호텔 확인번호",
+      "ourReference": "당사 예약번호",
+      "checkIn": "체크인",
+      "checkOut": "체크아웃",
+      "stay": "숙박",
+      "guests": "인원",
+      "occupancy": "성인 {adults}명{children, plural, =0 {} other {, 어린이 #명}}",
+      "leadGuest": "대표 투숙객",
+      "room": "객실",
+      "mealPlan": "식사 조건",
+      "paymentStatus": "결제 상태",
+      "paidOnline": "온라인 결제 완료",
+      "payAtProperty": "현지 결제",
+      "specialRequests": "요청 사항",
+      "requestsNotGuaranteed": "요청 사항은 숙소에 전달되며 보장되지 않습니다.",
+      "footer": "체크인 시 이 바우처와 유효한 신분증 또는 여권을 제시해 주세요. 숙소에 따라 추가 요건이 있을 수 있습니다.",
+      "fromTime": "{time}부터",
+      "untilTime": "{time}까지"
+    },
+    "receipt": {
+      "title": "결제 영수증",
+      "paid": "결제 완료",
+      "receiptNumber": "영수증 번호",
+      "bookingReference": "예약번호",
+      "paymentDate": "결제일",
+      "paymentMethod": "결제 수단",
+      "card": "카드",
+      "totalPaid": "결제 총액",
+      "footer": "이 영수증은 결제 사실만 확인합니다. 여행 서류가 아니며, 현지에서는 전자항공권 또는 호텔 바우처를 제시하셔야 합니다."
+    },
+    "pending": {
+      "awaitingTicket": "결제가 완료되었습니다. 항공사에서 아직 발권하지 않았으며, 발권되는 대로 전자항공권이 여기에 표시됩니다.",
+      "awaitingConfirmation": "결제가 완료되었습니다. 숙소의 확정을 기다리고 있으며, 확정되는 대로 바우처가 여기에 표시됩니다."
+    },
+    "actions": {
+      "eticket": "전자항공권 보기",
+      "voucher": "호텔 바우처 보기",
+      "receipt": "결제 영수증 보기",
+      "checkIn": "항공사에서 체크인"
+    },
+    "section": "여행 서류"
+  },
+  "about": {
+    "heroLabel": "CheapestGo 소개",
+    "heroTitle": "시간과 비용을 존중하는 여행.",
+    "heroBody": "CheapestGo는 항공권과 호텔을 한 곳에서 발견하고, 비교하고, 예약할 수 있는 현대적인 여행 플랫폼입니다 — 실제로 믿을 수 있는 가격으로.",
+    "missionTitle": "우리의 미션",
+    "missionBody": "여행 예약은 간편해야 합니다. 많은 플랫폼들이 수수료를 숨기고 가격을 부풀려 모든 클릭을 의심하게 만듭니다. 저희는 CheapestGo를 반대 방향으로 구축했습니다: 최상의 실제 가격을 제시하고, 정확히 무엇을 지불하는지 보여주며, 주말 여행이든 평생의 여행이든 최소한의 단계로 예약을 완료할 수 있도록 합니다.",
+    "whatWeDoTitle": "저희가 하는 일",
+    "flightsTitle": "항공권",
+    "flightsBody": "항공사 파트너를 통해 전 세계 항공권을 검색하고 예약하세요 — 명확한 가격과 결제 시 예상치 못한 수수료 없음.",
+    "hotelsTitle": "호텔 & 숙소",
+    "hotelsBody": "세계 유수 공급업체의 수백만 개 호텔과 독특한 숙소 — 항상 실제 가용성과 요금을 확인하세요.",
+    "dealsTitle": "특가 & 패키지",
+    "dealsBody": "매일 업데이트되는 엄선된 주말 여행 및 여행 특가 — 최고의 가치를 가장 먼저 만나보세요.",
+    "valuesTitle": "저희가 다른 이유",
+    "transparentTitle": "투명한 가격",
+    "transparentBody": "단일하고 투명한 서비스 마크업을 적용하며, 이미 표시된 가격에 포함되어 있습니다. 숨겨진 수수료는 절대 없습니다.",
+    "secureTitle": "기본적으로 안전",
+    "secureBody": "결제는 Stripe에서 처리되며 카드 정보를 저장하지 않습니다. 데이터는 전송 중과 저장 중에 암호화됩니다.",
+    "builtTitle": "지역을 위해 만들어졌습니다",
+    "builtBody": "동남아시아 여행자에 집중합니다 — 현지 통화, 현지 맥락, 그리고 여행 방식을 이해하는 지원.",
+    "partnersTitle": "신뢰할 수 있는 파트너",
+    "partnersBody": "항공권, 호텔, 결제 인벤토리는 검증된 글로벌 공급업체에서 제공됩니다. 보이는 가용성과 요금은 실제이며 예약 가능합니다.",
+    "whoTitle": "CheapestGo 운영 주체",
+    "whoBody": "CheapestGo는 미국 뉴욕 NY 10005 월 스트리트 30번지 8층에 본사를 둔 FORHU Inc.가 운영합니다. 질문, 피드백, 파트너십 아이디어는 언제나 환영합니다.",
+    "contactUs": "문의하기",
+    "startExploring": "탐색 시작",
+    "terms": "이용약관",
+    "privacy": "개인정보처리방침",
+    "refund": "환불 정책",
+    "meta": {
+      "title": "회사 소개 — CheapestGo",
+      "description": "CheapestGo는 동남아시아 여행객이 항공권, 호텔, 패키지를 투명한 가격으로 찾고 예약할 수 있도록 돕는 모던 온라인 여행사입니다."
+    }
   }
 }

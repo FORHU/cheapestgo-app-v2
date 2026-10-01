@@ -5,13 +5,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, X } from 'lucide-react';
+import { Plane, X, CalendarClock } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { createPortal } from 'react-dom';
 import BackButton from '@/shared/components/common/BackButton';
 import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { http } from '@/shared/lib/http';
+import { resolveDepartureDate } from '@/features/landing/lib/links';
 import { FlightResults } from '@/features/flights/components/flight-results';
 import { FlightFilters, DEFAULT_FLIGHT_FILTERS, type FlightFilterState } from '@/features/flights/components/flight-filters';
 import { ResponsiveFlightHeader, ProviderStatus } from '@/features/flights/components/ResponsiveFlightHeader';
@@ -149,10 +150,17 @@ export function FlightSearchClient() {
     const sp = useSearchParams();
     const router = useRouter();
 
+    // A route can be named without a date, and a link can sit in a chat window until its
+    // date has gone. Neither is worth refusing to search over — the airline rejects a past
+    // departure, and the page then reads as though the route has no flights at all.
+    const { departure: resolvedDeparture, chosen: departureChosen } = resolveDepartureDate(
+        sp.get('depart') ?? sp.get('departure'),
+    );
+
     const params: SearchParams = {
         origin: sp.get('origin') ?? '',
         destination: sp.get('destination') ?? '',
-        departure: sp.get('depart') ?? sp.get('departure') ?? '',
+        departure: resolvedDeparture,
         returnDate: sp.get('return') ?? undefined,
         adults: Math.max(1, parseInt(sp.get('adults') ?? '1', 10)),
         children: Math.max(0, parseInt(sp.get('children') ?? '0', 10)),
@@ -289,8 +297,10 @@ export function FlightSearchClient() {
         const resolvedOrigin = resolveIATA(params.origin);
         const resolvedDestination = resolveIATA(params.destination);
 
-        if (!resolvedOrigin || !resolvedDestination || !params.departure) {
-            setState({ status: 'error', message: 'Missing search parameters. Please go back and fill in origin, destination, and departure date.' });
+        // The date is always resolvable; a route is not. Nothing can guess where someone
+        // meant to fly, so that is the only case left worth refusing.
+        if (!resolvedOrigin || !resolvedDestination) {
+            setState({ status: 'error', message: tAll('flights.results.missingRoute') });
             return;
         }
 
@@ -475,6 +485,16 @@ export function FlightSearchClient() {
                         />
                     </div>
 
+                    {/* The same disclosure the narrow layout makes. This one carries the
+                        date in SectionHeader's subtitle, so without it the widest screen
+                        was the one that never said the date had been chosen for you. */}
+                    {!departureChosen && (
+                        <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                            <CalendarClock size={13} className="shrink-0 text-blue-500" aria-hidden />
+                            {tAll('flights.results.datePicked')}
+                        </p>
+                    )}
+
                     {bundleHotelId && (
                         <div className="mt-4 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700/50">
                             <div className="p-1.5 bg-violet-100 dark:bg-violet-900/40 rounded-lg shrink-0">
@@ -499,6 +519,7 @@ export function FlightSearchClient() {
                         origin={params.origin}
                         destination={params.destination}
                         dateStr={params.returnDate ? `${params.departure} — ${params.returnDate}` : params.departure}
+                        datePicked={!departureChosen}
                         passengersStr={[
                             tAll('flights.passengers.adults', { count: params.adults }),
                             params.children > 0 && tAll('flights.passengers.children', { count: params.children }),

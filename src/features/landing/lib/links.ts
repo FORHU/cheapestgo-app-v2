@@ -10,8 +10,16 @@
 
 import { NIGHTS } from '@/features/landing/data/catalog';
 
+/**
+ * A date as the URL and the supplier both write it, in the traveller's own calendar.
+ *
+ * Not `toISOString()`. Every caller here builds a Date from the local calendar, and
+ * `toISOString` restates it in UTC — so east of Greenwich local midnight belongs to the
+ * previous day and every deep link on the landing page left a day early. In Manila on
+ * 29 September the cards linked to the 28th.
+ */
 export function isoDate(d: Date): string {
-    return d.toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function addDays(base: Date, days: number): Date {
@@ -37,6 +45,25 @@ export function defaultTripDates(nights = NIGHTS): TripDates {
     today.setHours(0, 0, 0, 0);
     const depart = addDays(today, 30);
     return { depart: isoDate(depart), ret: isoDate(addDays(depart, nights)) };
+}
+
+/**
+ * The departure date a flight search should actually ask for.
+ *
+ * A route can be named without a date — `/flights/MNL-ICN` is a page about a route, and
+ * a link shared last month names a day that has gone. Neither is a reason to refuse to
+ * search: the airline simply rejects a departure in the past, and the page then reads as
+ * though the route has no flights.
+ *
+ * A month out, which is where the fares this product exists to find actually are. That is
+ * deliberately not the hotels' rule — a **Default Stay** is next Friday to Sunday because
+ * of what OTV has inventory for, and it has nothing to say about airfare.
+ */
+export function resolveDepartureDate(date?: string | null): { departure: string; chosen: boolean } {
+    const asked = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+    const today = isoDate(new Date());
+    if (asked && asked > today) return { departure: asked, chosen: true };
+    return { departure: defaultTripDates().depart, chosen: false };
 }
 
 export interface FlightSearchQuery {

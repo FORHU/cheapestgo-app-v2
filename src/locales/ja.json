@@ -85,7 +85,12 @@
     "emailRequired": "メールアドレスを入力してください",
     "emailInvalid": "有効なメールアドレスを入力してください",
     "passwordRequired": "パスワードを入力してください",
-    "passwordWeak": "パスワードが要件を満たしていません"
+    "passwordWeak": "パスワードが要件を満たしていません",
+    "staff": {
+      "title": "スタッフログイン",
+      "subtitle": "CheapestGoのサポート・管理",
+      "pitch": "普段お使いのアカウントと同じです。この入口は、行き先を知っているだけです。"
+    }
   },
   "checkout": {
     "back": "戻る",
@@ -395,7 +400,14 @@
   "errors": {
     "generic": "エラーが発生しました。もう一度お試しください。",
     "notFound": "ページが見つかりません。",
-    "searchFailed": "検索に失敗しました。接続を確認してもう一度お試しください。"
+    "searchFailed": "検索に失敗しました。接続を確認してもう一度お試しください。",
+    "auth": {
+      "description": "認証リクエストの処理中にエラーが発生しました。リンクの有効期限が切れているか、すでに使用された可能性があります。",
+      "goHome": "ホームへ移動",
+      "signInAgain": "もう一度ログインする",
+      "title": "認証エラー",
+      "retryDescription": "認証中に問題が発生しました。もう一度お試しください。"
+    }
   },
   "flights": {
     "results": {
@@ -426,7 +438,10 @@
       "noMatchHint": "絞り込み条件を調整してみてください。",
       "checkingProviders": "複数の提供元を確認中",
       "noFlights": "航空券が見つかりません",
-      "findingFares": "最適な運賃を検索中…"
+      "findingFares": "最適な運賃を検索中…",
+      "missingRoute": "出発地と到着地をお知らせいただければ、運賃をお探しします。",
+      "countFlights": "{count}件のフライト",
+      "datePicked": "日付はこちらで選びました — 変更すると他の運賃をご覧いただけます。"
     },
     "card": {
       "direct": "直行便",
@@ -546,7 +561,8 @@
     "results": {
       "searchFailed": "検索に失敗しました。",
       "loadingPrices": "料金を読み込み中…",
-      "noMatchHint": "絞り込みや日付を変更するか、近くの都市で検索してみてください。"
+      "noMatchHint": "絞り込みや日付を変更するか、近くの都市で検索してみてください。",
+      "datesPicked": "日付はこちらで選びました — 変更すると他の料金をご覧いただけます。"
     },
     "nearby": {
       "none": "近くに場所が見つかりません。"
@@ -2127,7 +2143,8 @@
       "placeholder": "例: 22時以降のチェックイン、エキストラベッド、高層階…",
       "saved": "保存しました — 施設に通知されました。",
       "saveError": "リクエストを保存できませんでした。もう一度お試しください。",
-      "submit": "リクエストを保存"
+      "submit": "リクエストを保存",
+      "title": "ご要望"
     },
     "sharePage": {
       "title": "予約確認書を共有",
@@ -2137,7 +2154,10 @@
       "sendTo": "送信先",
       "sentTo": "{email}に送信しました。",
       "sendError": "送信できませんでした。もう一度お試しください。",
-      "submit": "確認書を送信"
+      "submit": "確認書を送信",
+      "title": "この予約を共有",
+      "blurb": "ご一緒に旅行される方に予約確認書をお送りします。",
+      "sent": "{email} に送信しました"
     },
     "hotelConfirmed": {
       "confirming": "予約を確定中…",
@@ -2299,5 +2319,105 @@
     "plural": "目的地",
     "hotelsAvailableFor": "{from} — {to} にご利用いただけるホテル",
     "metaTitle": "{place}のホテル"
+  },
+  "documents": {
+    "status": {
+      "ticketed": "発券済み",
+      "confirmed": "確定"
+    },
+    "eticket": {
+      "title": "eチケット・旅程",
+      "passenger": "搭乗者",
+      "pnr": "予約番号",
+      "ticketNumber": "航空券番号",
+      "flight": "フライト",
+      "from": "出発",
+      "to": "到着",
+      "seat": "座席",
+      "atCheckIn": "チェックイン時に指定",
+      "fareConditions": "運賃条件",
+      "refundable": "払い戻し可能",
+      "nonRefundable": "払い戻し不可",
+      "nonChangeable": "変更不可",
+      "checkInHint": "搭乗券は航空会社でチェックインするとお受け取りいただけます。チェックインは通常、出発の24〜48時間前に開始されます。",
+      "footer": "ご予約に使用したパスポートまたは身分証明書とあわせてご提示ください。氏名は渡航書類と一致している必要があります。"
+    },
+    "voucher": {
+      "title": "ホテル予約バウチャー",
+      "confirmationNumber": "ホテル確認番号",
+      "ourReference": "当社予約番号",
+      "checkIn": "チェックイン",
+      "checkOut": "チェックアウト",
+      "stay": "宿泊",
+      "guests": "人数",
+      "occupancy": "大人{adults}名{children, plural, =0 {} other {、子供#名}}",
+      "leadGuest": "代表者",
+      "room": "客室",
+      "mealPlan": "食事プラン",
+      "paymentStatus": "お支払い状況",
+      "paidOnline": "オンライン決済済み",
+      "payAtProperty": "現地払い",
+      "specialRequests": "ご要望",
+      "requestsNotGuaranteed": "ご要望は施設にお伝えしますが、確約されるものではありません。",
+      "footer": "チェックイン時に、このバウチャーと有効な身分証明書またはパスポートをご提示ください。施設により追加の条件が適用される場合があります。",
+      "fromTime": "{time}から",
+      "untilTime": "{time}まで"
+    },
+    "receipt": {
+      "title": "支払い領収書",
+      "paid": "お支払い完了",
+      "receiptNumber": "領収書番号",
+      "bookingReference": "予約番号",
+      "paymentDate": "お支払い日",
+      "paymentMethod": "お支払い方法",
+      "card": "カード",
+      "totalPaid": "お支払い総額",
+      "footer": "この領収書はお支払いを証明するものです。渡航書類ではありません。現地ではeチケットまたはホテルバウチャーをご提示ください。"
+    },
+    "pending": {
+      "awaitingTicket": "お支払いは完了しています。航空会社がまだ発券していないため、発券され次第ここにeチケットが表示されます。",
+      "awaitingConfirmation": "お支払いは完了しています。施設からの確定をお待ちしています。確定次第、バウチャーがここに表示されます。"
+    },
+    "actions": {
+      "eticket": "eチケットを見る",
+      "voucher": "ホテルバウチャーを見る",
+      "receipt": "領収書を見る",
+      "checkIn": "航空会社でチェックイン"
+    },
+    "section": "旅行書類"
+  },
+  "about": {
+    "heroLabel": "CheapestGoについて",
+    "heroTitle": "時間とお金を大切にする旅行。",
+    "heroBody": "CheapestGoは、フライトとホテルを一か所で見つけ、比較し、予約できる現代的な旅行プラットフォームです — 本当に信頼できる価格で。",
+    "missionTitle": "私たちのミッション",
+    "missionBody": "旅行の予約は簡単であるべきです。多くのプラットフォームが手数料を隠し、価格を水増しし、すべてのクリックを不安にさせます。私たちはCheapestGoを逆の方向で構築しました：最高の実際の価格を表示し、支払う金額を正確に示し、週末旅行でも夢の旅行でも最小限の手順で予約を完了できるようにします。",
+    "whatWeDoTitle": "私たちが提供するもの",
+    "flightsTitle": "フライト",
+    "flightsBody": "航空会社パートナーを通じて世界中のフライトを検索・予約。明確な価格設定でチェックアウト時の隠れた料金はありません。",
+    "hotelsTitle": "ホテル & 宿泊",
+    "hotelsBody": "世界有数のサプライヤーから数百万のホテルとユニークな宿泊施設。常に実際の空室状況と料金をご確認いただけます。",
+    "dealsTitle": "お得情報 & パッケージ",
+    "dealsBody": "厳選された週末旅行やトラベルディール。毎日更新されるので最もお得な情報を最初にご覧いただけます。",
+    "valuesTitle": "私たちが異なる理由",
+    "transparentTitle": "透明な価格設定",
+    "transparentBody": "単一で透明なサービスマークアップを適用し、表示価格に既に含まれています。隠れた料金は一切ありません。",
+    "secureTitle": "デフォルトでセキュア",
+    "secureBody": "決済はStripeが処理し、カード情報は保存されません。データは転送中および保存中に暗号化されます。",
+    "builtTitle": "地域のために構築",
+    "builtBody": "東南アジアの旅行者に焦点を当てています — ローカル通貨、ローカルコンテキスト、旅行スタイルを理解したサポート。",
+    "partnersTitle": "信頼できるパートナーが支えています",
+    "partnersBody": "フライト、ホテル、決済の在庫は実績ある世界的プロバイダーから提供されるため、表示される空室状況と料金は実際に予約可能です。",
+    "whoTitle": "CheapestGoを運営するのは誰ですか",
+    "whoBody": "CheapestGoはFORHU Inc.が運営しています。本社：30 Wall Street, 8th Floor, New York, NY 10005, United States。ご質問、フィードバック、パートナーシップのアイデアは常に歓迎します。",
+    "contactUs": "お問い合わせ",
+    "startExploring": "探索を始める",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "refund": "返金ポリシー",
+    "meta": {
+      "title": "会社概要 — CheapestGo",
+      "description": "CheapestGoは、東南アジアを旅する人が航空券・ホテル・パッケージを明瞭な料金で検索・予約できるモダンなオンライン旅行会社です。"
+    }
   }
 }

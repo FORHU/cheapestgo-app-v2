@@ -8,6 +8,7 @@ import { Sparkles } from 'lucide-react';
 import { useDragScroll } from '@/shared/hooks/useDragScroll';
 import { attractionImagePath } from '@/shared/lib/destination-images';
 import { useTranslations } from 'next-intl';
+import { defaultStay } from '@/shared/lib/stay';
 
 interface Attraction {
   name: string;
@@ -55,6 +56,10 @@ const AttractionCard: React.FC<AttractionCardProps> = ({ attraction, index }) =>
       destination: attraction.searchQuery,
       destinationType: 'city',
       country: attraction.country,
+      // See PhilippinesCitiesSection: a card names a place, not a stay, and the window
+      // the store used to fall back to is the one with no inventory in it.
+      ...defaultStay(),
+      datesAuto: '1',
     });
     router.push(`/search?${p.toString()}`);
   }

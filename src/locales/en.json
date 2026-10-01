@@ -85,7 +85,12 @@
     "emailRequired": "Email is required",
     "emailInvalid": "Enter a valid email",
     "passwordRequired": "Password is required",
-    "passwordWeak": "Password does not meet requirements"
+    "passwordWeak": "Password does not meet requirements",
+    "staff": {
+      "title": "Staff sign in",
+      "subtitle": "Support and administration for CheapestGo",
+      "pitch": "The same account you use everywhere else. This door just knows where to put you."
+    }
   },
   "checkout": {
     "back": "Back",
@@ -395,7 +400,14 @@
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "notFound": "Page not found.",
-    "searchFailed": "Search failed. Check your connection and try again."
+    "searchFailed": "Search failed. Check your connection and try again.",
+    "auth": {
+      "description": "There was an error processing your authentication request. This could happen if the link expired or was already used.",
+      "goHome": "Go to homepage",
+      "signInAgain": "Try signing in again",
+      "title": "Authentication Error",
+      "retryDescription": "Something went wrong during authentication. Please try again."
+    }
   },
   "flights": {
     "results": {
@@ -426,7 +438,10 @@
       "noMatchHint": "Try adjusting your filter criteria.",
       "checkingProviders": "Checking multiple providers",
       "noFlights": "No flights found",
-      "findingFares": "Finding the best fares…"
+      "findingFares": "Finding the best fares…",
+      "missingRoute": "Tell us where you are flying from and to, and we will find the fares.",
+      "countFlights": "{count, plural, one {# flight} other {# flights}}",
+      "datePicked": "We picked this date — change it to see other fares."
     },
     "card": {
       "direct": "Direct",
@@ -546,7 +561,8 @@
     "results": {
       "searchFailed": "Search failed.",
       "loadingPrices": "Loading prices…",
-      "noMatchHint": "Try adjusting your filters, dates, or searching a nearby city."
+      "noMatchHint": "Try adjusting your filters, dates, or searching a nearby city.",
+      "datesPicked": "We picked these dates — change them to see other prices."
     },
     "nearby": {
       "none": "No places found nearby."
@@ -2127,7 +2143,8 @@
       "placeholder": "e.g. Late check-in after 10 PM, extra bed, high floor…",
       "saved": "Saved — the property has been notified.",
       "saveError": "Failed to save your request. Please try again.",
-      "submit": "Save request"
+      "submit": "Save request",
+      "title": "Special requests"
     },
     "sharePage": {
       "title": "Share booking confirmation",
@@ -2137,7 +2154,10 @@
       "sendTo": "Send to",
       "sentTo": "Sent to {email}.",
       "sendError": "Failed to send. Please try again.",
-      "submit": "Send confirmation"
+      "submit": "Send confirmation",
+      "title": "Share this booking",
+      "blurb": "Send the confirmation to whoever is travelling with you.",
+      "sent": "Sent to {email}"
     },
     "hotelConfirmed": {
       "confirming": "Confirming your booking…",
@@ -2299,5 +2319,105 @@
     "plural": "Destinations",
     "hotelsAvailableFor": "Hotels available for {from} — {to}",
     "metaTitle": "Hotels in {place}"
+  },
+  "documents": {
+    "status": {
+      "ticketed": "Ticketed",
+      "confirmed": "Confirmed"
+    },
+    "eticket": {
+      "title": "E-ticket & itinerary",
+      "passenger": "Passenger",
+      "pnr": "Booking reference",
+      "ticketNumber": "E-ticket number",
+      "flight": "Flight",
+      "from": "From",
+      "to": "To",
+      "seat": "Seat",
+      "atCheckIn": "Assigned at check-in",
+      "fareConditions": "Fare conditions",
+      "refundable": "Refundable",
+      "nonRefundable": "Non-refundable",
+      "nonChangeable": "changes not permitted",
+      "checkInHint": "Check in with the airline to get your boarding pass. Airlines usually open check-in 24–48 hours before departure.",
+      "footer": "Present this with the passport or ID used to book. Names must match your travel document."
+    },
+    "voucher": {
+      "title": "Hotel booking voucher",
+      "confirmationNumber": "Hotel confirmation number",
+      "ourReference": "Our reference",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "stay": "Stay",
+      "guests": "Guests",
+      "occupancy": "{adults, plural, one {# adult} other {# adults}}{children, plural, =0 {} one {, # child} other {, # children}}",
+      "leadGuest": "Lead guest",
+      "room": "Room",
+      "mealPlan": "Meal plan",
+      "paymentStatus": "Payment status",
+      "paidOnline": "Paid online",
+      "payAtProperty": "Pay at property",
+      "specialRequests": "Special requests",
+      "requestsNotGuaranteed": "Requests are passed to the property and are not guaranteed.",
+      "footer": "Present this voucher and a valid government-issued ID or passport at check-in. The property may apply additional requirements.",
+      "fromTime": "From {time}",
+      "untilTime": "Until {time}"
+    },
+    "receipt": {
+      "title": "Payment receipt",
+      "paid": "Payment successful",
+      "receiptNumber": "Receipt number",
+      "bookingReference": "Booking reference",
+      "paymentDate": "Payment date",
+      "paymentMethod": "Payment method",
+      "card": "Card",
+      "totalPaid": "Total paid",
+      "footer": "This receipt confirms a payment. It is not a travel document — your e-ticket or hotel voucher is what you show on arrival."
+    },
+    "pending": {
+      "awaitingTicket": "Your payment went through. The airline has not issued the ticket yet — your e-ticket appears here as soon as it does.",
+      "awaitingConfirmation": "Your payment went through. We are waiting for the property to confirm — your voucher appears here as soon as it does."
+    },
+    "actions": {
+      "eticket": "View e-ticket",
+      "voucher": "View hotel voucher",
+      "receipt": "View payment receipt",
+      "checkIn": "Check in with airline"
+    },
+    "section": "Travel documents"
+  },
+  "about": {
+    "heroLabel": "About CheapestGo",
+    "heroTitle": "Travel that respects your time and your wallet.",
+    "heroBody": "CheapestGo is a modern travel platform that helps you discover, compare, and book flights and hotels in one place — at prices you can actually trust.",
+    "missionTitle": "Our mission",
+    "missionBody": "Booking travel should feel effortless, not adversarial. Too many platforms bury fees, inflate prices, and make you second-guess every click. We built CheapestGo to do the opposite: surface the best real prices, show exactly what you pay, and get you booked in as few steps as possible — whether you are chasing a weekend escape or planning the trip of a lifetime.",
+    "whatWeDoTitle": "What we do",
+    "flightsTitle": "Flights",
+    "flightsBody": "Search and book flights worldwide through our airline partners, with clear pricing and no surprise fees at checkout.",
+    "hotelsTitle": "Hotels & stays",
+    "hotelsBody": "Millions of hotels and unique stays, sourced from leading global suppliers so you always have real availability and rates.",
+    "dealsTitle": "Deals & packages",
+    "dealsBody": "Curated weekend getaways and travel deals, updated daily, so the best value is the first thing you see.",
+    "valuesTitle": "What makes us different",
+    "transparentTitle": "Transparent pricing",
+    "transparentBody": "We apply a single, transparent service markup that is already included in the price you see. No hidden fees, ever.",
+    "secureTitle": "Secure by default",
+    "secureBody": "Payments are processed by Stripe and we never store your card details. Your data is encrypted in transit and at rest.",
+    "builtTitle": "Built for the region",
+    "builtBody": "We focus on travelers in Southeast Asia — local currencies, local context, and support that understands how you travel.",
+    "partnersTitle": "Powered by trusted partners",
+    "partnersBody": "Our flight, hotel, and payment inventory comes from established global providers, so the availability and rates you see are real and bookable.",
+    "whoTitle": "Who runs CheapestGo",
+    "whoBody": "CheapestGo is operated by FORHU Inc., headquartered at 30 Wall Street, 8th Floor, New York, NY 10005, United States. Questions, feedback, or partnership ideas are always welcome.",
+    "contactUs": "Contact us",
+    "startExploring": "Start exploring",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "refund": "Refund Policy",
+    "meta": {
+      "title": "About Us — CheapestGo",
+      "description": "CheapestGo is a modern online travel agency helping travelers across Southeast Asia find and book flights, hotels, and packages at transparent prices."
+    }
   }
 }

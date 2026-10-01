@@ -69,16 +69,44 @@ export function perNight(stayTotal: number, nights: number | null): number | nul
 }
 
 /** A date as the URL and the supplier both write it. */
-const asDay = (d: Date) => d.toISOString().slice(0, 10);
+/**
+ * A date as the URL and the supplier both write it, in the traveller's own calendar.
+ *
+ * Not `toISOString()`. Every Date reaching this is built from the local calendar, and
+ * restating it in UTC moves it back a day east of Greenwich — so in Manila a Default Stay
+ * computed at 09:00 on the 29th was written as the 28th, and the guard that rejects a
+ * past arrival then rejected the very stay this file had just chosen.
+ */
+export const asDay = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
- * The stay to quote for when the link does not name a usable one: next Friday to Sunday.
+ * The **Default Stay**: what to quote for when the link does not name a usable one.
+ * Next Friday to Sunday.
  *
  * Not tomorrow. OTV has near-zero inventory for same-day and next-day stays, so a page
  * that falls back to those renders "no rooms available" for a hotel that has plenty.
+ *
+ * This is the one hotel rule. Two others existed and have been removed: the search
+ * store filled in tomorrow, and `links.ts` used today+30 — so which stay a traveller
+ * was quoted depended on which card they clicked. `defaultTripDates` keeps today+30
+ * for **flights**, where the cheapest departure is weeks out, not next weekend.
  */
 /** Friday to Sunday. Also how long a stay is given when the link's checkout is unusable. */
 const DEFAULT_NIGHTS = 2;
+
+/**
+ * The last arrival date the supplier has nothing for.
+ *
+ * Same-day *and* next-day: the rule above has always said so, but the guard below only
+ * tested today, so a check-in of tomorrow went to the supplier unrescued and every
+ * property opened from it came back empty.
+ */
+export const earliestBookableDay = (): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return asDay(d);
+};
 
 export function defaultStay(): { checkIn: string; checkOut: string } {
     const now = new Date();
@@ -101,11 +129,16 @@ export function defaultStay(): { checkIn: string; checkOut: string } {
  * The nights come back with the dates on purpose: whatever restates the price per night
  * has to divide by the count the price was quoted for. Deriving them separately is what
  * produced the doubled nightly rate in v1 (ADR-0020).
+ *
+ * `chosen` says whether the traveller named this stay or the app did. A Default Stay is
+ * disclosed rather than applied silently — a quote nobody asked for, with no sign of
+ * where it came from, is worse than no quote.
  */
 export function resolveStayDates(checkIn: DateInput, checkOut: DateInput): {
     checkIn: string;
     checkOut: string;
     nights: number;
+    chosen: boolean;
 } {
     const fallback = defaultStay();
     const day = (value: DateInput): string | null => {
@@ -113,13 +146,15 @@ export function resolveStayDates(checkIn: DateInput, checkOut: DateInput): {
         return t === null ? null : asDay(new Date(t));
     };
 
-    let start = day(checkIn) ?? fallback.checkIn;
+    const asked = day(checkIn);
+    let start = asked ?? fallback.checkIn;
     let end   = day(checkOut) ?? fallback.checkOut;
 
-    // Today counts as past: a stay starting today is the same near-empty inventory.
-    if (start <= asDay(new Date())) {
-        start = fallback.checkIn;
-    }
+    // Same-day and next-day are the near-empty window, so both fall back — the rule this
+    // guard exists for always said "not tomorrow", and testing only today let every
+    // next-day search through to a supplier that had nothing to answer with.
+    const rescued = start < earliestBookableDay();
+    if (rescued) start = fallback.checkIn;
 
     // A checkout on or before the arrival is not a stay. Keep the arrival — it is the
     // part the guest chose — and give it the default two nights.
@@ -129,5 +164,10 @@ export function resolveStayDates(checkIn: DateInput, checkOut: DateInput): {
         end = asDay(pushed);
     }
 
-    return { checkIn: start, checkOut: end, nights: nightsBetween(start, end) ?? 1 };
+    return {
+        checkIn: start,
+        checkOut: end,
+        nights: nightsBetween(start, end) ?? 1,
+        chosen: asked !== null && !rescued,
+    };
 }
