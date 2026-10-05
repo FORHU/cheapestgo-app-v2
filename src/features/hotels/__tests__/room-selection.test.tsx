@@ -134,7 +134,7 @@ describe('RoomSelection', () => {
         }));
     });
 
-    it('renders one card per rate', () => {
+    it('renders one card per room, with its rates inside it', () => {
         const room = makeRoom({
             rates: [
                 { offerId: 'a', price: 200, currency: 'USD', boardCode: 'RO', refundable: true,  refundableTag: 'REFUNDABLE' },
@@ -142,16 +142,17 @@ describe('RoomSelection', () => {
             ],
         });
         render(<RoomSelection {...baseProps} rooms={[room]} />);
-        expect(screen.getAllByRole('button', { name: /Select Room|Selected/ })).toHaveLength(2);
-        expect(screen.getByText('$200')).toBeInTheDocument();
-        expect(screen.getByText('$240')).toBeInTheDocument();
+        // One room, one Select. The rates are a choice of terms within it, not
+        // two listings of the same bed.
+        expect(screen.getAllByRole('button', { name: /^(Select Room|Selected)$/ })).toHaveLength(1);
+        // Both prices are reachable: the cheaper as the headline, the dearer as its chip.
+        expect(screen.getAllByText(/\$200/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/\$240/).length).toBeGreaterThan(0);
     });
 });
 
 describe('RoomSelection — categorised modal', () => {
-    const content: RoomContent = {
-        gallery: [],
-        keyFacts: [{ label: 'Non-smoking' }, { label: 'Private bathroom' }],
+    const content: RoomContent = {        keyFacts: [{ label: 'Non-smoking' }, { label: 'Private bathroom' }],
         bedLine: 'Double bed',
         bedsExtraSummary: 'Extra beds and cribs are unavailable for this room type',
         sections: [
@@ -207,7 +208,7 @@ describe('RoomSelection — categorised modal', () => {
         const room = makeRoom({ amenities: ['Sea view'] });
         // hollow content — the shape the API attaches when matchEtgRoomGroup misses
         room.content = {
-            gallery: [], keyFacts: [], sections: [],
+            keyFacts: [], sections: [],
             bedLine: 'Double bed',
             bedsExtraSummary: 'Extra beds and cribs are unavailable for this room type',
         };
@@ -224,7 +225,8 @@ describe('RoomSelection — categorised modal', () => {
 
     it('opens the photo viewer from a thumbnail without closing the modal', () => {
         const room = makeRoom();
-        room.content = { ...content, gallery: ['/a.jpg', '/b.jpg'] };
+        room.roomPhotos = ['/a.jpg', '/b.jpg'];
+        room.content = content;
         render(<RoomSelection {...baseProps} rooms={[room]} />);
         fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
         const dialog = screen.getByRole('dialog');
@@ -239,5 +241,52 @@ describe('RoomSelection — categorised modal', () => {
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
         expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+});
+
+/**
+ * A room shows its own photograph.
+ *
+ * The API sends `roomPhotos`. This component read `content.gallery`, and the type declared
+ * a third name, `roomImages` — so every card fell through to the hotel's exterior shot even
+ * where eight pictures of the room had arrived. Every room on a property looked identical,
+ * which on a page someone books from is the one thing that must not happen.
+ *
+ * `content` is deliberately absent in both tests below: photographs do not depend on ETG
+ * having also matched key facts or sections, and tying them together is how the old code
+ * hid this.
+ */
+describe('RoomSelection — room photography', () => {
+    const HOTEL_SHOT = '/hotel-exterior.jpg';
+
+    it('prefers the room’s own photo over the hotel’s on the card', () => {
+        const room = makeRoom({ roomPhotos: ['/room-a.jpg', '/room-b.jpg'] });
+        render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
+
+        const sources = Array.from(document.querySelectorAll('img')).map(img => img.getAttribute('src'));
+        expect(sources).toContain('/room-a.jpg');
+        expect(sources).not.toContain(HOTEL_SHOT);
+    });
+
+    it('shows every room photo in the detail panel, with no ETG content alongside', () => {
+        const room = makeRoom({ roomPhotos: ['/room-a.jpg', '/room-b.jpg'] });
+        render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+
+        const dialog = screen.getByRole('dialog');
+        const sources = Array.from(dialog.querySelectorAll('img')).map(img => img.getAttribute('src'));
+        expect(sources).toEqual(expect.arrayContaining(['/room-a.jpg', '/room-b.jpg']));
+    });
+
+    it('falls back to the hotel’s photo, and says so, when the room has none', () => {
+        const room = makeRoom({ roomPhotos: [] });
+        render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+
+        const dialog = screen.getByRole('dialog');
+        const sources = Array.from(dialog.querySelectorAll('img')).map(img => img.getAttribute('src'));
+        expect(sources).toContain(HOTEL_SHOT);
+        // Labelled, so the hotel's building is never passed off as the room.
+        expect(within(dialog).getByText('Photo of the property')).toBeInTheDocument();
     });
 });

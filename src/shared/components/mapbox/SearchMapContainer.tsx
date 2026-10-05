@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { MappableProperty } from '@/shared/components/map/types';
 import { useHotelClusters, isCluster, type ViewBounds } from '@/shared/components/map/useHotelClusters';
@@ -154,8 +154,6 @@ interface SearchMapContainerProps {
      * Defaults on, so the map behaves as it always has if nobody passes it.
      */
     showPois?: boolean;
-    /** Number of nights in the search — used to convert total-stay prices to per-night display prices. */
-    nights?: number;
 }
 
 export const SearchMapContainer = React.memo(({
@@ -174,7 +172,6 @@ export const SearchMapContainer = React.memo(({
     onZoomChange,
     showAllProperties,
     showPois = true,
-    nights = 1,
 }: SearchMapContainerProps) => {
     const { mapRef, isMapLoaded, isMapIdle, handleMapLoad: instanceHandleMapLoad, handleMapStyleChange } = useMapboxInstance();
     const isMobile = useIsMobile();
@@ -217,10 +214,10 @@ export const SearchMapContainer = React.memo(({
     const markerPrices = useMemo(() => {
         const prices: Record<string, number> = {};
         for (const p of mappableProperties) {
-            prices[p.id] = convertCurrency(p.price, p.currency || 'USD', targetCurrency) / nights;
+            prices[p.id] = convertCurrency(p.price, p.currency || 'USD', targetCurrency);
         }
         return prices;
-    }, [mappableProperties, targetCurrency, nights]);
+    }, [mappableProperties, targetCurrency]);
 
     const _displayPrices = useMemo(() => {
         const formatted: Record<string, string> = {};
@@ -335,10 +332,46 @@ export const SearchMapContainer = React.memo(({
         };
     }, [isMapLoaded, mapRef]);
 
-    // skipInitialFit is never set: useMapViewport returns early via the `center`
-    // branch when defaultCenter is provided, so it won't run fitBounds on all
-    // properties even when a district bbox is active.
-    useMapViewport({ mapRef, isMapLoaded, properties: mappableProperties, center: defaultCenter, selectedId, disableFlyToSelected: true });
+    // A district search fits the district; everything else keeps the city flyTo.
+    //
+    // `useMapViewport`'s `center` branch opens at a fixed zoom 12, which frames a city.
+    // A **Sub-Area** search is a smaller question — "Alabang", not "Muntinlupa" — and at
+    // zoom 12 on a wide monitor the district is a quarter of the screen with half of
+    // Metro Manila around it, so the hotels the search is actually about arrive as one
+    // cluster bubble nobody can read. Worse, the bbox already filters the markers at
+    // zoom 11 and up, so the view is wide and the pins in it are cut back to the
+    // district anyway: the emptiness is the filter working and looks like no results.
+    useMapViewport({
+        mapRef, isMapLoaded, properties: mappableProperties, center: defaultCenter,
+        selectedId, disableFlyToSelected: true, skipInitialFit: !!districtBbox,
+    });
+
+    /**
+     * The district, framed once per district, as soon as the map can be told to.
+     *
+     * Keyed on the bounds themselves rather than a boolean: a plain "have I fitted yet"
+     * flag has to be reset when the district changes, and a reset effect runs on mount
+     * too — immediately after the fit it is meant to undo.
+     */
+    const fittedBboxRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!districtBbox || !isMapLoaded) return;
+        const key = districtBbox.join(',');
+        if (fittedBboxRef.current === key) return;
+        const map = mapRef.current;
+        if (!map) return;
+        fittedBboxRef.current = key;
+        const [minLng, minLat, maxLng, maxLat] = districtBbox;
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+            // Padding keeps the edge pins off the card rail and the search bar; the
+            // ceiling stops a one-street Sub-Area filling the screen with rooftops.
+            padding: { top: 90, bottom: 180, left: 60, right: 60 },
+            maxZoom: 15,
+            duration: 800,
+            pitch: 0,
+            bearing: 0,
+        });
+    }, [districtBbox, isMapLoaded, mapRef]);
 
 
     // ── Imperative hotel pin markers ─────────────────────────────────────────
@@ -997,7 +1030,6 @@ export const SearchMapContainer = React.memo(({
                     onViewDetails={onViewDetails}
                     onSelect={(id) => onSelectId(id)}
                     isMobile={isMobile}
-                    nights={nights}
                 />
 
                 {selectedNearbyPlace && (

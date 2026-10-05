@@ -346,6 +346,12 @@ function RailCard({
     const c = railCardPalette(theme);
     // Already per night: api-v2 divides the supplier's stay total before sending it, the
     // same contract v1 has. Dividing again here would quote a third of the real rate.
+    //
+    // That was written before it was true. Until 2026-10-04 `/hotels/search` sent the Stay
+    // Total — ₱1,604 for a two-night stay the property page sold at ₱802 a night — and this
+    // card printed it under a "/ night" label while the map beside it divided and showed
+    // ₱802. One screen, two prices, and correct only on a one-night stay. The division now
+    // happens once, in the API, and the map's own `/ nights` came out in the same change.
     const price = convertCurrency(property.price, property.currency || 'USD', currency);
     const priceStr = formatCurrency(price, currency);
     const rating = property.rating ?? 0;
@@ -1518,7 +1524,6 @@ function HotelSearchContent() {
                     onZoomChange={setMapZoom}
                     showAllProperties={showAllCityOverride}
                     showPois={showPois}
-                    nights={nights}
                 />
             </div>
 

@@ -175,7 +175,7 @@ export function ratesOf(room: RoomOption): RateRow[] {
 interface RoomSelectionProps {
     rooms: RoomOption[];
     /**
-     * The hotel's own photo, for rooms that came back without `roomImages`.
+     * The hotel's own photo, for rooms that came back without `roomPhotos`.
      * Not a picture of the room, and the card treats it as such: it is the
      * plate behind the rate rather than a claim about what you get.
      */
@@ -499,6 +499,8 @@ interface RateCard {
     /** ETG room-detail content, when the API matched this room to a room-group.
      *  Absent → the modal falls back to `allFeatures`. */
     content?: RoomContent;
+    /** The room's own photographs. Empty → the hotel's shot stands in, labelled as such. */
+    photos: string[];
 }
 
 function RoomDetailDialog({
@@ -543,7 +545,7 @@ function RoomDetailDialog({
      */
     const roomContent = card.content;
     const hasRoomContent = !!roomContent
-        && (roomContent.gallery.length > 0 || roomContent.keyFacts.length > 0 || roomContent.sections.length > 0);
+        && (roomContent.keyFacts.length > 0 || roomContent.sections.length > 0);
     /** Room sections (only when matched) then hotel-scoped policy sections (always). */
     const modalSections = [
         ...(hasRoomContent ? roomContent!.sections : []),
@@ -593,30 +595,36 @@ function RoomDetailDialog({
                     <p className={cn('mt-1 text-[13px]', palette.empty)}>{bedsExtraSummary}</p>
                 )}
 
+                {/*
+                  * The room's photographs, independent of whether ETG also matched key facts
+                  * or sections. They used to hang off `content.gallery` inside the branch
+                  * below, so a room with eight pictures and no other content showed the
+                  * hotel's exterior instead — and since nothing ever built `content`, that
+                  * was every room.
+                  */}
+                {card.photos.length > 0 ? (
+                    <div className="mt-4 flex gap-2 overflow-x-auto">
+                        {card.photos.map((src, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                key={src}
+                                src={src}
+                                alt=""
+                                onClick={() => setLightboxStart(i)}
+                                className="h-28 w-40 shrink-0 cursor-pointer rounded-lg object-cover"
+                            />
+                        ))}
+                    </div>
+                ) : galleryFallback && (
+                    <div className="mt-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
+                        <p className={cn('mt-1 text-[12px]', palette.empty)}>{t('v2.photoOfProperty')}</p>
+                    </div>
+                )}
+
                 {hasRoomContent ? (
                     <>
-                        {roomContent!.gallery.length > 0 && (
-                            <div className="mt-4 flex gap-2 overflow-x-auto">
-                                {roomContent!.gallery.map((src, i) => (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                        key={src}
-                                        src={src}
-                                        alt=""
-                                        onClick={() => setLightboxStart(i)}
-                                        className="h-28 w-40 shrink-0 cursor-pointer rounded-lg object-cover"
-                                    />
-                                ))}
-                            </div>
-                        )}
-                        {roomContent!.gallery.length === 0 && galleryFallback && (
-                            <div className="mt-4">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
-                                <p className={cn('mt-1 text-[12px]', palette.empty)}>{t('v2.photoOfProperty')}</p>
-                            </div>
-                        )}
-
                         {roomContent!.keyFacts.length > 0 && (
                             <section className="mt-5">
                                 <KeyFactsRow facts={roomContent!.keyFacts} palette={palette} />
@@ -713,10 +721,10 @@ function RoomDetailDialog({
 
             {/* Its own layer — clicks inside the viewer (backdrop, close, arrows)
                 must not bubble to the modal's `onClick={onClose}` behind it. */}
-            {lightboxStart !== null && card.content && card.content.gallery.length > 0 && (
+            {lightboxStart !== null && card.photos.length > 0 && (
                 <div onClick={(e) => e.stopPropagation()}>
                     <Lightbox
-                        images={card.content.gallery}
+                        images={card.photos}
                         startIndex={lightboxStart}
                         onClose={() => setLightboxStart(null)}
                     />
@@ -728,10 +736,13 @@ function RoomDetailDialog({
 }
 
 function RoomRateCard({
-    card, image, selected, palette, currency, nights, onSelect,
+    rates, image, selectedOfferId, palette, currency, nights, onSelect,
     propertySections, additionalInfo,
 }: {
-    card: RateCard; image?: string | null; selected: boolean;
+    /** One room's rates, cheapest first. Always at least one. */
+    rates: RateCard[];
+    image?: string | null;
+    selectedOfferId?: string | null;
     palette: Palette; currency: string; nights?: number | null;
     onSelect: (offer: SelectedOffer) => void;
     propertySections?: DetailSection[];
@@ -739,15 +750,25 @@ function RoomRateCard({
 }) {
     const tAll = useTranslations();
     const [modalOpen, setModalOpen] = useState(false);
+    /**
+     * Which of the room's rates the card is currently showing.
+     *
+     * Index rather than offer id, because the list is rebuilt whenever a filter chip
+     * changes and an id that has just been filtered out would leave the card blank.
+     * Cheapest first, so index 0 is the price the room advertises.
+     */
+    const [rateIdx, setRateIdx] = useState(0);
+    const card = rates[Math.min(rateIdx, rates.length - 1)];
+    const selected = card.rate.offerId === selectedOfferId;
 
     // The room's own photo where there is one, the hotel's where there is not.
     //
     // This used to take the hotel's unconditionally, which made every row on a property
     // identical — the same building shot beside "Deluxe Double" and "Superior Double", so the
     // one thing a reader is comparing looked the same for both. The expanded panel below has
-    // always preferred the room's gallery and kept the hotel shot as its fallback; the two
-    // disagreeing is what made this look deliberate rather than missed.
-    const photo = card.content?.gallery?.[0] ?? image;
+    // always preferred the room's own photographs and kept the hotel shot as its fallback;
+    // the two disagreeing is what made this look deliberate rather than missed.
+    const photo = card.photos[0] ?? image;
     const symbol = currencySymbol(currency) || currency;
     const pick = () => onSelect({ room: card.room, rate: card.rate });
 
@@ -783,7 +804,11 @@ function RoomRateCard({
                         <h4 className={cn('text-[16px] font-medium sm:text-[17px]', palette.name)}>{card.heading}</h4>
                         <div className="flex flex-wrap items-center gap-1.5">
                             {card.boardPill && <Pill palette={palette}>{card.boardPill}</Pill>}
-                            <Pill palette={palette}>{card.refundable ? 'Refundable' : 'Non-refundable'}</Pill>
+                            <Pill palette={palette}>
+                                {card.refundable
+                                    ? tAll('hotels.rooms.refundable')
+                                    : tAll('hotels.rooms.nonRefundable')}
+                            </Pill>
                         </div>
                     </div>
                     <p className="shrink-0 whitespace-nowrap text-right">
@@ -825,6 +850,44 @@ function RoomRateCard({
                         {selected ? 'Selected' : 'Select Room'}
                     </button>
                 </div>
+
+                {/*
+                  * The room's other rates, when it has any.
+                  *
+                  * These used to be separate cards — the same room, the same photograph,
+                  * four prices down the page. What actually separates them is the terms,
+                  * so they belong inside the one room as a choice rather than beside it
+                  * as duplicates. Picking one re-prices the card above: the headline, the
+                  * board and refundable pills, and the payment-terms column all follow.
+                  */}
+                {rates.length > 1 && (
+                    <div className="flex flex-wrap items-center gap-1.5 border-t border-current/[0.06] pt-3">
+                        {rates.map((option, i) => {
+                            const active = i === Math.min(rateIdx, rates.length - 1);
+                            return (
+                                <button
+                                    key={option.rate.offerId}
+                                    type="button"
+                                    onClick={() => setRateIdx(i)}
+                                    aria-pressed={active}
+                                    className={cn(
+                                        'cursor-pointer rounded-full px-3 py-1.5 text-[12px] font-medium whitespace-nowrap transition-colors',
+                                        active ? palette.pillOn : palette.pillIdle,
+                                    )}
+                                >
+                                    {symbol}{Math.round(option.nightly).toLocaleString()}
+                                    <span className="opacity-60">
+                                        {' · '}
+                                        {option.boardPill
+                                            ?? (option.refundable
+                                                ? tAll('hotels.rooms.refundable')
+                                                : tAll('hotels.rooms.nonRefundable'))}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {modalOpen && (
@@ -907,6 +970,7 @@ export function RoomSelection({
                 // back up for the "× N nights" line, which is the only place a total belongs.
                 nightly: convertCurrency(rate.price, rate.currency || 'USD', currency),
                 content: room.content,
+                photos: room.roomPhotos ?? [],
             };
         });
     }), [rooms, hotelAmenities, occupancy, checkIn, currency, nights]);
@@ -923,11 +987,39 @@ export function RoomSelection({
         return cards.filter(c => !c.refundable);
     }, [cards, filter]);
 
-    const pageCount = Math.max(1, Math.ceil(filtered.length / ROOMS_PER_PAGE));
+    /**
+     * One card per **Room**, not per **Rate**.
+     *
+     * The flattening above is still what the filters run on — "Breakfast Included" and
+     * "Refundable" are properties of a price, not of a room — but it must not reach the
+     * screen. Drawn per rate, a room sold four ways became four cards with the same name,
+     * the same photograph and four prices, which reads as duplicate listings or a pricing
+     * fault rather than as the choice of terms it is. Parque Espana drew "1 Bedroom
+     * Executive Double room" four times; Roynet would have drawn seventy cards.
+     *
+     * Grouped *after* filtering, so a card only ever offers rates that survived the chips.
+     * Keyed on the heading because that is what a reader distinguishes rooms by — two
+     * supplier room codes with one display name are one room to the person choosing.
+     */
+    const groups = useMemo(() => {
+        const byRoom = new Map<string, RateCard[]>();
+        for (const card of filtered) {
+            const key = card.heading;
+            const existing = byRoom.get(key);
+            if (existing) existing.push(card);
+            else byRoom.set(key, [card]);
+        }
+        // Cheapest rate first within a room, cheapest room first overall — the headline
+        // price of a card is the lowest it can be booked at.
+        const out = [...byRoom.values()].map(rates => [...rates].sort((a, b) => a.nightly - b.nightly));
+        return out.sort((a, b) => a[0].nightly - b[0].nightly);
+    }, [filtered]);
+
+    const pageCount = Math.max(1, Math.ceil(groups.length / ROOMS_PER_PAGE));
     // Clamped, not trusted: the filter can shrink the list under a page index
     // that has already been moved past the new end.
     const safePage = Math.min(page, pageCount - 1);
-    const paged = filtered.slice(safePage * ROOMS_PER_PAGE, safePage * ROOMS_PER_PAGE + ROOMS_PER_PAGE);
+    const paged = groups.slice(safePage * ROOMS_PER_PAGE, safePage * ROOMS_PER_PAGE + ROOMS_PER_PAGE);
 
     /** Turn to a page, recording the direction so the incoming column slides
      *  in from that side. The scroll position is left where it is — the pager
@@ -980,14 +1072,14 @@ export function RoomSelection({
                     transition={{ duration: PAGE_SLIDE_SECONDS, ease: PAGE_EASE }}
                     className="flex flex-col gap-3"
                 >
-                    {paged.map((card) => (
+                    {paged.map((rates) => (
                         <RoomRateCard
-                            key={`${card.room.id}-${card.rate.offerId}`}
-                            card={card}
+                            key={`${rates[0].room.id}-${rates[0].heading}`}
+                            rates={rates}
                             image={image}
                             currency={currency}
                             nights={nights}
-                            selected={card.rate.offerId === selectedOfferId}
+                            selectedOfferId={selectedOfferId}
                             palette={palette}
                             onSelect={onSelect}
                             propertySections={propertySections}

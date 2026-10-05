@@ -69,7 +69,14 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
         else if (!validateEmail(p.email)) errors[`${i}.email`]      = 'Invalid email';
         if (!p.phone.trim())          errors[`${i}.phone`]          = 'Required';
         if (!p.dateOfBirth)           errors[`${i}.dateOfBirth`]    = 'Required';
+        // Gender, because the order builder defaults a missing one to female and a ticket
+        // whose gender disagrees with the passport is refused at the gate.
+        if (!p.gender)                errors[`${i}.gender`]         = 'Required';
         if (!p.passportNumber.trim()) errors[`${i}.passportNumber`] = 'Required';
+        // Expiry and issuing country travel with the number or the airline gets none of
+        // it: `duffelIdentityDocuments` returns nothing unless all three are present.
+        if (!p.passportExpiry)        errors[`${i}.passportExpiry`] = 'Required';
+        if (p.nationality.trim().length !== 2) errors[`${i}.nationality`] = '2-letter country code';
     });
     return errors;
 }
@@ -492,7 +499,8 @@ function CheckoutContent() {
     // Flight form
     const [passengers, setPassengers]         = useState<PassengerInfo[]>(() =>
         Array.from({ length: Math.max(1, adults) }, () => ({
-            firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', passportNumber: '',
+            firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
+            gender: '', passportNumber: '', passportExpiry: '', nationality: '',
         }))
     );
     const [passengerErrors, setPassengerErrors] = useState<Record<string, string>>({});
@@ -666,7 +674,9 @@ function CheckoutContent() {
                     idempotencyKey: `flight-${offerId}-${passengers[0].email}`,
                     passengers: passengers.map(p => ({
                         firstName: p.firstName, lastName: p.lastName, email: p.email,
-                        phone: p.phone, dateOfBirth: p.dateOfBirth, passportNumber: p.passportNumber, type: 'adult',
+                        phone: p.phone, dateOfBirth: p.dateOfBirth, gender: p.gender,
+                        passportNumber: p.passportNumber, passportExpiry: p.passportExpiry,
+                        nationality: p.nationality.trim().toUpperCase(), type: 'adult',
                     })),
                 },
             );
@@ -888,10 +898,29 @@ function CheckoutContent() {
                                             <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
                                         </div>
                                         <div>
+                                            <select value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} style={mkInput(!!passengerErrors[`${i}.gender`])}>
+                                                {/* Duffel accepts only these two. */}
+                                                <option value="">{tAll('checkout.userDetails.gender')}</option>
+                                                <option value="m">{tAll('checkout.userDetails.genderMale')}</option>
+                                                <option value="f">{tAll('checkout.userDetails.genderFemale')}</option>
+                                            </select>
+                                            <ErrText msg={passengerErrors[`${i}.gender`]} />
+                                        </div>
+                                    </Grid2>
+                                    <Grid2>
+                                        <div>
                                             <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} style={mkInput(!!passengerErrors[`${i}.passportNumber`])} />
                                             <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
                                         </div>
+                                        <div>
+                                            <input type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} placeholder={tAll('checkout.userDetails.passportExpiry')} style={mkInput(!!passengerErrors[`${i}.passportExpiry`])} />
+                                            <ErrText msg={passengerErrors[`${i}.passportExpiry`]} />
+                                        </div>
                                     </Grid2>
+                                    <FieldRow>
+                                        <input type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder={tAll('checkout.userDetails.nationality')} style={mkInput(!!passengerErrors[`${i}.nationality`])} />
+                                        <ErrText msg={passengerErrors[`${i}.nationality`]} />
+                                    </FieldRow>
                                 </div>
                             ))}
                             <PrimaryBtn onClick={handleFlightSubmit} loading={submitting}>

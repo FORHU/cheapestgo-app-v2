@@ -5,10 +5,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, X, CalendarClock } from 'lucide-react';
+import { Plane, X, CalendarClock, Clock, SearchX } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { createPortal } from 'react-dom';
 import BackButton from '@/shared/components/common/BackButton';
+import { StateScreen, stateActionClass, stateSecondaryClass } from '@/shared/components/StateScreen';
 import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { http } from '@/shared/lib/http';
@@ -42,10 +43,30 @@ const CITY_TO_IATA: Record<string, string> = {
 
 const IATA_RE = /^[A-Z]{3}$/;
 
+/**
+ * An airport code, from whatever the URL happens to carry.
+ *
+ * Three shapes reach here, and only two were handled. The bare code comes from a deep
+ * link; a bare city name comes from the landing page's curated links; and **"Clark (CRK)"**
+ * comes from the search bar, which puts the airport picker's own display name in the URL
+ * (`immersive-search-bar.tsx`, `origin: pickedOrigin?.name`).
+ *
+ * That third shape matched neither test, so every flight search started from the app's own
+ * search bar refused with "tell us where you are flying from and to" — the one route into
+ * the feature, closed. Deep links kept working, which is why it survived.
+ *
+ * The parenthesised code is read first: when a name carries one it is the authority, and
+ * "London (LHR)" should not be able to resolve through the city table to anywhere else.
+ */
 function resolveIATA(input: string): string | null {
-    const upper = input.trim().toUpperCase();
+    const trimmed = input.trim();
+    const upper = trimmed.toUpperCase();
     if (IATA_RE.test(upper)) return upper;
-    return CITY_TO_IATA[input.trim().toLowerCase()] ?? null;
+
+    const tagged = /\(([A-Z]{3})\)/.exec(upper);
+    if (tagged) return tagged[1];
+
+    return CITY_TO_IATA[trimmed.toLowerCase()] ?? null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -103,43 +124,37 @@ function _getProviderCounts(offers: FlightOffer[]): Record<string, number> {
 function TimeoutBanner({ onRetry }: { onRetry: () => void }) {
     const tAll = useTranslations();
     return (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-10 text-center space-y-4">
-            <div className="text-5xl">⏱️</div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white">{tAll('flights.results.slowTitle')}</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                {tAll('flights.results.slowBody')}
-            </p>
-            <div className="flex gap-3 justify-center mt-2">
-                <button
-                    onClick={onRetry}
-                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-full transition-colors"
-                >
-                    {tAll('flights.results.tryAgain')}
-                </button>
-                <Link
-                    href="/"
-                    className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white text-sm font-semibold rounded-full transition-colors"
-                >
-                    {tAll('flights.results.newSearch')}
-                </Link>
-            </div>
-        </div>
+        <StateScreen
+            icon={Clock}
+            title={tAll('flights.results.slowTitle')}
+            lines={[tAll('flights.results.slowBody')]}
+            actions={
+                <>
+                    <button type="button" onClick={onRetry} className={stateActionClass}>
+                        {tAll('flights.results.tryAgain')}
+                    </button>
+                    <Link href="/" className={stateSecondaryClass}>
+                        {tAll('flights.results.newSearch')}
+                    </Link>
+                </>
+            }
+        />
     );
 }
 
 function ErrorBanner({ message }: { message: string }) {
     const tAll = useTranslations();
     return (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-8 rounded-2xl text-center space-y-3">
-            <p className="text-lg font-bold text-red-700 dark:text-red-400">{tAll('flights.results.searchError')}</p>
-            <p className="text-sm text-red-600 dark:text-red-300">{message}</p>
-            <Link
-                href="/"
-                className="block mt-2 text-sm font-semibold text-red-700 dark:text-red-400 hover:underline"
-            >
-                {tAll('flights.results.tryAnother')}
-            </Link>
-        </div>
+        <StateScreen
+            icon={SearchX}
+            title={tAll('flights.results.searchError')}
+            lines={[message]}
+            actions={
+                <Link href="/" className={stateActionClass}>
+                    {tAll('flights.results.tryAnother')}
+                </Link>
+            }
+        />
     );
 }
 
