@@ -37,7 +37,6 @@ export interface DetailSection {
 export interface AmenityGroup { groupName: string; amenities: string[]; nonFree: string[] }
 
 export interface RoomContent {
-    gallery: string[];
     matchedRoomName?: string;
     keyFacts: DetailItem[];
     bedLine?: string;
@@ -58,7 +57,15 @@ export interface RoomOption {
     bedType?: string;
     size?: number;
     amenities?: string[];
-    roomImages?: string[];
+    /**
+     * The room's own photographs, matched from an ETG **Room Group**.
+     *
+     * Named as the API names it, and as v1 names it throughout. It was `roomImages` here
+     * while the card read a third name again — `content.gallery`, which nothing ever
+     * filled — so every room on every property page fell back to the hotel's exterior
+     * shot even where the API had sent eight pictures of the room.
+     */
+    roomPhotos?: string[];
     cancellationDeadline?: string;
     cancelPolicy?: {
         refundable?: boolean;

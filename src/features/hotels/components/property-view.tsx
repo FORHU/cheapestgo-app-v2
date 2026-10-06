@@ -390,7 +390,7 @@ function PropertyContent() {
      * it as both the hotel's and the room's.
      */
     const heroImages = useMemo<string[]>(() => {
-        const roomShots = rooms.flatMap(r => r.roomImages ?? []);
+        const roomShots = rooms.flatMap(r => r.roomPhotos ?? []);
         return Array.from(new Set([...allImages, ...roomShots])).filter(Boolean);
     }, [allImages, rooms]);
     const heroCount = heroImages.length;

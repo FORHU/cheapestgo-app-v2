@@ -287,23 +287,28 @@
       "age": "年龄 *",
       "agePlaceholder": "0–17",
       "childN": "儿童 {n}",
+      "dateOfBirth": "出生日期",
       "email": "邮箱 *",
       "emailPlaceholder": "邮箱",
       "firstName": "名字 *",
       "firstNamePlaceholder": "名字",
+      "gender": "性别",
+      "genderFemale": "女",
+      "genderMale": "男",
       "guest1": "房客 1（本人）",
       "guestN": "房客 {n}",
       "lastName": "姓氏 *",
       "lastNamePlaceholder": "姓氏",
+      "nationality": "国籍（例如 PH）",
       "no": "否",
+      "passportExpiry": "护照有效期",
+      "passportNumber": "护照号码",
       "phone": "电话",
+      "phoneNumber": "电话号码",
       "phonePlaceholder": "号码",
       "title": "您的信息",
       "travelingForWork": "因公出差？",
-      "yes": "是",
-      "phoneNumber": "电话号码",
-      "passportNumber": "护照号码",
-      "dateOfBirth": "出生日期"
+      "yes": "是"
     },
     "validation": {
       "bookingFailed": "预订确认失败：{message}。您的付款将自动退款。",
@@ -406,50 +411,60 @@
     "metaTitle": "优惠"
   },
   "errors": {
-    "generic": "出现错误，请重试。",
-    "notFound": "页面未找到。",
-    "searchFailed": "搜索失败，请检查网络连接后重试。",
     "auth": {
       "description": "处理身份验证请求时出错。可能是链接已过期或已被使用。",
       "goHome": "前往首页",
       "signInAgain": "重新登录",
       "title": "身份验证错误",
       "retryDescription": "身份验证过程中出现问题，请重试。"
-    }
+    },
+    "generic": "出现错误，请重试。",
+    "notFound": "页面未找到。",
+    "page": {
+      "title": "出了点问题",
+      "body": "无法加载此页面。重试通常即可解决。",
+      "tryAgain": "重试",
+      "goHome": "返回首页",
+      "notFoundTitle": "此页面不存在",
+      "notFoundBody": "链接可能已失效，或该住宿已不再上架。",
+      "searchStays": "搜索住宿"
+    },
+    "searchFailed": "搜索失败，请检查网络连接后重试。"
   },
   "flights": {
     "results": {
-      "loading": "正在寻找最优价格…",
-      "empty": "该日期暂无可用航班。",
-      "sortBy": "排序方式",
-      "filters": "筛选",
-      "price": "价格",
+      "bundleActive": "机票 + 酒店套餐已启用",
+      "bundleBody": "请在下方选择航班——套餐折扣将在结账时应用。",
+      "checkingProviders": "正在查询多家供应商",
+      "countFlights": "{count} 个航班",
+      "datePicked": "这个日期是我们为您选择的 — 更改日期可查看其他票价。",
       "duration": "飞行时长",
+      "empty": "该日期暂无可用航班。",
+      "filters": "筛选",
+      "filtersTitle": "航班筛选",
+      "findingFares": "正在寻找最优票价…",
+      "loading": "正在寻找最优价格…",
+      "missingRoute": "请告诉我们出发地和目的地，我们来为您查找票价。",
+      "newSearch": "重新搜索",
+      "noFlights": "未找到航班",
+      "noFlightsBody": "请尝试调整搜索日期或选择附近机场。",
+      "noMatch": "没有符合筛选条件的航班",
+      "noMatchHint": "请尝试调整筛选条件。",
+      "price": "价格",
+      "saveUpTo": "最高省 8%",
+      "searchError": "搜索出错",
+      "slowBody": "航班供应商响应缓慢，请重试。",
+      "slowHint": "供应商响应缓慢，请稍候。",
+      "slowTitle": "搜索用时比平常更长",
+      "sortBy": "排序方式",
       "stops": {
         "any": "全部",
         "direct": "直飞",
         "oneStop": "经停1次",
         "twoPlus": "经停2次以上"
       },
-      "saveUpTo": "最高省 8%",
-      "slowTitle": "搜索用时比平常更长",
-      "slowBody": "航班供应商响应缓慢，请重试。",
       "tryAgain": "重试",
-      "newSearch": "重新搜索",
-      "searchError": "搜索出错",
-      "tryAnother": "尝试其他搜索",
-      "filtersTitle": "航班筛选",
-      "bundleActive": "机票 + 酒店套餐已启用",
-      "bundleBody": "请在下方选择航班——套餐折扣将在结账时应用。",
-      "slowHint": "供应商响应缓慢，请稍候。",
-      "noMatch": "没有符合筛选条件的航班",
-      "noMatchHint": "请尝试调整筛选条件。",
-      "checkingProviders": "正在查询多家供应商",
-      "noFlights": "未找到航班",
-      "findingFares": "正在寻找最优票价…",
-      "missingRoute": "请告诉我们出发地和目的地，我们来为您查找票价。",
-      "countFlights": "{count} 个航班",
-      "datePicked": "这个日期是我们为您选择的 — 更改日期可查看其他票价。"
+      "tryAnother": "尝试其他搜索"
     },
     "card": {
       "direct": "直飞",
@@ -587,12 +602,14 @@
       "basedOnCount": "基于 <b>{count}</b> 条评价"
     },
     "rooms": {
-      "viewMore": "查看更多",
+      "nextPage": "下一页",
       "noMatch": "没有符合该价格的房型，请尝试其他筛选条件。",
-      "paymentTerms": "付款条款",
+      "nonRefundable": "不可退款",
       "pages": "房型分页",
+      "paymentTerms": "付款条款",
       "prevPage": "上一页",
-      "nextPage": "下一页"
+      "refundable": "可退款",
+      "viewMore": "查看更多"
     }
   },
   "invoice": {

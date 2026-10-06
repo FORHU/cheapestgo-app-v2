@@ -238,7 +238,7 @@ describe('RoomSelection', () => {
         expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('draws one card per rate, at each rate own price', () => {
+    it('draws one card for a room sold several ways, headlined at its cheapest', () => {
         render(
             <RoomSelection
                 {...base}
@@ -250,29 +250,52 @@ describe('RoomSelection', () => {
                 })]}
             />,
         );
-        // The same room, twice over — which is what a room with two rates is,
-        // and what the design draws.
-        expect(shownRooms()).toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
-        expect(screen.getByText('$169')).toBeInTheDocument();
-        expect(screen.getByText('$200')).toBeInTheDocument();
-        // Each card names its own board on its pill. The pill wording is a
-        // size shorter than the filter chip's on purpose — "Breakfast" beside
-        // the room name, "Breakfast Included" on the chip above — so an exact
-        // match here cannot pick up the chip by accident.
+        // One room, one card. Drawn per rate it was the same name and the same
+        // photograph twice down the page, which reads as a duplicate listing.
+        expect(shownRooms()).toEqual(['Comfort Leisure Room']);
+        // The headline is the lowest it can be booked at; the dearer rate is
+        // offered inside the card rather than as a second room.
+        expect(screen.getAllByText('$169').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/\$200/).length).toBeGreaterThan(0);
+        // The card's pill names the board of whichever rate is showing — the
+        // cheapest, on arrival.
         expect(screen.getByText('Room Only')).toBeInTheDocument();
-        expect(screen.getByText('Breakfast')).toBeInTheDocument();
     });
 
-    it('lights only the rate that was picked, not its sibling', () => {
+    it('re-prices the card when another of the room rates is chosen', async () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    rates: [
+                        rate({ offerId: 'a', price: 169, boardCode: 'RO' }),
+                        rate({ offerId: 'b', price: 200, boardCode: 'BB' }),
+                    ],
+                })]}
+            />,
+        );
+        // Room Only is the cheaper rate, so it is what the card arrives showing.
+        expect(screen.getByText('Room Only')).toBeInTheDocument();
+
+        // The dearer rate's own chip inside the card.
+        await userEvent.click(screen.getByRole('button', { name: /\$200/ }));
+
+        // The room's pill now names that rate's board instead.
+        expect(screen.getByText('Breakfast')).toBeInTheDocument();
+        expect(screen.queryByText('Room Only')).not.toBeInTheDocument();
+    });
+
+    it('offers one Select per room, not one per rate', () => {
         render(
             <RoomSelection
                 {...base}
                 rooms={[room({ rates: [rate({ offerId: 'a' }), rate({ offerId: 'b', price: 200 })] })]}
-                selectedOfferId="b"
+                selectedOfferId="a"
             />,
         );
+        // Two rates, one room, one action — picking the terms happens inside the card.
+        expect(screen.getAllByRole('button', { name: /^(Selected|Select Room)$/ })).toHaveLength(1);
         expect(screen.getAllByRole('button', { name: 'Selected' })).toHaveLength(1);
-        expect(screen.getAllByRole('button', { name: 'Select Room' })).toHaveLength(1);
     });
 
     it('prints the nightly rate it was given, and does not divide it again', () => {

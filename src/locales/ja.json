@@ -287,23 +287,28 @@
       "age": "年齢 *",
       "agePlaceholder": "0–17",
       "childN": "子供 {n}",
+      "dateOfBirth": "生年月日",
       "email": "メールアドレス *",
       "emailPlaceholder": "メールアドレス",
       "firstName": "名 *",
       "firstNamePlaceholder": "名",
+      "gender": "性別",
+      "genderFemale": "女性",
+      "genderMale": "男性",
       "guest1": "ゲスト 1（ご本人）",
       "guestN": "ゲスト {n}",
       "lastName": "姓 *",
       "lastNamePlaceholder": "姓",
+      "nationality": "国籍（例：PH）",
       "no": "いいえ",
+      "passportExpiry": "パスポート有効期限",
+      "passportNumber": "パスポート番号",
       "phone": "電話番号",
+      "phoneNumber": "電話番号",
       "phonePlaceholder": "番号",
       "title": "お客様情報",
       "travelingForWork": "出張ですか？",
-      "yes": "はい",
-      "phoneNumber": "電話番号",
-      "passportNumber": "パスポート番号",
-      "dateOfBirth": "生年月日"
+      "yes": "はい"
     },
     "validation": {
       "bookingFailed": "予約確認に失敗しました：{message}。お支払いは自動的に返金されます。",
@@ -406,50 +411,60 @@
     "metaTitle": "お得情報"
   },
   "errors": {
-    "generic": "エラーが発生しました。もう一度お試しください。",
-    "notFound": "ページが見つかりません。",
-    "searchFailed": "検索に失敗しました。接続を確認してもう一度お試しください。",
     "auth": {
       "description": "認証リクエストの処理中にエラーが発生しました。リンクの有効期限が切れているか、すでに使用された可能性があります。",
       "goHome": "ホームへ移動",
       "signInAgain": "もう一度ログインする",
       "title": "認証エラー",
       "retryDescription": "認証中に問題が発生しました。もう一度お試しください。"
-    }
+    },
+    "generic": "エラーが発生しました。もう一度お試しください。",
+    "notFound": "ページが見つかりません。",
+    "page": {
+      "title": "問題が発生しました",
+      "body": "このページを読み込めませんでした。もう一度お試しいただくと解決する場合があります。",
+      "tryAgain": "再試行",
+      "goHome": "ホームへ",
+      "notFoundTitle": "このページは存在しません",
+      "notFoundBody": "リンクが古いか、その宿泊施設の掲載が終了した可能性があります。",
+      "searchStays": "宿泊施設を検索"
+    },
+    "searchFailed": "検索に失敗しました。接続を確認してもう一度お試しください。"
   },
   "flights": {
     "results": {
-      "loading": "最安値を探しています…",
-      "empty": "この日程のフライトは見つかりませんでした。",
-      "sortBy": "並び替え",
-      "filters": "絞り込み",
-      "price": "料金",
+      "bundleActive": "航空券＋ホテルのセット適用中",
+      "bundleBody": "下から航空券をお選びください。セット割引はお支払い時に適用されます。",
+      "checkingProviders": "複数の提供元を確認中",
+      "countFlights": "{count}件のフライト",
+      "datePicked": "日付はこちらで選びました — 変更すると他の運賃をご覧いただけます。",
       "duration": "所要時間",
+      "empty": "この日程のフライトは見つかりませんでした。",
+      "filters": "絞り込み",
+      "filtersTitle": "フライトの絞り込み",
+      "findingFares": "最適な運賃を検索中…",
+      "loading": "最安値を探しています…",
+      "missingRoute": "出発地と到着地をお知らせいただければ、運賃をお探しします。",
+      "newSearch": "新しく検索",
+      "noFlights": "航空券が見つかりません",
+      "noFlightsBody": "検索日程や近隣の空港を変更してお試しください。",
+      "noMatch": "絞り込み条件に合う航空券がありません",
+      "noMatchHint": "絞り込み条件を調整してみてください。",
+      "price": "料金",
+      "saveUpTo": "最大8%お得",
+      "searchError": "検索エラー",
+      "slowBody": "航空会社の応答が遅くなっています。もう一度お試しください。",
+      "slowHint": "提供元の応答が遅くなっています。少々お待ちください。",
+      "slowTitle": "検索に通常より時間がかかっています",
+      "sortBy": "並び替え",
       "stops": {
         "any": "すべて",
         "direct": "直行便",
         "oneStop": "乗り継ぎ1回",
         "twoPlus": "乗り継ぎ2回以上"
       },
-      "saveUpTo": "最大8%お得",
-      "slowTitle": "検索に通常より時間がかかっています",
-      "slowBody": "航空会社の応答が遅くなっています。もう一度お試しください。",
       "tryAgain": "もう一度試す",
-      "newSearch": "新しく検索",
-      "searchError": "検索エラー",
-      "tryAnother": "別の条件で検索",
-      "filtersTitle": "フライトの絞り込み",
-      "bundleActive": "航空券＋ホテルのセット適用中",
-      "bundleBody": "下から航空券をお選びください。セット割引はお支払い時に適用されます。",
-      "slowHint": "提供元の応答が遅くなっています。少々お待ちください。",
-      "noMatch": "絞り込み条件に合う航空券がありません",
-      "noMatchHint": "絞り込み条件を調整してみてください。",
-      "checkingProviders": "複数の提供元を確認中",
-      "noFlights": "航空券が見つかりません",
-      "findingFares": "最適な運賃を検索中…",
-      "missingRoute": "出発地と到着地をお知らせいただければ、運賃をお探しします。",
-      "countFlights": "{count}件のフライト",
-      "datePicked": "日付はこちらで選びました — 変更すると他の運賃をご覧いただけます。"
+      "tryAnother": "別の条件で検索"
     },
     "card": {
       "direct": "直行便",
@@ -587,12 +602,14 @@
       "basedOnCount": "レビュー<b>{count}</b>件に基づく"
     },
     "rooms": {
-      "viewMore": "もっと見る",
+      "nextPage": "次のページ",
       "noMatch": "その料金に合う客室はありません。別の条件をお試しください。",
-      "paymentTerms": "お支払い条件",
+      "nonRefundable": "返金不可",
       "pages": "客室ページ",
+      "paymentTerms": "お支払い条件",
       "prevPage": "前のページ",
-      "nextPage": "次のページ"
+      "refundable": "返金可能",
+      "viewMore": "もっと見る"
     }
   },
   "invoice": {

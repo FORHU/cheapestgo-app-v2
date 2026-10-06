@@ -14,6 +14,7 @@ import { Footer } from '@/shared/components/footer';
 import { HotelCard, HotelCardSkeleton, type HotelResult } from '@/features/hotels/components/hotel-card';
 import { http } from '@/shared/lib/http';
 import { Tag, Hotel } from 'lucide-react';
+import { StateScreen } from '@/shared/components/StateScreen';
 
 interface DealsResponse {
     deals?: HotelResult[];
@@ -80,26 +81,12 @@ export function DealsView() {
 
                 {/* Error state */}
                 {!loading && error && (
-                    <div className="text-center py-20 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4">
-                        <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-4">
-                            <Hotel className="w-7 h-7 text-red-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('deals.loadError')}</h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-sm">{error}</p>
-                    </div>
+                    <StateScreen icon={Hotel} title={tAll('deals.loadError')} lines={[error]} />
                 )}
 
                 {/* Empty state */}
                 {!loading && !error && deals.length === 0 && (
-                    <div className="text-center py-20 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4">
-                        <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-                            <Tag className="w-7 h-7 text-slate-300 dark:text-slate-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{tAll('deals.emptyTitle')}</h3>
-                        <p className="text-slate-400 dark:text-slate-500 text-sm">
-                            {tAll('deals.emptyBody')}
-                        </p>
-                    </div>
+                    <StateScreen icon={Tag} title={tAll('deals.emptyTitle')} lines={[tAll('deals.emptyBody')]} />
                 )}
 
                 {/* Deals grid */}

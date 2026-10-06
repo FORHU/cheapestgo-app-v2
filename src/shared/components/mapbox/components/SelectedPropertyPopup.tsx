@@ -15,7 +15,6 @@ interface SelectedPropertyPopupProps {
     onViewDetails: (id: string) => void;
     onSelect: (id: string) => void;
     isMobile?: boolean;
-    nights?: number;
 }
 
 /**
@@ -281,7 +280,7 @@ function GalleryDots({ count, active, onSelect }: {
  * phone they are a thumb target next to a tap target that navigates.
  */
 function HotelPreviewCard({
-    property, content, reviewRating, onClose, onViewDetails, isMobile, nights,
+    property, content, reviewRating, onClose, onViewDetails, isMobile,
 }: {
     property: MappableProperty;
     content: HotelContent | null;
@@ -289,7 +288,6 @@ function HotelPreviewCard({
     onClose: () => void;
     onViewDetails: (id: string) => void;
     isMobile: boolean;
-    nights: number;
 }) {
     const currency = useUserCurrency();
 
@@ -356,7 +354,7 @@ function HotelPreviewCard({
         priceLabel = property.priceLoading
             ? ''
             : `${formatCurrency(
-                convertCurrency(property.price, property.currency || 'USD', currency) / nights,
+                convertCurrency(property.price, property.currency || 'USD', currency),
                 currency,
             )}/ night`;
     } catch { /* an unknown currency just drops the line */ }
@@ -481,7 +479,6 @@ export const SelectedPropertyPopup = React.memo(({
     onViewDetails,
     onSelect,
     isMobile = false,
-    nights = 1,
 }: SelectedPropertyPopupProps) => {
     const targetCurrency = useUserCurrency();
     // Hooks run unconditionally; the id going null is what clears the fetch.
@@ -493,7 +490,7 @@ export const SelectedPropertyPopup = React.memo(({
         <>
             <MapMarker
                 property={selectedProperty}
-                displayPrice={convertCurrency(selectedProperty.price, selectedProperty.currency || 'USD', targetCurrency) / nights}
+                displayPrice={convertCurrency(selectedProperty.price, selectedProperty.currency || 'USD', targetCurrency)}
                 displayCurrency={targetCurrency}
                 isSelected={true}
                 isHovered={false}
@@ -519,7 +516,6 @@ export const SelectedPropertyPopup = React.memo(({
                     onClose={onClose}
                     onViewDetails={onViewDetails}
                     isMobile={isMobile}
-                    nights={nights}
                 />
             </Popup>
         </>

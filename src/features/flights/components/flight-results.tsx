@@ -3,8 +3,9 @@
 import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect } from 'react';
 import {  AnimatePresence } from 'framer-motion';
-import { Plane, Search } from 'lucide-react';
+import { Plane, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { StateScreen, stateActionClass } from '@/shared/components/StateScreen';
 import type { FlightOffer } from '@/shared/types';
 import { FlightCard } from './flight-card';
 
@@ -148,40 +149,27 @@ export function FlightResults({
     // Error state
     if (error) {
         return (
-            <div className={cn('flex flex-col items-center justify-center py-8 lg:py-16 gap-2 lg:gap-4', className)}>
-                <div className="w-9 h-9 lg:w-14 lg:h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <svg className="w-4.5 h-4.5 lg:w-7 lg:h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                </div>
-                <div className="text-center">
-                    <h3 className="text-xs lg:text-lg font-semibold text-slate-800 dark:text-slate-200">{tAll('flights.results.searchError')}</h3>
-                    <p className="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm">{error}</p>
-                </div>
-                {onRetry && (
-                    <button
-                        onClick={onRetry}
-                        className="mt-1 px-4 lg:px-6 py-1.5 lg:py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-[10px] lg:text-sm transition-colors"
-                    >
-                        {tAll('flights.results.tryAgain')}
-                    </button>
-                )}
-            </div>
+            <StateScreen
+                className={className}
+                icon={AlertTriangle}
+                title={tAll('flights.results.searchError')}
+                lines={[error]}
+                actions={onRetry
+                    ? <button type="button" onClick={onRetry} className={stateActionClass}>{tAll('flights.results.tryAgain')}</button>
+                    : undefined}
+            />
         );
     }
 
     // Empty state
     if (offers.length === 0) {
         return (
-            <div className={cn('flex flex-col items-center justify-center py-8 lg:py-16 gap-2 lg:gap-4', className)}>
-                <div className="w-9 h-9 lg:w-14 lg:h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <Search className="w-4.5 h-4.5 lg:w-7 lg:h-7 text-slate-400 dark:text-slate-500" />
-                </div>
-                <div className="text-center">
-                    <h3 className="text-xs lg:text-lg font-semibold text-slate-700 dark:text-slate-300">{tAll('flights.results.noFlights')}</h3>
-                    <p className="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm">{emptyMessage ?? 'Try adjusting your search dates or nearby airports.'}</p>
-                </div>
-            </div>
+            <StateScreen
+                className={className}
+                icon={Search}
+                title={tAll('flights.results.noFlights')}
+                lines={[emptyMessage ?? tAll('flights.results.noFlightsBody')]}
+            />
         );
     }
 

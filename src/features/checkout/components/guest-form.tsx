@@ -14,13 +14,33 @@ export interface GuestInfo {
     phone: string;
 }
 
+/**
+ * What an airline needs to issue a ticket, which is more than a name and a date.
+ *
+ * `gender` and the two passport companions below were missing until 2026-10-05, and each
+ * failed quietly rather than loudly:
+ *
+ * - **gender** — the order builder reads `pax.gender` and falls through to `'f'`/`'ms'`
+ *   when it is absent, so every passenger was ticketed female. A ticket whose gender does
+ *   not match the passport is refused at check-in, and nothing before the airport says so.
+ * - **passportExpiry, nationality** — `duffelIdentityDocuments` needs all three of number,
+ *   expiry and a two-letter country, and returns nothing at all when one is missing. The
+ *   form made the passport number mandatory and then threw it away, so travellers typed it
+ *   for nobody and supplied it again at check-in.
+ */
 export interface PassengerInfo {
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
     dateOfBirth: string;
+    /** `m` or `f` — the only values Duffel accepts. */
+    gender: string;
     passportNumber: string;
+    /** ISO date. Without it the passport is dropped on the floor. */
+    passportExpiry: string;
+    /** Two-letter issuing country, e.g. `PH`. Without it, likewise. */
+    nationality: string;
 }
 
 interface HotelGuestFormProps {
