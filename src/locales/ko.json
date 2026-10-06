@@ -277,7 +277,10 @@
       "nonRefundable": "환불 불가",
       "termsNotProvided": "공급사가 취소 조건을 제공하지 않았습니다 — 예약 전 숙소에 확인하세요",
       "fetchingPolicy": "취소 정책을 불러오는 중…",
-      "flight": "항공편"
+      "flight": "항공편",
+      "dates": "날짜",
+      "guests": "투숙객",
+      "room": "객실"
     },
     "title": "결제",
     "userDetails": {
@@ -351,7 +354,8 @@
     "steps": {
       "details": "정보 입력",
       "payment": "결제",
-      "confirmed": "예약 완료"
+      "confirmed": "예약 완료",
+      "verification": "확인"
     },
     "errors": {
       "paymentFailed": "결제에 실패했습니다. 다시 시도해 주세요.",
@@ -372,7 +376,11 @@
     "guestDetails": "투숙객 정보",
     "paymentInfo": "결제 정보",
     "paymentSecure": "결제 정보는 암호화되며 당사 서버에 저장되지 않습니다.",
-    "cardNamePlaceholder": "홍길동"
+    "cardNamePlaceholder": "홍길동",
+    "whosCheckingInYou": "체크인하실 분은 누구인가요? (본인 정보)",
+    "paymentDetailsTitle": "결제 정보",
+    "securedPoweredBy": "<b>{brand}</b> 보안 결제",
+    "payNow": "{amount} 결제하기"
   },
   "currencyPicker": {
     "label": "통화 선택"

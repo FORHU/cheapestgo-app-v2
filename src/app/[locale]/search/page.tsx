@@ -24,17 +24,20 @@ import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
 import { resolveStayDates } from '@/shared/lib/stay';
+import { BRAND, brandTheme } from '@/shared/lib/palette';
+import { BRAND_STROKE, BrandStrokeDefs } from '@/shared/components/BrandStroke';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const BG            = '#15111E';
+// The original CheapestGo palette — see `shared/lib/palette.ts`.
+const BG            = BRAND.obsidian;
 /**
- * The list view's ground — neutral, not the map view's plum, and a step below
- * the card surface so the cards read as plates rather than as the page.
+ * The list view's ground — obsidian / slate-100, a step below the card surface
+ * (slate-900 / white) so the cards read as plates rather than as the page.
  */
-const LIST_BG       = { dark: '#141414', light: '#F1F1F4' };
+const LIST_BG       = { dark: BRAND.obsidian, light: '#f1f5f9' };
 
 /**
  * Nothing filtered, for either view's panel.
@@ -50,7 +53,7 @@ const EMPTY_FILTERS: HotelFiltersState = {
 
 const SearchMapContainer = dynamic(
     () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
-    { ssr: false, loading: () => <div className="w-full h-full" style={{ background: '#1B2A2E' }} /> }
+    { ssr: false, loading: () => <div className="w-full h-full" style={{ background: BRAND.surface }} /> }
 );
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -298,17 +301,18 @@ const RAIL_WHEEL_PAGE_MS = 320;
  */
 function railCardPalette(theme: 'light' | 'dark') {
     const dark = theme === 'dark';
+    const b = brandTheme(theme);
     return {
-        surface: dark ? '#1A1A1A' : '#FFFFFF',
-        title:   dark ? '#FFFFFF' : '#111111',
-        muted:   dark ? 'rgba(255,255,255,0.60)' : '#6B7280',
-        hairline: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-        imageBg: dark ? 'rgba(255,255,255,0.05)' : '#F1F1F1',
-        // The price circle and the View Stay button invert the panel.
-        chipBg:   dark ? '#FFFFFF' : '#1A1A1A',
-        chipText: dark ? '#111111' : '#FFFFFF',
+        surface:  b.surface,
+        title:    b.title,
+        muted:    b.muted,
+        hairline: b.hairline,
+        imageBg:  dark ? 'rgba(255,255,255,0.05)' : b.raised,
+        // The price circle and the View Stay button wear the brand gradient.
+        chipBg:   BRAND.gradient,
+        chipText: '#FFFFFF',
         /** `chipText` at low alpha — the unlit part of a ring drawn on a chip. */
-        chipTrack: dark ? 'rgba(17,17,17,0.20)' : 'rgba(255,255,255,0.20)',
+        chipTrack: 'rgba(255,255,255,0.25)',
     };
 }
 
@@ -1326,7 +1330,7 @@ function HotelSearchContent() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                 className={theme === 'dark' ? 'dark flex flex-col min-h-screen' : 'flex flex-col min-h-screen'}
-                style={{ background: LIST_BG[theme], color: theme === 'dark' ? '#F5F5F5' : '#111111' }}
+                style={{ background: LIST_BG[theme], color: brandTheme(theme).text }}
             >
                 {/* The map view's toolbar, the same component at the same
                     sizes. Sort is the one control that stays behind — the
@@ -1355,7 +1359,7 @@ function HotelSearchContent() {
                     <div className={cn('relative', SHELL_CAP)}>
                         <SearchTopBar
                             tone={theme}
-                            barBackground={theme === 'dark' ? '#1A1A1A' : '#FFFFFF'}
+                            barBackground={brandTheme(theme).surface}
                             onBack={() => router.back()}
                             summary={pillText}
                             searching={isLoading || isStreaming}
@@ -1381,8 +1385,8 @@ function HotelSearchContent() {
                             for a city, so they are told which dates they are being quoted
                             for and that moving them is how to see other prices. */}
                         {datesArePicked && (
-                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
-                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: brandTheme(theme).muted }}>
+                                <CalendarClock size={12} className="shrink-0" color={BRAND_STROKE} aria-hidden><BrandStrokeDefs /></CalendarClock>
                                 {tAll('hotels.results.datesPicked')}
                             </p>
                         )}
@@ -1549,8 +1553,8 @@ function HotelSearchContent() {
                             for a city, so they are told which dates they are being quoted
                             for and that moving them is how to see other prices. */}
                         {datesArePicked && (
-                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
-                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: brandTheme(theme).muted }}>
+                                <CalendarClock size={12} className="shrink-0" color={BRAND_STROKE} aria-hidden><BrandStrokeDefs /></CalendarClock>
                                 {tAll('hotels.results.datesPicked')}
                             </p>
                         )}
@@ -1734,12 +1738,12 @@ function HotelSearchContent() {
                                                 onClick={() => setShowAllCityOverride(true)}
                                                 className="max-w-[60vw] truncate md:max-w-none"
                                                 style={{
-                                                    background: 'rgba(255,107,75,0.15)',
-                                                    border: '1px solid rgba(255,107,75,0.4)',
+                                                    background: ACCENT,
+                                                    border: '1px solid transparent',
                                                     borderRadius: 100,
                                                     padding: '4px 12px',
                                                     fontSize: 11, fontWeight: 700,
-                                                    color: ACCENT, cursor: 'pointer',
+                                                    color: '#FFFFFF', cursor: 'pointer',
                                                     backdropFilter: 'blur(8px)',
                                                     whiteSpace: 'nowrap',
                                                     pointerEvents: 'auto',
@@ -1899,8 +1903,13 @@ export default function HotelSearchPage() {
         <Suspense
             fallback={
                 <div className="flex items-center justify-center" style={{ height: '100dvh', background: BG }}>
-                    <div className="rounded-full border-2 border-t-transparent animate-spin"
-                        style={{ width: 32, height: 32, borderColor: ACCENT, borderTopColor: 'transparent' }} />
+                    {/* An SVG ring rather than a bordered div: a border cannot carry the
+                        brand gradient, a stroke can. */}
+                    <svg width="32" height="32" viewBox="0 0 24 24" className="animate-spin" aria-label="Loading">
+                        <BrandStrokeDefs />
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.5" />
+                        <circle cx="12" cy="12" r="9" fill="none" stroke={BRAND_STROKE} strokeWidth="2.5" strokeDasharray="42 100" strokeLinecap="round" />
+                    </svg>
                 </div>
             }
         >

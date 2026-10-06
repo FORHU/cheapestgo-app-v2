@@ -95,7 +95,8 @@ export function SearchTopBar({
 
     /** A control at rest, and the inverted chip a toggle takes while it is on. */
     const rest = { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text };
-    const lit  = { background: chrome.text, border: `1px solid ${chrome.text}`, color: chrome.surface };
+    // "On" is the brand gradient, the same as a selected sort or a card's price chip.
+    const lit  = { background: ACCENT, border: '1px solid transparent', color: '#FFFFFF' };
 
     return (
         <div
@@ -166,9 +167,9 @@ export function SearchTopBar({
                     </button>
                 )}
 
-                {/* Nearby places. Takes the inverted chip while on — the same "this
-                    one is lit" the rail cards and the filter panel use — rather than
-                    a colour of its own, so the bar keeps to two tones. Only ever
+                {/* Nearby places. Takes the blue chip while on — the same "this one
+                    is lit" the rail cards and the filter panel use — rather than a
+                    colour of its own. Only ever
                     useful once a stay is picked, since that is what the discs are
                     drawn around, but the toggle stays put so it does not appear and
                     disappear under the thumb. */}

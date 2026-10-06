@@ -7,6 +7,7 @@ import { useSearchStore } from '@/shared/stores/search.store';
 import { http } from '@/shared/lib/http';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { nightsBetween } from '@/shared/lib/stay';
+import { BRAND } from '@/shared/lib/palette';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,15 @@ const TRENDING: TrendingDest[] = [
 
 const FLEX_CHIPS = ['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
 
-const ACCENT = '#FF6B4B';
+/** Marks drawn on the photo — token underlines, carets, text links. v1's dark accent. */
+const ACCENT = BRAND.accent;
+/** Every button on the landing page — and anything filled behind white text, like a
+ *  picked date — wears v1's blue-to-cyan gradient. */
+const FILL = BRAND.gradient;
+/** The same gradient as text, for the one button that is only a word ("Clear"). */
+const GRADIENT_TEXT: React.CSSProperties = {
+    background: BRAND.gradient, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,11 +120,11 @@ function CalendarGrid({ checkIn, checkOut, onSelect, accent }: CalendarGridProps
         <div style={{ userSelect: 'none' }}>
             {/* Month nav */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                 </button>
                 <span style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{monthLabel}</span>
-                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                 </button>
             </div>
@@ -140,7 +149,7 @@ function CalendarGrid({ checkIn, checkOut, onSelect, accent }: CalendarGridProps
                     const bg = (isStart || isEnd)
                         ? accent
                         : inRange
-                            ? 'rgba(255,107,75,0.18)'
+                            ? BRAND.primaryWash
                             : 'transparent';
                     const fg = (isStart || isEnd)
                         ? '#fff'
@@ -162,7 +171,7 @@ function CalendarGrid({ checkIn, checkOut, onSelect, accent }: CalendarGridProps
                                 transition: 'background .15s',
                             }}
                             onMouseEnter={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)'; }}
-                            onMouseLeave={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = inRange ? 'rgba(255,107,75,0.18)' : 'transparent'; }}
+                            onMouseLeave={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = inRange ? BRAND.primaryWash : 'transparent'; }}
                         >
                             {d.getDate()}
                         </div>
@@ -247,7 +256,7 @@ function NotePanel({ children, width = 'min(360px,88vw)', extra = {} }: {
             left: '50%',
             transform: 'translateX(-50%) rotate(-0.6deg)',
             width,
-            background: 'rgba(26,26,26,0.98)',
+            background: 'rgba(15,23,42,0.98)',
             borderRadius: '20px',
             padding: '22px',
             boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)',
@@ -690,12 +699,12 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
         ? activeTrending.filter(t => `${t.name}${t.country}`.toLowerCase().includes(destQuery.trim().toLowerCase()))
         : activeTrending;
 
-    // White stamp on the dark card; the confirmation state keeps its green so a
-    // completed search still reads at a glance.
+    // v1's gradient with white ink, stamped onto the photo; the
+    // confirmation state keeps its green so a completed search still reads at a glance.
     const stampDone = ctaState === 'done';
-    const stampBg = stampDone ? '#2FB67F' : '#ffffff';
-    const stampFg = stampDone ? '#ffffff' : '#121212';
-    const stampBorder = stampDone ? '3px dashed rgba(255,255,255,.65)' : '3px dashed rgba(18,18,18,.3)';
+    const stampBg = stampDone ? '#2FB67F' : FILL;
+    const stampFg = '#ffffff';
+    const stampBorder = '3px dashed rgba(255,255,255,.6)';
     const stampTransform = stampDone ? 'rotate(0deg) scale(1.05)' : 'rotate(-8deg)';
     const stampAnimation = shake
         ? 'immSbShake 420ms ease'
@@ -712,7 +721,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
             <style>{`
                 @keyframes immSbSpin   { to { transform: rotate(360deg); } }
                 @keyframes immSbShake  { 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(3px)} 30%,50%,70%{transform:translateX(-5px)} 40%,60%{transform:translateX(5px)} }
-                @keyframes immSbPulse  { 0%,100%{box-shadow:0 16px 30px -10px rgba(0,0,0,.6),0 0 0 0 rgba(255,255,255,.35)} 50%{box-shadow:0 16px 30px -10px rgba(0,0,0,.6),0 0 0 10px rgba(255,255,255,0)} }
+                @keyframes immSbPulse  { 0%,100%{box-shadow:0 16px 30px -10px rgba(37,99,235,.55),0 0 0 0 rgba(96,165,250,.45)} 50%{box-shadow:0 16px 30px -10px rgba(37,99,235,.55),0 0 0 10px rgba(96,165,250,0)} }
                 @keyframes immSbHint   { 0%,100%{opacity:.92} 50%{opacity:.45} }
                 .imm-ribbon::-webkit-scrollbar { height:4px }
                 .imm-ribbon::-webkit-scrollbar-thumb { background:rgba(255,255,255,.18);border-radius:2px }
@@ -749,7 +758,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                     <div style={{ position: 'relative', minHeight: 'inherit', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(28px,4.5vw,48px)', gap: '18px', boxSizing: 'border-box' }}>
 
                         {/* ── Mode tabs ── */}
-                        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.32)', backdropFilter: 'blur(8px)', borderRadius: '100px', padding: '4px', gap: '2px' }}>
+                        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(2,6,23,.35)', border: `1px solid ${BRAND.glassBorder}`, backdropFilter: 'blur(24px)', borderRadius: '100px', padding: '4px', gap: '2px' }}>
                             {(['stays', 'flights'] as Mode[]).map(m => (
                                 <button
                                     key={m}
@@ -758,9 +767,10 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                         padding: '7px 16px', borderRadius: '100px', border: 'none',
                                         fontSize: '12px', fontWeight: 700, letterSpacing: '.04em',
                                         cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                                        background: mode === m ? '#fff' : 'transparent',
-                                        color:      mode === m ? '#121212' : 'rgba(255,255,255,.85)',
-                                        transition: 'background .2s,color .2s',
+                                        background: mode === m ? BRAND.gradient : 'transparent',
+                                        color:      mode === m ? '#fff' : 'rgba(255,255,255,.85)',
+                                        boxShadow:  mode === m ? '0 6px 18px -6px rgba(37,99,235,.65)' : 'none',
+                                        transition: 'color .2s,box-shadow .2s',
                                         textTransform: 'capitalize',
                                     }}
                                 >{m.charAt(0).toUpperCase() + m.slice(1)}</button>
@@ -841,7 +851,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 {checkIn && (
                                                     <button
-                                                        style={{ border: 'none', background: 'transparent', color: ACCENT, fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                                                        style={{ border: 'none', ...GRADIENT_TEXT, fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
                                                         onClick={e => { e.stopPropagation(); setCheckIn(null); setCheckOut(null); setFlexOption(null); }}
                                                     >{tAll('search.clear')}</button>
                                                 )}
@@ -849,7 +859,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                 {mode === 'stays' && (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setFlexible(f => !f); setCheckIn(null); setCheckOut(null); setFlexOption(null); }}>
                                                         <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(241,245,249,0.6)' }}>{tAll('search.imFlexible')}</span>
-                                                        <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: flexible ? ACCENT : 'rgba(255,255,255,0.08)', position: 'relative', transition: 'background .25s', flexShrink: 0 }}>
+                                                        <div style={{ width: '38px', height: '22px', borderRadius: '11px', background: flexible ? FILL : 'rgba(255,255,255,0.08)', position: 'relative', transition: 'background .25s', flexShrink: 0 }}>
                                                             <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: flexible ? '18px' : '2px', transition: 'left .25s', boxShadow: '0 1px 3px rgba(0,0,0,.3)' }} />
                                                         </div>
                                                     </div>
@@ -864,7 +874,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                                 <button
                                                                     key={tt}
                                                                     onClick={e => { e.stopPropagation(); setTripType(tt); setCheckIn(null); setCheckOut(null); }}
-                                                                    style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', border: active ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(255,255,255,0.18)', background: active ? ACCENT : 'transparent', color: active ? '#fff' : '#f1f5f9', transition: 'all .2s' }}
+                                                                    style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', border: active ? '1.5px solid transparent' : '1.5px solid rgba(255,255,255,0.18)', background: active ? FILL : 'transparent', boxShadow: active ? BRAND.gradientShadow : 'none', color: active ? '#fff' : '#f1f5f9', transition: 'all .2s' }}
                                                                 >{label}</button>
                                                             );
                                                         })}
@@ -879,7 +889,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                 checkIn={checkIn}
                                                 checkOut={checkOut}
                                                 onSelect={d => selectDay(d)()}
-                                                accent={ACCENT}
+                                                accent={FILL}
                                             />
                                         )}
 
@@ -898,7 +908,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                     return (
                                                         <button
                                                             key={label}
-                                                            style={{ padding: '10px 16px', borderRadius: '14px', border: active ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(255,255,255,0.18)', background: active ? ACCENT : 'transparent', color: active ? '#fff' : '#f1f5f9', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'opacity .2s' }}
+                                                            style={{ padding: '10px 16px', borderRadius: '14px', border: active ? '1.5px solid transparent' : '1.5px solid rgba(255,255,255,0.18)', background: active ? FILL : 'transparent', boxShadow: active ? BRAND.gradientShadow : 'none', color: active ? '#fff' : '#f1f5f9', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'opacity .2s' }}
                                                             onClick={e => { e.stopPropagation(); pickFlex(label)(); }}
                                                         >{label}</button>
                                                     );
@@ -931,9 +941,9 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                     <div style={{ fontSize: '11px', color: 'rgba(241,245,249,0.45)' }}>{sub}</div>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.max(min, n - 1)); }} disabled={val <= min} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '18px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val <= min ? 'not-allowed' : 'pointer', opacity: val <= min ? 0.3 : 1 }}>−</button>
+                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.max(min, n - 1)); }} disabled={val <= min} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow, fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val <= min ? 'not-allowed' : 'pointer', opacity: val <= min ? 0.3 : 1 }}>−</button>
                                                     <div style={{ fontSize: '18px', fontWeight: 800, minWidth: '20px', textAlign: 'center', fontFamily: 'var(--font-sans)', color: '#f1f5f9' }}>{val}</div>
-                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.min(max, n + 1)); }} disabled={val >= max} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', fontSize: '18px', fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val >= max ? 'not-allowed' : 'pointer', opacity: val >= max ? 0.3 : 1 }}>+</button>
+                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.min(max, n + 1)); }} disabled={val >= max} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow, fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val >= max ? 'not-allowed' : 'pointer', opacity: val >= max ? 0.3 : 1 }}>+</button>
                                                 </div>
                                             </div>
                                         ))}
@@ -957,7 +967,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                 color: stampFg, fontFamily: 'var(--font-sans)', fontWeight: 700,
                                 cursor: 'pointer', zIndex: 20,
                                 border: stampBorder,
-                                boxShadow: '0 16px 30px -10px rgba(0,0,0,.6)',
+                                boxShadow: '0 16px 30px -10px rgba(37,99,235,.55)',
                                 background: stampBg, transform: stampTransform,
                                 transition: 'background .3s,transform .3s',
                                 animation: stampAnimation,
@@ -988,7 +998,7 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
 
                     {/* Results badge */}
                     {ctaState === 'done' && resultsCount && (
-                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(26,26,26,0.98)', color: '#f1f5f9', padding: '10px 18px', borderRadius: '16px', fontWeight: 700, fontSize: '13px', boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(15,23,42,0.98)', color: '#f1f5f9', padding: '10px 18px', borderRadius: '16px', fontWeight: 700, fontSize: '13px', boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)', border: '1px solid rgba(255,255,255,0.10)' }}>
                             {resultsCount.toLocaleString()} {resultsLabel} found
                         </div>
                     )}

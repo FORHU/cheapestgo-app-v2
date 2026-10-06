@@ -24,6 +24,14 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `checkout.steps.details` | Details | 정보 입력 | お客様情報 | 填写信息 |
 | `checkout.steps.payment` | Payment | 결제 | お支払い | 支付 |
 | `checkout.steps.confirmed` | Confirmed | 예약 완료 | 予約完了 | 预订完成 |
+| `checkout.steps.verification` | Verification | 확인 | 確認 | 确认 |
+| `checkout.whosCheckingInYou` | Who’s checking in? (Your Details) | 체크인하실 분은 누구인가요? (본인 정보) | ご宿泊者はどなたですか？（お客様情報） | 由谁入住？（您的信息） |
+| `checkout.paymentDetailsTitle` | Payment Details | 결제 정보 | お支払い情報 | 支付信息 |
+| `checkout.securedPoweredBy` | Secured and Powered by <b>{brand}</b> | <b>{brand}</b> 보안 결제 | <b>{brand}</b>による安全な決済 | 由 <b>{brand}</b> 提供安全支付 |
+| `checkout.summary.dates` | Dates | 날짜 | 日程 | 日期 |
+| `checkout.summary.guests` | Guests | 투숙객 | 宿泊人数 | 入住人数 |
+| `checkout.summary.room` | Room | 객실 | 客室 | 客房 |
+| `checkout.payNow` | Pay {amount} | {amount} 결제하기 | {amount}を支払う | 支付 {amount} |
 | `checkout.validation.required` | Required | 필수 입력 | 必須 | 必填 |
 | `checkout.userDetails.phone` | Phone | 전화번호 | 電話番号 | 电话 |
 | `checkout.userDetails.phoneNumber` | Phone number | 전화번호 | 電話番号 | 电话号码 |

@@ -33,9 +33,10 @@ export function LandingHeader() {
                     <LocaleSelector variant="onDark" />
                     <CurrencySelector variant="onDark" />
 
+                    {/* v1's gradient, blue-600 → cyan-500, like every button on this page. */}
                     <Link
                         href={user ? '/account' : '/login'}
-                        className="ml-1 rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-[#e2e8f0] transition-colors duration-150 hover:text-[#f8fafc]"
+                        className="ml-1 rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-[filter] duration-150 hover:brightness-110"
                     >
                         {user ? tAll('nav.account') : tAll('nav.signIn')}
                     </Link>

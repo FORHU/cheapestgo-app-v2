@@ -277,7 +277,10 @@
       "nonRefundable": "Non-refundable",
       "termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
       "fetchingPolicy": "Fetching cancellation policy…",
-      "flight": "Flight"
+      "flight": "Flight",
+      "dates": "Dates",
+      "guests": "Guests",
+      "room": "Room"
     },
     "title": "Checkout",
     "userDetails": {
@@ -351,7 +354,8 @@
     "steps": {
       "details": "Details",
       "payment": "Payment",
-      "confirmed": "Confirmed"
+      "confirmed": "Confirmed",
+      "verification": "Verification"
     },
     "errors": {
       "paymentFailed": "Payment failed. Please try again.",
@@ -372,7 +376,11 @@
     "guestDetails": "Guest details",
     "paymentInfo": "Payment info",
     "paymentSecure": "Your payment information is encrypted and never stored on our servers.",
-    "cardNamePlaceholder": "John Doe"
+    "cardNamePlaceholder": "John Doe",
+    "whosCheckingInYou": "Who’s checking in? (Your Details)",
+    "paymentDetailsTitle": "Payment Details",
+    "securedPoweredBy": "Secured and Powered by <b>{brand}</b>",
+    "payNow": "Pay {amount}"
   },
   "currencyPicker": {
     "label": "Select currency"

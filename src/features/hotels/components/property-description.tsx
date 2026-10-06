@@ -109,7 +109,7 @@ function descriptionPalette(tone: 'light' | 'dark') {
         soft:  dark ? 'text-white/85' : 'text-slate-600',
         /** The write-up, deliberately the quietest thing in the section. */
         body:  dark ? 'text-white/55' : 'text-slate-500',
-        chip:     dark ? 'bg-white/[0.07] text-white/90' : 'bg-slate-100 text-slate-700',
+        chip:     dark ? 'bg-white/[0.07] text-slate-100' : 'bg-slate-200 text-slate-700',
         chipIcon: dark ? 'text-white/60' : 'text-slate-400',
         link:     dark ? 'text-white hover:text-white/70' : 'text-slate-900 hover:text-slate-600',
         /** The hairline between what the stay comes with and what the supplier
@@ -246,10 +246,11 @@ function splitAmenities(list: string[]): { facilities: string[]; policies: strin
  */
 function ChipGroup({
     label, items, moreLabel, lessLabel, palette, reduceMotion, className,
-    disclosure = true, compact = false,
+    disclosure = true, pill = false,
 }: {
-    /** Omitted for the amenities/rules row, which the design draws as two
-     *  unlabelled pill groups rather than two labelled sections. */
+    /** What the group is — the list's accessible name. Not printed: the design
+     *  draws the amenities/rules row as two unlabelled pill groups, so the
+     *  distinction is carried for a screen reader only. */
     label?: string;
     items: string[];
     moreLabel: string;
@@ -260,9 +261,9 @@ function ChipGroup({
     /** `false` for a short, fixed list (the hotel's general amenities): every
      *  chip always shown, no measurement, no "View more". */
     disclosure?: boolean;
-    /** Smaller pills that keep each label on one line — for a capped list that
-     *  needs to sit tight. */
-    compact?: boolean;
+    /** The design's fixed pill — 54px tall, at least 200px wide, label centred
+     *  on one line — for the short capped row under the rate. */
+    pill?: boolean;
 }) {
     const [showAll, setShowAll] = useState(false);
 
@@ -311,12 +312,6 @@ function ChipGroup({
 
     return (
         <div className={className}>
-            {label && (
-                <p className={cn('mb-3 text-[13px] font-bold tracking-[0.12em] uppercase', palette.muted)}>
-                    {label}
-                </p>
-            )}
-
             {/* The disclosure is a height, not a reflow. Every chip is always in
                 the list and the extras are clipped, so the four already on
                 screen do not move at all — opening it only uncovers what was
@@ -336,10 +331,11 @@ function ChipGroup({
                 the list's own height moved off it. */}
             <ul
                 ref={listRef}
+                aria-label={label}
                 // `relative`, so a chip's `offsetTop` is measured against this
                 // list rather than against whatever happens to be positioned
                 // above it.
-                className={cn('relative flex flex-wrap gap-2', disclosure && 'overflow-hidden')}
+                className={cn('relative flex flex-wrap', pill ? 'gap-3' : 'gap-2', disclosure && 'overflow-hidden')}
                 style={disclosure ? {
                     height: heights ? (showAll ? heights.full : heights.collapsed) : undefined,
                     transition: reduceMotion ? 'none' : `height ${CHIP_REVEAL.duration}s cubic-bezier(${EASE.join(',')})`,
@@ -363,14 +359,14 @@ function ChipGroup({
                             className={cn(
                                 'inline-flex items-center rounded-full',
                                 palette.chip,
-                                compact
-                                    ? 'gap-2 px-3.5 py-1.5 text-[13px] whitespace-nowrap sm:text-[13.5px]'
+                                pill
+                                    ? 'h-[54px] min-w-[clamp(150px,13vw,200px)] justify-center gap-2 px-6 text-[15px] whitespace-nowrap'
                                     : 'gap-3 px-6 py-3 text-[16px] sm:text-[17px]',
                             )}
                         >
                             {Icon && (
                                 <Icon
-                                    size={compact ? 14 : 17}
+                                    size={pill ? 15 : 17}
                                     strokeWidth={1.75}
                                     className={cn('shrink-0', palette.chipIcon)}
                                 />
@@ -444,11 +440,11 @@ export function PropertyDescription({
             ? splitAmenities(Array.from(new Set(general.amenities))).facilities
             : nonPolicy;
 
-        // Both groups: capped at five, compact pills, no "View more" — see the
-        // ChipGroup props below.
+        // Both groups: capped at three — the design's row of three pills a side —
+        // and no "View more"; the full list lives in the room-detail modal.
         return {
-            facilities: (universal.length ? universal : fallback).slice(0, 5),
-            policies:   splitAmenities(allFlat).policies.slice(0, 5),
+            facilities: (universal.length ? universal : fallback).slice(0, 3),
+            policies:   splitAmenities(allFlat).policies.slice(0, 3),
         };
     }, [amenityGroups, amenities]);
 
@@ -544,19 +540,16 @@ export function PropertyDescription({
                 </div>
             )}
 
-            {/* Amenities and rules, side by side in one row, each under its
-                own label — the wireframe's two labelled pill groups.
+            {/* Amenities and rules, side by side in one row — the design's two
+                unlabelled groups of three pills, a wide gutter between them.
 
-                A grid, not a flex row: amenities routinely runs to twenty-odd
-                chips against three or four rules, and a flex row sizes each
-                item off its own content first — the long list claims the
-                whole line before the short one is ever considered, so it
-                wraps to a line of its own beneath instead of sitting beside
-                it. A grid hands each side a fixed half regardless of how much
-                either is carrying. Single column below `sm`, where two halves
-                would each be too narrow to read a chip on. */}
+                A flex row rather than a grid: each side is capped at three, so
+                neither can crowd the other off the line, and a grid's fixed
+                halves were narrower than three 200px pills — the row would
+                break inside a group instead of between the two. When the
+                screen is too narrow for both, the rules group wraps whole. */}
             {hasChips && (
-                <div className={cn('grid grid-cols-1 gap-x-12 gap-y-6 sm:grid-cols-2', (hasTimes || hasPrice || hasRating) && 'mt-6')}>
+                <div className={cn('flex flex-wrap items-start gap-x-[clamp(32px,14vw,274px)] gap-y-3', (hasTimes || hasPrice || hasRating) && 'mt-6')}>
                     <ChipGroup
                         label="General Amenities"
                         items={facilities}
@@ -566,7 +559,7 @@ export function PropertyDescription({
                         reduceMotion={reduceMotion}
                         className="min-w-0"
                         disclosure={false}
-                        compact
+                        pill
                     />
                     <ChipGroup
                         label="Rules & Policies"
@@ -577,7 +570,7 @@ export function PropertyDescription({
                         reduceMotion={reduceMotion}
                         className="min-w-0"
                         disclosure={false}
-                        compact
+                        pill
                     />
                 </div>
             )}
@@ -590,7 +583,7 @@ export function PropertyDescription({
                         with no rate, no hours and no amenities it would be a
                         line under nothing. */}
                     {(hasPrice || hasRating || hasTimes || hasChips) && (
-                        <div className={cn('mt-6 h-px w-full', palette.rule)} />
+                        <div className={cn('mt-10 h-px w-full', palette.rule)} />
                     )}
                     <p
                         ref={bodyRef}

@@ -277,7 +277,10 @@
       "nonRefundable": "不可退款",
       "termsNotProvided": "供应商未提供取消条款 — 预订前请与住宿方确认",
       "fetchingPolicy": "正在获取取消政策…",
-      "flight": "航班"
+      "flight": "航班",
+      "dates": "日期",
+      "guests": "入住人数",
+      "room": "客房"
     },
     "title": "结账",
     "userDetails": {
@@ -351,7 +354,8 @@
     "steps": {
       "details": "填写信息",
       "payment": "支付",
-      "confirmed": "预订完成"
+      "confirmed": "预订完成",
+      "verification": "确认"
     },
     "errors": {
       "paymentFailed": "支付失败，请重试。",
@@ -372,7 +376,11 @@
     "guestDetails": "入住人信息",
     "paymentInfo": "支付信息",
     "paymentSecure": "您的支付信息已加密，绝不会存储在我们的服务器上。",
-    "cardNamePlaceholder": "张三"
+    "cardNamePlaceholder": "张三",
+    "whosCheckingInYou": "由谁入住？（您的信息）",
+    "paymentDetailsTitle": "支付信息",
+    "securedPoweredBy": "由 <b>{brand}</b> 提供安全支付",
+    "payNow": "支付 {amount}"
   },
   "currencyPicker": {
     "label": "选择货币"

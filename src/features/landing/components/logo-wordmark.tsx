@@ -1,4 +1,5 @@
 import { brandWordmark } from '@/shared/lib/brand';
+import { BRAND } from '@/shared/lib/palette';
 
 const { head, tail } = brandWordmark(process.env.NEXT_PUBLIC_BRAND_NAME);
 // The viewBox was cut for "cheapestGo" — 131 units for 10 glyphs at this size. A
@@ -28,7 +29,8 @@ export function LogoWordmark({ height = 24, className }: { height?: number; clas
         >
             <text x="0" y="30" fontFamily="var(--font-open-sans), 'Open Sans', sans-serif" fontSize="22">
                 <tspan fontWeight="400" fill="#f1f5f9" letterSpacing="-0.3">{head.toLowerCase()}</tspan>
-                <tspan fontWeight="700" fill="#ffffff" letterSpacing="-0.5">{tail}</tspan>
+                {/* The tail in v1's blue, as on v1's dark logo (`public/logo-dark.svg`). */}
+                <tspan fontWeight="700" fill={BRAND.accent} letterSpacing="-0.5">{tail}</tspan>
             </text>
         </svg>
     );

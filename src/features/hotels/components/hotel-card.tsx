@@ -96,12 +96,12 @@ interface HotelCardProps {
  * inverted chip, so a stay looks identical whichever view you found it in.
  * Mirrors `railCardPalette` in the search page.
  */
-const SURFACE = 'bg-white dark:bg-[#1A1A1A]';
-const TITLE   = 'text-[#111111] dark:text-white';
-const MUTED   = 'text-[#6B7280] dark:text-white/60';
-const IMAGE_BG = 'bg-[#F1F1F1] dark:bg-white/5';
-/** Inverted against the card surface: near-black chip on white, white on dark. */
-const CHIP    = 'bg-[#1A1A1A] text-white dark:bg-white dark:text-[#111111]';
+const SURFACE = 'bg-white dark:bg-slate-900';
+const TITLE   = 'text-slate-900 dark:text-white';
+const MUTED   = 'text-slate-500 dark:text-slate-400';
+const IMAGE_BG = 'bg-slate-100 dark:bg-white/5';
+/** The price, save and Book Now chips: the brand gradient, blue-600 → cyan-500. */
+const CHIP    = 'bg-linear-to-r from-blue-600 to-cyan-500 text-white';
 
 export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
     const tAll = useTranslations();

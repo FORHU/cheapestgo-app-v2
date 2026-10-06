@@ -277,7 +277,10 @@
       "nonRefundable": "返金不可",
       "termsNotProvided": "サプライヤーからキャンセル条件の提供がありません — 予約前に施設にご確認ください",
       "fetchingPolicy": "キャンセルポリシーを取得中…",
-      "flight": "フライト"
+      "flight": "フライト",
+      "dates": "日程",
+      "guests": "宿泊人数",
+      "room": "客室"
     },
     "title": "お支払い",
     "userDetails": {
@@ -351,7 +354,8 @@
     "steps": {
       "details": "お客様情報",
       "payment": "お支払い",
-      "confirmed": "予約完了"
+      "confirmed": "予約完了",
+      "verification": "確認"
     },
     "errors": {
       "paymentFailed": "お支払いに失敗しました。もう一度お試しください。",
@@ -372,7 +376,11 @@
     "guestDetails": "ご宿泊者情報",
     "paymentInfo": "お支払い情報",
     "paymentSecure": "お支払い情報は暗号化され、当社のサーバーには保存されません。",
-    "cardNamePlaceholder": "山田 太郎"
+    "cardNamePlaceholder": "山田 太郎",
+    "whosCheckingInYou": "ご宿泊者はどなたですか？（お客様情報）",
+    "paymentDetailsTitle": "お支払い情報",
+    "securedPoweredBy": "<b>{brand}</b>による安全な決済",
+    "payNow": "{amount}を支払う"
   },
   "currencyPicker": {
     "label": "通貨を選択"

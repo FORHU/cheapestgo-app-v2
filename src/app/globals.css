@@ -253,22 +253,24 @@ body.map-immersive .app-shell-main {
    object at two sizes, and a disc in one tone beside a card in a different
    one read as two different marks rather than one. The hotel preview draws
    from the same pair — one surface for everything the map opens over itself. */
+/* In the original CheapestGo palette (src/shared/lib/palette.ts): v1's white /
+   slate-900 marker pill with slate ink, as its MapMarker drew it. */
 :root {
   --pin-bg: #FFFFFF;
-  --pin-fg: #1C1C1C;
+  --pin-fg: #1e293b;
   --pin-line: rgba(255, 255, 255, 0.16);
   --map-card-bg: #FFFFFF;
-  --map-card-fg: #111111;
-  --map-card-muted: rgba(17, 17, 17, 0.55);
-  --map-card-well: rgba(0, 0, 0, 0.06);
+  --map-card-fg: #0f172a;
+  --map-card-muted: #64748b;
+  --map-card-well: #f1f5f9;
 }
 :root.dark {
-  --pin-bg: #1C1C1C;
+  --pin-bg: #0f172a;
   --pin-fg: #FFFFFF;
   --pin-line: rgba(255, 255, 255, 0.16);
-  --map-card-bg: #1C1C1E;
-  --map-card-fg: #FFFFFF;
-  --map-card-muted: rgba(255, 255, 255, 0.55);
+  --map-card-bg: #0f172a;
+  --map-card-fg: #f8fafc;
+  --map-card-muted: #94a3b8;
   --map-card-well: rgba(255, 255, 255, 0.08);
 }
 

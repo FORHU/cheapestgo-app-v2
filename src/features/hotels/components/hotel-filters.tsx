@@ -104,28 +104,29 @@ function filtersPalette(tone: 'light' | 'dark') {
     return {
         /** The panel's plate. The light one carries the lift; the dark one is
          *  already separated from its ground by value alone. */
-        panel:   dark ? 'bg-[#1A1A1A]' : 'bg-white shadow-sm',
+        panel:   dark ? 'bg-slate-900' : 'bg-white shadow-sm',
         heading: dark ? 'text-white' : 'text-slate-900',
         icon:    dark ? 'text-white' : 'text-slate-700',
         /** Section labels and the chevron beside them. */
-        muted:   dark ? 'text-white/70' : 'text-slate-500',
-        reset:   dark ? 'text-white/60' : 'text-slate-500',
+        muted:   dark ? 'text-slate-400' : 'text-slate-500',
+        reset:   dark ? 'text-slate-400' : 'text-slate-500',
         /** Body copy inside a section — the price row's two labels. */
         body:    dark ? 'text-white/90' : 'text-slate-700',
         /**
-         * Selected sort — the same inverted chip the card's price and Book Now
-         * use, so "this one is on" looks the same everywhere in the view.
+         * Selected sort and selected star rating — the brand gradient, the same as
+         * the card's price and Book Now chips, so "this one is on" looks the same
+         * everywhere in the view.
          */
-        sortOn:  dark ? 'bg-white text-[#111111]' : 'bg-[#1A1A1A] text-white',
-        /** Selected star rating — the slate pill the design puts behind "5 Stars". */
-        starOn:  dark ? 'bg-[#5B6472] text-white' : 'bg-slate-800 text-white',
+        sortOn:  'bg-linear-to-r from-blue-600 to-cyan-500 text-white',
+        starOn:  'bg-linear-to-r from-blue-600 to-cyan-500 text-white',
         /** Unselected, for both. */
         rowIdle: dark ? 'text-white/90 hover:bg-white/8' : 'text-slate-700 hover:bg-slate-100',
         track:     dark ? 'bg-white/20' : 'bg-slate-200',
-        trackFill: dark ? 'bg-[#E4E4E4]' : 'bg-slate-900',
-        thumb: dark
-            ? '[&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white'
-            : '[&::-webkit-slider-thumb]:bg-slate-900 [&::-moz-range-thumb]:bg-slate-900',
+        trackFill: 'bg-linear-to-r from-blue-600 to-cyan-500',
+        /** Each thumb carries the whole gradient — a thumb is too small to show a slice of it. */
+        thumb:
+            '[&::-webkit-slider-thumb]:bg-linear-to-r [&::-webkit-slider-thumb]:from-blue-600 [&::-webkit-slider-thumb]:to-cyan-500 ' +
+            '[&::-moz-range-thumb]:bg-linear-to-r [&::-moz-range-thumb]:from-blue-600 [&::-moz-range-thumb]:to-cyan-500',
         handle: dark ? 'bg-white/25 text-white' : 'bg-slate-300/90 text-slate-800',
     };
 }

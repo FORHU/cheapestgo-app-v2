@@ -148,7 +148,7 @@ export function HotelResults({
         return (
             <div className="flex flex-col gap-6 lg:flex-row">
                 <div className="hidden w-[280px] shrink-0 animate-pulse lg:block">
-                    <div className="h-[520px] rounded-[20px] bg-slate-200 dark:bg-[#1A1A1A]" />
+                    <div className="h-[520px] rounded-[20px] bg-slate-200 dark:bg-slate-900" />
                 </div>
                 <div className="flex-1 space-y-4">
                     <div className="space-y-2">
@@ -166,7 +166,7 @@ export function HotelResults({
     // ── Error ─────────────────────────────────────────────────────────────────
     if (error && hotels.length === 0) {
         return (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-20 text-center dark:border-white/10 dark:bg-[#1A1A1A]">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-20 text-center dark:border-white/10 dark:bg-slate-900">
                 <p className="text-sm font-medium text-slate-500 dark:text-white/70">{tAll('hotels.results.searchFailed')}</p>
                 <p className="mt-1 text-xs text-slate-400 dark:text-white/40">{error}</p>
             </div>
@@ -258,7 +258,7 @@ export function HotelResults({
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={FILTER_SLIDE}
-                            className="no-scrollbar relative ml-auto h-full w-[320px] max-w-full overflow-y-auto bg-slate-50 p-4 dark:bg-[#141414]"
+                            className="no-scrollbar relative ml-auto h-full w-[320px] max-w-full overflow-y-auto bg-slate-50 p-4 dark:bg-[#020617]"
                         >
                             <div className="mb-3 flex items-center justify-end">
                                 <button onClick={() => setMobileFiltersOpen(false)} aria-label={tAll('hotels.filters.close')}>
@@ -315,7 +315,7 @@ export function HotelResults({
                         ))}
                     </div>
                 ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-16 text-center dark:border-white/10 dark:bg-[#1A1A1A]">
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-16 text-center dark:border-white/10 dark:bg-slate-900">
                         <h3 className="font-medium text-slate-900 dark:text-white">
                             {destination ? `No hotels found in ${destination}` : 'No properties found'}
                         </h3>
@@ -339,7 +339,7 @@ export function HotelResults({
                         {hasMore ? (
                             <button
                                 onClick={() => setPage((p) => p + 1)}
-                                className="rounded-full bg-[#1A1A1A] px-6 py-2.5 text-xs font-bold text-white transition-transform active:scale-95 dark:bg-white dark:text-[#111111]"
+                                className="rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-6 py-2.5 text-xs font-bold text-white transition-[transform,filter] hover:brightness-110 active:scale-95"
                             >
                                 Show more ({filtered.length - visible.length} remaining)
                             </button>

@@ -87,7 +87,9 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
     setUserCountry(countryCode);
     setIsOpen(false);
 
-    if (pathname && (pathname.includes('/property/') || pathname.includes('/flights'))) {
+    // Pages that price from `?currency=` rather than from the store — checkout re-quotes
+    // the room in the new currency when the param changes.
+    if (pathname && (pathname.includes('/property/') || pathname.includes('/flights') || pathname.includes('/checkout'))) {
       const params = new URLSearchParams(searchParams?.toString() || '');
       params.set('currency', currencyCode);
       router.replace(`${pathname}?${params.toString()}`);

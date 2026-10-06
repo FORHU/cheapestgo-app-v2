@@ -16,9 +16,12 @@ export const LANDING_POSTER = '/videos/landing-ocean-poster.jpg';
  * sitting straight on the footage — `#94a3b8` footer links, a `#64748b` legal
  * line, `bg-white/[0.06]` header controls. These stops keep that text at ≥4.5:1
  * even against the wing, which is the brightest thing in frame.
+ *
+ * Tinted with v1's obsidian (`#020617`, see `shared/lib/palette.ts`) — the
+ * same weights as before, in the original brand's darkest blue rather than a neutral.
  */
 const SCRIM =
-    'bg-[linear-gradient(180deg,rgba(9,13,20,0.62)_0%,rgba(9,13,20,0.55)_45%,rgba(7,10,15,0.82)_100%)]';
+    'bg-[linear-gradient(180deg,rgba(2,6,23,0.62)_0%,rgba(2,6,23,0.55)_45%,rgba(2,6,23,0.82)_100%)]';
 
 /**
  * Full-bleed muted video behind the landing page.

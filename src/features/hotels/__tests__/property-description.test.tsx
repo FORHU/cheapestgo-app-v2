@@ -26,7 +26,9 @@ describe('PropertyDescription — amenities', () => {
                 ]}
             />,
         );
-        expect(screen.getByText('General Amenities')).toBeInTheDocument();
+        // Named for assistive tech, not printed: the design draws the two groups unlabelled.
+        expect(screen.getByRole('list', { name: 'General Amenities' })).toBeInTheDocument();
+        expect(screen.queryByText('General Amenities')).not.toBeInTheDocument();
         // universal comforts, wherever ETG filed them
         expect(screen.getByText('Free WiFi in all rooms')).toBeInTheDocument();
         expect(screen.getByText('Air conditioning')).toBeInTheDocument();
@@ -48,7 +50,7 @@ describe('PropertyDescription — amenities', () => {
                 ]}
             />,
         );
-        expect(screen.getByText('Rules & Policies')).toBeInTheDocument();
+        expect(screen.getByRole('list', { name: 'Rules & Policies' })).toBeInTheDocument();
         expect(screen.getByText('Pets not allowed')).toBeInTheDocument();
         expect(screen.getByText('Elevator')).toBeInTheDocument();
     });
@@ -67,7 +69,7 @@ describe('PropertyDescription — amenities', () => {
         expect(screen.getAllByText('Free Wi-Fi')).toHaveLength(1);
     });
 
-    it('caps "General Amenities" at five and never shows a "View more"', () => {
+    it('caps "General Amenities" at three and never shows a "View more"', () => {
         render(
             <PropertyDescription
                 tone="dark"
@@ -82,18 +84,19 @@ describe('PropertyDescription — amenities', () => {
             />,
         );
         expect(screen.getByText('Wi-Fi')).toBeInTheDocument();
-        expect(screen.getByText('Free toiletries')).toBeInTheDocument();
-        // seven universal amenities offered, only the first five drawn
+        expect(screen.getByText('Heating')).toBeInTheDocument();
+        expect(screen.queryByText('Private bathroom')).not.toBeInTheDocument();
+        // seven universal amenities offered, only the first three drawn — the design's row
         const drawn = ['Wi-Fi', 'Air conditioning', 'Heating', 'Private bathroom', 'Free toiletries', 'TV', 'Desk']
             .filter((a) => screen.queryByText(a));
-        expect(drawn).toHaveLength(5);
+        expect(drawn).toHaveLength(3);
         // no disclosure toggle on the amenities group
         expect(screen.queryByRole('button', { name: /view more/i })).not.toBeInTheDocument();
     });
 
     it('falls back to the flat amenities list when amenityGroups is absent', () => {
         render(<PropertyDescription tone="dark" amenities={['24 hour reception', 'Elevator']} />);
-        expect(screen.getByText('General Amenities')).toBeInTheDocument();
+        expect(screen.getByRole('list', { name: 'General Amenities' })).toBeInTheDocument();
         expect(screen.getByText('Elevator')).toBeInTheDocument();
     });
 

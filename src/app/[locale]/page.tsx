@@ -67,9 +67,12 @@ async function getServerTrending(): Promise<TrendingDest[]> {
  * The landing page runs on its own dark canvas and its own type stack, so it
  * overrides the two font vars `globals.css` binds to Plus Jakarta Sans on
  * `<body>` rather than changing them app-wide.
+ *
+ * The canvas is v1's: slate-900 falling to obsidian (`shared/lib/palette.ts`).
+ * It shows wherever the video has not painted — before it loads, or if it fails.
  */
 const CANVAS: CSSProperties = {
-    background: 'radial-gradient(120% 80% at 50% 0%,#1f1f1f 0%,#161616 45%,#121212 100%)',
+    background: 'radial-gradient(120% 80% at 50% 0%,#0f172a 0%,#0b1222 45%,#020617 100%)',
     '--font-sans': "var(--font-open-sans), 'Open Sans', sans-serif",
     '--font-display': "var(--font-open-sans), 'Open Sans', sans-serif",
 } as CSSProperties;

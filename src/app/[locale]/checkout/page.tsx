@@ -4,14 +4,15 @@ import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ArrowLeft, Check, Download, Calendar, MapPin, Users, CreditCard, Lock } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
+import { ArrowLeft, Check, Download, Calendar, MapPin, Users, Lock, ChevronDown, ChevronLeft, Sun, Moon, User, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { env } from '@/shared/lib/env';
-import type { GuestInfo, PassengerInfo } from '@/features/checkout/components/guest-form';
+import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
+import { buildConfirmGuests, formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
 import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
@@ -78,10 +79,20 @@ function checkoutPalette(theme: 'light' | 'dark') {
         muted:         dark ? 'rgba(245,239,228,.5)'  : 'rgba(17,17,17,.5)',
         faint:         dark ? 'rgba(245,239,228,.4)'  : 'rgba(17,17,17,.4)',
         hairline:      dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.1)',
-        fieldBg:       dark ? 'rgba(255,255,255,.09)' : 'rgba(0,0,0,.05)',
+        // The design's input fill: a violet-leaning grey, not a neutral one.
+        fieldBg:       dark ? '#2C2836' : '#EEEDF2',
         summaryBg:     dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)',
         summaryBorder: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)',
         menuBg:        dark ? '#141018' : '#FFFFFF',
+        /** The one raised plate the design uses — the summary card, the payment
+         *  panel and the toolbar circles all sit on it. */
+        surface:       dark ? '#1E1E1E' : '#F4F4F5',
+        /** Rules inside the summary card, a step louder than `hairline` so they
+         *  still read against `surface` rather than against the page. */
+        cardLine:      dark ? 'rgba(255,255,255,.2)'  : 'rgba(0,0,0,.12)',
+        /** A step the traveller is not on — before or after it alike. */
+        stepIdle:      dark ? '#383A3E' : '#E4E4E7',
+        stepLine:      dark ? '#808080' : 'rgba(0,0,0,.25)',
     };
 }
 
@@ -162,7 +173,7 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
 
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
-        width: '100%', height: 46, padding: '0 16px', borderRadius: 16,
+        width: '100%', height: 40, padding: '0 16px', borderRadius: 999,
         border: `1.5px solid ${hasError ? DANGER : 'transparent'}`,
         background: palette.fieldBg, color: palette.text,
         fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
@@ -171,8 +182,8 @@ function mkField(palette: Palette, hasError = false): React.CSSProperties {
 
 function Label({ children, palette, icon: Icon }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon }) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: palette.muted, marginBottom: 7 }}>
-            {Icon && <Icon size={12} style={{ flexShrink: 0, opacity: 0.9 }} />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 }}>
+            {Icon && <Icon size={13} strokeWidth={1.75} style={{ flexShrink: 0 }} />}
             {children}
         </div>
     );
@@ -185,16 +196,6 @@ function ErrText({ msg }: { msg?: string }) {
 
 function FieldRow({ children }: { children: React.ReactNode }) {
     return <div style={{ marginBottom: 14 }}>{children}</div>;
-}
-
-function TermsLine({ palette }: { palette: Palette }) {
-    return (
-        <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
-            By continuing you agree to our{' '}
-            <Link href="/terms" style={{ color: ACCENT }}>Terms</Link> and{' '}
-            <Link href="/privacy" style={{ color: ACCENT }}>Privacy Policy</Link>.
-        </p>
-    );
 }
 
 function Grid2({ children }: { children: React.ReactNode }) {
@@ -268,8 +269,8 @@ function PhoneField({
             <div
                 className="cg-phone"
                 style={{
-                    display: 'flex', alignItems: 'center', width: '100%', height: 46,
-                    borderRadius: 16, background: palette.fieldBg,
+                    display: 'flex', alignItems: 'center', width: '100%', height: 40,
+                    borderRadius: 999, background: palette.fieldBg,
                     border: `1.5px solid ${error ? DANGER : 'transparent'}`, boxSizing: 'border-box',
                 }}
             >
@@ -340,43 +341,125 @@ function PhoneField({
 // The label is a key rather than a word: this array is module scope, and a hook cannot run
 // here. ProgressBar resolves it.
 const STEPS = [
-    { key: 'form',      labelKey: 'steps.details',   num: 1 },
-    { key: 'payment',   labelKey: 'steps.payment',   num: 2 },
-    { key: 'confirmed', labelKey: 'steps.confirmed', num: 3 },
+    { key: 'form',      labelKey: 'steps.details',      num: 1 },
+    { key: 'payment',   labelKey: 'steps.payment',      num: 2 },
+    { key: 'confirmed', labelKey: 'steps.verification', num: 3 },
 ] as const;
 
 type Step = 'form' | 'payment' | 'confirmed';
 
-function ProgressBar({ step }: { step: Step }) {
+/**
+ * Three numbered discs joined by hairlines. As drawn, only the step in hand is
+ * marked — white disc, black numeral. Steps already done look exactly like
+ * steps still to come: the bar says where you are, not what you have finished.
+ */
+function ProgressBar({ step, palette }: { step: Step; palette: Palette }) {
     const t = useTranslations('checkout');
     const idx = { form: 0, payment: 1, confirmed: 2 }[step];
     return (
-        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-            {STEP_LABELS.map((label, i) => {
-                const done   = i < idx;
+        <ol style={{ display: 'flex', alignItems: 'flex-start', listStyle: 'none', margin: 0, padding: 0 }}>
+            {STEPS.map((s, i) => {
                 const active = i === idx;
                 return (
-                    <div key={label} style={{ display: 'flex', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, width: 80 }}>
+                    <li key={s.key} aria-current={active ? 'step' : undefined} style={{ display: 'flex', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, minWidth: 50 }}>
                             <div style={{
-                                width: 34, height: 34, borderRadius: '50%',
+                                width: 32, height: 32, borderRadius: '50%',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 13, fontWeight: 700,
-                                background: done ? ACCENT : active ? palette.title : palette.fieldBg,
-                                color:      done ? '#fff' : active ? palette.bg    : palette.muted,
+                                fontSize: 14, fontWeight: 700,
+                                background: active ? palette.title : palette.stepIdle,
+                                color:      active ? palette.bg    : palette.title,
                             }}>
-                                {done ? <Check size={15} strokeWidth={3} /> : i + 1}
+                                {s.num}
                             </div>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: i <= idx ? TEXT : 'rgba(245,239,228,.4)' }}>{t(s.labelKey)}</div>
+                            <div style={{ fontSize: 12, color: palette.text, whiteSpace: 'nowrap' }}>{t(s.labelKey)}</div>
                         </div>
                         {i < STEPS.length - 1 && (
-                            <div style={{ flex: 1, height: 2, background: i < idx ? ACCENT : 'rgba(255,255,255,.12)', marginBottom: 18, marginLeft: 4, marginRight: 4 }} />
+                            <div aria-hidden style={{ width: 'clamp(40px,6vw,90px)', height: 1, marginTop: 16, background: palette.stepLine }} />
                         )}
-                    </div>
+                    </li>
                 );
             })}
+        </ol>
+    );
+}
+
+// ─── Toolbar ──────────────────────────────────────────────────────────────────
+
+/**
+ * The row above the heading: back on the left; currency, then theme, on the
+ * right — 50px discs on the raised `surface`, as on the property page's banner
+ * but solid, since here they sit on the page rather than over a photograph.
+ */
+function CheckoutToolbar({ palette, backLabel, onBack }: { palette: Palette; backLabel: string; onBack: () => void }) {
+    const tAll = useTranslations();
+    const { theme, toggleTheme } = useTheme();
+    const disc: React.CSSProperties = {
+        width: 50, height: 50, borderRadius: '50%', border: 'none',
+        background: palette.surface, color: palette.title,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+    };
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(24px,3vw,36px)' }}>
+            <button type="button" onClick={onBack} aria-label={backLabel} title={backLabel} style={disc}>
+                <ChevronLeft size={24} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 17 }}>
+                <CurrencySelector
+                    align="right"
+                    iconOnly
+                    triggerClassName="h-[50px] w-[50px] md:h-[50px] md:w-[50px]"
+                    chrome={{
+                        surface: palette.surface,
+                        border:  'transparent',
+                        text:    palette.title,
+                        menu:    palette.menuBg,
+                        hover:   palette.fieldBg,
+                        shadow:  '0 24px 55px -18px rgba(0,0,0,.5)',
+                    }}
+                />
+                <button
+                    type="button"
+                    onClick={toggleTheme}
+                    aria-label={theme === 'dark' ? tAll('property.v2.switchToLight') : tAll('property.v2.switchToDark')}
+                    title={theme === 'dark' ? tAll('property.v2.lightMode') : tAll('property.v2.darkMode')}
+                    style={disc}
+                >
+                    {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+                </button>
+            </div>
         </div>
     );
+}
+
+/**
+ * The Payment Element dressed as the rest of the form: pill inputs on the
+ * field fill, labels in body colour, the accordion flattened onto the panel.
+ * Stripe draws it in its own iframe, so its text and placeholders are Stripe's
+ * and can only be restyled, not reworded.
+ */
+function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance {
+    return {
+        theme: theme === 'dark' ? 'night' : 'stripe',
+        variables: {
+            colorPrimary:         ACCENT,
+            colorBackground:      palette.fieldBg,
+            colorText:            palette.text,
+            colorTextSecondary:   palette.muted,
+            colorTextPlaceholder: palette.faint,
+            colorDanger:          DANGER,
+            borderRadius:         '999px',
+            fontSizeBase:         '14px',
+            spacingUnit:          '4px',
+        },
+        rules: {
+            '.Input':         { border: 'none', boxShadow: 'none', padding: '11px 16px' },
+            '.Input:focus':   { boxShadow: `0 0 0 1.5px ${ACCENT}` },
+            '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '400', marginBottom: '8px' },
+            '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: '0', paddingRight: '0' },
+            '.Tab':           { border: 'none', boxShadow: 'none' },
+        },
+    };
 }
 
 // ─── Stripe payment form ──────────────────────────────────────────────────────
@@ -419,19 +502,15 @@ function StripePaymentForm({
 
     return (
         <>
-            <div style={{ background: palette.fieldBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 18, padding: 22, marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <CreditCard size={16} color={ACCENT} /> {t('paymentDetails')}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(245,239,228,.5)', fontWeight: 600 }}>
-                        <Lock size={10} /> {t('securedByStripe')}
-                    </div>
-                </div>
+            <div style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
                 <PaymentElement options={{ layout: 'accordion' }} />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, marginTop: 'clamp(20px,3vw,32px)', fontSize: 12, color: palette.muted }}>
+                    <Lock size={11} aria-hidden />
+                    <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
+                </div>
             </div>
             <PrimaryBtn onClick={handlePay} loading={submitting} disabled={!stripe || !elements} palette={palette}>
-                Pay {currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {t('payNow', { amount: `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
             </PrimaryBtn>
         </>
     );
@@ -584,7 +663,7 @@ function ConfirmedScreen({
                                     <span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#fff', paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#fff', paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
                                 <span>{t('totalPaid')}</span>
                                 <span style={{ color: GREEN }}>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                             </div>
@@ -753,6 +832,21 @@ function CheckoutContent() {
         });
     }, [mode, rateKey, runPrebook]);
 
+    /**
+     * A currency picked from the toolbar mid-payment. The PaymentIntent was opened in the
+     * old currency and cannot be re-priced, so the traveller goes back a step: the re-run
+     * prebook above shows the new figures, and continuing opens a fresh intent in them.
+     */
+    const lastCurrency = React.useRef(currency);
+    useEffect(() => {
+        if (lastCurrency.current === currency) return;
+        lastCurrency.current = currency;
+        if (step === 'payment') {
+            setClientSecret(null);
+            setStep('form');
+        }
+    }, [currency, step]);
+
     // ── Hotel step 1: guest → payment intent ──
     const handleHotelSubmitForm = useCallback(async () => {
         const gErr = validateGuest(guest);
@@ -814,7 +908,7 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [guest, user, router, prebookId, display, runPrebook, currency, hotelName, roomName, checkIn, checkOut]);
+    }, [guest, coGuests, user, router, prebookId, display, runPrebook, currency, hotelName, roomName, checkIn, checkOut]);
 
     // ── Hotel step 2: Stripe confirms → then call /confirm ──
     const handleStripeSuccess = useCallback(async (stripePaymentIntentId: string) => {
@@ -861,7 +955,7 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [mode, flightSessionId, board, prebookId, guest, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
+    }, [mode, flightSessionId, board, prebookId, guest, coGuests, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
 
     // ── Flight submit ──
     const handleFlightSubmit = useCallback(async () => {
@@ -936,11 +1030,11 @@ function CheckoutContent() {
 
     const sectionLabelStyle: React.CSSProperties = {
         fontWeight: 700,
-        fontSize: 12,
-        letterSpacing: '0.07em',
+        fontSize: 14,
+        letterSpacing: '0.12em',
         textTransform: 'uppercase',
         color: palette.title,
-        marginBottom: 14,
+        marginBottom: 16,
     };
 
     const fieldCss = (
@@ -1006,76 +1100,87 @@ function CheckoutContent() {
         );
     }
 
-    // ── Summary card (right sidebar) ──────────────────────────────────────────
+    // ── Summary card (right column) ───────────────────────────────────────────
     function SummaryCard() {
+        const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 14, fontSize: 13, color: palette.text };
+        const rule = <div aria-hidden style={{ height: 1, background: palette.cardLine, margin: '12px 0' }} />;
         return (
-            <div style={{ flex: '0 1 340px', minWidth: 280, alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
-                <div style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ position: 'sticky', top: 24 }}>
+                <div style={{ background: palette.surface, borderRadius: 12, overflow: 'hidden' }}>
                     {hotelImage && (
-                        <div style={{ height: 200, overflow: 'hidden' }}>
+                        <div style={{ height: 204, overflow: 'hidden' }}>
                             <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
 
-                    <div style={{ padding: 18 }}>
+                    <div style={{ padding: '18px 30px 26px' }}>
                         {mode === 'hotel' ? (
                             <>
                                 <div style={{ fontWeight: 700, fontSize: 17, color: palette.title }}>{hotelName}</div>
-                                {roomName && <div style={{ fontSize: 13, color: palette.muted, marginTop: 3 }}>{roomName}</div>}
+                                {roomName && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{roomName}</div>}
                                 {hotelAddress && (
-                                    <div style={{ fontSize: 12, color: palette.muted, marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                                        <MapPin size={11} style={{ marginTop: 1, flexShrink: 0 }} />
+                                    <div style={{ fontSize: 13, color: palette.text, marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                                        <MapPin size={13} strokeWidth={1.75} style={{ marginTop: 1, flexShrink: 0 }} />
                                         <span>{[hotelAddress, hotelCity].filter(Boolean).join(', ')}</span>
                                     </div>
                                 )}
 
-                                <div style={{ height: 1, background: palette.hairline, margin: '14px 0' }} />
+                                {rule}
 
-                                {[
-                                    { label: 'Dates',  value: formatStayDates(checkIn, checkOut) },
-                                    { label: 'Guests', value: `${adults} guest${adults !== 1 ? 's' : ''}` },
-                                    roomName && { label: 'Room', value: roomName },
-                                ].filter((row): row is { label: string; value: string } => Boolean(row && row.value)).map((row) => (
-                                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontSize: 13, marginBottom: 8 }}>
-                                        <span style={{ color: palette.muted, flexShrink: 0 }}>{row.label}</span>
-                                        <span style={{ fontWeight: 600, color: palette.soft, textAlign: 'right' }}>{row.value}</span>
-                                    </div>
-                                ))}
+                                <div style={{ display: 'grid', gap: 8 }}>
+                                    {[
+                                        { label: t('summary.dates'),  value: formatStayDates(checkIn, checkOut) },
+                                        { label: t('summary.guests'), value: t('guestsCount', { count: adults + children }) },
+                                        { label: t('summary.room'),   value: roomName },
+                                    ].filter(r => r.value).map(r => (
+                                        <div key={r.label} style={row}>
+                                            <span style={{ flexShrink: 0 }}>{r.label}</span>
+                                            <span style={{ textAlign: 'right' }}>{r.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
 
-                                <div style={{ height: 1, background: palette.hairline, margin: '14px 0' }} />
+                                {rule}
 
-                            {nights && nightlyPrice > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 6 }}>
-                                    <span>{shownCurrency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
-                                    <span style={{ fontWeight: 600 }}>{shownCurrency} {roomTotal.toLocaleString()}</span>
+                                <div style={{ display: 'grid', gap: 8 }}>
+                                    {nights && nightlyPrice > 0 && (
+                                        <div style={row}>
+                                            <span>{shownCurrency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
+                                            <span>{shownCurrency} {roomTotal.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {display ? (
+                                        <div style={row}>
+                                            <span>{t('serviceFee')}</span>
+                                            <span>{shownCurrency} {fee.toLocaleString()}</span>
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: 12, color: palette.muted }}>{t('confirmingFinalPrice')}</div>
+                                    )}
                                 </div>
-                            )}
-                            {display ? (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 10 }}>
-                                    <span>{t('serviceFee')}</span><span style={{ fontWeight: 600 }}>{shownCurrency} {fee.toLocaleString()}</span>
+
+                                {rule}
+
+                                <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                    <span>{t('summary.total')}</span>
+                                    <span>{shownCurrency} {total.toLocaleString()}</span>
                                 </div>
-                            ) : (
-                                <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginBottom: 10 }}>
-                                    {t('confirmingFinalPrice')}
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ fontWeight: 700, fontSize: 17, color: palette.title }}>
+                                    {origin} → {destination}
                                 </div>
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff', paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
-                                <span>{t('summary.total')}</span><span>{shownCurrency} {total.toLocaleString()}</span>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 8 }}>
-                                {origin} → {destination}
-                            </div>
-                            {departureDate && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)', marginTop: 2 }}>{fmtDate(departureDate)}</div>}
-                            {cabin && <div style={{ fontSize: 12, color: 'rgba(245,239,228,.55)' }}>{cabin}</div>}
-                            <div style={{ height: 1, background: BORDER, margin: '14px 0' }} />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 800, color: '#fff' }}>
-                                <span>{tAll('checkout.success.total')}</span><span>{flightCurrency} {totalAmount.toLocaleString()}</span>
-                            </div>
-                        </>
-                    )}
+                                {departureDate && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{fmtDate(departureDate)}</div>}
+                                {cabin && <div style={{ fontSize: 13, color: palette.soft }}>{cabin}</div>}
+                                {rule}
+                                <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                    <span>{tAll('checkout.success.total')}</span>
+                                    <span>{flightCurrency} {totalAmount.toLocaleString()}</span>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         );
@@ -1114,29 +1219,29 @@ function CheckoutContent() {
                                     </div>
                                     <Grid2>
                                         <div>
-                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} style={mkInput(!!passengerErrors[`${i}.firstName`])} />
+                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.firstName`])} />
                                             <ErrText msg={passengerErrors[`${i}.firstName`]} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} style={mkInput(!!passengerErrors[`${i}.lastName`])} />
+                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.lastName`])} />
                                             <ErrText msg={passengerErrors[`${i}.lastName`]} />
                                         </div>
                                     </Grid2>
                                     <FieldRow>
-                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} style={mkInput(!!passengerErrors[`${i}.email`])} />
+                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.email`])} />
                                         <ErrText msg={passengerErrors[`${i}.email`]} />
                                     </FieldRow>
                                     <FieldRow>
-                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder={tAll('checkout.userDetails.phone')} style={mkInput(!!passengerErrors[`${i}.phone`])} />
+                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder={tAll('checkout.userDetails.phone')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.phone`])} />
                                         <ErrText msg={passengerErrors[`${i}.phone`]} />
                                     </FieldRow>
                                     <Grid2>
                                         <div>
-                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder={tAll('checkout.userDetails.dateOfBirth')} style={mkInput(!!passengerErrors[`${i}.dateOfBirth`])} />
+                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder={tAll('checkout.userDetails.dateOfBirth')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.dateOfBirth`])} />
                                             <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} style={mkInput(!!passengerErrors[`${i}.passportNumber`])} />
+                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportNumber`])} />
                                             <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
                                         </div>
                                     </Grid2>
@@ -1157,82 +1262,116 @@ function CheckoutContent() {
     }
 
     // ── Hotel checkout ────────────────────────────────────────────────────────
-    const backLabel = step === 'payment' ? 'Back to details' : 'Back to Property';
+    const backLabel = step === 'payment' ? t('backToBookingDetails') : tAll('property.v2.goBack');
+    const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 18 };
 
     return (
         <div style={rootStyle}>
             {fieldCss}
-            <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'clamp(20px,4vw,44px)', paddingBottom: 64 }}>
-                <button
-                    onClick={handleBack}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 'none', background: 'transparent', color: palette.text, fontSize: 15, fontWeight: 500, cursor: 'pointer', marginBottom: 10, padding: 0, fontFamily: 'inherit' }}
-                >
-                    <ArrowLeft size={17} /> {backLabel}
-                </button>
+            <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(20px,4vw,44px) clamp(16px,4vw,44px) 72px' }}>
+                <CheckoutToolbar palette={palette} backLabel={backLabel} onBack={handleBack} />
 
-                <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
-                    {t('completeYourBooking')}
-                </div>
-
-                {step === 'form' && (
-                    <div style={{ fontWeight: 500, fontSize: 'clamp(17px,2.1vw,25px)', color: palette.text, marginTop: 6, marginBottom: 38 }}>
-                        Who&rsquo;s checking in? (Your Details)
+                {/* Two columns on a wide screen — heading and form on the left, the
+                    steps over the summary on the right, as drawn. Stacked, the steps
+                    lead: they say where you are before the heading says what to do. */}
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
+                    <div className="lg:col-start-2 lg:row-start-1 flex lg:justify-center mb-8 lg:mb-0 lg:pt-1.5">
+                        <ProgressBar step={step} palette={palette} />
                     </div>
-                )}
 
-                {errorMsg && (
-                    <div style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                        {errorMsg}
+                    <div className="lg:col-start-1 lg:row-start-1">
+                        {/* One line from `lg` up, as drawn — it may run past the form column into
+                            the gutter, which the steps never reach. Sized so it always fits there. */}
+                        <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                            {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
+                        </h1>
+                        {step === 'form' && (
+                            <p style={{ fontSize: 'clamp(19px,2.2vw,32px)', fontWeight: 400, lineHeight: 1.25, color: palette.text, margin: '10px 0 0' }}>
+                                {t('whosCheckingInYou')}
+                            </p>
+                        )}
                     </div>
-                )}
 
-                <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    {/* ── Left: form ── */}
-                    <div style={{ flex: '1 1 460px', minWidth: 280 }}>
+                    <div className="lg:col-start-1 lg:row-start-2 min-w-0" style={{ marginTop: step === 'form' ? 30 : 26 }}>
+                        {errorMsg && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                {errorMsg}
+                            </div>
+                        )}
+
                         <AuthBanner />
 
-                        {/* Step 1: Guest details */}
+                        {/* Step 1: guest details */}
                         {step === 'form' && (
                             <>
-                                <div style={formCardStyle}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 18 }}>{t('whosCheckingIn')}</div>
-                                    <Grid2>
+                                {/* Guest 1 — the booking holder */}
+                                <section style={{ marginBottom: 28 }}>
+                                    <div style={sectionLabelStyle}>{t('userDetails.guest1')}</div>
+                                    <div style={fieldGrid}>
                                         <div>
-                                            <input type="text" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} style={mkInput(!!guestErrors.firstName)} />
+                                            <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
+                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!guestErrors.firstName)} />
                                             <ErrText msg={guestErrors.firstName} />
                                         </div>
                                         <div>
-                                            <input type="text" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} style={mkInput(!!guestErrors.lastName)} />
+                                            <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
+                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!guestErrors.lastName)} />
                                             <ErrText msg={guestErrors.lastName} />
                                         </div>
-                                    </Grid2>
-                                    <FieldRow>
-                                        <input type="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={tAll('auth.signIn.emailLabel')} style={mkInput(!!guestErrors.email)} />
-                                        <ErrText msg={guestErrors.email} />
-                                    </FieldRow>
-                                    <FieldRow>
-                                        <input type="tel" value={guest.phone} onChange={e => onGuest('phone', e.target.value)} placeholder={tAll('checkout.userDetails.phoneNumber')} style={mkInput(!!guestErrors.phone)} />
-                                        <ErrText msg={guestErrors.phone} />
-                                    </FieldRow>
+                                        {/* Email and phone keep to the left column, as drawn — a
+                                            name splits in two, a contact detail does not. On a
+                                            phone the half is too narrow for an address, so both
+                                            take the full row. */}
+                                        <div className="col-span-2 sm:col-span-1 sm:col-start-1">
+                                            <Label palette={palette} icon={Mail}>{t('userDetails.emailPlaceholder')}</Label>
+                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="eg.johndoe@gmail.com" className="cg-field" style={mkField(palette, !!guestErrors.email)} />
+                                            <ErrText msg={guestErrors.email} />
+                                        </div>
+                                        <div className="col-span-2 sm:col-span-1 sm:col-start-1">
+                                            <Label palette={palette} icon={Phone}>{t('userDetails.phoneNumber')}</Label>
+                                            <PhoneField
+                                                palette={palette}
+                                                code={guest.phoneCode}
+                                                number={guest.phone}
+                                                onCode={v => onGuest('phoneCode', v)}
+                                                onNumber={v => onGuest('phone', v)}
+                                                error={guestErrors.phone}
+                                            />
+                                            <ErrText msg={guestErrors.phone} />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Guests 2..N — name only */}
+                                {coGuests.map((g, i) => (
+                                    <section key={i} style={{ marginBottom: 28 }}>
+                                        <div style={sectionLabelStyle}>{t('userDetails.guestN', { n: i + 2 })}</div>
+                                        <div style={fieldGrid}>
+                                            <div>
+                                                <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
+                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder="Mike" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.firstName`])} />
+                                                <ErrText msg={coGuestErrors[`${i}.firstName`]} />
+                                            </div>
+                                            <div>
+                                                <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
+                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder="Hunt" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.lastName`])} />
+                                                <ErrText msg={coGuestErrors[`${i}.lastName`]} />
+                                            </div>
+                                        </div>
+                                    </section>
+                                ))}
+
+                                <div style={{ marginTop: 40 }}>
+                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting} palette={palette}>
+                                        {t('continueToPayment')}
+                                    </PrimaryBtn>
                                 </div>
-                                <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting}>
-                                    {t('continueToPayment')}
-                                </PrimaryBtn>
                             </>
                         )}
 
-                        {/* Step 2: Stripe Payment */}
+                        {/* Step 2: Stripe payment */}
                         {step === 'payment' && clientSecret && (
-                            <Elements
-                                stripe={getStripe()}
-                                options={{
-                                    clientSecret,
-                                    appearance: {
-                                        theme: theme === 'dark' ? 'night' : 'stripe',
-                                        variables: { colorPrimary: ACCENT, borderRadius: '12px' },
-                                    },
-                                }}
-                            >
+                            <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                 <StripePaymentForm
                                     onSuccess={handleStripeSuccess}
                                     onError={msg => setErrorMsg(msg)}
@@ -1242,17 +1381,18 @@ function CheckoutContent() {
                                     setSubmitting={setSubmitting}
                                     palette={palette}
                                 />
-                                <TermsLine palette={palette} />
                             </Elements>
                         )}
 
-                        <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
-                            {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
+                        <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                            {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                         </p>
                     </div>
 
-                    {/* ── Right: summary ── */}
-                    <SummaryCard />
+                    {/* Right: summary, under the steps */}
+                    <aside className="lg:col-start-2 lg:row-start-2 mt-10 lg:mt-0" style={{ paddingTop: step === 'form' ? 50 : 80 }}>
+                        <SummaryCard />
+                    </aside>
                 </div>
             </div>
         </div>

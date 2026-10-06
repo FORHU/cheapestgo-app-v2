@@ -31,6 +31,8 @@ import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
 import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
 import { resolveStayDates } from '@/shared/lib/stay';
+import { BRAND, brandTheme } from '@/shared/lib/palette';
+import { BRAND_STROKE, BrandStrokeDefs } from '@/shared/components/BrandStroke';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,7 +82,10 @@ interface PropertyApiResponse {
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
-const ACCENT = '#FF6B4B';
+/** The page's one accent — the brand's blue-to-cyan gradient, as on the landing and
+ *  search pages. A CSS gradient, so only ever a `background`; strokes take
+ *  `BRAND_STROKE` instead. */
+const ACCENT = BRAND.gradient;
 const GREEN  = '#2FB67F';
 
 /**
@@ -98,13 +103,16 @@ const GREEN  = '#2FB67F';
  */
 function propertyPalette(theme: 'light' | 'dark') {
     const dark = theme === 'dark';
+    const brand = brandTheme(theme);
     return {
-        bg:          dark ? '#000000' : '#FFFFFF',
-        title:       dark ? '#FFFFFF' : '#111111',
-        text:        dark ? '#F5EFE4' : '#111111',
-        muted:       dark ? 'rgba(245,239,228,.5)'  : 'rgba(17,17,17,.5)',
-        soft:        dark ? 'rgba(245,239,228,.7)'  : 'rgba(17,17,17,.65)',
-        hairline:    dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.1)',
+        // The original CheapestGo palette (`shared/lib/palette.ts`): obsidian /
+        // alabaster ground, slate ink.
+        bg:          brand.ground,
+        title:       brand.title,
+        text:        brand.text,
+        muted:       brand.muted,
+        soft:        dark ? '#cbd5e1' : '#475569',   // slate-300 / slate-600
+        hairline:    brand.hairline,
         cardBg:      dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.03)',
         cardBorder:  dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)',
         iconBg:      dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)',
@@ -177,7 +185,7 @@ const HERO_ARROW: React.CSSProperties = {
 function ratingInfo(score: number): { label: string; color: string } {
     // Keys, not words: this runs outside a component, where a hook cannot.
     if (score >= 9) return { label: 'ratings.exceptional', color: GREEN };
-    if (score >= 8) return { label: 'ratings.excellent',   color: '#4FA8E0' };
+    if (score >= 8) return { label: 'ratings.excellent',   color: BRAND.gradient };
     return                  { label: 'Good',        color: '#E0A23C' };
 }
 
@@ -187,8 +195,9 @@ function Spinner({ size = 32, accent = 'rgba(255,255,255,.2)' }: { size?: number
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <BrandStrokeDefs />
             <circle cx="12" cy="12" r="9" fill="none" stroke={accent} strokeWidth="3" />
-            <circle cx="12" cy="12" r="9" fill="none" stroke={ACCENT} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
+            <circle cx="12" cy="12" r="9" fill="none" stroke={BRAND_STROKE} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
         </svg>
     );
 }
@@ -540,7 +549,7 @@ function PropertyContent() {
                 {/* Deeper and reaching further up than before — the name and
                     address below are now twice their old size, and need more
                     of the photo's bottom darkened to stay legible over it. */}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(10,8,14,.18) 0%,rgba(10,8,14,.42) 35%,rgba(10,8,14,.96) 100%)' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(2,6,23,.18) 0%,rgba(2,6,23,.42) 35%,rgba(2,6,23,.96) 100%)' }} />
 
                 {/* Back. Over the photo rather than in the page below it — the
                     banner is the first thing on screen, and a control to leave
@@ -552,7 +561,7 @@ function PropertyContent() {
                     style={{
                         position: 'absolute', top: 20, zIndex: 2,
                         width: 44, height: 44, borderRadius: '50%',
-                        background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                        background: 'rgba(2,6,23,.45)', backdropFilter: 'blur(8px)',
                         color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer',
                     }}
@@ -575,10 +584,10 @@ function PropertyContent() {
                         iconOnly
                         triggerClassName="h-11 w-11 md:h-11 md:w-11 backdrop-blur-md"
                         chrome={{
-                            surface: 'rgba(20,20,20,.45)',
+                            surface: 'rgba(2,6,23,.45)',
                             border:  'transparent',
                             text:    '#fff',
-                            menu:    'rgba(18,18,20,.96)',
+                            menu:    'rgba(15,23,42,.96)',
                             hover:   'rgba(255,255,255,.12)',
                             shadow:  '0 24px 55px -18px rgba(0,0,0,.7)',
                         }}
@@ -589,7 +598,7 @@ function PropertyContent() {
                         title={theme === 'dark' ? t('v2.lightMode') : t('v2.darkMode')}
                         style={{
                             width: 44, height: 44, borderRadius: '50%', border: 'none',
-                            background: 'rgba(20,20,20,.45)', backdropFilter: 'blur(8px)',
+                            background: 'rgba(2,6,23,.45)', backdropFilter: 'blur(8px)',
                             color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer',
                         }}
@@ -811,7 +820,7 @@ function PropertyContent() {
                             padding: '15px 26px', borderRadius: 100, border: 'none',
                             background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 18,
                             cursor: 'pointer', whiteSpace: 'nowrap',
-                            boxShadow: '0 20px 46px -12px rgba(255,107,75,.55)',
+                            boxShadow: '0 20px 46px -12px rgba(37,99,235,.55)',
                         }}
                     >
                         {tAll('landing.hero.checkOut')}

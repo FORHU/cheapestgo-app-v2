@@ -225,56 +225,55 @@ function roomPalette(tone: 'light' | 'dark') {
     return {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
-         * The card's plate — a fixed #17181F in dark, matched to the detail
-         * modal below so a card and the modal it opens read as one surface.
+         * The card's plate — slate-900 in dark, matched to the detail modal
+         * below so a card and the modal it opens read as one surface.
          * No border; a layered drop shadow does the lifting. In light that
-         * shadow reads directly; in dark, against the page's black, it is felt
+         * shadow reads directly; in dark, against the page's obsidian, it is felt
          * only at the near edge, and the hover lift carries the rest of the
          * "this is a unit you act on" cue.
          */
         card:     dark
-            ? 'bg-[#17181F] shadow-[0_20px_48px_-16px_rgba(0,0,0,0.9),0_6px_16px_-8px_rgba(0,0,0,0.7)]'
+            ? 'bg-slate-900 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.9),0_6px_16px_-8px_rgba(0,0,0,0.7)]'
             : 'bg-white shadow-[0_20px_44px_-16px_rgba(15,23,42,0.28),0_6px_14px_-8px_rgba(15,23,42,0.16)]',
         name:     dark ? 'text-white' : 'text-slate-900',
-        feature:  dark ? 'text-white/60' : 'text-slate-500',
+        feature:  dark ? 'text-slate-400' : 'text-slate-500',
         price:    dark ? 'text-white' : 'text-slate-900',
-        unit:     dark ? 'text-white/45' : 'text-slate-400',
+        unit:     dark ? 'text-slate-500' : 'text-slate-400',
         imageBg:  dark ? 'bg-white/[0.06]' : 'bg-slate-100',
         /**
-         * "Select Room" — the bright, pressable pill. It runs the opposite way
-         * round to the rest of the app on purpose: white is the *available*
-         * state and dark is the *taken* one, so brightness reads as "you can
-         * press this", not as "this is on".
+         * "Select Room" — the bright, pressable pill, in the brand gradient. It
+         * runs the opposite way round to the rest of the app on purpose: the
+         * gradient is the *available* state and the quiet outline the *taken*
+         * one, so brightness reads as "you can press this", not as "this is on".
          */
-        pillIdle: dark ? 'bg-white text-[#111111] hover:bg-white/85' : 'bg-slate-900 text-white hover:bg-slate-700',
+        pillIdle: 'bg-linear-to-r from-blue-600 to-cyan-500 text-white hover:brightness-110',
         pillOn:   dark
             ? 'border border-white/45 bg-white/[0.04] text-white'
             : 'border border-slate-300 bg-white text-slate-900',
         /**
          * The room-card filter row and the pager under it — the conventional
          * direction, unlike "Select Room" above: the active choice is the solid
-         * fill, the rest are quiet outlines. Dark mode can't fill with black on
-         * a black page, so its active pill is white — the same "this one is on"
-         * cue, inverted.
+         * fill — the brand gradient, in both themes — and the rest are quiet
+         * outlines.
          */
-        filterOn:   dark ? 'bg-white text-slate-900' : 'bg-slate-900 text-white',
+        filterOn:   'bg-linear-to-r from-blue-600 to-cyan-500 text-white',
         filterIdle: dark
             ? 'border border-white/25 bg-transparent text-white/70 hover:bg-white/[0.06]'
             : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
         /** The recessive status pills beside the room name — a translucent fill,
          *  not the bright CTA treatment of the filter pills. */
-        tag:      dark ? 'bg-white/[0.08] text-white/70' : 'bg-slate-100 text-slate-600',
+        tag:      dark ? 'bg-white/[0.08] text-slate-300' : 'bg-slate-100 text-slate-600',
         /** The "Room Details" / "Payment Terms" column labels and their dot. */
-        columnHeading: dark ? 'text-white/80' : 'text-slate-700',
-        columnDot:     dark ? 'bg-white/40' : 'bg-slate-400',
+        columnHeading: dark ? 'text-slate-200' : 'text-slate-700',
+        columnDot:     dark ? 'bg-slate-500' : 'bg-slate-400',
         /** The two "View more" links under the columns. */
-        viewMore: dark ? 'text-white/55 hover:text-white/85' : 'text-slate-500 hover:text-slate-800',
-        /** The detail modal — same #17181F as the room card that opens it. */
-        modalBg:      dark ? 'bg-[#17181F]' : 'bg-white',
+        viewMore: dark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800',
+        /** The detail modal — the same slate-900 as the room card that opens it. */
+        modalBg:      dark ? 'bg-slate-900' : 'bg-white',
         modalTitle:   dark ? 'text-white' : 'text-slate-900',
-        modalLabel:   dark ? 'text-white/45' : 'text-slate-400',
-        modalClose:   dark ? 'text-white/50 hover:text-white/85' : 'text-slate-400 hover:text-slate-700',
-        empty:    dark ? 'text-white/45' : 'text-slate-400',
+        modalLabel:   dark ? 'text-slate-500' : 'text-slate-400',
+        modalClose:   dark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-700',
+        empty:    dark ? 'text-slate-500' : 'text-slate-400',
     };
 }
 
