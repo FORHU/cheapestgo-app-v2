@@ -42,6 +42,10 @@ export const BRAND = {
     /** v1 `--color-obsidian-surface` / `-border`: glass over dark imagery. */
     glass:         'rgba(255,255,255,0.05)',
     glassBorder:   'rgba(255,255,255,0.10)',
+    /** v1's landing canvas — slate-900 at the top falling to obsidian: the blue dark
+     *  ground, for a screen that drops the graph-paper grid. Mirrored by
+     *  `body.flat-ground` in globals.css, which cannot read this file. */
+    canvas:        'radial-gradient(120% 80% at 50% 0%,#0f172a 0%,#0b1222 45%,#020617 100%)',
 } as const;
 
 /**

@@ -126,6 +126,28 @@ body.map-immersive .app-shell-main {
   padding-bottom: 0;
 }
 
+/*
+ * A screen on a plain ground rather than v1's graph paper — the flight results
+ * page. That page adds this to <body> while it is showing, for the same reason
+ * `.map-immersive` is a body class: the grid and the sparkles both live on the
+ * app shell in layout.tsx, out of the page's reach.
+ *
+ * Light is slate-100, the hotel list view's ground. Dark is the landing canvas (`BRAND.canvas` in
+ * shared/lib/palette.ts), held to the viewport so a long list of results does
+ * not stretch its glow down the whole page.
+ */
+body.flat-ground .app-shell {
+  background: #f1f5f9;
+}
+
+html.dark body.flat-ground .app-shell {
+  background: radial-gradient(120% 80% at 50% 0%, #0f172a 0%, #0b1222 45%, #020617 100%) fixed;
+}
+
+body.flat-ground .global-sparkle {
+  display: none;
+}
+
 @utility thin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
@@ -406,6 +428,41 @@ body.map-immersive .app-shell-main {
 @keyframes pin-dot {
   0%, 70%, 100% { opacity: 0.25; transform: translateY(0); }
   35%           { opacity: 1;    transform: translateY(-2px); }
+}
+
+/*
+ * The flight card's route line: a plane flying it from departure to arrival,
+ * trailing a streak of the brand gradient (flight-card.tsx, `RouteLine`).
+ *
+ * `.route-flight` is as wide as the line and carries the plane on its right
+ * edge; sliding it across is what flies the plane. A transform rather than
+ * `left`, so it animates on the compositor instead of re-laying out every frame.
+ *
+ * At rest the plane waits at the departure end — slid back all but its own 14px
+ * — and it flies only while the card is hovered, or holds focus for a keyboard.
+ * Each loop departs from where it waited and fades out on arrival. Anyone who
+ * asks for less motion keeps the plane waiting.
+ */
+@keyframes route-fly {
+  0%   { transform: translateX(calc(-100% + 14px)); opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+
+.route-flight {
+  transform: translateX(calc(-100% + 14px));
+}
+
+.group:hover .route-flight,
+.group:focus-within .route-flight {
+  animation: route-fly 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group:hover .route-flight,
+  .group:focus-within .route-flight {
+    animation: none;
+  }
 }
 
 /*

@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ArrowLeft, Check, Download, Calendar, MapPin, Users, Lock, ChevronDown, ChevronLeft, Sun, Moon, User, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown, ChevronLeft, Sun, Moon, User, Mail, Phone, type LucideIcon } from 'lucide-react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
@@ -14,6 +14,7 @@ import { env } from '@/shared/lib/env';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { buildConfirmGuests, formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
 import { nightsBetween } from '@/shared/lib/stay';
+import { BRAND } from '@/shared/lib/palette';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
 
@@ -53,7 +54,12 @@ interface PassengerInfo {
     email:          string;
     phone:          string;
     dateOfBirth:    string;
+    /** 'M' | 'F', as the API takes it; '' until chosen. */
+    gender:         string;
     passportNumber: string;
+    passportExpiry: string;
+    /** Issuing country, ISO 3166 alpha-2. */
+    nationality:    string;
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -72,7 +78,8 @@ const DANGER = '#E4685A';
 function checkoutPalette(theme: 'light' | 'dark') {
     const dark = theme === 'dark';
     return {
-        bg:            dark ? '#000000' : '#FFFFFF',
+        // Obsidian, as on the property page this flow comes from and in the design.
+        bg:            dark ? BRAND.obsidian : '#FFFFFF',
         title:         dark ? '#FFFFFF' : '#111111',
         text:          dark ? '#F5EFE4' : '#111111',
         soft:          dark ? 'rgba(245,239,228,.7)'  : 'rgba(17,17,17,.65)',
@@ -449,22 +456,31 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
     return {
         theme: theme === 'dark' ? 'night' : 'stripe',
         variables: {
-            colorPrimary:         ACCENT,
+            // Neutral, so the "Card" heading and its icon read as the panel's title, as in
+            // the design; the accent stays on the focus ring, set on `.Input:focus` below.
+            colorPrimary:         palette.text,
             colorBackground:      palette.fieldBg,
             colorText:            palette.text,
             colorTextSecondary:   palette.muted,
             colorTextPlaceholder: palette.faint,
             colorDanger:          DANGER,
-            borderRadius:         '999px',
+            // Stripe's own containers (Link's save-info block, menus) take this; only the
+            // inputs are pills, below. At 999px here the save-info block became an oval.
+            borderRadius:         '12px',
             fontSizeBase:         '14px',
             spacingUnit:          '4px',
+            accordionItemLabelFontSize:           '16px',
+            accordionItemLabelFontWeight:         '400',
+            accordionItemLabelSelectedFontWeight: '400',
         },
         rules: {
-            '.Input':         { border: 'none', boxShadow: 'none', padding: '11px 16px' },
+            '.Input':         { border: 'none', boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
             '.Input:focus':   { boxShadow: `0 0 0 1.5px ${ACCENT}` },
             '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '400', marginBottom: '8px' },
-            '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: '0', paddingRight: '0' },
+            '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingTop: '0', paddingLeft: '0', paddingRight: '0' },
             '.Tab':           { border: 'none', boxShadow: 'none' },
+            // The optional save-info fields sit straight on the panel, as in the design.
+            '.Block':         { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: '0' },
         },
     };
 }
@@ -511,8 +527,7 @@ function StripePaymentForm({
         <>
             <div style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
                 <PaymentElement options={{ layout: 'accordion' }} />
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, marginTop: 'clamp(20px,3vw,32px)', fontSize: 12, color: palette.muted }}>
-                    <Lock size={11} aria-hidden />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 'clamp(20px,3vw,32px)', fontSize: 12, color: palette.muted }}>
                     <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
                 </div>
             </div>
@@ -1159,12 +1174,9 @@ function CheckoutContent() {
                                             <span>{shownCurrency} {roomTotal.toLocaleString()}</span>
                                         </div>
                                     )}
-                                    {display ? (
-                                        <div style={row}>
-                                            <span>{t('serviceFee')}</span>
-                                            <span>{shownCurrency} {fee.toLocaleString()}</span>
-                                        </div>
-                                    ) : (
+                                    {/* No service fee line: it is folded into the total below
+                                        (the server's charged figure), not itemised here. */}
+                                    {!display && (
                                         <div style={{ fontSize: 12, color: palette.muted }}>{t('confirmingFinalPrice')}</div>
                                     )}
                                 </div>
@@ -1196,7 +1208,10 @@ function CheckoutContent() {
         );
     }
 
-    // ── Flight form (single step) ─────────────────────────────────────────────
+    // ── Flight checkout: passengers, then payment ────────────────────────────
+    // It was drawn as a single step, so the payment step `handleFlightSubmit` moves to
+    // never appeared: the airline order and Stripe intent were created, and the page
+    // stayed on the passenger form with nothing to pay with.
     if (mode === 'flight') {
         return (
             <div style={rootStyle}>
@@ -1209,7 +1224,7 @@ function CheckoutContent() {
                         <ArrowLeft size={15} /> {tAll('checkout.back')}
                     </button>
 
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: '#fff', margin: '18px 0 26px' }}>
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: palette.title, margin: '18px 0 26px' }}>
                         {t('completeYourBooking')}
                     </div>
 
@@ -1222,6 +1237,7 @@ function CheckoutContent() {
                     <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                         <div style={{ flex: '1 1 420px', minWidth: 280 }}>
                             <AuthBanner />
+                            {step === 'form' && <>
                             {passengers.map((p, i) => (
                                 <div key={i} style={formCardStyle}>
                                     <div style={{ fontWeight: 700, fontSize: 16, color: palette.title, marginBottom: 18 }}>
@@ -1251,16 +1267,26 @@ function CheckoutContent() {
                                             <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
                                         </div>
                                         <div>
+                                            {/* Required by the check above and sent with the booking, but the
+                                                control was missing, so the form could never be submitted. */}
+                                            <select value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} aria-label={tAll('checkout.userDetails.gender')} className="cg-field" style={{ ...mkField(palette, !!passengerErrors[`${i}.gender`]), color: p.gender ? palette.text : palette.faint }}>
+                                                <option value="" disabled>{tAll('checkout.userDetails.gender')}</option>
+                                                <option value="M">{tAll('checkout.userDetails.genderMale')}</option>
+                                                <option value="F">{tAll('checkout.userDetails.genderFemale')}</option>
+                                            </select>
+                                            <ErrText msg={passengerErrors[`${i}.gender`]} />
+                                        </div>
+                                        <div>
                                             <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportNumber`])} />
                                             <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
                                         </div>
                                         <div>
-                                            <input type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} placeholder={tAll('checkout.userDetails.passportExpiry')} style={mkInput(!!passengerErrors[`${i}.passportExpiry`])} />
+                                            <input type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} placeholder={tAll('checkout.userDetails.passportExpiry')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportExpiry`])} />
                                             <ErrText msg={passengerErrors[`${i}.passportExpiry`]} />
                                         </div>
                                     </Grid2>
                                     <FieldRow>
-                                        <input type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder={tAll('checkout.userDetails.nationality')} style={mkInput(!!passengerErrors[`${i}.nationality`])} />
+                                        <input type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder={tAll('checkout.userDetails.nationality')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.nationality`])} />
                                         <ErrText msg={passengerErrors[`${i}.nationality`]} />
                                     </FieldRow>
                                 </div>
@@ -1268,7 +1294,21 @@ function CheckoutContent() {
                             <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
                                 Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </PrimaryBtn>
-                            <p style={{ fontSize: 10, color: 'rgba(245,239,228,.4)', textAlign: 'center', marginTop: 12 }}>
+                            </>}
+                            {step === 'payment' && clientSecret && (
+                                <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                                    <StripePaymentForm
+                                        onSuccess={handleStripeSuccess}
+                                        onError={msg => setErrorMsg(msg)}
+                                        total={totalAmount}
+                                        currency={flightCurrency}
+                                        submitting={submitting}
+                                        setSubmitting={setSubmitting}
+                                        palette={palette}
+                                    />
+                                </Elements>
+                            )}
+                            <p style={{ fontSize: 10, color: palette.faint, textAlign: 'center', marginTop: 12 }}>
                                 {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
                             </p>
                         </div>

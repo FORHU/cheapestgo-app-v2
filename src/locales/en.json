@@ -435,7 +435,9 @@
     "results": {
       "bundleActive": "Flight + Hotel Bundle Active",
       "bundleBody": "Select a flight below — your bundle discount will be applied at checkout.",
+      "checkingFare": "Checking the fare is still available…",
       "checkingProviders": "Checking multiple providers",
+      "clearFilters": "Clear filters",
       "countFlights": "{count, plural, one {# flight} other {# flights}}",
       "datePicked": "We picked this date — change it to see other fares.",
       "duration": "Duration",
@@ -443,6 +445,8 @@
       "filters": "Filters",
       "filtersTitle": "Flight Filters",
       "findingFares": "Finding the best fares…",
+      "flightsFound": "{count, plural, one {# flight} other {# flights}} found",
+      "flightsTo": "Flights to {city}",
       "loading": "Finding the best fares…",
       "missingRoute": "Tell us where you are flying from and to, and we will find the fares.",
       "newSearch": "New Search",
@@ -478,6 +482,21 @@
       "freeCancellation": "Free Cancellation",
       "nonRefundable": "Non-refundable"
     },
+    "itinerary": {
+      "departFrom": "Depart from",
+      "arriveAt": "Arrive at",
+      "flightDuration": "Flight Duration",
+      "outbound": "Outbound",
+      "return": "Return",
+      "legLabel": "Leg {number}",
+      "layoverLabel": "Layover",
+      "layoverValue": "{duration} at {airport}",
+      "terminal": "Terminal {terminal}",
+      "terminalUnavailable": "Terminal available closer to departure",
+      "totalFlightDuration": "Total Flight Duration",
+      "nonstop": "Nonstop",
+      "stopCount": "{count, plural, one {# stop} other {# stops}}"
+    },
     "filters": {
       "cheapest": "Cheapest",
       "fastest": "Fastest",
@@ -491,6 +510,42 @@
       "anyStops": "Any stops",
       "nonStopOnly": "Non-stop only",
       "upTo1Stop": "Up to 1 stop"
+    },
+    "filtersPanel": {
+      "airlines": "Airlines",
+      "anyStops": "Any Stops",
+      "arrival": "Arrival",
+      "arrivalAirports": "Arrival Airports",
+      "branded": "Branded",
+      "cheapestFirst": "Cheapest First",
+      "departure": "Departure",
+      "direct": "Direct",
+      "earliestDeparture": "Earliest Departure",
+      "fareType": "Fare Type",
+      "fastestFirst": "Fastest First",
+      "flightDuration": "Flight Duration",
+      "ndc": "NDC",
+      "nonStopOnly": "Non-stop only",
+      "oneStop": "1 Stop",
+      "pricePerPerson": "Price Per Person",
+      "provider": "Provider",
+      "refundable": "Refundable",
+      "refundableFares": "Refundable fares",
+      "refundableFaresDescription": "Fares that allow cancellation with a refund",
+      "reset": "Reset",
+      "selectAllAirlines": "Select all airlines",
+      "selectAllAirports": "Select all airports",
+      "showAll": "Show all",
+      "showLess": "Show less",
+      "sortBy": "Sort By",
+      "stops": "Stops",
+      "times": "Times",
+      "twoStopsPlus": "2 Stops +",
+      "underHours": "Under {hours} hours",
+      "upToOneStop": "Up to 1 stop",
+      "rangeFrom": "{label} from",
+      "rangeTo": "{label} to",
+      "underHoursInput": "Under <field></field> hours"
     },
     "priceAlert": {
       "loading": "Loading",
@@ -514,6 +569,11 @@
       "adults": "{count, plural, one {# adult} other {# adults}}",
       "children": "{count, plural, one {# child} other {# children}}",
       "infants": "{count, plural, one {# infant} other {# infants}}"
+    },
+    "topBar": {
+      "swap": "Swap origin and destination",
+      "changeTrip": "Change dates and travellers",
+      "cabin": "Cabin"
     }
   },
   "footer": {
@@ -1804,6 +1864,8 @@
       "ofUs": "{count} of us"
     },
     "trendingCities": "Popular cities",
+    "popularAirports": "Popular airports",
+    "noAirportsMatch": "No airports match “{query}”",
     "imFlexible": "I'm flexible",
     "oneWay": "One-way",
     "roundTrip": "Round-trip",

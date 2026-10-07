@@ -82,6 +82,8 @@ reads oddly there costs more than one on a marketing page. Review these first.
 
 | Key | English | 한국어 | 日本語 | 中文 |
 |-----|---------|--------|--------|------|
+| `search.popularAirports` | Popular airports | 인기 공항 | 人気の空港 | 热门机场 |
+| `search.noAirportsMatch` | No airports match “{query}” | “{query}”와(과) 일치하는 공항이 없습니다 | 「{query}」に一致する空港はありません | 没有与“{query}”匹配的机场 |
 | `search.v2.noAccommodations` | No accommodations found | 조건에 맞는 숙소가 없습니다 | 条件に合う宿泊施設が見つかりませんでした | 未找到符合条件的住宿 |
 | `search.v2.hideStayCards` | Hide stay cards | 숙소 카드 숨기기 | 宿泊カードを隠す | 隐藏住宿卡片 |
 | `search.v2.hideCards` | Hide cards | 카드 숨기기 | カードを隠す | 隐藏卡片 |
@@ -90,3 +92,15 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `search.v2.clusterChecking` | checking {count}… | {count}곳 확인 중… | {count}件を確認中… | 正在确认 {count} 处… |
 | `search.v2.clusterHotels` | {count} hotels | 호텔 {count}곳 | ホテル{count}軒 | {count} 家酒店 |
 | `search.v2.clusterFrom` | from {price} | {price}부터 | {price}〜 | {price} 起 |
+
+## flights
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `flights.results.flightsTo` | Flights to {city} | {city}행 항공편 | {city}行きのフライト | 飞往{city}的航班 |
+| `flights.results.flightsFound` | {count} flights found | 항공편 {count}편 검색됨 | {count}件のフライトが見つかりました | 找到 {count} 个航班 |
+| `flights.results.checkingFare` | Checking the fare is still available… | 요금이 아직 유효한지 확인하는 중… | 運賃がまだ有効か確認しています… | 正在确认该票价是否仍然有效… |
+| `flights.results.clearFilters` | Clear filters | 필터 초기화 | 絞り込みをクリア | 清除筛选 |
+| `flights.topBar.swap` | Swap origin and destination | 출발지와 도착지 바꾸기 | 出発地と到着地を入れ替える | 交换出发地和目的地 |
+| `flights.topBar.changeTrip` | Change dates and travellers | 날짜 및 여행자 변경 | 日程と人数を変更 | 更改日期和出行人数 |
+| `flights.topBar.cabin` | Cabin | 좌석 등급 | 座席クラス | 舱位 |

@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
 import { http } from '@/shared/lib/http';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
+import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
 import { nightsBetween } from '@/shared/lib/stay';
 import { BRAND } from '@/shared/lib/palette';
 
@@ -54,7 +55,7 @@ const TRENDING: TrendingDest[] = [
     { id: 'marrakech', name: 'Marrakech', country: 'Morocco',   tag: 'Desert warmth',  bgClass: 'bg-gradient-to-br from-amber-400 to-orange-700', lat:  31.6295,  lng:  -7.9811,  countryCode: 'MA' },
 ];
 
-const FLEX_CHIPS = ['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
+const FLEX_CHIPS =['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
 
 /** Marks drawn on the photo — token underlines, carets, text links. v1's dark accent. */
 const ACCENT = BRAND.accent;
@@ -201,6 +202,17 @@ function SearchMiniIcon() {
     );
 }
 
+/** An airport's IATA code, where a city row has its search glyph. */
+function CodeBadge({ code }: { code: string }) {
+    return (
+        <span style={{
+            flexShrink: 0, minWidth: '46px', padding: '5px 0', borderRadius: '8px', textAlign: 'center',
+            fontSize: '12px', fontWeight: 800, letterSpacing: '.06em', color: '#fff',
+            background: 'rgba(255,255,255,.1)', border: `1px solid ${BRAND.glassBorder}`,
+        }}>{code}</span>
+    );
+}
+
 function ClockMiniIcon() {
     return (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -289,8 +301,12 @@ interface DestPanelProps {
     suggestions: DestSuggestion[];
     sugLoading: boolean;
     onPickSuggestion: (s: DestSuggestion) => void;
-    trending: TrendingDest[];
-    onPickTrending: (t: TrendingDest) => void;
+    trending?: TrendingDest[];
+    onPickTrending?: (t: TrendingDest) => void;
+    /** Flights mode: airports to offer before anything is typed, in place of the cards. */
+    airports?: DestSuggestion[];
+    /** Flights mode: what to say when a typed query finds no airport. */
+    noMatchLabel?: string;
     recentDestinations?: Array<{ title: string; lat?: number; lng?: number }>;
     onPickRecent?: (title: string, lat?: number, lng?: number) => void;
     placeholder?: string;
@@ -299,15 +315,35 @@ interface DestPanelProps {
 
 function DestPanel({
     query, onQueryChange, suggestions, sugLoading,
-    onPickSuggestion, trending, onPickTrending,
-    recentDestinations = [], onPickRecent,
+    onPickSuggestion, trending = [], onPickTrending,
+    recentDestinations = [], onPickRecent, airports, noMatchLabel,
     placeholder = 'Search cities, countries, anywhere…',
     trendingLabel = 'Trending right now',
 }: DestPanelProps) {
     const tAll = useTranslations();
     const showSuggestions = query.trim().length >= 2 && suggestions.length > 0;
     const showRecent = !query.trim() && recentDestinations.length > 0 && onPickRecent;
-    const showTrending = trending.length > 0;
+    const showTrending = trending.length > 0 && !!onPickTrending;
+    const showAirports = !!airports?.length && query.trim().length < 2;
+    const showNoMatch  = !!noMatchLabel && query.trim().length >= 2 && !sugLoading && suggestions.length === 0;
+    const sectionLabel: React.CSSProperties = { fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(241,245,249,0.42)', marginBottom: '10px' };
+
+    // One row for a typed result and a popular airport alike. An airport leads with its
+    // code; the title drops the "(KIX)" it carries for the token, since the badge says it.
+    const row = (s: DestSuggestion, key: React.Key) => (
+        <div key={key} className="imm-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', cursor: 'pointer' }} onClick={() => onPickSuggestion(s)}>
+            {s.code
+                ? <CodeBadge code={s.code} />
+                : <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {s.code ? s.title.replace(/\s*\([A-Z]{3}\)$/, '') : s.title}
+                </div>
+                <div style={{ fontSize: '12px', color: 'rgba(241,245,249,0.6)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.subtitle}</div>
+            </div>
+        </div>
+    );
+
     return (
         <>
             {/* Search input */}
@@ -332,16 +368,22 @@ function DestPanel({
             {/* API suggestions */}
             {showSuggestions && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '18px' }}>
-                    {suggestions.map((s, i) => (
-                        <div key={i} className="imm-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', cursor: 'pointer' }} onClick={() => onPickSuggestion(s)}>
-                            <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div>
-                                <div style={{ fontSize: '12px', color: 'rgba(241,245,249,0.6)', marginTop: '1px' }}>{s.subtitle}</div>
-                            </div>
-                        </div>
-                    ))}
+                    {suggestions.map((s, i) => row(s, i))}
                 </div>
+            )}
+
+            {showNoMatch && (
+                <div style={{ fontSize: '13px', color: 'rgba(241,245,249,0.6)', padding: '4px 10px 14px' }}>{noMatchLabel}</div>
+            )}
+
+            {/* Popular airports — flights mode's starting list */}
+            {showAirports && (
+                <>
+                    <div style={sectionLabel}>{trendingLabel}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {airports!.map(a => row(a, a.code!))}
+                    </div>
+                </>
             )}
 
             {/* Recent searches */}
@@ -371,7 +413,7 @@ function DestPanel({
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
                         {trending.map(dest => (
-                            <div key={dest.id} className="imm-dest-card" style={{ flex: '1 1 120px', cursor: 'pointer', transition: 'opacity .2s' }} onClick={() => onPickTrending(dest)}>
+                            <div key={dest.id} className="imm-dest-card" style={{ flex: '1 1 120px', cursor: 'pointer', transition: 'opacity .2s' }} onClick={() => onPickTrending!(dest)}>
                                 <div
                                     className={dest.bgClass}
                                     style={{
@@ -512,14 +554,6 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
     }, []);
 
     // ── Origin picks ─────────────────────────────────────────────────────────
-
-    const pickOriginTrending = useCallback((t: TrendingDest) => {
-        clearTimeout(advanceT.current);
-        setPickedOrigin({ name: t.name });
-        setOriginQuery('');
-        setOriginSugs([]);
-        setPanelOpen('destination');
-    }, []);
 
     const pickOriginSuggestion = useCallback((s: DestSuggestion) => {
         clearTimeout(advanceT.current);
@@ -797,10 +831,10 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                                     suggestions={originSugs}
                                                     sugLoading={originSugLoading}
                                                     onPickSuggestion={pickOriginSuggestion}
-                                                    trending={activeTrending}
-                                                    onPickTrending={pickOriginTrending}
+                                                    airports={POPULAR_AIRPORTS}
+                                                    noMatchLabel={tAll('search.noAirportsMatch', { query: originQuery.trim() })}
                                                     placeholder={tAll('search.cityAirportPlaceholder')}
-                                                    trendingLabel={tAll('search.trendingCities')}
+                                                    trendingLabel={tAll('search.popularAirports')}
                                                 />
                                             </NotePanel>
                                         )}
@@ -827,10 +861,20 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                             suggestions={destSugs}
                                             sugLoading={destSugLoading}
                                             onPickSuggestion={pickDestSuggestion}
-                                            trending={filteredTrending}
-                                            onPickTrending={pickDestTrending}
-                                            recentDestinations={recentSearches}
-                                            onPickRecent={pickDestRecent}
+                                            {...(mode === 'flights'
+                                                // Airports, not the stays cards: a flight is booked to one.
+                                                ? {
+                                                    airports:      POPULAR_AIRPORTS,
+                                                    noMatchLabel:  tAll('search.noAirportsMatch', { query: destQuery.trim() }),
+                                                    placeholder:   tAll('search.cityAirportPlaceholder'),
+                                                    trendingLabel: tAll('search.popularAirports'),
+                                                }
+                                                : {
+                                                    trending:           filteredTrending,
+                                                    onPickTrending:     pickDestTrending,
+                                                    recentDestinations: recentSearches,
+                                                    onPickRecent:       pickDestRecent,
+                                                })}
                                         />
                                     </NotePanel>
                                 )}

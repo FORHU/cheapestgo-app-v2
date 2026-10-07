@@ -11,55 +11,36 @@ import { FlightCard } from './flight-card';
 
 const PAGE_SIZE = 15;
 
+/** The card's own shape — plate, itinerary, price column — so nothing moves when results land. */
 function FlightCardSkeleton({ index = 0 }: { index?: number }) {
+    const bar = 'rounded bg-slate-200 dark:bg-white/10';
     return (
         <div
-            className="flex flex-col lg:flex-row bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 animate-pulse"
+            className="flex animate-pulse flex-col overflow-hidden rounded-2xl bg-white md:min-h-[205px] md:flex-row dark:bg-slate-900"
             style={{ animationDelay: `${index * 150}ms` }}
         >
-            {/* flight info */}
-            <div className="flex-1 px-2.5 pt-2.5 pb-2 lg:p-5">
-                {/* Airline header */}
-                <div className="flex items-center gap-1.5 lg:gap-3 mb-1.5 lg:mb-4">
-                    <div className="w-6 h-6 lg:w-10 lg:h-10 rounded-md bg-slate-200 dark:bg-white/10" />
-                    <div>
-                        <div className="h-3 w-24 lg:h-4 lg:w-[120px] rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
-                        <div className="h-2 w-16 lg:h-3 lg:w-20 rounded bg-slate-200 dark:bg-white/10" />
-                    </div>
+            <div className="flex h-20 shrink-0 items-center justify-center md:h-auto md:w-[240px]">
+                <div className="size-14 rounded-full bg-slate-200 md:size-[120px] dark:bg-white/10" />
+            </div>
+            <div className="flex flex-1 flex-col px-5 py-5 md:pt-7 md:pr-8 md:pb-6 md:pl-9">
+                <div className={cn(bar, 'h-5 w-40')} />
+                <div className={cn(bar, 'mt-2 h-3 w-16')} />
+                <div className="mt-[18px] flex items-center gap-5">
+                    <div className={cn(bar, 'h-[30px] w-[72px]')} />
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
+                    <div className={cn(bar, 'h-[30px] w-[72px]')} />
                 </div>
-
-                {/* Route timeline */}
-                <div className="flex items-center gap-1.5 lg:gap-3 mb-1.5 lg:mb-4">
-                    <div className="text-center">
-                        <div className="h-4 w-11 lg:h-6 lg:w-14 rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
-                        <div className="h-2 w-6 lg:h-3 lg:w-8 rounded bg-slate-200 dark:bg-white/10" />
-                    </div>
-                    <div className="flex-1 flex flex-col items-center gap-0.5">
-                        <div className="h-2 w-9 lg:h-3 lg:w-12 rounded bg-slate-200 dark:bg-white/10" />
-                        <div className="w-full h-[2px] rounded bg-slate-200 dark:bg-white/10" />
-                        <div className="h-2 w-10 lg:h-3 lg:w-[52px] rounded bg-slate-200 dark:bg-white/10" />
-                    </div>
-                    <div className="text-center">
-                        <div className="h-4 w-11 lg:h-6 lg:w-14 rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
-                        <div className="h-2 w-6 lg:h-3 lg:w-8 rounded bg-slate-200 dark:bg-white/10" />
-                    </div>
-                </div>
-
-                {/* Tags */}
-                <div className="flex gap-0.5 lg:gap-2">
-                    <div className="h-3.5 w-[50px] lg:h-[22px] lg:w-20 rounded-full bg-slate-200 dark:bg-white/10" />
-                    <div className="h-3.5 w-11 lg:h-[22px] lg:w-[72px] rounded-full bg-slate-200 dark:bg-white/10" />
-                    <div className="h-3.5 w-[38px] lg:h-[22px] lg:w-16 rounded-full bg-slate-200 dark:bg-white/10" />
+                <div className="mt-[18px] flex gap-4">
+                    <div className={cn(bar, 'h-3.5 w-28')} />
+                    <div className={cn(bar, 'h-3.5 w-20')} />
                 </div>
             </div>
-
-            {/* price */}
-            <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-1.5 lg:gap-2 lg:w-[180px] px-2.5 py-2 lg:p-5 lg:border-l border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-4 md:w-[230px] md:flex-col md:items-stretch md:justify-end md:border-t-0 md:border-l md:p-6 dark:border-white/10">
                 <div>
-                    <div className="h-5 w-[70px] lg:h-7 lg:w-[100px] rounded bg-slate-200 dark:bg-white/10 mb-0.5" />
-                    <div className="h-2.5 w-[50px] lg:h-3.5 lg:w-[72px] rounded bg-slate-200 dark:bg-white/10" />
+                    <div className={cn(bar, 'h-7 w-32')} />
+                    <div className={cn(bar, 'mt-1.5 h-3 w-24')} />
                 </div>
-                <div className="h-7 w-[76px] lg:h-[38px] lg:w-full rounded-full lg:rounded-lg bg-slate-200 dark:bg-white/10" />
+                <div className="h-[42px] w-28 rounded-full bg-slate-200 md:mt-4 md:w-full dark:bg-white/10" />
             </div>
         </div>
     );
@@ -175,7 +156,7 @@ export function FlightResults({
 
     // Results
     return (
-        <div className={cn('space-y-3', className)}>
+        <div className={cn('space-y-4', className)}>
             <AnimatePresence mode="popLayout">
                 {visibleOffers.map((offer, idx) => (
                     <FlightCard
@@ -192,7 +173,7 @@ export function FlightResults({
 
 
             {(hasMore || isAutoLoading) && (
-                <div className="space-y-3 pb-8">
+                <div className="space-y-4 pb-8">
                     <FlightCardSkeleton index={0} />
                     <FlightCardSkeleton index={1} />
                     <FlightCardSkeleton index={2} />
@@ -208,11 +189,9 @@ export function FlightResults({
             )}
 
             {!hasMore && !isAutoLoading && offers.length > 0 && (
-                <div className="pt-4 pb-12 text-center">
-                    <p className="text-[10px] font-normal text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-60">
-                        All {offers.length} flights shown
-                    </p>
-                </div>
+                <p className="pt-4 pb-12 text-center text-[12px] text-slate-400 dark:text-white/40">
+                    All {offers.length} {offers.length === 1 ? 'flight' : 'flights'} shown
+                </p>
             )}
         </div>
     );

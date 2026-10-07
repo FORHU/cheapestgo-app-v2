@@ -2,25 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
-import { ChevronUp, ChevronLeft, SlidersHorizontal, Star } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, SlidersHorizontal, Star } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { currencySymbol } from '@/shared/lib/format';
-
-/**
- * The accordion slide.
- *
- * A tween rather than the spring the sidebar column uses: this animates to
- * `height: auto`, which framer-motion resolves by measuring the content, and a
- * spring overshoots that measurement — with the box clipped, the overshoot reads
- * as the rows springing past their own container and back. 220ms also matches
- * the chevron's own rotation, which is already a tween at that duration.
- */
-const SECTION_SLIDE = {
-    duration: 0.22,
-    ease: [0.32, 0.72, 0, 1] as [number, number, number, number],
-};
+import { filtersPalette, FilterSection, FilterRow, RangeSlider } from '@/shared/components/ui/filter-panel';
 
 /**
  * The five options the design lists. `cheapest` and `price-low` are the same
@@ -92,191 +78,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 const STAR_OPTIONS = [5, 4, 3, 2, 1];
 
-/**
- * Every colour the panel paints with, picked by tone rather than by a `dark:`
- * variant — see the `tone` prop for why the variant could not be used here.
- *
- * Whole class strings on both branches, never interpolated fragments, so
- * Tailwind's scanner still finds each one.
- */
-function filtersPalette(tone: 'light' | 'dark') {
-    const dark = tone === 'dark';
-    return {
-        /** The panel's plate. The light one carries the lift; the dark one is
-         *  already separated from its ground by value alone. */
-        panel:   dark ? 'bg-slate-900' : 'bg-white shadow-sm',
-        heading: dark ? 'text-white' : 'text-slate-900',
-        icon:    dark ? 'text-white' : 'text-slate-700',
-        /** Section labels and the chevron beside them. */
-        muted:   dark ? 'text-slate-400' : 'text-slate-500',
-        reset:   dark ? 'text-slate-400' : 'text-slate-500',
-        /** Body copy inside a section — the price row's two labels. */
-        body:    dark ? 'text-white/90' : 'text-slate-700',
-        /**
-         * Selected sort and selected star rating — the brand gradient, the same as
-         * the card's price and Book Now chips, so "this one is on" looks the same
-         * everywhere in the view.
-         */
-        sortOn:  'bg-linear-to-r from-blue-600 to-cyan-500 text-white',
-        starOn:  'bg-linear-to-r from-blue-600 to-cyan-500 text-white',
-        /** Unselected, for both. */
-        rowIdle: dark ? 'text-white/90 hover:bg-white/8' : 'text-slate-700 hover:bg-slate-100',
-        track:     dark ? 'bg-white/20' : 'bg-slate-200',
-        trackFill: 'bg-linear-to-r from-blue-600 to-cyan-500',
-        /** Each thumb carries the whole gradient — a thumb is too small to show a slice of it. */
-        thumb:
-            '[&::-webkit-slider-thumb]:bg-linear-to-r [&::-webkit-slider-thumb]:from-blue-600 [&::-webkit-slider-thumb]:to-cyan-500 ' +
-            '[&::-moz-range-thumb]:bg-linear-to-r [&::-moz-range-thumb]:from-blue-600 [&::-moz-range-thumb]:to-cyan-500',
-        handle: dark ? 'bg-white/25 text-white' : 'bg-slate-300/90 text-slate-800',
-    };
-}
-
-type Palette = ReturnType<typeof filtersPalette>;
-
-// ─── Section ──────────────────────────────────────────────────────────────────
-
-function Section({
-    label, open, onToggle, palette, children,
-}: {
-    label: string; open: boolean; onToggle: () => void; palette: Palette; children: React.ReactNode;
-}) {
-    return (
-        <div>
-            <button
-                type="button"
-                onClick={onToggle}
-                aria-expanded={open}
-                className="flex w-full items-center gap-2.5 px-1 text-left"
-            >
-                <ChevronUp
-                    size={16}
-                    strokeWidth={1.75}
-                    className={cn(
-                        'shrink-0 transition-transform duration-200',
-                        palette.muted,
-                        !open && 'rotate-180',
-                    )}
-                />
-                <span className={cn('text-[13px] tracking-[0.13em] uppercase', palette.muted)}>
-                    {label}
-                </span>
-            </button>
-
-            {/* `initial={false}` because all three sections start open: without
-                it the panel would animate itself apart on first paint. */}
-            <AnimatePresence initial={false}>
-                {open && (
-                    <motion.div
-                        key="body"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={SECTION_SLIDE}
-                        // Clips the rows to the collapsing box. Without it they
-                        // stay drawn at full height and simply slide up over the
-                        // section below.
-                        style={{ overflow: 'hidden' }}
-                    >
-                        {/* The top margin belongs to the *inner* box. On the
-                            animated one it would survive `height: 0` and leave a
-                            14px gap under every closed section. */}
-                        {/* 34px rows on a 42px pitch, as drawn. */}
-                        <div className="mt-[14px] flex flex-col gap-2">{children}</div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-// ─── Price slider ─────────────────────────────────────────────────────────────
-
-/**
- * The design's two-handle range. Two native range inputs stacked on one track:
- * the inputs themselves are pointer-transparent so the lower one doesn't
- * swallow clicks meant for the upper, and only the thumbs opt back in.
- *
- * When the low handle is near the top of the track both thumbs land on the same
- * spot, so the low input is lifted above the high one there — otherwise the
- * high input covers it and the range can never be widened again.
- */
-function PriceRangeSlider({
-    min, max, low, high, palette, onChange,
-}: {
-    min: number; max: number; low: number; high: number;
-    palette: Palette;
-    onChange: (low: number, high: number) => void;
-}) {
-    const tAll = useTranslations();
-    const span = Math.max(1, max - min);
-    const step = Math.max(1, Math.round(span / 100));
-    const lowPct = ((low - min) / span) * 100;
-    const highPct = ((high - min) / span) * 100;
-
-    const thumb =
-        '[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none ' +
-        '[&::-webkit-slider-thumb]:h-[18px] [&::-webkit-slider-thumb]:w-[18px] ' +
-        '[&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:rounded-full ' +
-        '[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:border-0 ' +
-        '[&::-moz-range-thumb]:h-[18px] [&::-moz-range-thumb]:w-[18px] ' +
-        '[&::-moz-range-thumb]:cursor-grab [&::-moz-range-thumb]:rounded-full ' +
-        palette.thumb;
-
-    const input =
-        'pointer-events-none absolute inset-0 h-[18px] w-full appearance-none bg-transparent outline-none';
-
-    return (
-        <div className="relative h-[18px] px-1">
-            {/* Track */}
-            <div className={cn('absolute top-1/2 right-1 left-1 h-1.5 -translate-y-1/2 rounded-full', palette.track)}>
-                <div
-                    className={cn('absolute h-full rounded-full', palette.trackFill)}
-                    style={{ left: `${lowPct}%`, right: `${100 - highPct}%` }}
-                />
-            </div>
-
-            <input
-                type="range"
-                aria-label={tAll('hotels.filters.minPerNight')}
-                min={min} max={max} step={step} value={low}
-                onChange={(e) => onChange(Math.min(Number(e.target.value), high), high)}
-                className={cn(input, thumb)}
-                style={{ zIndex: lowPct > 80 ? 5 : 3 }}
-            />
-            <input
-                type="range"
-                aria-label={tAll('hotels.filters.maxPerNight')}
-                min={min} max={max} step={step} value={high}
-                onChange={(e) => onChange(low, Math.max(Number(e.target.value), low))}
-                className={cn(input, thumb)}
-                style={{ zIndex: 4 }}
-            />
-        </div>
-    );
-}
-
 // ─── Panel ────────────────────────────────────────────────────────────────────
-
-/** One Sort By row. Shared so the caller's options and this panel's own draw
- *  identically rather than as two copies of the same button. */
-function SortRow({
-    label, active, palette, onClick,
-}: {
-    label: string; active: boolean; palette: Palette; onClick: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                'flex h-[34px] w-full items-center rounded-full pr-4 pl-[26px] text-left text-[15px] transition-colors',
-                active ? palette.sortOn : palette.rowIdle,
-            )}
-        >
-            {label}
-        </button>
-    );
-}
 
 export function HotelFilters({
     filters, onChange, onReset, priceRange, currency = 'USD', onCollapse, tone, showSort = true, sort,
@@ -336,10 +138,10 @@ export function HotelFilters({
                             Kept as two branches rather than one merged list so
                             each keeps its own value type. */}
                         {(sort || showSort) && (
-                        <Section label="Sort By" open={open.sort} onToggle={section('sort')} palette={palette}>
+                        <FilterSection label="Sort By" open={open.sort} onToggle={section('sort')} palette={palette}>
                             {sort
                                 ? sort.options.map((opt) => (
-                                    <SortRow
+                                    <FilterRow
                                         key={opt.value}
                                         label={opt.label}
                                         active={sort.value === opt.value}
@@ -348,7 +150,7 @@ export function HotelFilters({
                                     />
                                 ))
                                 : SORT_OPTIONS.map((opt) => (
-                                    <SortRow
+                                    <FilterRow
                                         key={opt.value}
                                         label={opt.label}
                                         active={filters.sortBy === opt.value}
@@ -356,11 +158,11 @@ export function HotelFilters({
                                         onClick={() => onChange({ sortBy: opt.value })}
                                     />
                                 ))}
-                        </Section>
+                        </FilterSection>
                         )}
 
                         {/* Star rating */}
-                        <Section label="Star Rating" open={open.stars} onToggle={section('stars')} palette={palette}>
+                        <FilterSection label="Star Rating" open={open.stars} onToggle={section('stars')} palette={palette}>
                             {STAR_OPTIONS.map((star) => {
                                 const active = filters.starRatings.includes(star);
                                 return (
@@ -371,7 +173,7 @@ export function HotelFilters({
                                         aria-pressed={active}
                                         className={cn(
                                             'flex h-[34px] w-full items-center justify-between gap-3 rounded-full pr-4 pl-[26px] text-left text-[15px] transition-colors',
-                                            active ? palette.starOn : palette.rowIdle,
+                                            active ? palette.rowOn : palette.rowIdle,
                                         )}
                                     >
                                         <span>{star === 1 ? '1 Star' : `${star} Stars`}</span>
@@ -383,10 +185,10 @@ export function HotelFilters({
                                     </button>
                                 );
                             })}
-                        </Section>
+                        </FilterSection>
 
                         {/* Price */}
-                        <Section label="Price / Night" open={open.price} onToggle={section('price')} palette={palette}>
+                        <FilterSection label="Price / Night" open={open.price} onToggle={section('price')} palette={palette}>
                             <div className="px-1">
                                 <div className="flex items-baseline justify-between gap-2">
                                     <span className={cn('text-[15px]', palette.body)}>{tAll('hotels.filters.adjustPrice')}</span>
@@ -396,17 +198,19 @@ export function HotelFilters({
                                 </div>
 
                                 <div className="mt-6">
-                                    <PriceRangeSlider
+                                    <RangeSlider
                                         min={priceRange.min}
                                         max={priceRange.max}
                                         low={filters.minPrice}
                                         high={filters.maxPrice}
                                         palette={palette}
+                                        lowLabel={tAll('hotels.filters.minPerNight')}
+                                        highLabel={tAll('hotels.filters.maxPerNight')}
                                         onChange={(lo, hi) => onChange({ minPrice: lo, maxPrice: hi })}
                                     />
                                 </div>
                             </div>
-                        </Section>
+                        </FilterSection>
                     </div>
                 </div>
             </aside>

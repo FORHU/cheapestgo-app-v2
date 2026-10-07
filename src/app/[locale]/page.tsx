@@ -3,6 +3,7 @@ export const revalidate = 300;
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import { BRAND_NAME } from '@/shared/lib/brand';
+import { BRAND } from '@/shared/lib/palette';
 import { hreflangAlternates } from '@/shared/lib/seo';
 
 /**
@@ -72,7 +73,7 @@ async function getServerTrending(): Promise<TrendingDest[]> {
  * It shows wherever the video has not painted — before it loads, or if it fails.
  */
 const CANVAS: CSSProperties = {
-    background: 'radial-gradient(120% 80% at 50% 0%,#0f172a 0%,#0b1222 45%,#020617 100%)',
+    background: BRAND.canvas,
     '--font-sans': "var(--font-open-sans), 'Open Sans', sans-serif",
     '--font-display': "var(--font-open-sans), 'Open Sans', sans-serif",
 } as CSSProperties;

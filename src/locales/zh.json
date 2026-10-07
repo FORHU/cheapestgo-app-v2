@@ -435,7 +435,9 @@
     "results": {
       "bundleActive": "机票 + 酒店套餐已启用",
       "bundleBody": "请在下方选择航班——套餐折扣将在结账时应用。",
+      "checkingFare": "正在确认该票价是否仍然有效…",
       "checkingProviders": "正在查询多家供应商",
+      "clearFilters": "清除筛选",
       "countFlights": "{count} 个航班",
       "datePicked": "这个日期是我们为您选择的 — 更改日期可查看其他票价。",
       "duration": "飞行时长",
@@ -443,6 +445,8 @@
       "filters": "筛选",
       "filtersTitle": "航班筛选",
       "findingFares": "正在寻找最优票价…",
+      "flightsFound": "找到 {count} 个航班",
+      "flightsTo": "飞往{city}的航班",
       "loading": "正在寻找最优价格…",
       "missingRoute": "请告诉我们出发地和目的地，我们来为您查找票价。",
       "newSearch": "重新搜索",
@@ -478,6 +482,21 @@
       "freeCancellation": "免费取消",
       "nonRefundable": "不可退款"
     },
+    "itinerary": {
+      "arriveAt": "抵达",
+      "departFrom": "出发",
+      "flightDuration": "飞行时长",
+      "layoverLabel": "中转",
+      "layoverValue": "在 {airport} 中转 {duration}",
+      "legLabel": "第 {number} 段",
+      "nonstop": "直飞",
+      "outbound": "去程",
+      "return": "回程",
+      "stopCount": "{count} 次经停",
+      "terminal": "{terminal} 号航站楼",
+      "terminalUnavailable": "航站楼信息将在临近出发时提供",
+      "totalFlightDuration": "总飞行时长"
+    },
     "filters": {
       "cheapest": "最便宜",
       "fastest": "最快",
@@ -491,6 +510,42 @@
       "anyStops": "不限中转",
       "nonStopOnly": "仅直飞",
       "upTo1Stop": "最多 1 次中转"
+    },
+    "filtersPanel": {
+      "airlines": "航空公司",
+      "anyStops": "不限中转",
+      "arrival": "到达",
+      "arrivalAirports": "到达机场",
+      "branded": "品牌票价",
+      "cheapestFirst": "价格最低优先",
+      "departure": "出发",
+      "direct": "直飞",
+      "earliestDeparture": "最早出发优先",
+      "fareType": "票价类型",
+      "fastestFirst": "用时最短优先",
+      "flightDuration": "飞行时长",
+      "ndc": "NDC",
+      "nonStopOnly": "仅直飞",
+      "oneStop": "1次中转",
+      "pricePerPerson": "每人价格",
+      "provider": "供应商",
+      "rangeFrom": "{label} 起",
+      "rangeTo": "{label} 止",
+      "refundable": "可退款",
+      "refundableFares": "可退款票价",
+      "refundableFaresDescription": "允许取消并退款的票价",
+      "reset": "重置",
+      "selectAllAirlines": "选择所有航空公司",
+      "selectAllAirports": "选择所有机场",
+      "showAll": "显示全部",
+      "showLess": "收起",
+      "sortBy": "排序方式",
+      "stops": "中转",
+      "times": "时间",
+      "twoStopsPlus": "2次及以上中转",
+      "underHours": "{hours}小时以内",
+      "underHoursInput": "<field></field>小时以内",
+      "upToOneStop": "最多 1 次中转"
     },
     "priceAlert": {
       "loading": "加载中",
@@ -514,6 +569,11 @@
       "adults": "{count} 名成人",
       "children": "{count} 名儿童",
       "infants": "{count} 名婴儿"
+    },
+    "topBar": {
+      "swap": "交换出发地和目的地",
+      "changeTrip": "更改日期和出行人数",
+      "cabin": "舱位"
     }
   },
   "footer": {
@@ -1804,6 +1864,8 @@
       "ofUs": "{count} 人"
     },
     "trendingCities": "热门城市",
+    "popularAirports": "热门机场",
+    "noAirportsMatch": "没有与“{query}”匹配的机场",
     "imFlexible": "日期灵活",
     "oneWay": "单程",
     "roundTrip": "往返",

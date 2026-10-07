@@ -7,6 +7,7 @@ import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { LogoWordmark } from './logo-wordmark';
 import { BRAND_NAME } from '@/shared/lib/brand';
+import SignInDropdown from '@/shared/auth/SignInDropdown';
 
 /**
  * The landing page's own header: transparent over the dark canvas, carrying the
@@ -33,13 +34,20 @@ export function LandingHeader() {
                     <LocaleSelector variant="onDark" />
                     <CurrencySelector variant="onDark" />
 
-                    {/* v1's gradient, blue-600 → cyan-500, like every button on this page. */}
-                    <Link
-                        href={user ? '/account' : '/login'}
-                        className="ml-1 rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-[filter] duration-150 hover:brightness-110"
-                    >
-                        {user ? tAll('nav.account') : tAll('nav.signIn')}
-                    </Link>
+                    {/* Signed in, it is the app header's round profile button and menu, as in v1.
+                        Signed out, v1's gradient, blue-600 → cyan-500, like every button on this page. */}
+                    {user ? (
+                        <div className="ml-1">
+                            <SignInDropdown />
+                        </div>
+                    ) : (
+                        <Link
+                            href="/login"
+                            className="ml-1 rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-[filter] duration-150 hover:brightness-110"
+                        >
+                            {tAll('nav.signIn')}
+                        </Link>
+                    )}
                 </div>
             </div>
         </header>

@@ -5,6 +5,28 @@ import type { User, AuthStep } from "@/types/auth";
 import { loginSchema, registerSchema, emailSchema, profileSchema, updatePasswordSchema, type RegisterInput, type ProfileInput } from "@/lib/schemas/auth";
 import { http } from "@/shared/lib/http";
 
+/** A user as api-v2 sends it: the `users` row, snake_case, without the password hash. */
+export interface ApiUser {
+    id:          string;
+    email:       string;
+    role?:       string;
+    first_name?: string | null;
+    last_name?:  string | null;
+    avatar_url?: string | null;
+}
+
+/** The API's row in the camelCase shape this store holds. */
+export function toSessionUser(user: ApiUser): User {
+    return {
+        id:        user.id,
+        email:     user.email,
+        firstName: user.first_name ?? '',
+        lastName:  user.last_name ?? '',
+        avatar:    user.avatar_url ?? undefined,
+        role:      (user.role ?? 'user') as User['role'],
+    };
+}
+
 interface AuthState {
     user: User | null;
     authStep: AuthStep;
@@ -63,8 +85,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 10_000);
             try {
-                const res = await http.get<{ user: User }>('/auth/me', { signal: controller.signal });
-                set({ user: res.user ?? null, isLoading: false });
+                const res = await http.get<{ user: ApiUser | null }>('/auth/me', { signal: controller.signal });
+                set({ user: res.user ? toSessionUser(res.user) : null, isLoading: false });
             } catch {
                 set({ user: null, isLoading: false });
             } finally {

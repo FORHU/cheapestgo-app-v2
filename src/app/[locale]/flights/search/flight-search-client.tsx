@@ -5,19 +5,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, X, CalendarClock, Clock, SearchX } from 'lucide-react';
+import { Plane, X, CalendarClock, Clock, SearchX, SlidersHorizontal } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { createPortal } from 'react-dom';
-import BackButton from '@/shared/components/common/BackButton';
 import { StateScreen, stateActionClass, stateSecondaryClass } from '@/shared/components/StateScreen';
-import { SectionHeader } from '@/shared/components/ui/SectionHeader';
-import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
+import { Button } from '@/shared/components/ui/button';
+import { useTheme } from '@/shared/components/ThemeContext';
 import { http } from '@/shared/lib/http';
+import { cn } from '@/shared/lib/cn';
+import { BRAND, brandTheme } from '@/shared/lib/palette';
+import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { resolveDepartureDate } from '@/features/landing/lib/links';
 import { FlightResults } from '@/features/flights/components/flight-results';
-import { FlightFilters, DEFAULT_FLIGHT_FILTERS, type FlightFilterState } from '@/features/flights/components/flight-filters';
-import { ResponsiveFlightHeader, ProviderStatus } from '@/features/flights/components/ResponsiveFlightHeader';
+import { FlightFilters } from '@/features/flights/components/flight-filters';
+import { FlightSearchTopBar } from '@/features/flights/components/flight-search-top-bar';
 import { PriceAlertButton } from '@/features/flights/components/PriceAlertButton';
+import {
+    DEFAULT_FLIGHT_FILTERS, activeFilterCount as countActiveFilters, applyFlightFilters, type FlightFilterState,
+} from '@/features/flights/lib/filter-offers';
 import type { FlightOffer } from '@/shared/types';
 
 // ─── City name → IATA code lookup ─────────────────────────────────────────────
@@ -74,6 +79,29 @@ function resolveIATA(input: string): string | null {
 const SLOW_MS = 15_000;
 const TIMEOUT_MS = 45_000;
 
+/**
+ * The sidebar's motion, as the hotel results page has it (`hotel-results.tsx`):
+ * the panel's width, the width of the column once it is only the handle, the
+ * spring the column and the results share, and the panel's own quicker fade.
+ */
+const PANEL_W = 280;
+const HANDLE_W = 42;
+const FILTER_SLIDE = { type: 'spring' as const, damping: 30, stiffness: 260, mass: 0.7 };
+const PANEL_FADE = { duration: 0.18 };
+
+/**
+ * The page ground — slate-100, as the hotel list view has it, or the landing canvas in the dark — painted on the
+ * app shell by `body.flat-ground` (globals.css) in place of v1's graph paper.
+ *
+ * The sticky bar's strip paints the same ground so the bar floats on it rather than
+ * on a band of its own. Dark is held to the viewport, as the shell's is, so the strip
+ * shows exactly the slice of the glow behind it.
+ */
+const GROUND: Record<'light' | 'dark', React.CSSProperties> = {
+    light: { background: '#f1f5f9' },
+    dark:  { backgroundColor: BRAND.obsidian, backgroundImage: BRAND.canvas, backgroundAttachment: 'fixed' },
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SearchParams {
@@ -95,29 +123,6 @@ type SearchStatus =
     | { status: 'empty' }
     | { status: 'timeout' }
     | { status: 'error'; message: string };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getAirlineName(o: FlightOffer): string {
-    return o.segments[0]?.airlineName || o.segments[0]?.airline || o.provider;
-}
-
-function getAirlines(offers: FlightOffer[]): string[] {
-    const set = new Set<string>();
-    for (const o of offers) {
-        const name = getAirlineName(o);
-        if (name) set.add(name);
-    }
-    return Array.from(set).sort();
-}
-
-function _getProviderCounts(offers: FlightOffer[]): Record<string, number> {
-    const counts: Record<string, number> = {};
-    for (const o of offers) {
-        counts[o.provider] = (counts[o.provider] || 0) + 1;
-    }
-    return counts;
-}
 
 // ─── Error / Timeout banners ──────────────────────────────────────────────────
 
@@ -164,6 +169,14 @@ export function FlightSearchClient() {
     const tAll = useTranslations();
     const sp = useSearchParams();
     const router = useRouter();
+    const { theme, toggleTheme } = useTheme();
+
+    // v1's graph paper and sparkles live on the app shell, out of this page's
+    // reach; the body class swaps them for the plain ground. See `GROUND`.
+    useEffect(() => {
+        document.body.classList.add('flat-ground');
+        return () => document.body.classList.remove('flat-ground');
+    }, []);
 
     // A route can be named without a date, and a link can sit in a chat window until its
     // date has gone. Neither is worth refusing to search over — the airline rejects a past
@@ -191,7 +204,7 @@ export function FlightSearchClient() {
     const abortRef = useRef<AbortController | null>(null);
     // Filter state
     const [filters, setFilters] = useState<FlightFilterState>(DEFAULT_FLIGHT_FILTERS);
-    const [filtersOpen, _setFiltersOpen] = useState(true);
+    const [filtersCollapsed, setFiltersCollapsed] = useState(false);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     // allOffers holds the unfiltered list (used to populate the filter panel)
     const [allOffers, setAllOffers] = useState<FlightOffer[]>([]);
@@ -199,49 +212,17 @@ export function FlightSearchClient() {
     const handleFilterChange = (partial: Partial<FlightFilterState>) => {
         setFilters((prev) => ({ ...prev, ...partial }));
     };
+    const resetFilters = () => setFilters(DEFAULT_FLIGHT_FILTERS);
 
-    // Derive offers for filter sidebar airline/provider lists from the unfiltered set
-    const _airlines = useMemo(() => getAirlines(allOffers.length > 0 ? allOffers : (state.status === 'success' ? state.offers : [])), [allOffers, state]);
-
-    // Client-side filtering
+    // Client-side filtering — v1's rules, in `lib/filter-offers.ts`.
     // Memoised so the empty-state array keeps its identity across renders —
     // otherwise it invalidates the `filteredOffers` memo below on every render.
     const rawOffers = useMemo(() => (state.status === 'success' ? state.offers : []), [state]);
-    const filteredOffers = useMemo(() => {
-        const base = allOffers.length > 0 ? allOffers : rawOffers;
-        let offers = [...base];
-        if (filters.maxStops !== null) {
-            offers = offers.filter((o) => (o.totalStops ?? 0) <= filters.maxStops!);
-        }
-        if (filters.refundableOnly) {
-            offers = offers.filter((o) => (o.farePolicy?.isRefundable ?? o.refundable) === true);
-        }
-        if (filters.selectedProviders.length > 0) {
-            offers = offers.filter((o) => filters.selectedProviders.includes(o.provider));
-        }
-        if (filters.selectedAirlines.length > 0) {
-            offers = offers.filter((o) => {
-                const name = getAirlineName(o);
-                return filters.selectedAirlines.includes(name);
-            });
-        }
-        if (filters.sortBy === 'price') {
-            offers.sort((a, b) => (a.price?.total ?? 0) - (b.price?.total ?? 0));
-        } else if (filters.sortBy === 'duration') {
-            offers.sort((a, b) => (a.totalDuration ?? 0) - (b.totalDuration ?? 0));
-        } else if (filters.sortBy === 'departure') {
-            offers.sort((a, b) =>
-                new Date(a.segments?.[0]?.departure?.time ?? 0).getTime() -
-                new Date(b.segments?.[0]?.departure?.time ?? 0).getTime()
-            );
-        }
-        return offers;
-    }, [allOffers, rawOffers, filters]);
-
-    const activeFilterCount = filters.selectedAirlines.length +
-        (filters.maxStops !== null ? 1 : 0) +
-        (filters.refundableOnly ? 1 : 0) +
-        filters.selectedProviders.length;
+    const filteredOffers = useMemo(
+        () => applyFlightFilters(allOffers.length > 0 ? allOffers : rawOffers, filters),
+        [allOffers, rawOffers, filters],
+    );
+    const activeFilterCount = countActiveFilters(filters);
 
     const isLoading = state.status === 'loading' || state.status === 'loading_slow';
     const isSlowSearch = state.status === 'loading_slow';
@@ -294,6 +275,18 @@ export function FlightSearchClient() {
         }));
         const qs = new URLSearchParams();
         qs.set('offerId', chosen.offerId);
+        // Checkout reads the trip from the URL, never from sessionStorage, so with the
+        // offer id alone it drew an empty route and a USD 0 total. The server still
+        // prices the booking from the offer; these are what the page shows meanwhile.
+        const first = chosen.segments?.[0];
+        const last  = chosen.segments?.[chosen.segments.length - 1];
+        qs.set('totalAmount', String(chosen.price?.total ?? 0));
+        qs.set('currency', chosen.price?.currency ?? 'USD');
+        if (first?.origin)                    qs.set('origin', first.origin);
+        if (last?.destination)                qs.set('destination', last.destination);
+        if (first?.departure?.time)           qs.set('departureDate', first.departure.time.slice(0, 10));
+        if (first?.cabinClass)                qs.set('cabin', first.cabinClass);
+        qs.set('adults', String(params.adults));
         if (bundleHotelId) {
             qs.set('bundleHotelId', bundleHotelId);
         }
@@ -307,6 +300,9 @@ export function FlightSearchClient() {
         abortRef.current = controller;
 
         setState({ status: 'loading' });
+        // The last route's offers would otherwise fill the filter panel — its airlines,
+        // its prices — until this one answers.
+        setAllOffers([]);
 
         // Resolve city names to IATA
         const resolvedOrigin = resolveIATA(params.origin);
@@ -392,214 +388,270 @@ export function FlightSearchClient() {
         setRetryKey((k) => k + 1);
     };
 
-    const handleSearchEdit = () => {
-        router.push('/?mode=flights');
+    /**
+     * A change made on the top bar — route, dates, travellers or cabin — as a new
+     * search URL, in the shape the landing search writes. The filters start over
+     * with it: an airline or price picked for one route means nothing on another.
+     */
+    const applySearch = (next: Partial<SearchParams>) => {
+        const merged = { ...params, ...next };
+        const qs = new URLSearchParams({
+            origin:      merged.origin,
+            destination: merged.destination,
+            depart:      merged.departure,
+            tripType:    merged.returnDate ? 'round-trip' : 'one-way',
+            cabin:       merged.cabin,
+            adults:      String(merged.adults),
+            children:    String(merged.children),
+            infants:     String(merged.infants),
+        });
+        if (merged.returnDate) qs.set('return', merged.returnDate);
+        if (bundleHotelId) qs.set('bundleHotelId', bundleHotelId);
+        setFilters(DEFAULT_FLIGHT_FILTERS);
+        router.push(`/flights/search?${qs.toString()}`);
     };
 
-    if (state.status === 'timeout') {
-        return (
-            <div className="flex-1 flex items-center justify-center p-4">
-                <TimeoutBanner onRetry={handleRetry} />
-            </div>
-        );
-    }
+    const panelProps = {
+        filters,
+        onChange: handleFilterChange,
+        onReset: resetFilters,
+        allOffers: allOffers.length > 0 ? allOffers : rawOffers,
+    };
 
-    if (state.status === 'error') {
-        return (
-            <div className="flex-1 flex items-center justify-center p-4">
-                <ErrorBanner message={state.message} />
-            </div>
-        );
-    }
-
+    // The hotel results page's drawer, so filters open the same way on both: the
+    // scrim fades and the sheet slides in from the right edge and back out of it.
     const mobileFilterModal = (
         <AnimatePresence>
             {mobileFiltersOpen && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[90] bg-black/40 lg:hidden pointer-events-auto"
+                <motion.div
+                    key="filter-drawer"
+                    className="fixed inset-0 z-[100] flex lg:hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={() => setMobileFiltersOpen(false)}
                     />
                     <motion.div
-                        initial={{ opacity: 0, y: '100%', scale: 1 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 sm:top-[88px] sm:bottom-auto sm:left-auto sm:w-[340px] sm:max-h-[calc(100vh-120px)] max-h-[85vh] z-[100] bg-white dark:bg-slate-900 bg-grid-slate-100 dark:bg-grid-slate-800/50 bg-[length:40px_40px] flex flex-col lg:hidden shadow-2xl rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200/50 dark:border-slate-800/50 overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={FILTER_SLIDE}
+                        className="no-scrollbar relative ml-auto h-full w-[320px] max-w-full overflow-y-auto bg-slate-50 p-4 dark:bg-[#020617]"
                     >
-                        <div className="absolute inset-0 z-0 pointer-events-none opacity-50">
-                            <GlobalSparkle />
-                        </div>
-
-
-                        <div className="p-3 border-b border-slate-200/50 dark:border-white/5 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 flex-shrink-0">
-                            <button
-                                onClick={() => setMobileFiltersOpen(false)}
-                                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors -ml-1.5"
-                            >
-                                <X size={16} className="text-slate-700 dark:text-slate-300" />
-                            </button>
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white absolute left-1/2 -translate-x-1/2">{tAll('flights.results.filtersTitle')}</h2>
-                            <div className="w-8" />
-                        </div>
-
-                        {/* Filter Content */}
-                        <div className="flex-1 overflow-y-auto p-5 relative z-10">
-                            <FlightFilters
-                                filters={filters}
-                                onChange={handleFilterChange}
-                                allOffers={allOffers.length > 0 ? allOffers : rawOffers}
-                            />
-                        </div>
-
-                        {/* Fixed Footer */}
-                        <div className="p-4 border-t border-slate-200/50 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex justify-center flex-shrink-0 relative z-10">
-                            <button
-                                onClick={() => setMobileFiltersOpen(false)}
-                                className="w-full max-w-sm py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center justify-center transition-transform active:scale-[0.98] shadow-md hover:shadow-lg"
-                            >
-                                Show {filteredOffers.length} {filteredOffers.length === 1 ? 'flight' : 'flights'}
+                        <div className="mb-3 flex items-center justify-end">
+                            <button onClick={() => setMobileFiltersOpen(false)} aria-label={tAll('hotels.filters.close')}>
+                                <X size={18} className="text-slate-500 dark:text-white/60" />
                             </button>
                         </div>
+                        <FlightFilters {...panelProps} />
+                        <Button fullWidth className="mt-6" onClick={() => setMobileFiltersOpen(false)}>
+                            Show {filteredOffers.length} {filteredOffers.length === 1 ? 'flight' : 'flights'}
+                        </Button>
                     </motion.div>
-                </>
+                </motion.div>
             )}
         </AnimatePresence>
     );
 
-    // `economy` / `premium_economy` in the URL, `landing.search.cabinClass.premiumEconomy` in
-    // the locale file.
-    const cabinLabel = tAll(`landing.search.cabinClass.${params.cabin.replace(/_(.)/g, (_, c) => c.toUpperCase())}`);
-    const subtitle = [
-        params.departure,
-        params.returnDate && `↩ ${params.returnDate}`,
-        tAll('flights.passengers.adults', { count: params.adults }),
-        cabinLabel,
-    ].filter(Boolean).join(' · ');
+    // "Seoul (ICN)" from the search bar reads as "Seoul" in "Flights to …"; a bare code stays a code.
+    const destinationCity = params.destination.replace(/\s*\([A-Z]{3}\)\s*$/, '') || params.destination;
+
+    const failed = state.status === 'timeout' || state.status === 'error';
 
     return (
-        <main className="flex-1 pt-2 pb-12 px-4 md:pt-6 md:pb-20 overflow-x-hidden">
-            <div className="max-w-7xl mx-auto space-y-3 lg:space-y-6">
-                <div className="hidden lg:block">
-                    <BackButton href="/" bareIcon className="mb-1 lg:mb-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center shadow-sm p-0!" />
-                    <div className="flex items-start justify-between gap-2 lg:gap-4 flex-wrap">
-                        <SectionHeader
-                            title={`${params.origin} → ${params.destination}`}
-                            subtitle={subtitle}
-                            className="!mb-0"
-                        />
-                        <PriceAlertButton
-                            origin={params.origin}
-                            destination={params.destination}
-                            adults={params.adults}
-                            cabin={params.cabin}
-                        />
-                    </div>
+        <>
+            {/* ── Top bar ──────────────────────────────────────────────────────
+                The hotel search page's bar, flights' version, standing in for the
+                app header as it does there. Sticky on the page ground so the
+                cards scroll under it rather than through the gap around it. Drawn
+                in every state — after an error it is the only way to change the
+                search without starting over. */}
+            <div className={cn('sticky top-0 z-30 pt-4 pb-3', SHELL_GUTTER)} style={GROUND[theme]}>
+                <div className={cn('relative', SHELL_CAP)}>
+                    <FlightSearchTopBar
+                        tone={theme}
+                        barBackground={brandTheme(theme).surface}
+                        onBack={() => router.back()}
+                        route={{
+                            origin: params.origin,
+                            destination: params.destination,
+                            onApply: (next) => applySearch(next),
+                        }}
+                        searching={isLoading}
+                        trip={{
+                            departure: params.departure,
+                            returnDate: params.returnDate,
+                            adults: params.adults,
+                            children: params.children,
+                            infants: params.infants,
+                            cabin: params.cabin,
+                            onApply: (next) => applySearch(next),
+                        }}
+                        theme={theme}
+                        onToggleTheme={toggleTheme}
+                        // The sidebar is the filter surface once there is room for it.
+                        filters={{
+                            open: mobileFiltersOpen,
+                            activeCount: activeFilterCount,
+                            onToggle: () => setMobileFiltersOpen((v) => !v),
+                            mobileOnly: true,
+                        }}
+                    />
 
-                    {/* The same disclosure the narrow layout makes. This one carries the
-                        date in SectionHeader's subtitle, so without it the widest screen
-                        was the one that never said the date had been chosen for you. */}
+                    {/* A date nobody asked for is disclosed, never applied quietly —
+                        the traveller named a route, so they are told which day they
+                        are being quoted for and that moving it is how to see others. */}
                     {!departureChosen && (
-                        <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                            <CalendarClock size={13} className="shrink-0 text-blue-500" aria-hidden />
+                        <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 dark:text-white/55">
+                            <CalendarClock size={12} className="shrink-0 text-blue-500" aria-hidden />
                             {tAll('flights.results.datePicked')}
                         </p>
                     )}
-
-                    {bundleHotelId && (
-                        <div className="mt-4 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700/50">
-                            <div className="p-1.5 bg-violet-100 dark:bg-violet-900/40 rounded-lg shrink-0">
-                                <Plane size={14} className="text-violet-600 dark:text-violet-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{tAll('flights.results.bundleActive')}</p>
-                                <p className="text-[11px] text-violet-600/80 dark:text-violet-400/80">
-                                    {tAll('flights.results.bundleBody')}
-                                </p>
-                            </div>
-                            <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded-full">
-                                {tAll('flights.results.saveUpTo')}
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Loading, Results layout */}
-                <div className="flex flex-col gap-3 lg:gap-6 relative pb-24 pt-0 lg:pt-0">
-                    <ResponsiveFlightHeader
-                        origin={params.origin}
-                        destination={params.destination}
-                        dateStr={params.returnDate ? `${params.departure} — ${params.returnDate}` : params.departure}
-                        datePicked={!departureChosen}
-                        passengersStr={[
-                            tAll('flights.passengers.adults', { count: params.adults }),
-                            params.children > 0 && tAll('flights.passengers.children', { count: params.children }),
-                            params.infants > 0 && tAll('flights.passengers.infants', { count: params.infants }),
-                        ].filter(Boolean).join(', ') + ` · ${cabinLabel}`}
-                        activeFilterCount={activeFilterCount}
-                        statusElement={<ProviderStatus offers={rawOffers} loading={isLoading} />}
-                        resultCount={filteredOffers.length}
-                        onFiltersOpen={() => setMobileFiltersOpen(true)}
-                        onSearchEdit={handleSearchEdit}
-                    />
-
-                    {typeof window !== 'undefined' && createPortal(mobileFilterModal, document.body)}
-
-                    {isSlowSearch && (
-                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl px-5 py-4 flex items-center gap-3">
-                            <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                            <div>
-                                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Still searching&hellip;</p>
-                                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{tAll('flights.results.slowHint')}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col lg:flex-row gap-6 lg:items-start items-stretch">
-                        {/* Desktop Sidebar Filters */}
-                        <AnimatePresence>
-                            {filtersOpen && (
-                                <motion.div
-                                    initial={{ width: 0, opacity: 0, x: -20 }}
-                                    animate={{ width: 288, opacity: 1, x: 0 }}
-                                    exit={{ width: 0, opacity: 0, x: -20 }}
-                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                    className="hidden lg:block sticky top-24 self-start flex-shrink-0 overflow-hidden"
-                                >
-                                    <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
-                                        <FlightFilters
-                                            filters={filters}
-                                            onChange={handleFilterChange}
-                                            allOffers={allOffers.length > 0 ? allOffers : rawOffers}
-                                        />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        <div className="flex-1 min-w-0 space-y-4">
-                            {state.status === 'success' && filteredOffers.length === 0 && allOffers.length > 0 ? (
-                                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-10 text-center space-y-3">
-                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{tAll('flights.results.noMatch')}</p>
-                                    <p className="text-sm text-slate-500">{tAll('flights.results.noMatchHint')}</p>
-                                </div>
-                            ) : (
-                                <FlightResults
-                                    offers={filteredOffers}
-                                    loading={isLoading}
-                                    onSelect={handleSelect}
-                                    checkingOfferId={revalidating}
-                                    skeletonCount={8}
-                                />
-                            )}
-                        </div>
-                    </div>
                 </div>
             </div>
-        </main>
+
+            {typeof window !== 'undefined' && createPortal(mobileFilterModal, document.body)}
+
+            <main className={cn('flex-1 pt-3 pb-24 md:pb-28', SHELL_GUTTER)}>
+                <div className={cn('w-full', SHELL_CAP)}>
+                    {state.status === 'timeout' && (
+                        <div className="flex justify-center py-10"><TimeoutBanner onRetry={handleRetry} /></div>
+                    )}
+                    {state.status === 'error' && (
+                        <div className="flex justify-center py-10"><ErrorBanner message={state.message} /></div>
+                    )}
+
+                    {!failed && (
+                        <div className="flex flex-col items-stretch gap-6 lg:flex-row lg:items-start">
+                            {/* Desktop sidebar. The column is what animates: the results
+                                are `flex-1` off it, so its width carries them across. Not
+                                clipped, because the panel's collapse handle straddles its
+                                right edge — see `hotel-results.tsx`, which this mirrors.
+                                Stretched to the results' height: sized to the panel alone,
+                                the column left the sticky panel no room to stay put in, and
+                                it scrolled away with the page. */}
+                            <motion.div
+                                className="relative hidden shrink-0 self-stretch lg:block"
+                                initial={false}
+                                animate={{ width: filtersCollapsed ? HANDLE_W : PANEL_W }}
+                                transition={FILTER_SLIDE}
+                            >
+                                <div className="sticky top-24">
+                                    <AnimatePresence initial={false} mode="wait">
+                                        {filtersCollapsed ? (
+                                            <motion.button
+                                                key="show-filters"
+                                                type="button"
+                                                onClick={() => setFiltersCollapsed(false)}
+                                                aria-label={tAll('hotels.filters.show')}
+                                                title={tAll('hotels.filters.show')}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -10 }}
+                                                transition={PANEL_FADE}
+                                                className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-slate-300/90 text-slate-800 transition-opacity hover:opacity-85 dark:bg-white/25 dark:text-white"
+                                            >
+                                                <SlidersHorizontal size={19} strokeWidth={1.75} />
+                                            </motion.button>
+                                        ) : (
+                                            <motion.div
+                                                key="filters"
+                                                initial={{ opacity: 0, x: -14 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -14 }}
+                                                transition={PANEL_FADE}
+                                                style={{ width: PANEL_W }}
+                                            >
+                                                <FlightFilters {...panelProps} onCollapse={() => setFiltersCollapsed(true)} />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </motion.div>
+
+                            <div className="min-w-0 flex-1">
+                                <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                        <h1 className="text-lg font-bold text-slate-900 md:text-2xl dark:text-slate-50">
+                                            {tAll('flights.results.flightsTo', { city: destinationCity })}
+                                        </h1>
+                                        <p className="mt-0.5 text-xs text-slate-500 md:text-sm dark:text-white/55">
+                                            {isLoading
+                                                ? tAll('flights.results.findingFares')
+                                                : tAll('flights.results.flightsFound', { count: filteredOffers.length })}
+                                        </p>
+                                    </div>
+                                    <PriceAlertButton
+                                        origin={params.origin}
+                                        destination={params.destination}
+                                        adults={params.adults}
+                                        cabin={params.cabin}
+                                    />
+                                </div>
+
+                                {bundleHotelId && (
+                                    <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 dark:border-violet-700/50 dark:bg-violet-900/20">
+                                        <div className="shrink-0 rounded-lg bg-violet-100 p-1.5 dark:bg-violet-900/40">
+                                            <Plane size={14} className="text-violet-600 dark:text-violet-400" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{tAll('flights.results.bundleActive')}</p>
+                                            <p className="text-[11px] text-violet-600/80 dark:text-violet-400/80">
+                                                {tAll('flights.results.bundleBody')}
+                                            </p>
+                                        </div>
+                                        <span className="shrink-0 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                                            {tAll('flights.results.saveUpTo')}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {isSlowSearch && (
+                                    <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-800 dark:bg-amber-950/30">
+                                        <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Still searching&hellip;</p>
+                                            <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{tAll('flights.results.slowHint')}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {revalidating && (
+                                    <div role="status" className="mb-4 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-600 dark:bg-white/8 dark:text-white/70">
+                                        {tAll('flights.results.checkingFare')}
+                                    </div>
+                                )}
+
+                                {state.status === 'success' && filteredOffers.length === 0 && allOffers.length > 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-16 text-center dark:border-white/10 dark:bg-slate-900">
+                                        <h3 className="font-medium text-slate-900 dark:text-white">{tAll('flights.results.noMatch')}</h3>
+                                        <p className="mt-1 text-sm text-slate-500 dark:text-white/50">{tAll('flights.results.noMatchHint')}</p>
+                                        <button
+                                            type="button"
+                                            onClick={resetFilters}
+                                            className="mt-3 text-xs text-slate-600 underline underline-offset-2 dark:text-white/70"
+                                        >
+                                            {tAll('flights.results.clearFilters')}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <FlightResults
+                                        offers={filteredOffers}
+                                        loading={isLoading}
+                                        onSelect={handleSelect}
+                                        checkingOfferId={revalidating}
+                                        skeletonCount={8}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </>
     );
 }

@@ -22,6 +22,7 @@ import { useIsMobile } from '@/shared/hooks/useMediaQuery';
 import { cn } from '@/shared/lib/cn';
 import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
+import type { Stay } from '@/features/search/components/stay-editor';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
 import { resolveStayDates } from '@/shared/lib/stay';
 import { BRAND, brandTheme } from '@/shared/lib/palette';
@@ -111,18 +112,6 @@ function sortHotels(list: MappableProperty[], by: SortValue): MappableProperty[]
     if (by === 'rating')        c.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     if (by === 'most-reviewed') c.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
     return c;
-}
-
-function fmtPill(destination: string, checkIn: string, checkOut: string, adults: string, children: string) {
-    const parts: string[] = [];
-    if (destination) parts.push(destination);
-    if (checkIn && checkOut) {
-        const fmt = (s: string) => new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        parts.push(`${fmt(checkIn)} – ${fmt(checkOut)}`);
-    }
-    const guests = (Number(adults) || 2) + (Number(children) || 0);
-    parts.push(`${guests} guest${guests !== 1 ? 's' : ''}`);
-    return parts.join(' | ');
 }
 
 // ─── Bottom rail card ─────────────────────────────────────────────────────────
@@ -1029,7 +1018,6 @@ function HotelSearchContent() {
     }, [railSorted, mapFiltered, selectedId, hoveredId]);
     const isLoading    = status === 'loading';
     const isStreaming  = status === 'streaming';
-    const pillText     = fmtPill(destination, checkIn, checkOut, adults, children);
 
     const handleViewDetails = useCallback((id: string) => router.push(`/property/${id}?${searchQs}`), [router, searchQs]);
 
@@ -1048,6 +1036,23 @@ function HotelSearchContent() {
         }
         router.push(`/search?${params.toString()}`);
     }, [router, searchParams]);
+    // New dates or guests: the same search, re-run for the stay the traveller chose.
+    // `datesAuto` goes, because these dates are no longer ours to disclose.
+    const handleStayApply = useCallback((next: Stay) => {
+        const params = new URLSearchParams(searchParams?.toString() ?? '');
+        params.set('checkIn',  next.checkIn);
+        params.set('checkOut', next.checkOut);
+        params.set('adults',   String(next.adults));
+        params.set('children', String(next.children));
+        params.set('rooms',    String(next.rooms));
+        params.delete('datesAuto');
+        router.push(`/search?${params.toString()}`);
+    }, [router, searchParams]);
+    const stayControl = {
+        checkIn, checkOut,
+        adults: Number(adults) || 2, children: Number(children) || 0, rooms: Number(rooms) || 1,
+        onApply: handleStayApply,
+    };
     const handleSelect      = useCallback((id: string) => setSelectedId(prev => prev === id ? null : id), []);
 
     // Wheel over the rail scrolls the cards horizontally and never reaches the
@@ -1367,7 +1372,8 @@ function HotelSearchContent() {
                             tone={theme}
                             barBackground={brandTheme(theme).surface}
                             onBack={() => router.back()}
-                            summary={pillText}
+                            summary={destination}
+                            stay={stayControl}
                             searching={isLoading || isStreaming}
                             proximity={mapCenter}
                             onSearchSubmit={handleSearchSubmit}
@@ -1539,7 +1545,8 @@ function HotelSearchContent() {
                         className="pointer-events-auto"
                         tone={uiTone}
                         onBack={() => router.back()}
-                        summary={pillText}
+                        summary={destination}
+                            stay={stayControl}
                         searching={isLoading || isStreaming}
                         proximity={mapCenter}
                         onSearchSubmit={handleSearchSubmit}

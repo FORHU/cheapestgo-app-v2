@@ -435,7 +435,9 @@
     "results": {
       "bundleActive": "航空券＋ホテルのセット適用中",
       "bundleBody": "下から航空券をお選びください。セット割引はお支払い時に適用されます。",
+      "checkingFare": "運賃がまだ有効か確認しています…",
       "checkingProviders": "複数の提供元を確認中",
+      "clearFilters": "絞り込みをクリア",
       "countFlights": "{count}件のフライト",
       "datePicked": "日付はこちらで選びました — 変更すると他の運賃をご覧いただけます。",
       "duration": "所要時間",
@@ -443,6 +445,8 @@
       "filters": "絞り込み",
       "filtersTitle": "フライトの絞り込み",
       "findingFares": "最適な運賃を検索中…",
+      "flightsFound": "{count}件のフライトが見つかりました",
+      "flightsTo": "{city}行きのフライト",
       "loading": "最安値を探しています…",
       "missingRoute": "出発地と到着地をお知らせいただければ、運賃をお探しします。",
       "newSearch": "新しく検索",
@@ -478,6 +482,21 @@
       "freeCancellation": "無料キャンセル",
       "nonRefundable": "払い戻し不可"
     },
+    "itinerary": {
+      "arriveAt": "到着",
+      "departFrom": "出発",
+      "flightDuration": "飛行時間",
+      "layoverLabel": "乗り継ぎ",
+      "layoverValue": "{airport} で {duration}",
+      "legLabel": "区間 {number}",
+      "nonstop": "直行",
+      "outbound": "往路",
+      "return": "復路",
+      "stopCount": "経由{count}回",
+      "terminal": "ターミナル {terminal}",
+      "terminalUnavailable": "ターミナル情報は出発が近づくと表示されます",
+      "totalFlightDuration": "総飛行時間"
+    },
     "filters": {
       "cheapest": "最安",
       "fastest": "最短",
@@ -491,6 +510,42 @@
       "anyStops": "経由回数は問わない",
       "nonStopOnly": "直行便のみ",
       "upTo1Stop": "経由1回まで"
+    },
+    "filtersPanel": {
+      "airlines": "航空会社",
+      "anyStops": "すべての乗り継ぎ",
+      "arrival": "到着",
+      "arrivalAirports": "到着空港",
+      "branded": "ブランド運賃",
+      "cheapestFirst": "安い順",
+      "departure": "出発",
+      "direct": "直行",
+      "earliestDeparture": "出発が早い順",
+      "fareType": "運賃タイプ",
+      "fastestFirst": "所要時間が短い順",
+      "flightDuration": "飛行時間",
+      "ndc": "NDC",
+      "nonStopOnly": "直行便のみ",
+      "oneStop": "経由1回",
+      "pricePerPerson": "1人あたりの料金",
+      "provider": "プロバイダー",
+      "rangeFrom": "{label} から",
+      "rangeTo": "{label} まで",
+      "refundable": "払い戻し可能",
+      "refundableFares": "返金可能な運賃",
+      "refundableFaresDescription": "キャンセル時に返金を受けられる運賃",
+      "reset": "リセット",
+      "selectAllAirlines": "すべての航空会社を選択",
+      "selectAllAirports": "すべての空港を選択",
+      "showAll": "すべて表示",
+      "showLess": "表示を減らす",
+      "sortBy": "並び替え",
+      "stops": "乗り継ぎ",
+      "times": "時刻",
+      "twoStopsPlus": "経由2回以上",
+      "underHours": "{hours}時間以内",
+      "underHoursInput": "<field></field>時間以内",
+      "upToOneStop": "乗り継ぎ1回まで"
     },
     "priceAlert": {
       "loading": "読み込み中",
@@ -514,6 +569,11 @@
       "adults": "大人{count}名",
       "children": "子供{count}名",
       "infants": "幼児{count}名"
+    },
+    "topBar": {
+      "swap": "出発地と到着地を入れ替える",
+      "changeTrip": "日程と人数を変更",
+      "cabin": "座席クラス"
     }
   },
   "footer": {
@@ -1804,6 +1864,8 @@
       "ofUs": "{count}人"
     },
     "trendingCities": "人気の都市",
+    "popularAirports": "人気の空港",
+    "noAirportsMatch": "「{query}」に一致する空港はありません",
     "imFlexible": "日程は柔軟",
     "oneWay": "片道",
     "roundTrip": "往復",

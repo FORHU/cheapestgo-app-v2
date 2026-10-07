@@ -435,7 +435,9 @@
     "results": {
       "bundleActive": "항공 + 호텔 묶음 적용 중",
       "bundleBody": "아래에서 항공편을 선택하세요. 결제 시 묶음 할인이 적용됩니다.",
+      "checkingFare": "요금이 아직 유효한지 확인하는 중…",
       "checkingProviders": "여러 공급사를 확인하는 중",
+      "clearFilters": "필터 초기화",
       "countFlights": "항공편 {count}편",
       "datePicked": "날짜는 저희가 골랐습니다 — 변경하시면 다른 요금을 보실 수 있습니다.",
       "duration": "소요 시간",
@@ -443,6 +445,8 @@
       "filters": "필터",
       "filtersTitle": "항공편 필터",
       "findingFares": "최적의 요금을 찾는 중…",
+      "flightsFound": "항공편 {count}편 검색됨",
+      "flightsTo": "{city}행 항공편",
       "loading": "최저가 항공편을 찾고 있습니다…",
       "missingRoute": "출발지와 도착지를 알려주시면 요금을 찾아드립니다.",
       "newSearch": "새로 검색",
@@ -478,6 +482,21 @@
       "freeCancellation": "무료 취소",
       "nonRefundable": "환불 불가"
     },
+    "itinerary": {
+      "arriveAt": "도착",
+      "departFrom": "출발",
+      "flightDuration": "비행 시간",
+      "layoverLabel": "경유",
+      "layoverValue": "{airport}에서 {duration}",
+      "legLabel": "구간 {number}",
+      "nonstop": "직항",
+      "outbound": "가는 편",
+      "return": "오는 편",
+      "stopCount": "경유 {count}회",
+      "terminal": "터미널 {terminal}",
+      "terminalUnavailable": "터미널 정보는 출발일이 가까워지면 제공됩니다",
+      "totalFlightDuration": "총 비행 시간"
+    },
     "filters": {
       "cheapest": "최저가",
       "fastest": "최단 시간",
@@ -491,6 +510,42 @@
       "anyStops": "경유 무관",
       "nonStopOnly": "직항만",
       "upTo1Stop": "경유 1회까지"
+    },
+    "filtersPanel": {
+      "airlines": "항공사",
+      "anyStops": "전체 경유",
+      "arrival": "도착",
+      "arrivalAirports": "도착 공항",
+      "branded": "브랜드 요금",
+      "cheapestFirst": "최저가순",
+      "departure": "출발",
+      "direct": "직항",
+      "earliestDeparture": "가장 이른 출발순",
+      "fareType": "요금 유형",
+      "fastestFirst": "최단 시간순",
+      "flightDuration": "비행 시간",
+      "ndc": "NDC",
+      "nonStopOnly": "직항만",
+      "oneStop": "경유 1회",
+      "pricePerPerson": "1인당 요금",
+      "provider": "공급사",
+      "rangeFrom": "{label} 시작",
+      "rangeTo": "{label} 끝",
+      "refundable": "환불 가능",
+      "refundableFares": "환불 가능 요금",
+      "refundableFaresDescription": "환불 취소가 가능한 요금",
+      "reset": "초기화",
+      "selectAllAirlines": "모든 항공사 선택",
+      "selectAllAirports": "모든 공항 선택",
+      "showAll": "모두 보기",
+      "showLess": "간략히 보기",
+      "sortBy": "정렬 기준",
+      "stops": "경유",
+      "times": "시간대",
+      "twoStopsPlus": "경유 2회 이상",
+      "underHours": "{hours}시간 이내",
+      "underHoursInput": "<field></field>시간 이내",
+      "upToOneStop": "최대 1회 경유"
     },
     "priceAlert": {
       "loading": "불러오는 중",
@@ -514,6 +569,11 @@
       "adults": "성인 {count}명",
       "children": "어린이 {count}명",
       "infants": "유아 {count}명"
+    },
+    "topBar": {
+      "swap": "출발지와 도착지 바꾸기",
+      "changeTrip": "날짜 및 여행자 변경",
+      "cabin": "좌석 등급"
     }
   },
   "footer": {
@@ -1804,6 +1864,8 @@
       "ofUs": "{count}명"
     },
     "trendingCities": "인기 도시",
+    "popularAirports": "인기 공항",
+    "noAirportsMatch": "“{query}”와(과) 일치하는 공항이 없습니다",
     "imFlexible": "날짜 미정",
     "oneWay": "편도",
     "roundTrip": "왕복",
