@@ -2,9 +2,11 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { PoiCategory } from '@/shared/config/map-discovery';
 
-vi.mock('@/shared/lib/env', () => ({
-    env: { NEXT_PUBLIC_API_URL: 'http://api.test/api/v2', NEXT_PUBLIC_MAPBOX_TOKEN: undefined },
+const testEnv = vi.hoisted(() => ({
+    NEXT_PUBLIC_API_URL: 'http://api.test/api/v2',
+    NEXT_PUBLIC_MAPBOX_TOKEN: undefined as string | undefined,
 }));
+vi.mock('@/shared/lib/env', () => ({ env: testEnv }));
 
 import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
 
@@ -21,7 +23,8 @@ const json = (body: unknown, status = 200) =>
 
 function api(routes: {
     nearby: (url: URL) => Response | Promise<Response>;
-    details?: (url: URL) => Response;
+    details?: (url: URL) => Response | Promise<Response>;
+    mapbox?: (url: URL) => Response;
 }) {
     const fn = vi.fn(async (input: string | URL) => {
         const url = new URL(String(input));
@@ -29,6 +32,7 @@ function api(routes: {
         if (url.pathname.endsWith('/photos/poi') && url.searchParams.get('full') === 'true') {
             return routes.details?.(url) ?? json({}, 404);
         }
+        if (url.hostname === 'api.mapbox.com' && routes.mapbox) return routes.mapbox(url);
         throw new Error(`unexpected fetch ${url}`);
     });
     vi.stubGlobal('fetch', fn);
@@ -42,7 +46,10 @@ const DETAILS = {
     openingHours: { open_now: true, weekday_text: ['Monday: 8 AM – 10 PM'] }, photoReference: 'ref', source: 'google',
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+    vi.unstubAllGlobals();
+    testEnv.NEXT_PUBLIC_MAPBOX_TOKEN = undefined;
+});
 
 describe('useNearbyGems', () => {
     it('merges each place’s details into its gem', async () => {
@@ -127,6 +134,73 @@ describe('useNearbyGems', () => {
         rerender({ category: 'restaurant' });
 
         await waitFor(() => expect(result.current.gems.map((g) => g.name)).toEqual(['New Place']));
+        await act(async () => { releaseOld(); await new Promise((r) => setTimeout(r, 0)); });
+        expect(result.current.gems.map((g) => g.name)).toEqual(['New Place']);
+    });
+
+    it('with details "stubs", does not look up a Google place', async () => {
+        const fetchMock = api({ nearby: () => json({ features: [feature('g-1', 'Cafe Onion', 4.5)] }), details: () => json(DETAILS) });
+
+        const { result } = renderHook(() => useNearbyGems({ coordinates: HOTEL, category: 'all', details: 'stubs' }));
+
+        await waitFor(() => expect(result.current.gems).toHaveLength(1));
+        await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+        const detailCalls = fetchMock.mock.calls.filter(([u]) => new URL(String(u)).searchParams.get('full') === 'true');
+        expect(detailCalls).toHaveLength(0);
+    });
+
+    it('settles a gem whose details call fails', async () => {
+        api({ nearby: () => json({ features: [feature('g-1', 'Cafe Onion', 4.5)] }), details: () => json({ error: 'x' }, 502) });
+
+        const { result } = renderHook(() => useNearbyGems({ coordinates: HOTEL, category: 'all' }));
+
+        await waitFor(() => expect(result.current.gems[0]?.isStub).toBe(false));
+        expect(result.current.gems[0]).toMatchObject({ name: 'Cafe Onion', rating: 4.5, category: 'cafe' });
+        expect(result.current.gems[0].phone).toBeUndefined();
+    });
+
+    it('reports Mapbox failing everywhere, with nothing from Google, as an error', async () => {
+        testEnv.NEXT_PUBLIC_MAPBOX_TOKEN = 'tok';
+        api({ nearby: () => json({ features: [] }), mapbox: () => json({ message: 'unauthorized' }, 401) });
+
+        const { result } = renderHook(() => useNearbyGems({ coordinates: HOTEL, category: 'all' }));
+
+        await waitFor(() => expect(result.current.error).toBe(true));
+        expect(result.current.gems).toEqual([]);
+        expect(result.current.loading).toBe(false);
+    });
+
+    it('flags an incomplete lookup as an error while still returning what Mapbox found', async () => {
+        testEnv.NEXT_PUBLIC_MAPBOX_TOKEN = 'tok';
+        api({
+            nearby: () => json({}, 503),
+            mapbox: () => json({ features: [{ geometry: { coordinates: [126.98, 37.55] }, properties: { name: 'Mapbox Cafe', mapbox_id: 'mb-1', category: 'cafe' } }] }),
+            details: () => json({}, 502),
+        });
+
+        const { result } = renderHook(() => useNearbyGems({ coordinates: HOTEL, category: 'all' }));
+
+        await waitFor(() => expect(result.current.gems.length).toBeGreaterThan(0));
+        expect(result.current.error).toBe(true);
+    });
+
+    it('ignores a superseded category’s details', async () => {
+        let releaseOld!: () => void;
+        const oldGate = new Promise<Response>((resolve) => { releaseOld = () => resolve(json(DETAILS)); });
+        api({
+            nearby: (url) => json({ features: [url.searchParams.get('category') === 'all'
+                ? feature('g-old', 'Old Place', 4.5) : feature('g-new', 'New Place', 4.5)] }),
+            details: (url) => (url.searchParams.get('name') === 'Old Place' ? oldGate : json({ ...DETAILS, name: 'New Place' })),
+        });
+
+        const { result, rerender } = renderHook(
+            ({ category }: { category: PoiCategory }) => useNearbyGems({ coordinates: HOTEL, category }),
+            { initialProps: { category: 'all' as PoiCategory } },
+        );
+        await waitFor(() => expect(result.current.gems.map((g) => g.name)).toEqual(['Old Place']));
+        rerender({ category: 'restaurant' });
+        await waitFor(() => expect(result.current.gems[0]?.name).toBe('New Place'));
+        await waitFor(() => expect(result.current.gems[0]?.isStub).toBe(false));
         await act(async () => { releaseOld(); await new Promise((r) => setTimeout(r, 0)); });
         expect(result.current.gems.map((g) => g.name)).toEqual(['New Place']);
     });

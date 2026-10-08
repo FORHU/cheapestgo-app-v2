@@ -686,9 +686,9 @@ export const SearchMapContainer = React.memo(({
         ? { lat: selectedProperty.coordinates.lat, lng: selectedProperty.coordinates.lng }
         : undefined;
 
-    const { gems: cafeGems,    loading: cafeLoading }    = useNearbyGems({ coordinates: gemCoords, category: 'cafe',    radiusMeters: nearbyRadius });
-    const { gems: medicalGems, loading: medicalLoading } = useNearbyGems({ coordinates: gemCoords, category: 'medical', radiusMeters: nearbyRadius });
-    const { gems: transitGems, loading: transitLoading } = useNearbyGems({ coordinates: gemCoords, category: 'transit', radiusMeters: nearbyRadius });
+    const { gems: cafeGems,    loading: cafeLoading }    = useNearbyGems({ coordinates: gemCoords, category: 'cafe',    radiusMeters: nearbyRadius, details: 'stubs' });
+    const { gems: medicalGems, loading: medicalLoading } = useNearbyGems({ coordinates: gemCoords, category: 'medical', radiusMeters: nearbyRadius, details: 'stubs' });
+    const { gems: transitGems, loading: transitLoading } = useNearbyGems({ coordinates: gemCoords, category: 'transit', radiusMeters: nearbyRadius, details: 'stubs' });
 
     const _isFetchingGems = cafeLoading || medicalLoading || transitLoading;
 
@@ -713,9 +713,9 @@ export const SearchMapContainer = React.memo(({
             lat:              gem.coordinates.lat,
             lng:              gem.coordinates.lng,
             rating:           gem.rating ?? undefined,
-            userRatingsTotal: undefined,
-            placeId:          gem.id,
-            vicinity:         undefined,
+            userRatingsTotal: gem.userRatingsTotal ?? undefined,
+            placeId:          gem.placeId,
+            vicinity:         gem.vicinity ?? undefined,
         })),
         [filteredGems]
     );
@@ -802,8 +802,8 @@ export const SearchMapContainer = React.memo(({
         setActiveGemName(name);
         setSelectedNearbyPlace({
             name, category: gem.category || 'place', lat, lng,
-            rating: gem.rating ?? undefined, userRatingsTotal: undefined,
-            placeId: gem.id, vicinity: undefined,
+            rating: gem.rating ?? undefined, userRatingsTotal: gem.userRatingsTotal ?? undefined,
+            placeId: gem.placeId, vicinity: gem.vicinity ?? undefined,
         });
         mapRef.current?.flyTo({ center: [lng, lat], zoom: 16, pitch: 30, duration: 600 });
     }, [activeGemName, mapRef]);

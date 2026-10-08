@@ -22,7 +22,6 @@ interface PoiFeature {
         place_id?: string;
         mapbox_id?: string;
         photoReference?: string;
-        isStub?: boolean;
         source?: string;
         rating?: number | null;
         userRatingsTotal?: number;
@@ -77,7 +76,7 @@ export interface NearbyGem {
     imageUrl: string;
     icon: React.ElementType;
     coordinates: { lat: number; lng: number };
-    /** Still waiting on its details. */
+    /** Details not yet attempted or still in flight. A failed lookup settles this to false too. */
     isStub: boolean;
 }
 
@@ -85,6 +84,13 @@ interface UseNearbyGemsProps {
     coordinates?: { lat: number; lng: number };
     category: PoiCategory;
     radiusMeters?: number;
+    /**
+     * Which places get their details fetched. `'all'` (default) enriches every
+     * place; `'stubs'` only the Mapbox ones, which have nothing else to show.
+     * Details cost a billed Google call each, so callers that draw nothing the
+     * details change should pass `'stubs'`.
+     */
+    details?: 'all' | 'stubs';
 }
 
 /** Below this, a place is dropped once its details arrive (v1's bar). */
@@ -180,19 +186,32 @@ async function enrich(
     apiBase: string,
     signal: AbortSignal,
     publish: (gems: NearbyGem[]) => void,
+    mode: 'all' | 'stubs',
 ) {
     const limiter = pLimit(3);
     let buffer = [...initial];
     let lastFlush = Date.now();
-    const flush = (force: boolean) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const clearTimer = () => { if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
+    const publishNow = () => {
+        clearTimer();
         if (signal.aborted) return;
-        if (force || Date.now() - lastFlush >= FLUSH_MS) {
-            publish([...buffer]);
-            lastFlush = Date.now();
-        }
+        publish([...buffer]);
+        lastFlush = Date.now();
+    };
+    const flush = (force: boolean) => {
+        if (signal.aborted) { clearTimer(); return; }
+        const wait = FLUSH_MS - (Date.now() - lastFlush);
+        if (force || wait <= 0) publishNow();
+        else if (timer === undefined) timer = setTimeout(publishNow, wait);
+    };
+    signal.addEventListener('abort', clearTimer, { once: true });
+    const settle = (id: string) => {
+        buffer = buffer.map((g) => g.id === id ? { ...g, isStub: false } : g);
     };
 
-    await Promise.all(initial.map((gem) => limiter(async () => {
+    const targets = mode === 'all' ? initial : initial.filter((g) => g.source !== 'google');
+    await Promise.all(targets.map((gem) => limiter(async () => {
         if (signal.aborted) return;
         try {
             const qs = new URLSearchParams({
@@ -204,17 +223,27 @@ async function enrich(
             if (gem.placeId)  qs.set('placeId', gem.placeId);
             if (gem.category) qs.set('category', gem.category);
             const res = await fetch(`${apiBase}/photos/poi?${qs.toString()}`, { signal });
-            if (!res.ok) return;
-            buffer = mergeDetails(buffer, gem.id, await res.json() as PoiDetailsResponse);
+            if (!res.ok) {
+                settle(gem.id);
+            } else {
+                buffer = mergeDetails(buffer, gem.id, await res.json() as PoiDetailsResponse);
+            }
             flush(false);
-        } catch {
-            /* one place's details failing leaves its card as it was */
+        } catch (e) {
+            // One place's details failing leaves its card as it was, minus the spinner.
+            if (isAbortError(e) || signal.aborted) return;
+            settle(gem.id);
+            flush(false);
         }
     })));
     flush(true);
 }
 
-export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: UseNearbyGemsProps) {
+/**
+ * Nearby places for a point. `error` means "the lookup was incomplete" — gems
+ * may still be present (e.g. Google failed but Mapbox found places).
+ */
+export function useNearbyGems({ coordinates, category, radiusMeters = 3000, details = 'all' }: UseNearbyGemsProps) {
     const [gems, setGems]       = useState<NearbyGem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError]     = useState(false);
@@ -269,14 +298,21 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     };
                     const cats = mbCats[category] ?? ['tourism'];
 
+                    let mbFailed = 0;
                     const mbResults = await Promise.all(
                         cats.map((cat) =>
                             fetch(
                                 `https://api.mapbox.com/search/searchbox/v1/category/${encodeURIComponent(cat)}?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}&language=en&limit=15&proximity=${lng},${lat}`,
                                 { signal },
-                            ).then((r) => r.json()).catch(() => ({ features: [] })),
+                            ).then((r) => {
+                                if (!r.ok) throw new Error(`mapbox ${r.status}`);
+                                return r.json();
+                            }).catch(() => { mbFailed++; return { features: [] }; }),
                         ),
                     );
+                    // Nothing from Google and nothing from Mapbox because Mapbox failed:
+                    // that is a failed lookup, not an empty neighbourhood.
+                    if (features.length === 0 && mbFailed === cats.length && !signal.aborted) setError(true);
 
                     const seen = new Set(features.map((f) => f.properties?.name));
                     for (const mb of mbResults) {
@@ -308,9 +344,9 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                 setLoading(false);
 
                 // Stage 3: details for every place, published in batches
-                await enrich(initialGems, apiBase, signal, setGems);
+                await enrich(initialGems, apiBase, signal, setGems, details);
             } catch (e) {
-                if (!isAbortError(e)) {
+                if (!isAbortError(e) && !signal.aborted) {
                     console.error('[useNearbyGems]', e);
                     setError(true);
                 }
@@ -321,7 +357,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
 
         run();
         return () => controller.abort();
-    }, [lat, lng, category, radiusMeters, attempt]);
+    }, [lat, lng, category, radiusMeters, details, attempt]);
 
     return { gems, loading, error, retry };
 }
