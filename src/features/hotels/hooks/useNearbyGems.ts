@@ -132,7 +132,7 @@ export function categoryToBg(cat: string) {
     return 'from-slate-700 to-slate-950';
 }
 
-function toGem(f: PoiFeature, apiBase: string): NearbyGem {
+function toGem(f: PoiFeature, apiBase: string, details: 'all' | 'stubs'): NearbyGem {
     const name = f.properties?.name ?? '';
     const category = f.properties?.category ?? '';
     const [lng, lat] = f.geometry?.coordinates ?? [0, 0];
@@ -157,7 +157,8 @@ function toGem(f: PoiFeature, apiBase: string): NearbyGem {
         imageUrl:         `${apiBase}/photos/poi?${qs.toString()}`,
         icon:             categoryToIcon(category),
         coordinates:      { lat, lng },
-        isStub:           true,
+        // Waiting on details only if they will be fetched for this place.
+        isStub:           details === 'all' || source !== 'google',
     };
 }
 
@@ -226,7 +227,10 @@ async function enrich(
             if (!res.ok) {
                 settle(gem.id);
             } else {
-                buffer = mergeDetails(buffer, gem.id, await res.json() as PoiDetailsResponse);
+                // Read the body first: `buffer` must be read after the await, or a slower
+                // response would write back a stale copy and drop concurrent merges.
+                const details = await res.json() as PoiDetailsResponse;
+                buffer = mergeDetails(buffer, gem.id, details);
             }
             flush(false);
         } catch (e) {
@@ -236,7 +240,7 @@ async function enrich(
             flush(false);
         }
     })));
-    flush(true);
+    if (targets.length > 0) flush(true);
 }
 
 /**
@@ -339,7 +343,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000, deta
                 if (signal.aborted) return;
                 if (features.length === 0) { setLoading(false); return; }
 
-                const initialGems = features.slice(0, 25).map((f) => toGem(f, apiBase));
+                const initialGems = features.slice(0, 25).map((f) => toGem(f, apiBase, details));
                 setGems(initialGems);
                 setLoading(false);
 

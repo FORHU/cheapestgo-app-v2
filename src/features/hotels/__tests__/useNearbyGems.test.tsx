@@ -47,6 +47,7 @@ const DETAILS = {
 };
 
 afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     testEnv.NEXT_PUBLIC_MAPBOX_TOKEN = undefined;
 });
@@ -147,6 +148,7 @@ describe('useNearbyGems', () => {
         await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
         const detailCalls = fetchMock.mock.calls.filter(([u]) => new URL(String(u)).searchParams.get('full') === 'true');
         expect(detailCalls).toHaveLength(0);
+        expect(result.current.gems[0].isStub).toBe(false);
     });
 
     it('settles a gem whose details call fails', async () => {
@@ -203,5 +205,32 @@ describe('useNearbyGems', () => {
         await waitFor(() => expect(result.current.gems[0]?.isStub).toBe(false));
         await act(async () => { releaseOld(); await new Promise((r) => setTimeout(r, 0)); });
         expect(result.current.gems.map((g) => g.name)).toEqual(['New Place']);
+    });
+
+    it('publishes finished details on a trailing flush without waiting for the slowest', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+        let releaseSlow!: () => void;
+        const slowGate = new Promise<Response>((resolve) => { releaseSlow = () => resolve(json({ ...DETAILS, name: 'Slow' })); });
+        api({
+            nearby: () => json({ features: [feature('g-1', 'Fast One', 4.5), feature('g-2', 'Fast Two', 4.5), feature('g-3', 'Slow', 4.5)] }),
+            details: (url) => (url.searchParams.get('name') === 'Slow' ? slowGate : json(DETAILS)),
+        });
+
+        const { result } = renderHook(() => useNearbyGems({ coordinates: HOTEL, category: 'all' }));
+        await waitFor(() => expect(result.current.gems).toHaveLength(3));
+        expect(result.current.gems.every((g) => g.isStub)).toBe(true);
+
+        // Let the fast responses land; the trailing timer (800ms) is still pending, so nothing is published yet.
+        await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+        expect(result.current.gems.every((g) => g.isStub)).toBe(true);
+
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+        const byName = (n: string) => result.current.gems.find((g) => g.name === n);
+        expect(byName('Fast One')?.isStub).toBe(false);
+        expect(byName('Fast Two')?.isStub).toBe(false);
+        expect(byName('Slow')?.isStub).toBe(true);
+
+        await act(async () => { releaseSlow(); await vi.advanceTimersByTimeAsync(1000); });
+        expect(result.current.gems.every((g) => !g.isStub)).toBe(true);
     });
 });
