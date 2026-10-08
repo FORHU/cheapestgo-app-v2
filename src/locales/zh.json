@@ -1460,6 +1460,66 @@
     "accountWorks": "您的账户可在CheapestGo及所有合作站点使用"
   },
   "property": {
+    "nearby": {
+      "hotel": "酒店",
+      "categoryLabel": "地点类型",
+      "radiusLabel": "搜索范围",
+      "unitLabel": "距离单位",
+      "categories": {
+        "all": "全部",
+        "restaurant": "餐饮",
+        "cafe": "咖啡馆",
+        "attraction": "景点 & 公园",
+        "grocery": "杂货",
+        "medical": "医院 & 健康",
+        "transit": "交通"
+      },
+      "loadFailed": "无法加载附近地点。",
+      "retry": "重试",
+      "details": "详情",
+      "close": "关闭",
+      "scrollLeft": "向左滚动",
+      "scrollRight": "向右滚动",
+      "away": "距离 {distance}",
+      "fromHotel": "距酒店 {distance}",
+      "reviewsCount": "{count, plural, other {# 条评价}}",
+      "call": "致电",
+      "website": "网站",
+      "googleMaps": "Google 地图",
+      "drive": "驾车",
+      "walk": "步行",
+      "bike": "骑行",
+      "traffic": "实时路况",
+      "travelMode": "出行方式",
+      "minutes": "{count} 分钟",
+      "loadingRoute": "正在查找路线…",
+      "routeUnavailable": "无可用路线",
+      "addToTrip": "加入行程",
+      "removeFromTrip": "移出行程",
+      "trip": {
+        "title": "我的行程 · {count}/{max}",
+        "optimize": "优化路线",
+        "optimizing": "正在优化…",
+        "clear": "清空",
+        "max": "最多可规划 {max} 个地点。",
+        "failed": "无法优化此路线。",
+        "summary": "从酒店出发往返 {minutes} 分钟"
+      },
+      "directions": {
+        "open": "获取路线",
+        "close": "收起路线",
+        "whereFrom": "从哪里出发？",
+        "locateMe": "使用我的位置",
+        "locating": "正在定位…",
+        "locationDenied": "无法获取您的位置，请输入出发地。",
+        "searchFailed": "无法搜索地点，请重试。",
+        "toHotel": "到酒店 {minutes} 分钟"
+      },
+      "weather": {
+        "feelsLike": "体感 {temp}",
+        "highLow": "{high} / {low}"
+      }
+    },
     "addressNotAvailable": "地址不可用",
     "bookingWidget": {
       "amenities": "设施",

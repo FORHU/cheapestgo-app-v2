@@ -1460,6 +1460,66 @@
     "accountWorks": "Your account works across CheapestGo and all partner sites"
   },
   "property": {
+    "nearby": {
+      "hotel": "Hotel",
+      "categoryLabel": "Place type",
+      "radiusLabel": "Search radius",
+      "unitLabel": "Distance unit",
+      "categories": {
+        "all": "All",
+        "restaurant": "Dining",
+        "cafe": "Cafés",
+        "attraction": "Attractions & Parks",
+        "grocery": "Groceries",
+        "medical": "Hospitals & Health",
+        "transit": "Transit"
+      },
+      "loadFailed": "Couldn't load nearby places.",
+      "retry": "Try again",
+      "details": "Details",
+      "close": "Close",
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right",
+      "away": "{distance} away",
+      "fromHotel": "{distance} from the hotel",
+      "reviewsCount": "{count, plural, one {# review} other {# reviews}}",
+      "call": "Call",
+      "website": "Website",
+      "googleMaps": "Google Maps",
+      "drive": "Drive",
+      "walk": "Walk",
+      "bike": "Bike",
+      "traffic": "Live traffic",
+      "travelMode": "Travel mode",
+      "minutes": "{count} min",
+      "loadingRoute": "Finding a route…",
+      "routeUnavailable": "Route unavailable",
+      "addToTrip": "Add to trip",
+      "removeFromTrip": "Remove from trip",
+      "trip": {
+        "title": "Your trip · {count}/{max}",
+        "optimize": "Optimize route",
+        "optimizing": "Optimizing…",
+        "clear": "Clear",
+        "max": "You can plan up to {max} stops.",
+        "failed": "Couldn't optimize this route.",
+        "summary": "{minutes} min round trip from the hotel"
+      },
+      "directions": {
+        "open": "Get directions",
+        "close": "Hide directions",
+        "whereFrom": "Where from?",
+        "locateMe": "Use my location",
+        "locating": "Locating…",
+        "locationDenied": "Couldn't get your location. Type a starting point instead.",
+        "searchFailed": "Couldn't search places. Try again.",
+        "toHotel": "{minutes} min to the hotel"
+      },
+      "weather": {
+        "feelsLike": "Feels like {temp}",
+        "highLow": "{high} / {low}"
+      }
+    },
     "addressNotAvailable": "Address not available",
     "bookingWidget": {
       "amenities": "Amenities",

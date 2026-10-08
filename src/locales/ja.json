@@ -1460,6 +1460,66 @@
     "accountWorks": "アカウントはCheapestGoおよびすべてのパートナーサイトで利用できます"
   },
   "property": {
+    "nearby": {
+      "hotel": "ホテル",
+      "categoryLabel": "スポットの種類",
+      "radiusLabel": "検索範囲",
+      "unitLabel": "距離の単位",
+      "categories": {
+        "all": "すべて",
+        "restaurant": "食事",
+        "cafe": "カフェ",
+        "attraction": "観光スポット & 公園",
+        "grocery": "食料品",
+        "medical": "病院 & 健康",
+        "transit": "交通機関"
+      },
+      "loadFailed": "周辺スポットを読み込めませんでした。",
+      "retry": "再試行",
+      "details": "詳細",
+      "close": "閉じる",
+      "scrollLeft": "左へスクロール",
+      "scrollRight": "右へスクロール",
+      "away": "{distance}先",
+      "fromHotel": "ホテルから{distance}",
+      "reviewsCount": "{count, plural, other {#件のレビュー}}",
+      "call": "電話",
+      "website": "ウェブサイト",
+      "googleMaps": "Google マップ",
+      "drive": "車",
+      "walk": "徒歩",
+      "bike": "自転車",
+      "traffic": "リアルタイム交通",
+      "travelMode": "移動手段",
+      "minutes": "{count}分",
+      "loadingRoute": "ルートを検索中…",
+      "routeUnavailable": "ルートが見つかりません",
+      "addToTrip": "旅程に追加",
+      "removeFromTrip": "旅程から削除",
+      "trip": {
+        "title": "旅程 · {count}/{max}",
+        "optimize": "ルートを最適化",
+        "optimizing": "最適化中…",
+        "clear": "クリア",
+        "max": "最大{max}か所まで計画できます。",
+        "failed": "ルートを最適化できませんでした。",
+        "summary": "ホテル発着で往復{minutes}分"
+      },
+      "directions": {
+        "open": "ルートを検索",
+        "close": "ルート検索を閉じる",
+        "whereFrom": "出発地は？",
+        "locateMe": "現在地を使用",
+        "locating": "現在地を取得中…",
+        "locationDenied": "現在地を取得できませんでした。出発地を入力してください。",
+        "searchFailed": "場所を検索できませんでした。もう一度お試しください。",
+        "toHotel": "ホテルまで{minutes}分"
+      },
+      "weather": {
+        "feelsLike": "体感 {temp}",
+        "highLow": "{high} / {low}"
+      }
+    },
     "addressNotAvailable": "住所情報がありません",
     "bookingWidget": {
       "amenities": "設備",

@@ -1460,6 +1460,66 @@
     "accountWorks": "계정은 CheapestGo 및 모든 파트너 사이트에서 사용 가능합니다"
   },
   "property": {
+    "nearby": {
+      "hotel": "호텔",
+      "categoryLabel": "장소 유형",
+      "radiusLabel": "검색 반경",
+      "unitLabel": "거리 단위",
+      "categories": {
+        "all": "전체",
+        "restaurant": "식당",
+        "cafe": "카페",
+        "attraction": "관광명소 & 공원",
+        "grocery": "식료품점",
+        "medical": "병원 & 건강",
+        "transit": "대중교통"
+      },
+      "loadFailed": "주변 장소를 불러오지 못했습니다.",
+      "retry": "다시 시도",
+      "details": "상세 정보",
+      "close": "닫기",
+      "scrollLeft": "왼쪽으로 스크롤",
+      "scrollRight": "오른쪽으로 스크롤",
+      "away": "{distance} 거리",
+      "fromHotel": "호텔에서 {distance}",
+      "reviewsCount": "{count, plural, other {리뷰 #개}}",
+      "call": "전화",
+      "website": "웹사이트",
+      "googleMaps": "Google 지도",
+      "drive": "자동차",
+      "walk": "도보",
+      "bike": "자전거",
+      "traffic": "실시간 교통",
+      "travelMode": "이동 수단",
+      "minutes": "{count}분",
+      "loadingRoute": "경로를 찾는 중…",
+      "routeUnavailable": "경로를 찾을 수 없음",
+      "addToTrip": "일정에 추가",
+      "removeFromTrip": "일정에서 삭제",
+      "trip": {
+        "title": "내 일정 · {count}/{max}",
+        "optimize": "경로 최적화",
+        "optimizing": "최적화 중…",
+        "clear": "모두 지우기",
+        "max": "최대 {max}곳까지 계획할 수 있습니다.",
+        "failed": "경로를 최적화하지 못했습니다.",
+        "summary": "호텔 출발 왕복 {minutes}분"
+      },
+      "directions": {
+        "open": "길찾기",
+        "close": "길찾기 닫기",
+        "whereFrom": "출발지는 어디인가요?",
+        "locateMe": "내 위치 사용",
+        "locating": "위치 확인 중…",
+        "locationDenied": "위치를 가져올 수 없습니다. 출발지를 직접 입력해 주세요.",
+        "searchFailed": "장소를 검색하지 못했습니다. 다시 시도해 주세요.",
+        "toHotel": "호텔까지 {minutes}분"
+      },
+      "weather": {
+        "feelsLike": "체감 {temp}",
+        "highLow": "{high} / {low}"
+      }
+    },
     "addressNotAvailable": "주소를 이용할 수 없습니다",
     "bookingWidget": {
       "amenities": "편의시설",
