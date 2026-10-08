@@ -1483,6 +1483,7 @@
       "away": "{distance} away",
       "fromHotel": "{distance} from the hotel",
       "reviewsCount": "{count, plural, one {# review} other {# reviews}}",
+      "ratingOutOf5": "{rating} out of 5 stars",
       "call": "Call",
       "website": "Website",
       "googleMaps": "Google Maps",

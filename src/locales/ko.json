@@ -1483,6 +1483,7 @@
       "away": "{distance} 거리",
       "fromHotel": "호텔에서 {distance}",
       "reviewsCount": "{count, plural, other {리뷰 #개}}",
+      "ratingOutOf5": "5점 만점에 {rating}점",
       "call": "전화하기",
       "website": "웹사이트",
       "googleMaps": "Google 지도",

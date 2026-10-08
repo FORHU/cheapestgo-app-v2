@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import enMessages from '@/locales/en.json';
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { PlaceDetailsModal } from '@/features/hotels/components/nearby/PlaceDetailsModal';
 import { HOTEL, PALETTE, gem, renderWithIntl } from './nearby-fixtures';
 
@@ -20,6 +20,8 @@ function open(g = RICH, onClose = vi.fn()) {
 }
 
 describe('PlaceDetailsModal', () => {
+    afterEach(() => { document.body.style.overflow = ''; });
+
     it('renders nothing without a place', () => {
         renderWithIntl(<PlaceDetailsModal gem={null} hotel={HOTEL} unit="km" palette={PALETTE} onClose={vi.fn()} />);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -99,5 +101,43 @@ describe('PlaceDetailsModal', () => {
         expect(document.body.style.overflow).toBe('hidden');
         unmount();
         expect(document.body.style.overflow).toBe('auto');
+    });
+
+    it('does not link a website that is not http(s)', () => {
+        open(gem({ website: 'javascript:alert(1)' }));
+        expect(screen.queryByRole('link', { name: /Website/ })).not.toBeInTheDocument();
+    });
+
+    it('does not throw when the opener is gone on close', () => {
+        const ui = (g: ReturnType<typeof gem> | null) => (
+            <NextIntlClientProvider locale="en" messages={enMessages as never}>
+                <PlaceDetailsModal gem={g} hotel={HOTEL} unit="km" palette={PALETTE} onClose={vi.fn()} />
+            </NextIntlClientProvider>
+        );
+        const opener = document.createElement('button');
+        document.body.appendChild(opener);
+        opener.focus();
+        const { rerender } = render(ui(RICH));
+        opener.remove();
+        expect(() => rerender(ui(null))).not.toThrow();
+    });
+
+    it('labels ratings for screen readers', () => {
+        open();
+        expect(screen.getByRole('img', { name: '5 out of 5 stars' })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: '4.6 out of 5 stars' })).toBeInTheDocument();
+    });
+
+    it('shows no stray separator for an unrated place', () => {
+        open(gem({ rating: null }));
+        expect(screen.getByText(/360 m away/).textContent).not.toContain('·');
+    });
+
+    it('falls back to the initial when a reviewer photo fails', () => {
+        open(gem({ reviews: [{ author_name: 'Min', rating: 5, text: 'x', profile_photo_url: 'http://x/y.png' }] }));
+        const img = document.querySelector('img[src="http://x/y.png"]')!;
+        fireEvent.error(img);
+        expect(document.querySelector('img[src="http://x/y.png"]')).toBeNull();
+        expect(screen.getByText('M')).toBeInTheDocument();
     });
 });

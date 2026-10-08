@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { Clock, Globe, MapPin, Phone, Star, X } from 'lucide-react';
 import { categoryToBg, type NearbyGem, type PoiReview } from '@/features/hotels/hooks/useNearbyGems';
 import { formatDistance, haversineMeters, type DistanceUnit } from '@/shared/lib/distance';
 import { BRAND } from '@/shared/lib/palette';
-import { googleMapsUrl } from './links';
+import { useBodyScrollLock } from '@/shared/hooks/useBodyScrollLock';
+import { googleMapsUrl, safeHttpUrl } from './links';
 import { groupOpeningHours } from './opening-hours';
 import type { LatLng, NearbyPalette } from './types';
 
@@ -35,16 +36,15 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
     const closeRef = useRef<HTMLButtonElement>(null);
     const open = gem !== null;
 
-    // Focus the close button on open, hand focus back to whatever had it on close, lock page scroll.
+    useBodyScrollLock(open);
+
+    // Focus the close button on open and hand focus back to whatever had it on close (if it still exists).
     useEffect(() => {
         if (!open) return;
         const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        const prevOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
         closeRef.current?.focus();
         return () => {
-            document.body.style.overflow = prevOverflow;
-            opener?.focus();
+            if (opener?.isConnected) opener.focus();
         };
     }, [open]);
 
@@ -74,6 +74,9 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
     const hours = groupOpeningHours(gem.openingHours?.weekday_text, today);
     const reviews = gem.reviews ?? [];
     const Icon = gem.icon;
+    const website = safeHttpUrl(gem.website);
+    const dark = isDarkBackground(palette.bg);
+    const hasRatingInfo = (gem.rating !== null && gem.rating > 0) || !!gem.userRatingsTotal;
 
     const action: React.CSSProperties = {
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px',
@@ -113,12 +116,13 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
                         <h2 id={titleId} style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>{name}</h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 14, flexWrap: 'wrap' }}>
                             {gem.rating !== null && gem.rating > 0 && (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
-                                    <Star size={14} fill="#f59e0b" color="#f59e0b" aria-hidden /> {gem.rating.toFixed(1)}
+                                <span role="img" aria-label={t('ratingOutOf5', { rating: gem.rating.toFixed(1) })} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+                                    <Star size={14} fill="#f59e0b" color="#f59e0b" aria-hidden /> <span aria-hidden>{gem.rating.toFixed(1)}</span>
                                 </span>
                             )}
                             {gem.userRatingsTotal ? <span style={{ opacity: 0.8 }}>{t('reviewsCount', { count: gem.userRatingsTotal })}</span> : null}
-                            <span style={{ opacity: 0.8 }}>· {t('away', { distance })}</span>
+                            {hasRatingInfo && <span aria-hidden style={{ opacity: 0.8 }}>·</span>}
+                            <span style={{ opacity: 0.8 }}>{t('away', { distance })}</span>
                         </div>
                     </div>
                 </div>
@@ -126,7 +130,7 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <div style={{ display: 'flex', gap: 8 }}>
                         {gem.phone && <a href={`tel:${gem.phone}`} style={action}><Phone size={16} aria-hidden />{t('call')}</a>}
-                        {gem.website && <a href={gem.website} target="_blank" rel="noopener noreferrer" style={action}><Globe size={16} aria-hidden />{t('website')}</a>}
+                        {website && <a href={website} target="_blank" rel="noopener noreferrer" style={action}><Globe size={16} aria-hidden />{t('website')}</a>}
                         <a href={googleMapsUrl(gem)} target="_blank" rel="noopener noreferrer" style={action}><MapPin size={16} aria-hidden />{t('googleMaps')}</a>
                     </div>
 
@@ -142,7 +146,7 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
                                 <Clock size={16} color={palette.muted} aria-hidden />
                                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: palette.title }}>{tPoi('openingHours')}</h3>
                                 {gem.openingHours?.open_now !== undefined && (
-                                    <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: gem.openingHours.open_now ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)', color: gem.openingHours.open_now ? '#059669' : '#dc2626' }}>
+                                    <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: gem.openingHours.open_now ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)', color: gem.openingHours.open_now ? (dark ? '#34d399' : '#047857') : (dark ? '#f87171' : '#b91c1c') }}>
                                         {gem.openingHours.open_now ? tPoi('openNow') : tPoi('closed')}
                                     </span>
                                 )}
@@ -167,19 +171,21 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
 }
 
 function ReviewItem({ review, palette }: { review: PoiReview; palette: NearbyPalette }) {
+    const t = useTranslations('property.nearby');
+    const [photoFailed, setPhotoFailed] = useState(false);
     return (
         <div style={{ padding: 14, borderRadius: 14, background: palette.cardBg, border: `1px solid ${palette.cardBorder}`, marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                {review.profile_photo_url
+                {review.profile_photo_url && !photoFailed
                     ? (
                         // eslint-disable-next-line @next/next/no-img-element -- Google avatar URLs are remote and not proxied
-                        <img src={review.profile_photo_url} alt="" width={28} height={28} referrerPolicy="no-referrer" style={{ borderRadius: '50%' }} />
+                        <img src={review.profile_photo_url} alt="" width={28} height={28} referrerPolicy="no-referrer" onError={() => setPhotoFailed(true)} style={{ borderRadius: '50%' }} />
                     )
                     : <div style={{ width: 28, height: 28, borderRadius: '50%', background: BRAND.primaryStrong, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{review.author_name.charAt(0)}</div>}
                 <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: palette.title }}>{review.author_name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: palette.muted }}>
-                        <span aria-label={`${review.rating} / 5`}>{'★'.repeat(Math.round(review.rating))}</span>
+                        <span role="img" aria-label={t('ratingOutOf5', { rating: review.rating })}>{'★'.repeat(Math.round(review.rating))}</span>
                         {review.relative_time_description && <span>{review.relative_time_description}</span>}
                     </div>
                 </div>
@@ -187,4 +193,16 @@ function ReviewItem({ review, palette }: { review: PoiReview; palette: NearbyPal
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: palette.text }}>{review.text}</p>
         </div>
     );
+}
+
+/**
+ * Whether the palette's ground is dark, judged by its luminance — the page passes one palette for
+ * both themes (ADR-0004), so the badge colours follow from it. Unparseable colours count as light.
+ */
+function isDarkBackground(bg: string): boolean {
+    const m = /^#([0-9a-f]{6})$/i.exec(bg.trim());
+    if (!m) return false;
+    const n = parseInt(m[1], 16);
+    const lum = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+    return lum < 0.5;
 }

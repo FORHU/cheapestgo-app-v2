@@ -1483,6 +1483,7 @@
       "away": "距离 {distance}",
       "fromHotel": "距酒店 {distance}",
       "reviewsCount": "{count, plural, other {# 条评价}}",
+      "ratingOutOf5": "{rating} 分（满分 5 分）",
       "call": "致电",
       "website": "网站",
       "googleMaps": "Google 地图",

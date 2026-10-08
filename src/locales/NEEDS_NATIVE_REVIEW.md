@@ -125,6 +125,7 @@ restaurant/attraction/grocery/medical/transit came from v1 and are not listed.
 | `property.nearby.scrollLeft` | Scroll left | 왼쪽으로 스크롤 | 左へスクロール | 向左滚动 |
 | `property.nearby.scrollRight` | Scroll right | 오른쪽으로 스크롤 | 右へスクロール | 向右滚动 |
 | `property.nearby.away` | {distance} away | {distance} 거리 | {distance}先 | 距离 {distance} |
+| `property.nearby.ratingOutOf5` | {rating} out of 5 stars | 5점 만점에 {rating}점 | 5点中{rating}点 | {rating} 分（满分 5 分） |
 | `property.nearby.fromHotel` | {distance} from the hotel | 호텔에서 {distance} | ホテルから{distance} | 距酒店 {distance} |
 | `property.nearby.reviewsCount` | {count, plural, one {# review} other {# reviews}} | {count, plural, other {리뷰 #개}} | {count, plural, other {#件のレビュー}} | {count, plural, other {# 条评价}} |
 | `property.nearby.call` | Call | 전화하기 | 電話する | 致电 |

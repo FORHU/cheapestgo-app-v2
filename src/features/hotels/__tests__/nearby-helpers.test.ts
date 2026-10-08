@@ -32,3 +32,19 @@ describe('googleMapsUrl', () => {
         expect(url.searchParams.has('query_place_id')).toBe(false);
     });
 });
+
+import { safeHttpUrl } from '@/features/hotels/components/nearby/links';
+
+describe('safeHttpUrl', () => {
+    it('keeps http(s) urls', () => {
+        expect(safeHttpUrl('https://onion.example/x')).toBe('https://onion.example/x');
+        expect(safeHttpUrl('http://onion.example')).toBe('http://onion.example');
+    });
+    it('drops other schemes, garbage and empties', () => {
+        expect(safeHttpUrl('javascript:alert(1)')).toBeNull();
+        expect(safeHttpUrl('ftp://x')).toBeNull();
+        expect(safeHttpUrl('not a url')).toBeNull();
+        expect(safeHttpUrl(null)).toBeNull();
+        expect(safeHttpUrl(undefined)).toBeNull();
+    });
+});

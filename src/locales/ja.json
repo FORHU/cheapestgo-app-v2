@@ -1483,6 +1483,7 @@
       "away": "{distance}先",
       "fromHotel": "ホテルから{distance}",
       "reviewsCount": "{count, plural, other {#件のレビュー}}",
+      "ratingOutOf5": "5点中{rating}点",
       "call": "電話する",
       "website": "ウェブサイト",
       "googleMaps": "Google マップ",
