@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { POI_FILTERS, type PoiCategory } from '@/shared/config/map-discovery';
@@ -40,6 +40,38 @@ export function PlaceStrip({
     const locale = useLocale();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+    // Close on a press outside the dropdown (no backdrop, so the press still reaches what it hit).
+    useEffect(() => {
+        if (!menuOpen) return;
+        const onDown = (e: MouseEvent) => {
+            if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [menuOpen]);
+
+    const closeMenu = (refocus: boolean) => {
+        setMenuOpen(false);
+        if (refocus) triggerRef.current?.focus();
+    };
+
+    const radiusSteps = RADIUS_OPTIONS[unit];
+    const currentStep = radiusSteps.indexOf(radius);
+    const tabStop = currentStep === -1 ? 0 : currentStep;
+    /** Arrow keys step through the radii and stop at the ends (no wrap). */
+    const onRadiusKey = (e: React.KeyboardEvent, index: number) => {
+        const delta = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+        if (!delta) return;
+        e.preventDefault();
+        const next = index + delta;
+        if (next < 0 || next >= radiusSteps.length) return;
+        onRadiusChange(radiusSteps[next]);
+        radioRefs.current[next]?.focus();
+    };
 
     const selected = POI_FILTERS.find((f) => f.id === category) ?? POI_FILTERS[0];
     const SelectedIcon = selected.icon;
@@ -82,12 +114,18 @@ export function PlaceStrip({
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative' }}>
+                <div
+                    ref={menuRef}
+                    style={{ position: 'relative' }}
+                    onKeyDown={(e) => { if (e.key === 'Escape' && menuOpen) { e.stopPropagation(); closeMenu(true); } }}
+                    onBlur={(e) => { if (menuOpen && !menuRef.current?.contains(e.relatedTarget as Node | null)) setMenuOpen(false); }}
+                >
                     <button
+                        ref={triggerRef}
                         type="button"
                         aria-haspopup="listbox"
                         aria-expanded={menuOpen}
-                        aria-label={t('categoryLabel')}
+                        aria-label={`${t('categoryLabel')}: ${t(`categories.${selected.id}`)}`}
                         onClick={() => setMenuOpen((open) => !open)}
                         style={pill}
                     >
@@ -97,7 +135,6 @@ export function PlaceStrip({
                     </button>
                     {menuOpen && (
                         <>
-                            <div aria-hidden onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
                             <div
                                 role="listbox"
                                 aria-label={t('categoryLabel')}
@@ -116,7 +153,7 @@ export function PlaceStrip({
                                             type="button"
                                             role="option"
                                             aria-selected={active}
-                                            onClick={() => { onCategoryChange(f.id); setMenuOpen(false); }}
+                                            onClick={() => { onCategoryChange(f.id); closeMenu(true); }}
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 10px',
                                                 borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
@@ -136,14 +173,17 @@ export function PlaceStrip({
                 </div>
 
                 <div role="radiogroup" aria-label={t('radiusLabel')} style={{ ...pill, gap: 2, padding: 2, cursor: 'default' }}>
-                    {RADIUS_OPTIONS[unit].map((meters) => {
+                    {radiusSteps.map((meters, i) => {
                         const active = meters === radius;
                         return (
                             <button
                                 key={meters}
                                 type="button"
                                 role="radio"
+                                ref={(el) => { radioRefs.current[i] = el; }}
                                 aria-checked={active}
+                                tabIndex={i === tabStop ? 0 : -1}
+                                onKeyDown={(e) => onRadiusKey(e, i)}
                                 onClick={() => onRadiusChange(meters)}
                                 style={{
                                     padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer',
@@ -179,7 +219,7 @@ export function PlaceStrip({
                         <ChevronLeft size={16} aria-hidden />
                     </button>
                 )}
-                <div ref={scrollRef} className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollBehavior: 'smooth', padding: '4px 2px' }}>
+                <div ref={scrollRef} className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollBehavior: 'smooth', padding: '8px 6px' }}>
                     {body}
                 </div>
                 {gems.length > 3 && (
@@ -222,9 +262,10 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }:
 
     return (
         <div
-            className={`relative shrink-0 overflow-hidden rounded-2xl bg-linear-to-br ${categoryToBg(gem.category)}`}
-            style={{ width: 192, height: 128, outline: active ? `3px solid ${BRAND.primary}` : 'none', outlineOffset: 2 }}
+            className={`relative shrink-0 overflow-hidden rounded-2xl bg-linear-to-br has-[button[data-select]:focus-visible]:outline-2 has-[button[data-select]:focus-visible]:outline-offset-2 ${categoryToBg(gem.category)}`}
+            style={{ width: 192, height: 128, ...(active ? { outline: `3px solid ${BRAND.primary}`, outlineOffset: 2 } : {}), outlineColor: BRAND.primary }}
         >
+            {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the api-v2 proxy with an SVG fallback; next/image would need remotePatterns for that host */}
             <img
                 src={gem.imageUrl}
                 alt=""
@@ -239,7 +280,8 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }:
 
             <button
                 type="button"
-                aria-label={gem.name}
+                data-select
+                aria-label={name}
                 aria-pressed={active}
                 onClick={() => onSelect(gem)}
                 className="absolute inset-0 cursor-pointer"
@@ -257,7 +299,7 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }:
                 <div className="truncate text-[10px] font-bold uppercase tracking-widest text-white/70">
                     {gem.displayCategory ?? gem.category.replace(/_/g, ' ')}
                 </div>
-                <div className="line-clamp-2 text-[13px] font-extrabold leading-tight text-white" aria-hidden={name === gem.name}>
+                <div className="line-clamp-2 text-[13px] font-extrabold leading-tight text-white" aria-hidden>
                     {name}
                 </div>
                 <div className="text-[11px] font-semibold text-white/75">{distance}</div>
@@ -265,6 +307,7 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }:
 
             <button
                 type="button"
+                aria-label={`${detailsLabel}: ${name}`}
                 onClick={() => onDetails(gem)}
                 className="absolute top-2 right-2 z-10 rounded-lg bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-black/55"
             >

@@ -65,7 +65,7 @@ describe('PlaceStrip', () => {
     it('picks a category from the dropdown', () => {
         const p = props();
         renderWithIntl(<PlaceStrip {...p} />);
-        fireEvent.click(screen.getByRole('button', { name: 'Place type' }));
+        fireEvent.click(screen.getByRole('button', { name: /Place type/ }));
         fireEvent.click(screen.getByRole('option', { name: 'Dining' }));
         expect(p.onCategoryChange).toHaveBeenCalledWith('restaurant');
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('PlaceStrip', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Cafe Onion' }));
         expect(p.onSelect).toHaveBeenCalledWith(p.gems[0]);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Details' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Details: Cafe Onion' }));
         expect(p.onDetails).toHaveBeenCalledWith(p.gems[0]);
         expect(p.onSelect).toHaveBeenCalledTimes(1);
     });
@@ -113,5 +113,75 @@ describe('PlaceStrip', () => {
     it('says when there is genuinely nothing nearby', () => {
         renderWithIntl(<PlaceStrip {...props({ gems: [] })} />);
         expect(screen.getByText('No places found nearby.')).toBeInTheDocument();
+    });
+
+    it('names the category trigger with its current value', () => {
+        renderWithIntl(<PlaceStrip {...props()} />);
+        expect(screen.getByRole('button', { name: 'Place type: All' })).toBeInTheDocument();
+    });
+
+    it('closes the dropdown on Escape and returns focus to the trigger', () => {
+        renderWithIntl(<PlaceStrip {...props()} />);
+        const trigger = screen.getByRole('button', { name: /Place type/ });
+        fireEvent.click(trigger);
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+        fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        expect(trigger).toHaveFocus();
+    });
+
+    it('closes the dropdown when clicking outside it', () => {
+        renderWithIntl(<PlaceStrip {...props()} />);
+        fireEvent.click(screen.getByRole('button', { name: /Place type/ }));
+        fireEvent.mouseDown(document.body);
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    it('returns focus to the trigger after picking an option', () => {
+        renderWithIntl(<PlaceStrip {...props()} />);
+        const trigger = screen.getByRole('button', { name: /Place type/ });
+        fireEvent.click(trigger);
+        fireEvent.click(screen.getByRole('option', { name: 'Dining' }));
+        expect(trigger).toHaveFocus();
+    });
+
+    it('moves the radius with the arrow keys, one roving tab stop', () => {
+        const p = props();
+        renderWithIntl(<PlaceStrip {...p} />);
+        expect(screen.getByRole('radio', { name: '2 km' })).toHaveAttribute('tabindex', '0');
+        expect(screen.getByRole('radio', { name: '1 km' })).toHaveAttribute('tabindex', '-1');
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: '2 km' }), { key: 'ArrowRight' });
+        expect(p.onRadiusChange).toHaveBeenLastCalledWith(5000);
+        expect(screen.getByRole('radio', { name: '5 km' })).toHaveFocus();
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: '2 km' }), { key: 'ArrowLeft' });
+        expect(p.onRadiusChange).toHaveBeenLastCalledWith(1000);
+
+        vi.mocked(p.onRadiusChange).mockClear();
+        fireEvent.keyDown(screen.getByRole('radio', { name: '10 km' }), { key: 'ArrowDown' });
+        expect(p.onRadiusChange).not.toHaveBeenCalled();
+    });
+
+    it('makes the first radius step tabbable when none is current', () => {
+        renderWithIntl(<PlaceStrip {...props({ radius: 3000 })} />);
+        expect(screen.getByRole('radio', { name: '1 km' })).toHaveAttribute('tabindex', '0');
+    });
+
+    it('names the select button after the visible, translated name', () => {
+        renderWithIntl(<PlaceStrip {...props({ gems: [gem({ name: '카페 어니언', translatedName: 'Cafe Onion' })] })} />);
+        expect(screen.getByRole('button', { name: 'Cafe Onion' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Details: Cafe Onion' })).toBeInTheDocument();
+    });
+
+    it('marks the active place as pressed', () => {
+        renderWithIntl(<PlaceStrip {...props({ activeId: 'g-1' })} />);
+        expect(screen.getByRole('button', { name: 'Cafe Onion' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('draws a focus ring on the card, since the button outline would be clipped', () => {
+        renderWithIntl(<PlaceStrip {...props()} />);
+        const card = screen.getByRole('button', { name: 'Cafe Onion' }).parentElement!;
+        expect(card.className).toMatch(/has-\[button\[data-select\]:focus-visible\]:outline-2/);
     });
 });
