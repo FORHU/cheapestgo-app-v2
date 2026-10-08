@@ -32,17 +32,29 @@ export function guessDistanceUnit(languages: readonly string[]): DistanceUnit {
     return 'km';
 }
 
-function unitFormat(locale: string, value: number, unit: 'meter' | 'kilometer' | 'foot' | 'mile', digits: number) {
-    return new Intl.NumberFormat(locale, {
-        style: 'unit', unit, unitDisplay: 'short', maximumFractionDigits: digits,
-    }).format(value);
+type FormatUnit = 'meter' | 'kilometer' | 'foot' | 'mile';
+
+/** Map markers format on every render, and building an Intl.NumberFormat is the costly part. */
+const formatters = new Map<string, Intl.NumberFormat>();
+
+function unitFormat(locale: string, value: number, unit: FormatUnit, digits: number) {
+    const key = `${locale}|${unit}|${digits}`;
+    let format = formatters.get(key);
+    if (!format) {
+        format = new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: 'short', maximumFractionDigits: digits });
+        formatters.set(key, format);
+    }
+    return format.format(value);
 }
 
 /**
  * `meters` as text: metres under a kilometre, feet under a tenth of a mile, otherwise one decimal.
  * Short distances round to 10 — "350 m", not "347 m" — which is all a walk needs.
+ * A distance that is not a number shows as a dash; a negative one counts as zero.
  */
-export function formatDistance(meters: number, unit: DistanceUnit, locale = 'en'): string {
+export function formatDistance(distance: number, unit: DistanceUnit, locale = 'en'): string {
+    if (!Number.isFinite(distance)) return '—';
+    const meters = Math.max(0, distance);
     if (unit === 'km') {
         const rounded = Math.round(meters / 10) * 10;
         return rounded < 1000

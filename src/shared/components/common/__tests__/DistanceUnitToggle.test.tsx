@@ -24,4 +24,20 @@ describe('DistanceUnitToggle', () => {
         fireEvent.click(screen.getByRole('radio', { name: 'km' }));
         expect(onChange).not.toHaveBeenCalled();
     });
+
+    it('puts only the chosen unit in the tab order', () => {
+        render(<DistanceUnitToggle value="mi" onChange={vi.fn()} label="Distance unit" colors={COLORS} />);
+        expect(screen.getByRole('radio', { name: 'mi' })).toHaveAttribute('tabindex', '0');
+        expect(screen.getByRole('radio', { name: 'km' })).toHaveAttribute('tabindex', '-1');
+    });
+
+    it.each(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])('%s selects the other unit and moves focus', (key) => {
+        const onChange = vi.fn();
+        render(<DistanceUnitToggle value="km" onChange={onChange} label="Distance unit" colors={COLORS} />);
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'km' }), { key });
+
+        expect(onChange).toHaveBeenCalledWith('mi');
+        expect(screen.getByRole('radio', { name: 'mi' })).toHaveFocus();
+    });
 });

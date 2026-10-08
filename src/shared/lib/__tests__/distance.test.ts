@@ -22,12 +22,24 @@ describe('formatDistance', () => {
     it.each([
         [990, 'km', '990 m'],
         [995, 'km', '1 km'],
+        [999, 'km', '1 km'],
+        [-50, 'km', '0 m'],
+        [-50, 'mi', '0 ft'],
         [1234, 'km', '1.2 km'],
         [144.8, 'mi', '480 ft'],
         [160.9344, 'mi', '0.1 mi'],
         [1609.344, 'mi', '1 mi'],
     ] as const)('%d m in %s → %s', (meters, unit, text) => {
         expect(formatDistance(meters, unit, 'en')).toBe(text);
+    });
+
+    it('shows a dash for a distance that is not a number', () => {
+        expect(formatDistance(Number.NaN, 'km', 'en')).toBe('—');
+        expect(formatDistance(Infinity, 'mi', 'en')).toBe('—');
+    });
+
+    it('localises the unit', () => {
+        expect(formatDistance(1234, 'km', 'zh')).toContain('公里');
     });
 
     it('localises the number and unit', () => {

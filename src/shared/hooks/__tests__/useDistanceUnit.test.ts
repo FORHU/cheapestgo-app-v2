@@ -1,3 +1,5 @@
+import { createElement } from 'react';
+import { renderToString } from 'react-dom/server';
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useDistanceUnit } from '@/shared/hooks/useDistanceUnit';
@@ -36,5 +38,28 @@ describe('useDistanceUnit', () => {
         expect(result.current[0]).toBe('km');
         const saved = JSON.parse(localStorage.getItem('cheapestgo-search-v2') ?? '{}');
         expect(saved.state.distanceUnit).toBe('km');
+    });
+});
+
+describe('useDistanceUnit timing and persistence', () => {
+    it('gives a client mount the real unit on its first render', () => {
+        browserLanguages(['en-US']);
+        const values: string[] = [];
+        renderHook(() => { const [unit] = useDistanceUnit(); values.push(unit); return unit; });
+        expect(values[0]).toBe('mi');
+    });
+
+    it('renders km on the server', () => {
+        browserLanguages(['en-US']);
+        function Probe() { const [unit] = useDistanceUnit(); return createElement('span', null, unit); }
+        expect(renderToString(createElement(Probe))).toContain('km');
+    });
+
+    it('reads a saved choice back from storage', async () => {
+        browserLanguages(['ko-KR']);
+        localStorage.setItem('cheapestgo-search-v2', JSON.stringify({ state: { distanceUnit: 'mi' }, version: 0 }));
+        await useSearchStore.persist.rehydrate();
+        const { result } = renderHook(() => useDistanceUnit());
+        expect(result.current[0]).toBe('mi');
     });
 });
