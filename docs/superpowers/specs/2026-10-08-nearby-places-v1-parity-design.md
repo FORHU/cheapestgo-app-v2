@@ -34,7 +34,9 @@ Appearance follows the V2 property page palette (ADR-0004, light and dark).
    Everything else in the popup is ported.
 4. **Approach:** rebuild in V2's structure (small typed units, palette-driven styling), not a
    copy of V1's 866-line component.
-5. **Out of scope:** the search-results map's places panel (`MapGemsPanel`, still a stub); the
+5. **Distance units are the viewer's choice (km or miles), site-wide,** remembered in the browser,
+   switched from a pill beside the distance pickers. See section 2a.
+6. **Out of scope:** the search-results map's places panel (`MapGemsPanel`, still a stub); the
    three duplicated Google "discover" implementations in api-v2 (`google.route`, `lib/google/places.ts`,
    `hotels.controller`).
 
@@ -80,8 +82,8 @@ New directory `features/hotels/components/nearby/`:
 |---|---|
 | `NearbyExplorer.tsx` | Owns category, radius, active place, popup place, travel mode, fullscreen, directions mode, trip stops. Lays out map + strip. Replaces the inline `NearbySection` in `property-view.tsx`. Takes `coordinates`, `palette`, `hotelName`. |
 | `NearbyMap.tsx` | Mapbox map: hotel pin, place pins (reuses `shared/components/map/NearbyPlaceMarker`), route layer, style from `palette.mapStyle`, recenter, `MapDetailsPanel` via `useMapDetails`. |
-| `PlaceStrip.tsx` | Photo cards, category dropdown (`POI_FILTERS`), radius 1/2/5/10 km, skeleton / error+retry / empty / list states, scroll arrows. |
-| `PlaceCallout.tsx` | Selected-place card on the map: name, km away, drive/walk/bike minutes, View on Maps, Details, Add to trip. |
+| `PlaceStrip.tsx` | Photo cards, category dropdown (`POI_FILTERS`), radius picker from `RADIUS_OPTIONS[unit]`, `DistanceUnitToggle` beside it, skeleton / error+retry / empty / list states, scroll arrows. |
+| `PlaceCallout.tsx` | Selected-place card on the map: name, distance away (viewer's unit), drive/walk/bike minutes, View on Maps, Details, Add to trip. |
 | `PlaceDetailsModal.tsx` | Photo header, rating + count, call / website / Google Maps, grouped opening hours with open-now badge, Google reviews. Empty sections hidden. No review form. |
 | `DirectionsPanel.tsx` | Get directions: where-from autocomplete, locate me, profile switch (traffic / drive / walk / bike). |
 | `TripPlannerBar.tsx` | Selected stops (max 11), Optimize route, clear. |
@@ -112,7 +114,7 @@ after the transition. One tree, not V1's duplicated one.
 ### Styling and copy
 
 - All colours from the property page `palette` (ADR-0004); map style from `palette.mapStyle`.
-- Distances in **km**, as V1 shows them (the current V2 section shows miles; this changes it).
+- Distances in the viewer's chosen unit (section 2a).
 - All strings via next-intl. Missing keys from V1's `hotels.searchResults.discovery.*`,
   `property.mapOverlay.*`, `property.poiDetails.*` are added to en/ko/ja/zh; non-English entries listed in
   `src/locales/NEEDS_NATIVE_REVIEW.md`.
@@ -120,6 +122,48 @@ after the transition. One tree, not V1's duplicated one.
 ### Removed
 
 `features/hotels/components/poi-discovery.tsx`, `features/hotels/components/nearby-section.tsx` (unused).
+
+## 2a. Distance units (km / miles)
+
+A site-wide viewer preference, handled like display currency.
+
+### Setting
+
+- `search.store` (persisted) gains `distanceUnit: 'km' | 'mi' | null` and `setDistanceUnit`.
+  `null` = not chosen yet.
+- `useDistanceUnit()` returns the choice, else `guessDistanceUnit(navigator.languages)`:
+  **`'mi'` when the first language tag carrying a region has region US, GB, LR or MM; otherwise `'km'`**
+  (a bare `en` with no region → `'km'`).
+- Every distance on the site is rendered from client-fetched data, so there is no SSR/hydration
+  mismatch to manage.
+
+### Formatting — `shared/lib/distance.ts` (single source for every surface)
+
+- `formatDistance(meters, unit, locale)` via `Intl.NumberFormat` `style: 'unit'` (unit names
+  localise themselves; no new translation keys for units).
+  - `km`: `< 1000 m` → metres, rounded to 10 (`"350 m"`); else one decimal (`"1.2 km"`).
+  - `mi`: `< 0.1 mi` → feet, rounded to 10 (`"450 ft"`); else one decimal (`"0.8 mi"`).
+- `RADIUS_OPTIONS`: `km` → 1, 2, 5, 10 km; `mi` → ½, 1, 3, 5 mi. Values stored in **metres**
+  (`mi`: 805, 1609, 4828, 8047), so API calls are unit-agnostic. Labels via `formatDistance`.
+- `nearestRadius(meters, unit)` re-snaps the selected radius to the closest option when the unit flips.
+
+### Switch — `shared/components/common/DistanceUnitToggle.tsx`
+
+`km | mi` segmented pill, `role="radiogroup"` with two `role="radio"` options, palette-styled
+(takes the same tone/chrome inputs as the other selectors). Placed beside the radius picker in
+`PlaceStrip`. Flipping it updates the store, so every surface follows.
+
+### Surfaces
+
+| Surface | Change |
+|---|---|
+| `PlaceStrip` | Radius picker labels/values per unit; distance on each card |
+| `PlaceCallout` | "x away" |
+| Search map `NearbyPlacePopup` | Replace hard-coded English `"…km from the hotel"` with `formatDistance` + translated `"{distance} from the hotel"` |
+| Search map `SearchMapContainer` (`${poiDistance} km`) | Pass metres; format with `formatDistance` |
+
+The search map has no radius picker today (its places panel is a stub), so it **follows** the
+setting without its own switch.
 
 ## 3. Failure handling
 
@@ -153,6 +197,11 @@ concurrent dedup → one call; failures not cached; 400 on missing name; `photo_
 `PlaceDetailsModal` (empty sections hidden, no review form); `DirectionsPanel` denied hint.
 Existing search-map tests must still pass.
 
+**Distance units** (`shared/lib/__tests__/distance.test.ts` + component tests):
+`guessDistanceUnit` for `en-US`, `en-GB`, `ko-KR`, bare `en`; formatter boundaries (999 m vs
+1 km; 0.09 vs 0.1 mi); `nearestRadius` re-snap; `distanceUnit` persists across store rehydration;
+clicking `DistanceUnitToggle` changes card distances and radius labels; search-map popup follows the setting.
+
 **Real app**, per the V2 local QA recipe (app-v2 on :3001, local api-v2, playwright-core + installed
 Chrome), light and dark screenshots per slice: strip with photos → route + three times → details
 popup → directions from typed address → 3-stop optimised trip → weather chip → fullscreen and back.
@@ -164,7 +213,8 @@ popup → directions from typed address → 3-stop optimised trip → weather ch
 Each slice is test-first, committed, and checked in the browser before the next.
 
 1. api-v2 `/photos/poi` lookup + enriched `useNearbyGems` (with `error`).
-2. `NearbyExplorer`, `NearbyMap`, `PlaceStrip`, `PlaceDetailsModal`; replace the section in `property-view.tsx`.
+2. `NearbyExplorer`, `NearbyMap`, `PlaceStrip`, `PlaceDetailsModal`; replace the section in `property-view.tsx`;
+   distance units (store, `distance.ts`, `DistanceUnitToggle`, search-map popup).
 3. Route from hotel: `useMapboxDirections`, `PlaceCallout`.
 4. Directions to hotel: `useOriginSearch`, `DirectionsPanel`.
 5. Trip planner: `useTripPlanner`, `TripPlannerBar`.
