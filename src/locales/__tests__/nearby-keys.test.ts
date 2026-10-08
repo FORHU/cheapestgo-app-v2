@@ -24,6 +24,9 @@ const leaves = (node: unknown, prefix: string): string[] =>
         ? Object.entries(node as Record<string, unknown>).flatMap(([k, v]) => leaves(v, `${prefix}.${k}`))
         : [prefix];
 
+const argNames = (value: unknown): string[] =>
+    [...new Set([...String(value).matchAll(/\{(\w+)[,}]/g)].map((m) => m[1]))].sort();
+
 const NEARBY = leaves(read(en, 'property.nearby'), 'property.nearby');
 
 const REUSED = [
@@ -46,6 +49,11 @@ describe('nearby messages', () => {
     describe.each(LANGS)('%s', (_lang, messages) => {
         it.each([...NEARBY, ...REUSED])('%s', (path) => {
             expect(read(messages, path)).toBeTypeOf('string');
+        });
+    });
+    describe.each(LANGS)('%s placeholders', (_lang, messages) => {
+        it.each(NEARBY)('%s uses the same arguments as English', (path) => {
+            expect(argNames(read(messages, path))).toEqual(argNames(read(en, path)));
         });
     });
 });

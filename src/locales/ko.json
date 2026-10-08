@@ -1483,13 +1483,13 @@
       "away": "{distance} 거리",
       "fromHotel": "호텔에서 {distance}",
       "reviewsCount": "{count, plural, other {리뷰 #개}}",
-      "call": "전화",
+      "call": "전화하기",
       "website": "웹사이트",
       "googleMaps": "Google 지도",
       "drive": "자동차",
       "walk": "도보",
       "bike": "자전거",
-      "traffic": "실시간 교통",
+      "traffic": "실시간 교통 정보",
       "travelMode": "이동 수단",
       "minutes": "{count}분",
       "loadingRoute": "경로를 찾는 중…",
@@ -1501,7 +1501,7 @@
         "optimize": "경로 최적화",
         "optimizing": "최적화 중…",
         "clear": "모두 지우기",
-        "max": "최대 {max}곳까지 계획할 수 있습니다.",
+        "max": "최대 {max}곳까지 추가할 수 있습니다.",
         "failed": "경로를 최적화하지 못했습니다.",
         "summary": "호텔 출발 왕복 {minutes}분"
       },
@@ -1516,7 +1516,7 @@
         "toHotel": "호텔까지 {minutes}분"
       },
       "weather": {
-        "feelsLike": "체감 {temp}",
+        "feelsLike": "체감 온도 {temp}",
         "highLow": "{high} / {low}"
       }
     },

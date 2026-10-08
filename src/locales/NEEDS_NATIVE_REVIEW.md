@@ -127,24 +127,24 @@ restaurant/attraction/grocery/medical/transit came from v1 and are not listed.
 | `property.nearby.away` | {distance} away | {distance} 거리 | {distance}先 | 距离 {distance} |
 | `property.nearby.fromHotel` | {distance} from the hotel | 호텔에서 {distance} | ホテルから{distance} | 距酒店 {distance} |
 | `property.nearby.reviewsCount` | {count, plural, one {# review} other {# reviews}} | {count, plural, other {리뷰 #개}} | {count, plural, other {#件のレビュー}} | {count, plural, other {# 条评价}} |
-| `property.nearby.call` | Call | 전화 | 電話 | 致电 |
+| `property.nearby.call` | Call | 전화하기 | 電話する | 致电 |
 | `property.nearby.website` | Website | 웹사이트 | ウェブサイト | 网站 |
 | `property.nearby.googleMaps` | Google Maps | Google 지도 | Google マップ | Google 地图 |
 | `property.nearby.drive` | Drive | 자동차 | 車 | 驾车 |
 | `property.nearby.walk` | Walk | 도보 | 徒歩 | 步行 |
 | `property.nearby.bike` | Bike | 자전거 | 自転車 | 骑行 |
-| `property.nearby.traffic` | Live traffic | 실시간 교통 | リアルタイム交通 | 实时路况 |
+| `property.nearby.traffic` | Live traffic | 실시간 교통 정보 | リアルタイム交通情報 | 实时路况 |
 | `property.nearby.travelMode` | Travel mode | 이동 수단 | 移動手段 | 出行方式 |
 | `property.nearby.minutes` | {count} min | {count}분 | {count}分 | {count} 分钟 |
 | `property.nearby.loadingRoute` | Finding a route… | 경로를 찾는 중… | ルートを検索中… | 正在查找路线… |
 | `property.nearby.routeUnavailable` | Route unavailable | 경로를 찾을 수 없음 | ルートが見つかりません | 无可用路线 |
 | `property.nearby.addToTrip` | Add to trip | 일정에 추가 | 旅程に追加 | 加入行程 |
 | `property.nearby.removeFromTrip` | Remove from trip | 일정에서 삭제 | 旅程から削除 | 移出行程 |
-| `property.nearby.trip.title` | Your trip · {count}/{max} | 내 일정 · {count}/{max} | 旅程 · {count}/{max} | 我的行程 · {count}/{max} |
+| `property.nearby.trip.title` | Your trip · {count}/{max} | 내 일정 · {count}/{max} | 旅程 · {count}/{max} | 行程规划 · {count}/{max} |
 | `property.nearby.trip.optimize` | Optimize route | 경로 최적화 | ルートを最適化 | 优化路线 |
 | `property.nearby.trip.optimizing` | Optimizing… | 최적화 중… | 最適化中… | 正在优化… |
-| `property.nearby.trip.clear` | Clear | 모두 지우기 | クリア | 清空 |
-| `property.nearby.trip.max` | You can plan up to {max} stops. | 최대 {max}곳까지 계획할 수 있습니다. | 最大{max}か所まで計画できます。 | 最多可规划 {max} 个地点。 |
+| `property.nearby.trip.clear` | Clear | 모두 지우기 | すべてクリア | 清空 |
+| `property.nearby.trip.max` | You can plan up to {max} stops. | 최대 {max}곳까지 추가할 수 있습니다. | 最大{max}か所まで追加できます。 | 最多可规划 {max} 个地点。 |
 | `property.nearby.trip.failed` | Couldn't optimize this route. | 경로를 최적화하지 못했습니다. | ルートを最適化できませんでした。 | 无法优化此路线。 |
 | `property.nearby.trip.summary` | {minutes} min round trip from the hotel | 호텔 출발 왕복 {minutes}분 | ホテル発着で往復{minutes}分 | 从酒店出发往返 {minutes} 分钟 |
 | `property.nearby.directions.open` | Get directions | 길찾기 | ルートを検索 | 获取路线 |
@@ -154,6 +154,6 @@ restaurant/attraction/grocery/medical/transit came from v1 and are not listed.
 | `property.nearby.directions.locating` | Locating… | 위치 확인 중… | 現在地を取得中… | 正在定位… |
 | `property.nearby.directions.locationDenied` | Couldn't get your location. Type a starting point instead. | 위치를 가져올 수 없습니다. 출발지를 직접 입력해 주세요. | 現在地を取得できませんでした。出発地を入力してください。 | 无法获取您的位置，请输入出发地。 |
 | `property.nearby.directions.searchFailed` | Couldn't search places. Try again. | 장소를 검색하지 못했습니다. 다시 시도해 주세요. | 場所を検索できませんでした。もう一度お試しください。 | 无法搜索地点，请重试。 |
-| `property.nearby.directions.toHotel` | {minutes} min to the hotel | 호텔까지 {minutes}분 | ホテルまで{minutes}分 | 到酒店 {minutes} 分钟 |
-| `property.nearby.weather.feelsLike` | Feels like {temp} | 체감 {temp} | 体感 {temp} | 体感 {temp} |
+| `property.nearby.directions.toHotel` | {minutes} min to the hotel | 호텔까지 {minutes}분 | ホテルまで{minutes}分 | 到酒店约 {minutes} 分钟 |
+| `property.nearby.weather.feelsLike` | Feels like {temp} | 체감 온도 {temp} | 体感気温 {temp} | 体感温度 {temp} |
 | `property.nearby.weather.highLow` | {high} / {low} | {high} / {low} | {high} / {low} | {high} / {low} |

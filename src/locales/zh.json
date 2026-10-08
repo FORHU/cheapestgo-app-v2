@@ -1497,7 +1497,7 @@
       "addToTrip": "加入行程",
       "removeFromTrip": "移出行程",
       "trip": {
-        "title": "我的行程 · {count}/{max}",
+        "title": "行程规划 · {count}/{max}",
         "optimize": "优化路线",
         "optimizing": "正在优化…",
         "clear": "清空",
@@ -1513,10 +1513,10 @@
         "locating": "正在定位…",
         "locationDenied": "无法获取您的位置，请输入出发地。",
         "searchFailed": "无法搜索地点，请重试。",
-        "toHotel": "到酒店 {minutes} 分钟"
+        "toHotel": "到酒店约 {minutes} 分钟"
       },
       "weather": {
-        "feelsLike": "体感 {temp}",
+        "feelsLike": "体感温度 {temp}",
         "highLow": "{high} / {low}"
       }
     },
