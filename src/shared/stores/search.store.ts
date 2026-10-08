@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { asDay, defaultStay, earliestBookableDay } from '@/shared/lib/stay';
 import { persist } from 'zustand/middleware';
+import type { DistanceUnit } from '@/shared/lib/distance';
 
 /** How many recent destinations the search bar offers. Shared with the sign-in handoff,
  *  which merges two lists and must cap the result the same way. */
@@ -40,6 +41,8 @@ interface SearchState {
     // Locale prefs (persisted)
     userCurrency: string;
     userCountry: string;
+    /** km or miles, as the viewer picked. `null` until they pick — the browser region decides till then. */
+    distanceUnit: DistanceUnit | null;
 
     // Recent searches (persisted)
     recentSearches: Destination[];
@@ -66,6 +69,7 @@ interface SearchState {
     setTravelers: (t: Partial<TravelersConfig>) => void;
     setUserCurrency: (c: string) => void;
     setUserCountry: (c: string) => void;
+    setDistanceUnit: (u: DistanceUnit) => void;
     addRecentSearch: (d: Destination) => void;
     removeRecentSearch: (title: string) => void;
     clearRecentSearches: () => void;
@@ -133,6 +137,7 @@ export const useSearchStore = create<SearchState>()(
             travelers: initialTravelers,
             userCurrency: 'KRW',
             userCountry: 'KR',
+            distanceUnit: null,
             recentSearches: [],
             activeDropdown: null,
             isSearching: false,
@@ -169,6 +174,7 @@ export const useSearchStore = create<SearchState>()(
             setTravelers: (t) => set((s) => ({ travelers: { ...s.travelers, ...t } })),
             setUserCurrency: (userCurrency) => set({ userCurrency }),
             setUserCountry: (userCountry) => set({ userCountry }),
+            setDistanceUnit: (distanceUnit) => set({ distanceUnit }),
 
             addRecentSearch: (destination) => set((s) => {
                 const filtered = s.recentSearches.filter((d) => d.title !== destination.title);
@@ -301,6 +307,7 @@ export const useSearchStore = create<SearchState>()(
                 destinationQuery: s.destinationQuery,
                 userCurrency: s.userCurrency,
                 userCountry: s.userCountry,
+                distanceUnit: s.distanceUnit,
                 searchMode: s.searchMode,
                 flightState: s.flightState,
             }) as SearchState,
@@ -331,6 +338,7 @@ export const useSearchActions = () =>
             setTravelers: state.setTravelers,
             setUserCurrency: state.setUserCurrency,
             setUserCountry: state.setUserCountry,
+            setDistanceUnit: state.setDistanceUnit,
             setActiveDropdown: state.setActiveDropdown,
             setFilters: state.setFilters,
             setIsMobileFiltersOpen: state.setIsMobileFiltersOpen,
