@@ -118,8 +118,6 @@ function propertyPalette(theme: 'light' | 'dark') {
     };
 }
 
-type PropertyPalette = ReturnType<typeof propertyPalette>;
-
 /**
  * The page's column — one edge for every section on it, so the hero's name, the
  * description, the rooms and the bar at the bottom all start on the same line.
