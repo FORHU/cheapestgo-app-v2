@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 import { Link } from '@/i18n/navigation';
 import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -42,6 +42,7 @@ interface FlightBookingCardProps {
 export function FlightBookingCard({ booking }: FlightBookingCardProps) {
     const tAll = useTranslations();
     const tTrips = useTranslations('trips');
+    const brand = useBrandName();
     const segments = booking.flight_segments ?? [];
     const first = segments[0];
     const last = segments[segments.length - 1];
@@ -60,7 +61,7 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
         toast.success('Downloading E-Ticket...');
         
         // Trigger download of mock e-ticket text
-        const text = `${BRAND_NAME.toUpperCase()} FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with ${BRAND_NAME}!`;
+        const text = `${brand.toUpperCase()} FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with ${brand}!`;
         const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');

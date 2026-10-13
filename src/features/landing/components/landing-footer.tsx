@@ -1,15 +1,21 @@
+'use client';
+
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { LogoWordmark } from './logo-wordmark';
 import { CHROME_LINK, FOOTER_LINKS } from '@/features/landing/lib/chrome-links';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 
 /**
  * The landing page's own footer: one row of wordmark, links and the legal line,
  * stacking to a left-aligned column below 760px.
+ *
+ * A client component because the brand it names is the one being shown on this request, which a
+ * deployment with the brand preview on resolves per visitor and hands down through context.
  */
 export function LandingFooter() {
     const t = useTranslations();
+    const brand = useBrandName();
     return (
         <footer>
             <div className="mx-auto max-w-[1240px] px-6 pt-8 pb-10">
@@ -25,7 +31,7 @@ export function LandingFooter() {
                     </nav>
 
                     <span className="text-xs text-[#64748b]">
-                        © {new Date().getFullYear()} {BRAND_NAME} · Manila
+                        © {new Date().getFullYear()} {brand} · Manila
                     </span>
                 </div>
             </div>

@@ -2,7 +2,8 @@ export const revalidate = 300;
 
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { brandProfile } from '@/shared/lib/brand';
+import { getBrandName } from '@/shared/lib/brand.server';
 import { BRAND } from '@/shared/lib/palette';
 import { hreflangAlternates } from '@/shared/lib/seo';
 
@@ -79,17 +80,21 @@ const CANVAS: CSSProperties = {
 } as CSSProperties;
 
 export default async function HomePage() {
-    const [t, trending] = await Promise.all([
+    const [t, trending, brand] = await Promise.all([
         getTranslations('seo'),
         getServerTrending(),
+        getBrandName(),
     ]);
 
+    // The organisation the page declares is the brand being shown, at its own address. A literal
+    // cheapestgo.com here told search engines that AirangGo's homepage was CheapestGo's.
+    const profile = brandProfile(brand);
     const organizationJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Organization',
-        name: `${BRAND_NAME}`,
-        url: 'https://cheapestgo.com',
-        logo: 'https://cheapestgo.com/icon-192.png',
+        name: brand,
+        url: profile.origin,
+        logo: `${profile.origin}${profile.icon}`,
         sameAs: [],
         description: t('orgDescription'),
     };

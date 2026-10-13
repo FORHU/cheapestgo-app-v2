@@ -6,7 +6,7 @@ import { useAuthStore } from '@/shared/stores/auth.store';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { LogoWordmark } from './logo-wordmark';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
 
 /**
@@ -20,11 +20,12 @@ import SignInDropdown from '@/shared/auth/SignInDropdown';
 export function LandingHeader() {
     const user = useAuthStore((s) => s.user);
     const tAll = useTranslations();
+    const brand = useBrandName();
 
     return (
         <header className="relative z-[5]">
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">
-                <Link href="/" aria-label={`${BRAND_NAME} home`} className="flex shrink-0 items-center">
+                <Link href="/" aria-label={`${brand} home`} className="flex shrink-0 items-center">
                     <LogoWordmark height={24} />
                 </Link>
 

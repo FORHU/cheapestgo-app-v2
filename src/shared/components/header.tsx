@@ -12,14 +12,14 @@ import { usePWAInstall } from '@/contexts/PWAInstallContext';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { cn } from '@/shared/lib/cn';
-import { brandWordmark } from '@/shared/lib/brand';
+import { useBrandWordmark } from '@/shared/components/BrandProvider';
 import { useTranslations } from 'next-intl';
 
-// Split once at module scope: the brand cannot change between renders, and the
-// split is what keeps the trailing "Go" accented for a brand that is not ours.
-const wordmark = brandWordmark(process.env.NEXT_PUBLIC_BRAND_NAME);
-
 const HeaderContent = () => {
+  // Split from the brand being shown rather than at module scope: a deployment with the brand
+  // preview on can show either brand, and the split is what keeps the trailing "Go" accented
+  // for a brand that is not ours.
+  const wordmark = useBrandWordmark();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();

@@ -2,13 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 import React from 'react';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName, useBrandProfile } from '@/shared/components/BrandProvider';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Share, Plus, ArrowDownToLine } from 'lucide-react';
 import Image from 'next/image';
 import { usePWAInstall } from '@/shared/contexts/PWAInstallContext';
 
-const IOS_STEPS = [
+// A function of the brand, not a constant: the last step names it, and which brand that is
+// is decided per request.
+const iosSteps = (brand: string) => [
   {
     number: 1,
     title: 'Tap the Share button',
@@ -30,13 +32,15 @@ const IOS_STEPS = [
   {
     number: 4,
     title: 'Tap "Add" to confirm',
-    description: `${BRAND_NAME} will appear on your home screen`,
+    description: `${brand} will appear on your home screen`,
     Icon: Download,
   },
 ] as const;
 
 export default function InstallPWAPrompt() {
     const tAll = useTranslations();
+  const brand = useBrandName();
+  const { favicon } = useBrandProfile();
   const { isInstalled, isGuideOpen, closeGuide } = usePWAInstall();
 
   if (isInstalled) return null;
@@ -72,8 +76,8 @@ export default function InstallPWAPrompt() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm ring-1 ring-black/5">
                     <Image
-                      src="/cheapestgo.png"
-                      alt={BRAND_NAME}
+                      src={favicon}
+                      alt={brand}
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
@@ -83,7 +87,7 @@ export default function InstallPWAPrompt() {
                     <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
                       {tAll('pwa.addToHomeScreen')}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{BRAND_NAME} · iOS Safari</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{brand} · iOS Safari</p>
                   </div>
                 </div>
                 <button
@@ -96,7 +100,7 @@ export default function InstallPWAPrompt() {
               </div>
 
               <div className="space-y-4">
-                {IOS_STEPS.map(({ number, title, description, Icon }) => (
+                {iosSteps(brand).map(({ number, title, description, Icon }) => (
                   <motion.div
                     key={number}
                     initial={{ opacity: 0, x: -12 }}

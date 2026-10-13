@@ -13,7 +13,10 @@ import { ExchangeRateListener } from '@/shared/components/ExchangeRateListener';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
 import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { brandProfile, brandPreviewEnabled } from '@/shared/lib/brand';
+import { getBrandName } from '@/shared/lib/brand.server';
+import { BrandProvider } from '@/shared/components/BrandProvider';
+import { BrandPreviewSwitcher } from '@/shared/components/BrandPreviewSwitcher';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
 
@@ -36,60 +39,67 @@ const openSans = Open_Sans({ subsets: ['latin'], variable: '--font-open-sans', d
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cheapestgo.com';
 
-// Every string below names the brand. Served from the Korean domain under a literal
-// "CheapestGo" the tab title, the share card and the app name all name a company the
-// visitor has never heard of — and a share card is the one surface a visitor sees
-// before they ever reach the site.
-const BRAND = BRAND_NAME;
-const TAGLINE = `${BRAND} | Discover and Book Your Next Global Journey`;
-const DESCRIPTION = `Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with ${BRAND} — your modern travel OS.`;
-
 export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
 };
 
-export const metadata: Metadata = {
-    metadataBase: new URL(SITE_URL),
-    title: {
-        default: TAGLINE,
-        template: `%s | ${BRAND}`,
-    },
-    description: DESCRIPTION,
-    icons: {
-        icon: '/Fav_Icon_Light.png',
-        apple: '/Fav_Icon_Light.png',
-    },
-    appleWebApp: {
-        capable: true,
-        statusBarStyle: 'black-translucent',
-        title: BRAND,
-    },
-    openGraph: {
-        title: TAGLINE,
-        description: DESCRIPTION,
-        url: SITE_URL,
-        siteName: BRAND,
-        images: [{
-            url: `${SITE_URL}/Web_Logo_Light.png`,
-            width: 1200,
-            height: 630,
-            alt: `${BRAND} - Ultimate Travel Booking Platform`,
-        }],
-        locale: 'en_US',
-        type: 'website',
-    },
-    twitter: {
-        card: 'summary_large_image',
-        title: TAGLINE,
-        description: DESCRIPTION,
-        images: [`${SITE_URL}/Web_Logo_Light.png`],
-    },
-};
+// Every string below names the brand. Served from the Korean domain under a literal
+// "CheapestGo" the tab title, the share card and the app name all name a company the
+// visitor has never heard of — and a share card is the one surface a visitor sees
+// before they ever reach the site.
+//
+// Per request rather than a constant: a deployment with the brand preview on shows
+// whichever brand the visitor picked, and the tab title has to be that one.
+export async function generateMetadata(): Promise<Metadata> {
+    const brand = await getBrandName();
+    const { favicon, logo } = brandProfile(brand);
+    const tagline = `${brand} | Discover and Book Your Next Global Journey`;
+    const description = `Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with ${brand} — your modern travel OS.`;
+
+    return {
+        metadataBase: new URL(SITE_URL),
+        title: {
+            default: tagline,
+            template: `%s | ${brand}`,
+        },
+        description,
+        icons: {
+            icon: favicon,
+            apple: favicon,
+        },
+        appleWebApp: {
+            capable: true,
+            statusBarStyle: 'black-translucent',
+            title: brand,
+        },
+        openGraph: {
+            title: tagline,
+            description,
+            url: SITE_URL,
+            siteName: brand,
+            images: [{
+                url: `${SITE_URL}${logo}`,
+                width: 1200,
+                height: 630,
+                alt: `${brand} - Ultimate Travel Booking Platform`,
+            }],
+            locale: 'en_US',
+            type: 'website',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: tagline,
+            description,
+            images: [`${SITE_URL}${logo}`],
+        },
+    };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const locale = await getLocale();
     const messages = await getMessages();
+    const brand = await getBrandName();
 
     return (
         <html lang={locale} suppressHydrationWarning>
@@ -106,6 +116,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     }}
                 />
                 <NextIntlClientProvider locale={locale} messages={messages}>
+                    <BrandProvider name={brand}>
                     <Providers>
                         <AuthListener />
                         <ExchangeRateListener />
@@ -130,7 +141,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                             <InstallPWAPrompt />
                         </div>
                         <PWAServiceWorkerRegistrar />
+                        {/* Only where the brand preview is on. On production the control is
+                            never rendered, so there is nothing to find or to switch. */}
+                        {brandPreviewEnabled() && <BrandPreviewSwitcher current={brand} />}
                     </Providers>
+                    </BrandProvider>
                 </NextIntlClientProvider>
                 <Analytics />
                 <SpeedInsights />

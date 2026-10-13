@@ -74,6 +74,25 @@ describe('applyBrand', () => {
         expect(applyBrand(messages)).toBe(messages);
     });
 
+    it('names the brand it is told to, not the one the build was made for', async () => {
+        // The brand preview: a CheapestGo build showing AirangGo for this request. The policies
+        // have to follow what the header shows, not what the process was started with.
+        const applyBrand = await load('CheapestGo');
+        expect(applyBrand({ p: 'How CheapestGo collects your data.' }, 'AirangGo'))
+            .toEqual({ p: 'How AirangGo collects your data.' });
+    });
+
+    it('is a no-op when told CheapestGo, even on an AirangGo build', async () => {
+        const applyBrand = await load('AirangGo');
+        const messages = { p: 'How CheapestGo collects your data.' };
+        expect(applyBrand(messages, 'CheapestGo')).toBe(messages);
+    });
+
+    it('canonicalises the brand it is told', async () => {
+        const applyBrand = await load('CheapestGo');
+        expect(applyBrand({ p: 'CheapestGo' }, 'GeomeeGo')).toEqual({ p: 'AirangGo' });
+    });
+
     it('preserves ICU placeholders when rebranding', async () => {
         const applyBrand = await load('AirangGo');
         expect(applyBrand({ t: 'Hotels in {city}, {country} — Cheapest Rates | CheapestGo' }))
