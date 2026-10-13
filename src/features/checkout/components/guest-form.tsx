@@ -7,11 +7,24 @@ import { cn } from '@/shared/lib/cn';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * The hotel holder, which is exactly what `POST /hotels/confirm` accepts.
+ *
+ * No phone. The form asked for one and had nowhere to put it: `confirm` takes
+ * `holder: { firstName, lastName, email }`, the TGX booking sends
+ * `contactInfo: { email }`, and `bookings` has `holder_first_name`,
+ * `holder_last_name` and `holder_email` with no phone column. A required field that
+ * reaches no system is a question asked for nothing.
+ *
+ * To bring it back it needs all three: a column (a v1 migration — v2 never authors one,
+ * ADR-0018), the field on the confirm schema, and `telephone` on TGX's `contactInfo`,
+ * which has to be checked against their schema first — an unknown field on a GraphQL
+ * mutation is an error, and that mutation books against a live supplier.
+ */
 export interface GuestInfo {
     firstName: string;
     lastName: string;
     email: string;
-    phone: string;
 }
 
 /**
@@ -137,18 +150,6 @@ function HotelGuestFields({
                         autoComplete="email"
                     />
                     <FieldError message={errors.email} />
-                </div>
-                <div>
-                    <SectionLabel label="Phone" required />
-                    <input
-                        type="tel"
-                        placeholder="+1 555 000 0000"
-                        value={guest.phone}
-                        onChange={(e) => onChange('phone', e.target.value)}
-                        className={fieldClass(!!errors.phone)}
-                        autoComplete="tel"
-                    />
-                    <FieldError message={errors.phone} />
                 </div>
             </div>
         </div>

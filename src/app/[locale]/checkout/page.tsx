@@ -56,7 +56,6 @@ function validateGuest(g: GuestInfo): Partial<Record<keyof GuestInfo, string>> {
     if (!g.lastName.trim())  e.lastName  = 'Required';
     if (!g.email.trim())     e.email     = 'Required';
     else if (!validateEmail(g.email)) e.email = 'Invalid email';
-    if (!g.phone.trim())     e.phone     = 'Required';
     return e;
 }
 
@@ -493,7 +492,7 @@ function CheckoutContent() {
     const [bookingId, setBookingId]         = useState<string | null>(null);
 
     // Hotel guest form
-    const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '', phone: '' });
+    const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '' });
     const [guestErrors, setGuestErrors] = useState<Partial<Record<keyof GuestInfo, string>>>({});
 
     // Flight form
@@ -987,10 +986,6 @@ function CheckoutContent() {
                                     <FieldRow>
                                         <input type="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={tAll('auth.signIn.emailLabel')} style={mkInput(!!guestErrors.email)} />
                                         <ErrText msg={guestErrors.email} />
-                                    </FieldRow>
-                                    <FieldRow>
-                                        <input type="tel" value={guest.phone} onChange={e => onGuest('phone', e.target.value)} placeholder={tAll('checkout.userDetails.phoneNumber')} style={mkInput(!!guestErrors.phone)} />
-                                        <ErrText msg={guestErrors.phone} />
                                     </FieldRow>
                                 </div>
                                 <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting}>
