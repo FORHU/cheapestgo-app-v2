@@ -39,7 +39,8 @@ async function fetchAirports(query: string): Promise<DestinationSuggestion[]> {
     return res.data.map(airport => ({
         type:        'airport' as const,
         title:       `${airport.city} (${airport.iata})`,
-        subtitle:    `${airport.name} · ${airport.country}`,
+        // A city code (OSA, TYO) has no country of its own; no trailing dot for it.
+        subtitle:    [airport.name, airport.country].filter(Boolean).join(' · '),
         code:        airport.iata,
         countryCode: '',
     }));

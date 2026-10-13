@@ -93,7 +93,8 @@ export function GlobalSparkle() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-none"
+      // `global-sparkle` is the hook a screen hides it by — see `.flat-ground`.
+      className="global-sparkle fixed inset-0 z-0 pointer-events-none"
       aria-hidden="true"
     />
   );

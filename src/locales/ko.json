@@ -277,7 +277,10 @@
       "nonRefundable": "환불 불가",
       "termsNotProvided": "공급사가 취소 조건을 제공하지 않았습니다 — 예약 전 숙소에 확인하세요",
       "fetchingPolicy": "취소 정책을 불러오는 중…",
-      "flight": "항공편"
+      "flight": "항공편",
+      "dates": "날짜",
+      "guests": "투숙객",
+      "room": "객실"
     },
     "title": "결제",
     "userDetails": {
@@ -356,7 +359,8 @@
     "steps": {
       "details": "정보 입력",
       "payment": "결제",
-      "confirmed": "예약 완료"
+      "confirmed": "예약 완료",
+      "verification": "확인"
     },
     "errors": {
       "paymentFailed": "결제에 실패했습니다. 다시 시도해 주세요.",
@@ -377,7 +381,11 @@
     "guestDetails": "투숙객 정보",
     "paymentInfo": "결제 정보",
     "paymentSecure": "결제 정보는 암호화되며 당사 서버에 저장되지 않습니다.",
-    "cardNamePlaceholder": "홍길동"
+    "cardNamePlaceholder": "홍길동",
+    "whosCheckingInYou": "체크인하실 분은 누구인가요? (본인 정보)",
+    "paymentDetailsTitle": "결제 정보",
+    "securedPoweredBy": "<b>{brand}</b> 보안 결제",
+    "payNow": "{amount} 결제하기"
   },
   "currencyPicker": {
     "label": "통화 선택"
@@ -427,7 +435,9 @@
     "results": {
       "bundleActive": "항공 + 호텔 묶음 적용 중",
       "bundleBody": "아래에서 항공편을 선택하세요. 결제 시 묶음 할인이 적용됩니다.",
+      "checkingFare": "요금이 아직 유효한지 확인하는 중…",
       "checkingProviders": "여러 공급사를 확인하는 중",
+      "clearFilters": "필터 초기화",
       "countFlights": "항공편 {count}편",
       "datePicked": "날짜는 저희가 골랐습니다 — 변경하시면 다른 요금을 보실 수 있습니다.",
       "duration": "소요 시간",
@@ -435,6 +445,8 @@
       "filters": "필터",
       "filtersTitle": "항공편 필터",
       "findingFares": "최적의 요금을 찾는 중…",
+      "flightsFound": "항공편 {count}편 검색됨",
+      "flightsTo": "{city}행 항공편",
       "loading": "최저가 항공편을 찾고 있습니다…",
       "missingRoute": "출발지와 도착지를 알려주시면 요금을 찾아드립니다.",
       "newSearch": "새로 검색",
@@ -470,6 +482,21 @@
       "freeCancellation": "무료 취소",
       "nonRefundable": "환불 불가"
     },
+    "itinerary": {
+      "arriveAt": "도착",
+      "departFrom": "출발",
+      "flightDuration": "비행 시간",
+      "layoverLabel": "경유",
+      "layoverValue": "{airport}에서 {duration}",
+      "legLabel": "구간 {number}",
+      "nonstop": "직항",
+      "outbound": "가는 편",
+      "return": "오는 편",
+      "stopCount": "경유 {count}회",
+      "terminal": "터미널 {terminal}",
+      "terminalUnavailable": "터미널 정보는 출발일이 가까워지면 제공됩니다",
+      "totalFlightDuration": "총 비행 시간"
+    },
     "filters": {
       "cheapest": "최저가",
       "fastest": "최단 시간",
@@ -483,6 +510,42 @@
       "anyStops": "경유 무관",
       "nonStopOnly": "직항만",
       "upTo1Stop": "경유 1회까지"
+    },
+    "filtersPanel": {
+      "airlines": "항공사",
+      "anyStops": "전체 경유",
+      "arrival": "도착",
+      "arrivalAirports": "도착 공항",
+      "branded": "브랜드 요금",
+      "cheapestFirst": "최저가순",
+      "departure": "출발",
+      "direct": "직항",
+      "earliestDeparture": "가장 이른 출발순",
+      "fareType": "요금 유형",
+      "fastestFirst": "최단 시간순",
+      "flightDuration": "비행 시간",
+      "ndc": "NDC",
+      "nonStopOnly": "직항만",
+      "oneStop": "경유 1회",
+      "pricePerPerson": "1인당 요금",
+      "provider": "공급사",
+      "rangeFrom": "{label} 시작",
+      "rangeTo": "{label} 끝",
+      "refundable": "환불 가능",
+      "refundableFares": "환불 가능 요금",
+      "refundableFaresDescription": "환불 취소가 가능한 요금",
+      "reset": "초기화",
+      "selectAllAirlines": "모든 항공사 선택",
+      "selectAllAirports": "모든 공항 선택",
+      "showAll": "모두 보기",
+      "showLess": "간략히 보기",
+      "sortBy": "정렬 기준",
+      "stops": "경유",
+      "times": "시간대",
+      "twoStopsPlus": "경유 2회 이상",
+      "underHours": "{hours}시간 이내",
+      "underHoursInput": "<field></field>시간 이내",
+      "upToOneStop": "최대 1회 경유"
     },
     "priceAlert": {
       "loading": "불러오는 중",
@@ -506,6 +569,11 @@
       "adults": "성인 {count}명",
       "children": "어린이 {count}명",
       "infants": "유아 {count}명"
+    },
+    "topBar": {
+      "swap": "출발지와 도착지 바꾸기",
+      "changeTrip": "날짜 및 여행자 변경",
+      "cabin": "좌석 등급"
     }
   },
   "footer": {
@@ -1392,6 +1460,67 @@
     "accountWorks": "계정은 CheapestGo 및 모든 파트너 사이트에서 사용 가능합니다"
   },
   "property": {
+    "nearby": {
+      "hotel": "호텔",
+      "categoryLabel": "장소 유형",
+      "radiusLabel": "검색 반경",
+      "unitLabel": "거리 단위",
+      "categories": {
+        "all": "전체",
+        "restaurant": "식당",
+        "cafe": "카페",
+        "attraction": "관광명소 & 공원",
+        "grocery": "식료품점",
+        "medical": "병원 & 건강",
+        "transit": "대중교통"
+      },
+      "loadFailed": "주변 장소를 불러오지 못했습니다.",
+      "retry": "다시 시도",
+      "details": "상세 정보",
+      "close": "닫기",
+      "scrollLeft": "왼쪽으로 스크롤",
+      "scrollRight": "오른쪽으로 스크롤",
+      "away": "{distance} 거리",
+      "fromHotel": "호텔에서 {distance}",
+      "reviewsCount": "{count, plural, other {리뷰 #개}}",
+      "ratingOutOf5": "5점 만점에 {rating}점",
+      "call": "전화하기",
+      "website": "웹사이트",
+      "googleMaps": "Google 지도",
+      "drive": "자동차",
+      "walk": "도보",
+      "bike": "자전거",
+      "traffic": "실시간 교통 정보",
+      "travelMode": "이동 수단",
+      "minutes": "{count}분",
+      "loadingRoute": "경로를 찾는 중…",
+      "routeUnavailable": "경로를 찾을 수 없음",
+      "addToTrip": "일정에 추가",
+      "removeFromTrip": "일정에서 삭제",
+      "trip": {
+        "title": "내 일정 · {count}/{max}",
+        "optimize": "경로 최적화",
+        "optimizing": "최적화 중…",
+        "clear": "모두 지우기",
+        "max": "최대 {max}곳까지 추가할 수 있습니다.",
+        "failed": "경로를 최적화하지 못했습니다.",
+        "summary": "호텔 출발 왕복 {minutes}분"
+      },
+      "directions": {
+        "open": "길찾기",
+        "close": "길찾기 닫기",
+        "whereFrom": "출발지는 어디인가요?",
+        "locateMe": "내 위치 사용",
+        "locating": "위치 확인 중…",
+        "locationDenied": "위치를 가져올 수 없습니다. 출발지를 직접 입력해 주세요.",
+        "searchFailed": "장소를 검색하지 못했습니다. 다시 시도해 주세요.",
+        "toHotel": "호텔까지 {minutes}분"
+      },
+      "weather": {
+        "feelsLike": "체감 온도 {temp}",
+        "highLow": "{high} / {low}"
+      }
+    },
     "addressNotAvailable": "주소를 이용할 수 없습니다",
     "bookingWidget": {
       "amenities": "편의시설",
@@ -1796,6 +1925,8 @@
       "ofUs": "{count}명"
     },
     "trendingCities": "인기 도시",
+    "popularAirports": "인기 공항",
+    "noAirportsMatch": "“{query}”와(과) 일치하는 공항이 없습니다",
     "imFlexible": "날짜 미정",
     "oneWay": "편도",
     "roundTrip": "왕복",

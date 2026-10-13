@@ -42,6 +42,16 @@ const USED = [
     'checkout.steps.details',
     'checkout.steps.payment',
     'checkout.steps.confirmed',
+    'checkout.steps.verification',
+    'checkout.whosCheckingInYou',
+    'checkout.paymentDetailsTitle',
+    'checkout.securedPoweredBy',
+    'checkout.summary.dates',
+    'checkout.summary.guests',
+    'checkout.summary.room',
+    'checkout.payNow',
+    'checkout.userDetails.guest1',
+    'checkout.userDetails.guestN',
 ];
 
 describe('checkout messages', () => {

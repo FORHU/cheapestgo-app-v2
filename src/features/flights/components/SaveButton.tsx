@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Heart, Heart as HeartFill, Loader2 } from 'lucide-react';
+import { Bookmark, Heart, Heart as HeartFill, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { useAuthStore } from '@/shared/auth/store';
@@ -47,6 +47,8 @@ interface SaveButtonProps {
     deepLink: string;
     snapshot: { offerId: string; provider: string };
     size?: 'sm' | 'md';
+    /** `bookmark`: the flight card's 36px gradient disc — the hotel card's save chip. */
+    variant?: 'heart' | 'bookmark';
     onSavedChange?: (saved: boolean) => void;
 }
 
@@ -60,6 +62,7 @@ export function SaveButton({
     deepLink,
     snapshot,
     size = 'md',
+    variant = 'heart',
     onSavedChange,
 }: SaveButtonProps) {
     const [isSaved, setIsSaved] = useState(false);
@@ -145,6 +148,22 @@ export function SaveButton({
             >
                 <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
             </div>
+        );
+    }
+
+    if (variant === 'bookmark') {
+        return (
+            <button
+                onClick={toggleSave}
+                disabled={isLoading}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-blue-600 to-cyan-500 text-white transition-opacity hover:opacity-85 disabled:opacity-60"
+                aria-label={isSaved ? 'Remove from saved' : 'Save flight'}
+                aria-pressed={isSaved}
+            >
+                {isLoading
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Bookmark size={16} strokeWidth={1.75} className={cn(isSaved && 'fill-current')} />}
+            </button>
         );
     }
 

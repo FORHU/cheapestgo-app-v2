@@ -31,6 +31,7 @@ import type { NearbyPlace } from '@/shared/components/map/useMapNearbyPlaces';
 import type { MapEvent } from 'react-map-gl/mapbox';
 import type { Marker as MapboxMarker } from 'mapbox-gl';
 import { isAbortError } from '@/shared/lib/error';
+import { BRAND_STOPS } from '@/shared/lib/palette';
 
 /**
  * A place on the map, plus where it sits in the entrance stagger.
@@ -115,7 +116,7 @@ const DISTRICT_MARKER_THRESHOLD = 11;
  * ink inverted. Mapbox paint properties cannot read the `--map-card-*` variables
  * the POI discs invert through, so the rule is spelled out again here.
  */
-const RADIUS_INK = { light: '#141414', dark: '#E6E6E6' } as const;
+const RADIUS_INK = { light: '#0f172a', dark: '#e2e8f0' } as const; // slate-900 / slate-200
 
 /**
  * Zoom the map settles on when a hotel is picked — close enough to read the
@@ -685,9 +686,9 @@ export const SearchMapContainer = React.memo(({
         ? { lat: selectedProperty.coordinates.lat, lng: selectedProperty.coordinates.lng }
         : undefined;
 
-    const { gems: cafeGems,    loading: cafeLoading }    = useNearbyGems({ coordinates: gemCoords, category: 'cafe',    radiusMeters: nearbyRadius });
-    const { gems: medicalGems, loading: medicalLoading } = useNearbyGems({ coordinates: gemCoords, category: 'medical', radiusMeters: nearbyRadius });
-    const { gems: transitGems, loading: transitLoading } = useNearbyGems({ coordinates: gemCoords, category: 'transit', radiusMeters: nearbyRadius });
+    const { gems: cafeGems,    loading: cafeLoading }    = useNearbyGems({ coordinates: gemCoords, category: 'cafe',    radiusMeters: nearbyRadius, details: 'stubs' });
+    const { gems: medicalGems, loading: medicalLoading } = useNearbyGems({ coordinates: gemCoords, category: 'medical', radiusMeters: nearbyRadius, details: 'stubs' });
+    const { gems: transitGems, loading: transitLoading } = useNearbyGems({ coordinates: gemCoords, category: 'transit', radiusMeters: nearbyRadius, details: 'stubs' });
 
     const _isFetchingGems = cafeLoading || medicalLoading || transitLoading;
 
@@ -712,9 +713,9 @@ export const SearchMapContainer = React.memo(({
             lat:              gem.coordinates.lat,
             lng:              gem.coordinates.lng,
             rating:           gem.rating ?? undefined,
-            userRatingsTotal: undefined,
-            placeId:          gem.id,
-            vicinity:         undefined,
+            userRatingsTotal: gem.userRatingsTotal ?? undefined,
+            placeId:          gem.placeId,
+            vicinity:         gem.vicinity ?? undefined,
         })),
         [filteredGems]
     );
@@ -801,8 +802,8 @@ export const SearchMapContainer = React.memo(({
         setActiveGemName(name);
         setSelectedNearbyPlace({
             name, category: gem.category || 'place', lat, lng,
-            rating: gem.rating ?? undefined, userRatingsTotal: undefined,
-            placeId: gem.id, vicinity: undefined,
+            rating: gem.rating ?? undefined, userRatingsTotal: gem.userRatingsTotal ?? undefined,
+            placeId: gem.placeId, vicinity: gem.vicinity ?? undefined,
         });
         mapRef.current?.flyTo({ center: [lng, lat], zoom: 16, pitch: 30, duration: 600 });
     }, [activeGemName, mapRef]);
@@ -952,7 +953,7 @@ export const SearchMapContainer = React.memo(({
                                                 width: 48, height: 48,
                                                 borderRadius: '50%',
                                                 border: '2.5px solid white',
-                                                background: 'linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%)',
+                                                background: 'linear-gradient(90deg, #dbeafe 0%, #cffafe 100%)', // the brand gradient, pale: blue-100 → cyan-100
                                                 boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
                                                 animationDelay: `${i * 0.15}s`,
                                             }}
@@ -967,7 +968,7 @@ export const SearchMapContainer = React.memo(({
                                             boxShadow: '0 1px 5px rgba(0,0,0,0.12)',
                                             lineHeight: '1.5',
                                         }}>
-                                            <span style={{ letterSpacing: '0.2em', color: '#aaa' }}>···</span>
+                                            <span style={{ letterSpacing: '0.2em', color: '#94a3b8' }}>···</span>
                                         </div>
                                     </div>
                                 </Marker>
@@ -1002,9 +1003,14 @@ export const SearchMapContainer = React.memo(({
                         ))}
 
                         {poiRouteData && (
-                            <Source id="poi-route-source" type="geojson" data={poiRouteData}>
+                            // `lineMetrics` is what lets the line carry a gradient: it gives
+                            // Mapbox each point's progress along the route to colour by.
+                            <Source id="poi-route-source" type="geojson" data={poiRouteData} lineMetrics>
                                 <Layer id="poi-route-layer" type="line"
-                                    paint={{ 'line-color': '#3b82f6', 'line-width': 3, 'line-opacity': 1 }} />
+                                    paint={{
+                                        'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, BRAND_STOPS.from, 1, BRAND_STOPS.to],
+                                        'line-width': 3, 'line-opacity': 1,
+                                    }} />
                             </Source>
                         )}
 

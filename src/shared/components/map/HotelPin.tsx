@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { BRAND } from '@/shared/lib/palette';
 
 interface HotelPinProps {
     image?: string;
@@ -71,7 +72,8 @@ export function HotelPin({ image, priceLabel, active = false, selected = false }
                         flexShrink: 0,
                         borderRadius: '50%',
                         overflow: 'hidden',
-                        background: 'linear-gradient(135deg,#667eea,#764ba2)',
+                        // The brand gradient, standing in until the photo loads (or if there is none).
+                        background: BRAND.gradient,
                         boxShadow: 'inset 0 0 0 1px var(--pin-line)',
                     }}
                 >

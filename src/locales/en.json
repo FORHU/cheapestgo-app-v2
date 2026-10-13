@@ -277,7 +277,10 @@
       "nonRefundable": "Non-refundable",
       "termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
       "fetchingPolicy": "Fetching cancellation policy…",
-      "flight": "Flight"
+      "flight": "Flight",
+      "dates": "Dates",
+      "guests": "Guests",
+      "room": "Room"
     },
     "title": "Checkout",
     "userDetails": {
@@ -356,7 +359,8 @@
     "steps": {
       "details": "Details",
       "payment": "Payment",
-      "confirmed": "Confirmed"
+      "confirmed": "Confirmed",
+      "verification": "Verification"
     },
     "errors": {
       "paymentFailed": "Payment failed. Please try again.",
@@ -377,7 +381,11 @@
     "guestDetails": "Guest details",
     "paymentInfo": "Payment info",
     "paymentSecure": "Your payment information is encrypted and never stored on our servers.",
-    "cardNamePlaceholder": "John Doe"
+    "cardNamePlaceholder": "John Doe",
+    "whosCheckingInYou": "Who’s checking in? (Your Details)",
+    "paymentDetailsTitle": "Payment Details",
+    "securedPoweredBy": "Secured and Powered by <b>{brand}</b>",
+    "payNow": "Pay {amount}"
   },
   "currencyPicker": {
     "label": "Select currency"
@@ -427,7 +435,9 @@
     "results": {
       "bundleActive": "Flight + Hotel Bundle Active",
       "bundleBody": "Select a flight below — your bundle discount will be applied at checkout.",
+      "checkingFare": "Checking the fare is still available…",
       "checkingProviders": "Checking multiple providers",
+      "clearFilters": "Clear filters",
       "countFlights": "{count, plural, one {# flight} other {# flights}}",
       "datePicked": "We picked this date — change it to see other fares.",
       "duration": "Duration",
@@ -435,6 +445,8 @@
       "filters": "Filters",
       "filtersTitle": "Flight Filters",
       "findingFares": "Finding the best fares…",
+      "flightsFound": "{count, plural, one {# flight} other {# flights}} found",
+      "flightsTo": "Flights to {city}",
       "loading": "Finding the best fares…",
       "missingRoute": "Tell us where you are flying from and to, and we will find the fares.",
       "newSearch": "New Search",
@@ -470,6 +482,21 @@
       "freeCancellation": "Free Cancellation",
       "nonRefundable": "Non-refundable"
     },
+    "itinerary": {
+      "departFrom": "Depart from",
+      "arriveAt": "Arrive at",
+      "flightDuration": "Flight Duration",
+      "outbound": "Outbound",
+      "return": "Return",
+      "legLabel": "Leg {number}",
+      "layoverLabel": "Layover",
+      "layoverValue": "{duration} at {airport}",
+      "terminal": "Terminal {terminal}",
+      "terminalUnavailable": "Terminal available closer to departure",
+      "totalFlightDuration": "Total Flight Duration",
+      "nonstop": "Nonstop",
+      "stopCount": "{count, plural, one {# stop} other {# stops}}"
+    },
     "filters": {
       "cheapest": "Cheapest",
       "fastest": "Fastest",
@@ -483,6 +510,42 @@
       "anyStops": "Any stops",
       "nonStopOnly": "Non-stop only",
       "upTo1Stop": "Up to 1 stop"
+    },
+    "filtersPanel": {
+      "airlines": "Airlines",
+      "anyStops": "Any Stops",
+      "arrival": "Arrival",
+      "arrivalAirports": "Arrival Airports",
+      "branded": "Branded",
+      "cheapestFirst": "Cheapest First",
+      "departure": "Departure",
+      "direct": "Direct",
+      "earliestDeparture": "Earliest Departure",
+      "fareType": "Fare Type",
+      "fastestFirst": "Fastest First",
+      "flightDuration": "Flight Duration",
+      "ndc": "NDC",
+      "nonStopOnly": "Non-stop only",
+      "oneStop": "1 Stop",
+      "pricePerPerson": "Price Per Person",
+      "provider": "Provider",
+      "refundable": "Refundable",
+      "refundableFares": "Refundable fares",
+      "refundableFaresDescription": "Fares that allow cancellation with a refund",
+      "reset": "Reset",
+      "selectAllAirlines": "Select all airlines",
+      "selectAllAirports": "Select all airports",
+      "showAll": "Show all",
+      "showLess": "Show less",
+      "sortBy": "Sort By",
+      "stops": "Stops",
+      "times": "Times",
+      "twoStopsPlus": "2 Stops +",
+      "underHours": "Under {hours} hours",
+      "upToOneStop": "Up to 1 stop",
+      "rangeFrom": "{label} from",
+      "rangeTo": "{label} to",
+      "underHoursInput": "Under <field></field> hours"
     },
     "priceAlert": {
       "loading": "Loading",
@@ -506,6 +569,11 @@
       "adults": "{count, plural, one {# adult} other {# adults}}",
       "children": "{count, plural, one {# child} other {# children}}",
       "infants": "{count, plural, one {# infant} other {# infants}}"
+    },
+    "topBar": {
+      "swap": "Swap origin and destination",
+      "changeTrip": "Change dates and travellers",
+      "cabin": "Cabin"
     }
   },
   "footer": {
@@ -1392,6 +1460,67 @@
     "accountWorks": "Your account works across CheapestGo and all partner sites"
   },
   "property": {
+    "nearby": {
+      "hotel": "Hotel",
+      "categoryLabel": "Place type",
+      "radiusLabel": "Search radius",
+      "unitLabel": "Distance unit",
+      "categories": {
+        "all": "All",
+        "restaurant": "Dining",
+        "cafe": "Cafés",
+        "attraction": "Attractions & Parks",
+        "grocery": "Groceries",
+        "medical": "Hospitals & Health",
+        "transit": "Transit"
+      },
+      "loadFailed": "Couldn't load nearby places.",
+      "retry": "Try again",
+      "details": "Details",
+      "close": "Close",
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right",
+      "away": "{distance} away",
+      "fromHotel": "{distance} from the hotel",
+      "reviewsCount": "{count, plural, one {# review} other {# reviews}}",
+      "ratingOutOf5": "{rating} out of 5 stars",
+      "call": "Call",
+      "website": "Website",
+      "googleMaps": "Google Maps",
+      "drive": "Drive",
+      "walk": "Walk",
+      "bike": "Bike",
+      "traffic": "Live traffic",
+      "travelMode": "Travel mode",
+      "minutes": "{count} min",
+      "loadingRoute": "Finding a route…",
+      "routeUnavailable": "Route unavailable",
+      "addToTrip": "Add to trip",
+      "removeFromTrip": "Remove from trip",
+      "trip": {
+        "title": "Your trip · {count}/{max}",
+        "optimize": "Optimize route",
+        "optimizing": "Optimizing…",
+        "clear": "Clear",
+        "max": "You can plan up to {max} stops.",
+        "failed": "Couldn't optimize this route.",
+        "summary": "{minutes} min round trip from the hotel"
+      },
+      "directions": {
+        "open": "Get directions",
+        "close": "Hide directions",
+        "whereFrom": "Where from?",
+        "locateMe": "Use my location",
+        "locating": "Locating…",
+        "locationDenied": "Couldn't get your location. Type a starting point instead.",
+        "searchFailed": "Couldn't search places. Try again.",
+        "toHotel": "{minutes} min to the hotel"
+      },
+      "weather": {
+        "feelsLike": "Feels like {temp}",
+        "highLow": "{high} / {low}"
+      }
+    },
     "addressNotAvailable": "Address not available",
     "bookingWidget": {
       "amenities": "Amenities",
@@ -1796,6 +1925,8 @@
       "ofUs": "{count} of us"
     },
     "trendingCities": "Popular cities",
+    "popularAirports": "Popular airports",
+    "noAirportsMatch": "No airports match “{query}”",
     "imFlexible": "I'm flexible",
     "oneWay": "One-way",
     "roundTrip": "Round-trip",

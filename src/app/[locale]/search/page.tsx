@@ -22,19 +22,23 @@ import { useIsMobile } from '@/shared/hooks/useMediaQuery';
 import { cn } from '@/shared/lib/cn';
 import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { SearchTopBar } from '@/features/search/components/search-top-bar';
+import type { Stay } from '@/features/search/components/stay-editor';
 import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/search/components/search-chrome';
 import { resolveStayDates } from '@/shared/lib/stay';
+import { BRAND, brandTheme } from '@/shared/lib/palette';
+import { BRAND_STROKE, BrandStrokeDefs } from '@/shared/components/BrandStroke';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const BG            = '#15111E';
+// The original CheapestGo palette — see `shared/lib/palette.ts`.
+const BG            = BRAND.obsidian;
 /**
- * The list view's ground — neutral, not the map view's plum, and a step below
- * the card surface so the cards read as plates rather than as the page.
+ * The list view's ground — obsidian / slate-100, a step below the card surface
+ * (slate-900 / white) so the cards read as plates rather than as the page.
  */
-const LIST_BG       = { dark: '#141414', light: '#F1F1F4' };
+const LIST_BG       = { dark: BRAND.obsidian, light: '#f1f5f9' };
 
 /**
  * Nothing filtered, for either view's panel.
@@ -50,7 +54,7 @@ const EMPTY_FILTERS: HotelFiltersState = {
 
 const SearchMapContainer = dynamic(
     () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
-    { ssr: false, loading: () => <div className="w-full h-full" style={{ background: '#1B2A2E' }} /> }
+    { ssr: false, loading: () => <div className="w-full h-full" style={{ background: BRAND.surface }} /> }
 );
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -110,18 +114,6 @@ function sortHotels(list: MappableProperty[], by: SortValue): MappableProperty[]
     return c;
 }
 
-function fmtPill(destination: string, checkIn: string, checkOut: string, adults: string, children: string) {
-    const parts: string[] = [];
-    if (destination) parts.push(destination);
-    if (checkIn && checkOut) {
-        const fmt = (s: string) => new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        parts.push(`${fmt(checkIn)} – ${fmt(checkOut)}`);
-    }
-    const guests = (Number(adults) || 2) + (Number(children) || 0);
-    parts.push(`${guests} guest${guests !== 1 ? 's' : ''}`);
-    return parts.join(' | ');
-}
-
 // ─── Bottom rail card ─────────────────────────────────────────────────────────
 // The design's landscape plate: the photo fills the left edge over the card's
 // full height, the name and address stack against it, and the baseline carries
@@ -149,9 +141,9 @@ const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
  * The phone card's own width cap, as a number — the one place along this
  * rail that still needs the inset as a raw pixel value rather than a class.
  *
- * Everywhere else the rail sits in the same `px-4 sm:px-8 lg:px-12` box the
- * top bar does — `MAP_CHROME_GUTTER` — so the strip begins under the bar's
- * left edge at every width. The scroller's own inset used to be measured on
+ * Everywhere else the rail sits in the same `px-20` box the top bar does —
+ * `MAP_CHROME_GUTTER` — so the strip begins under the bar's left edge at every
+ * width. The scroller's own inset used to be measured on
  * its own, in JS, off an `isMobile` that flips at 768 where the bar's gutter
  * steps at 640; between those two widths the first card started 8px inside
  * the tally chip above it, and past 1448 the whole strip sat a couple of
@@ -220,21 +212,13 @@ const CARD_GEOM_MOBILE = {
  * from under it.
  */
 /**
- * The map view's floating chrome sits on the bottom nav's box, not the shell's.
+ * The map view's floating chrome — the toolbar and the card rail — sits a flat
+ * 80px off both window edges at every width.
  *
- * `SHELL_GUTTER` opens at 20px and the nav's own fixed wrapper at 16px, so on a
- * phone the toolbar floated 4px inside the nav below it and the two pills — the
- * only two things on the screen with a hard left and right edge — did not line
- * up. The nav is the one that cannot move: it is every screen's, while this
- * gutter is this view's alone.
- *
- * Only the first step changes. Past `sm` the shell's own 32/48 take over again,
- * which is where the nav stops being the thing the eye compares against — it
- * still carries its 16px to `lg`, so between those two widths the bar is wider
- * than the nav rather than narrower. If that reads wrong on a tablet, the fix
- * is `px-4 lg:px-12` here, and it is a design call rather than a bug.
+ * The rail reads this same constant (see below), so the strip under the bar
+ * always starts and ends on the bar's edge.
  */
-const MAP_CHROME_GUTTER = 'px-4 sm:px-8 lg:px-12';
+const MAP_CHROME_GUTTER = 'px-20';
 
 const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:pb-7';
 /** The same clearance as an offset, for anything that floats rather than pads. */
@@ -306,17 +290,18 @@ const RAIL_WHEEL_PAGE_MS = 320;
  */
 function railCardPalette(theme: 'light' | 'dark') {
     const dark = theme === 'dark';
+    const b = brandTheme(theme);
     return {
-        surface: dark ? '#1A1A1A' : '#FFFFFF',
-        title:   dark ? '#FFFFFF' : '#111111',
-        muted:   dark ? 'rgba(255,255,255,0.60)' : '#6B7280',
-        hairline: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-        imageBg: dark ? 'rgba(255,255,255,0.05)' : '#F1F1F1',
-        // The price circle and the View Stay button invert the panel.
-        chipBg:   dark ? '#FFFFFF' : '#1A1A1A',
-        chipText: dark ? '#111111' : '#FFFFFF',
+        surface:  b.surface,
+        title:    b.title,
+        muted:    b.muted,
+        hairline: b.hairline,
+        imageBg:  dark ? 'rgba(255,255,255,0.05)' : b.raised,
+        // The price circle and the View Stay button wear the brand gradient.
+        chipBg:   BRAND.gradient,
+        chipText: '#FFFFFF',
         /** `chipText` at low alpha — the unlit part of a ring drawn on a chip. */
-        chipTrack: dark ? 'rgba(17,17,17,0.20)' : 'rgba(255,255,255,0.20)',
+        chipTrack: 'rgba(255,255,255,0.25)',
     };
 }
 
@@ -1033,7 +1018,6 @@ function HotelSearchContent() {
     }, [railSorted, mapFiltered, selectedId, hoveredId]);
     const isLoading    = status === 'loading';
     const isStreaming  = status === 'streaming';
-    const pillText     = fmtPill(destination, checkIn, checkOut, adults, children);
 
     const handleViewDetails = useCallback((id: string) => router.push(`/property/${id}?${searchQs}`), [router, searchQs]);
 
@@ -1052,6 +1036,23 @@ function HotelSearchContent() {
         }
         router.push(`/search?${params.toString()}`);
     }, [router, searchParams]);
+    // New dates or guests: the same search, re-run for the stay the traveller chose.
+    // `datesAuto` goes, because these dates are no longer ours to disclose.
+    const handleStayApply = useCallback((next: Stay) => {
+        const params = new URLSearchParams(searchParams?.toString() ?? '');
+        params.set('checkIn',  next.checkIn);
+        params.set('checkOut', next.checkOut);
+        params.set('adults',   String(next.adults));
+        params.set('children', String(next.children));
+        params.set('rooms',    String(next.rooms));
+        params.delete('datesAuto');
+        router.push(`/search?${params.toString()}`);
+    }, [router, searchParams]);
+    const stayControl = {
+        checkIn, checkOut,
+        adults: Number(adults) || 2, children: Number(children) || 0, rooms: Number(rooms) || 1,
+        onApply: handleStayApply,
+    };
     const handleSelect      = useCallback((id: string) => setSelectedId(prev => prev === id ? null : id), []);
 
     // Wheel over the rail scrolls the cards horizontally and never reaches the
@@ -1340,7 +1341,7 @@ function HotelSearchContent() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                 className={theme === 'dark' ? 'dark flex flex-col min-h-screen' : 'flex flex-col min-h-screen'}
-                style={{ background: LIST_BG[theme], color: theme === 'dark' ? '#F5F5F5' : '#111111' }}
+                style={{ background: LIST_BG[theme], color: brandTheme(theme).text }}
             >
                 {/* The map view's toolbar, the same component at the same
                     sizes. Sort is the one control that stays behind — the
@@ -1369,9 +1370,10 @@ function HotelSearchContent() {
                     <div className={cn('relative', SHELL_CAP)}>
                         <SearchTopBar
                             tone={theme}
-                            barBackground={theme === 'dark' ? '#1A1A1A' : '#FFFFFF'}
+                            barBackground={brandTheme(theme).surface}
                             onBack={() => router.back()}
-                            summary={pillText}
+                            summary={destination}
+                            stay={stayControl}
                             searching={isLoading || isStreaming}
                             proximity={mapCenter}
                             onSearchSubmit={handleSearchSubmit}
@@ -1395,8 +1397,8 @@ function HotelSearchContent() {
                             for a city, so they are told which dates they are being quoted
                             for and that moving them is how to see other prices. */}
                         {datesArePicked && (
-                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
-                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: brandTheme(theme).muted }}>
+                                <CalendarClock size={12} className="shrink-0" color={BRAND_STROKE} aria-hidden><BrandStrokeDefs /></CalendarClock>
                                 {tAll('hotels.results.datesPicked')}
                             </p>
                         )}
@@ -1538,12 +1540,13 @@ function HotelSearchContent() {
                 was desktop-only anyway, so the panel is the only surface both
                 breakpoints reach. */}
             <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-30 pt-4', MAP_CHROME_GUTTER)}>
-                <div className={cn('relative', SHELL_CAP)}>
+                <div className="relative">
                     <SearchTopBar
                         className="pointer-events-auto"
                         tone={uiTone}
                         onBack={() => router.back()}
-                        summary={pillText}
+                        summary={destination}
+                            stay={stayControl}
                         searching={isLoading || isStreaming}
                         proximity={mapCenter}
                         onSearchSubmit={handleSearchSubmit}
@@ -1562,8 +1565,8 @@ function HotelSearchContent() {
                             for a city, so they are told which dates they are being quoted
                             for and that moving them is how to see other prices. */}
                         {datesArePicked && (
-                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: theme === 'dark' ? 'rgba(245,239,228,.55)' : '#64748b' }}>
-                                <CalendarClock size={12} className="shrink-0" style={{ color: ACCENT }} aria-hidden />
+                            <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: brandTheme(theme).muted }}>
+                                <CalendarClock size={12} className="shrink-0" color={BRAND_STROKE} aria-hidden><BrandStrokeDefs /></CalendarClock>
                                 {tAll('hotels.results.datesPicked')}
                             </p>
                         )}
@@ -1699,14 +1702,12 @@ function HotelSearchContent() {
                         className="absolute left-0 right-0 bottom-0 z-20"
                         style={{ pointerEvents: 'none' }}
                     >
-                        {/* The toolbar's box, again: the gutter outside, the cap
-                            inside. Everything the rail draws — the tally, the
-                            controls opposite it, and the strip under both —
-                            then starts on the bar's left edge and ends on its
-                            right one, instead of the rail running to the window
-                            while the bar stopped at 1400. */}
+                        {/* The toolbar's gutter, again: the tally and the controls
+                            opposite it start on the bar's left edge and end on its
+                            right one, and the strip below is drawn in the same box,
+                            so all three line up down the view's two edges. */}
                         <div className={MAP_CHROME_GUTTER}>
-                            <div className={SHELL_CAP}>
+                            <div className="contents">
                                 {/* Count + rail controls */}
                                 <div className="mb-1.5 flex items-end justify-between md:mb-0.5 md:items-center">
                                     {/* The tally, in the slider's top-left corner.
@@ -1749,12 +1750,12 @@ function HotelSearchContent() {
                                                 onClick={() => setShowAllCityOverride(true)}
                                                 className="max-w-[60vw] truncate md:max-w-none"
                                                 style={{
-                                                    background: 'rgba(255,107,75,0.15)',
-                                                    border: '1px solid rgba(255,107,75,0.4)',
+                                                    background: ACCENT,
+                                                    border: '1px solid transparent',
                                                     borderRadius: 100,
                                                     padding: '4px 12px',
                                                     fontSize: 11, fontWeight: 700,
-                                                    color: ACCENT, cursor: 'pointer',
+                                                    color: '#FFFFFF', cursor: 'pointer',
                                                     backdropFilter: 'blur(8px)',
                                                     whiteSpace: 'nowrap',
                                                     pointerEvents: 'auto',
@@ -1795,7 +1796,7 @@ function HotelSearchContent() {
                             scroll to horizontal. The bottom inset clears the app's
                             bottom nav wherever that nav is on screen. */}
                         <div className={cn('relative', RAIL_PAD_B_MOBILE)}>
-                            <div className="pl-4 sm:pl-8 lg:pl-12">
+                            <div className="pl-20">
                                 <div
                                     ref={attachRailScroll}
                                     className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
@@ -1828,7 +1829,7 @@ function HotelSearchContent() {
                                     ))}
                                     {/* Mirrors the strip's left inset so the last card
                                         doesn't butt against the window edge */}
-                                    <div className="w-4 shrink-0 sm:w-8 lg:w-12" />
+                                    <div className="w-20 shrink-0" />
                                 </div>
                             </div>
 
@@ -1843,14 +1844,12 @@ function HotelSearchContent() {
 
                                 Its own symmetric gutter, not the scroller's: the
                                 scroller's is left-only on purpose, so a card can
-                                scroll past the visual right edge — nested under
-                                that same box, a centered row would land 24px
-                                right of where the bar itself centers. This row
+                                scroll past the visual right edge, while this row
                                 needs both edges to land where the bar's do. Only
                                 drawn once there's more than one page to move
                                 between. */}
                             {railPageCount > 1 && (
-                                <div className="mt-3 flex justify-center gap-1.5 px-4 sm:px-8 lg:px-12">
+                                <div className="mt-3 flex justify-center gap-1.5 px-20">
                                     {Array.from({ length: railPageCount }).map((_, i) => (
                                         <button
                                             key={i}
@@ -1882,12 +1881,12 @@ function HotelSearchContent() {
                         exit={{ y: 60, opacity: 0 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 200 }}
                         // Rides the same bottom inset as the rail it restores, so
-                        // it clears the app's bottom nav too, and the same box, so
-                        // it comes back on the right edge the Hide button it
+                        // it clears the app's bottom nav too, and the same gutter,
+                        // so it comes back on the right edge the Hide button it
                         // replaces sat on rather than out at the window's.
-                        className={cn('pointer-events-none absolute inset-x-0 z-20', SHELL_GUTTER, RAIL_BOTTOM_MOBILE)}
+                        className={cn('pointer-events-none absolute inset-x-0 z-20 px-20', RAIL_BOTTOM_MOBILE)}
                     >
-                        <div className={cn('flex justify-end', SHELL_CAP)}>
+                        <div className="flex justify-end">
                             <button
                                 onClick={() => setRailHidden(false)}
                                 className="pointer-events-auto flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
@@ -1916,8 +1915,13 @@ export default function HotelSearchPage() {
         <Suspense
             fallback={
                 <div className="flex items-center justify-center" style={{ height: '100dvh', background: BG }}>
-                    <div className="rounded-full border-2 border-t-transparent animate-spin"
-                        style={{ width: 32, height: 32, borderColor: ACCENT, borderTopColor: 'transparent' }} />
+                    {/* An SVG ring rather than a bordered div: a border cannot carry the
+                        brand gradient, a stroke can. */}
+                    <svg width="32" height="32" viewBox="0 0 24 24" className="animate-spin" aria-label="Loading">
+                        <BrandStrokeDefs />
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.5" />
+                        <circle cx="12" cy="12" r="9" fill="none" stroke={BRAND_STROKE} strokeWidth="2.5" strokeDasharray="42 100" strokeLinecap="round" />
+                    </svg>
                 </div>
             }
         >

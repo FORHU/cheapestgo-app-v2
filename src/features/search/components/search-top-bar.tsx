@@ -1,10 +1,15 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import React from 'react';
-import { ArrowLeft, Compass, List, Map as MapIcon, Moon, SlidersHorizontal, Sun } from 'lucide-react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ArrowLeft, Compass, List, LogIn, Map as MapIcon, Moon, SlidersHorizontal, Sun } from 'lucide-react';
+import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
+import { useAuthStore } from '@/shared/stores/auth.store';
+import SignInDropdown from '@/shared/auth/SignInDropdown';
 import { SearchBar } from './search-bar';
+import { StayEditor, type Stay } from './stay-editor';
 import { ACCENT, ICON_BTN, sortPalette } from './search-chrome';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
@@ -47,6 +52,9 @@ export interface SearchTopBarProps {
     proximity?: { lat: number; lng: number };
     onSearchSubmit: (name: string, coords?: { lat: number; lng: number }) => void;
 
+    /** The stay being searched — dates and guests — editable from the bar. */
+    stay?: Stay & { onApply: (next: Stay) => void };
+
     /** The app theme, for the toggle's own label and glyph. */
     theme: 'light' | 'dark';
     onToggleTheme: () => void;
@@ -84,34 +92,29 @@ export interface SearchTopBarProps {
 export function SearchTopBar({
     tone, barBackground, className,
     onBack,
-    summary, searching, proximity, onSearchSubmit,
+    summary, searching, proximity, onSearchSubmit, stay,
     theme, onToggleTheme,
     view, onViewChange,
     filters, pois,
     showRegionControls = false,
 }: SearchTopBarProps) {
     const tAll = useTranslations();
-    const chrome = sortPalette(tone);
-
-    /** A control at rest, and the inverted chip a toggle takes while it is on. */
-    const rest = { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text };
-    const lit  = { background: chrome.text, border: `1px solid ${chrome.text}`, color: chrome.surface };
+    const { chrome, rest, lit } = barStyles(tone);
 
     return (
         <div
-            // Desktop takes 8px of padding on a height that follows its content.
-            // The 60px it used to be fixed at was taller than the tallest
-            // control plus any padding, so the padding never showed — it was
-            // 20px of dead space either way. The phone keeps its own fixed 48px,
-            // where the bar is already as tight as it goes.
+            // Desktop holds the bar at a fixed 60px — the size it was before the
+            // map and list toolbars were merged into this component — with 8px of
+            // padding inside it. The phone keeps its own tighter 48px, where the
+            // bar is already as small as it goes and the desktop controls step
+            // down to fit.
             className={cn(
-                'flex h-12 items-center gap-1.5 rounded-[16px] px-2',
-                'md:h-auto md:gap-2 md:rounded-[20px] md:p-2',
+                'flex h-12 items-center gap-1.5 rounded-[16px] p-8',
+                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
                 className,
             )}
             style={{
                 background: barBackground ?? chrome.bar,
-                border: `1px solid ${chrome.border}`,
                 boxShadow: chrome.shadow,
             }}
         >
@@ -121,7 +124,7 @@ export function SearchTopBar({
                 aria-label={tAll('common.goBack')}
                 className={ICON_BTN}
                 style={rest}>
-                <ArrowLeft size={13} className="md:size-[15px]" style={{ color: chrome.text }} />
+                <ArrowLeft size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
             </button>
 
             {/* Search */}
@@ -133,6 +136,9 @@ export function SearchTopBar({
                 onSubmit={onSearchSubmit}
             />
 
+            {/* Dates and guests, beside the place they belong to. */}
+            {stay && <StayEditor tone={tone} {...stay} />}
+
             {/* Everything the bar acts with, in one cluster at its right
                 corner — filters, nearby places, theme, view.
 
@@ -142,34 +148,11 @@ export function SearchTopBar({
                 (see the search page), so the controls take the end of the
                 bar and the slack falls between them and the field. */}
             <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
-                {/* Filters. Lit while the panel is open or anything is set, so a
-                    narrowed map is legible from the toolbar without opening it; the
-                    dot then says there is a count behind the icon, which a 28px
-                    circle has no room to print. */}
-                {filters && (
-                    <button
-                        onClick={filters.onToggle}
-                        aria-expanded={filters.open}
-                        aria-label={tAll('flights.results.filters')}
-                        title={tAll('flights.results.filters')}
-                        className={cn(ICON_BTN, 'relative transition-colors', filters.mobileOnly && 'lg:hidden')}
-                        style={filters.open || (filters.activeCount ?? 0) > 0 ? lit : rest}>
-                        <SlidersHorizontal size={13} className="md:size-[15px]" />
-                        {(filters.activeCount ?? 0) > 0 && !filters.open && (
-                            <span
-                                aria-hidden="true"
-                                className="absolute -top-0.5 -right-0.5 rounded-full"
-                                // Rings against the bar it sits on, which the caller
-                                // may have overridden out from under the palette.
-                                style={{ width: 7, height: 7, background: ACCENT, border: `1.5px solid ${barBackground ?? chrome.bar}` }}
-                            />
-                        )}
-                    </button>
-                )}
+                {filters && <BarFiltersButton tone={tone} barBackground={barBackground} {...filters} />}
 
-                {/* Nearby places. Takes the inverted chip while on — the same "this
-                    one is lit" the rail cards and the filter panel use — rather than
-                    a colour of its own, so the bar keeps to two tones. Only ever
+                {/* Nearby places. Takes the blue chip while on — the same "this one
+                    is lit" the rail cards and the filter panel use — rather than a
+                    colour of its own. Only ever
                     useful once a stay is picked, since that is what the discs are
                     drawn around, but the toggle stays put so it does not appear and
                     disappear under the thumb. */}
@@ -181,7 +164,7 @@ export function SearchTopBar({
                         title={pois.on ? 'Hide nearby places' : 'Show nearby places'}
                         className={cn(ICON_BTN, 'transition-colors')}
                         style={pois.on ? lit : rest}>
-                        <Compass size={13} className="md:size-[15px]" />
+                        <Compass size={13} className="md:size-[17px]" />
                     </button>
                 )}
 
@@ -205,38 +188,150 @@ export function SearchTopBar({
                     </>
                 )}
 
-                {/* Theme */}
-                <button
-                    onClick={onToggleTheme}
-                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                    className={ICON_BTN}
-                    style={rest}>
-                    {theme === 'dark'
-                        ? <Sun size={13} className="md:size-[15px]" style={{ color: chrome.text }} />
-                        : <Moon size={13} className="md:size-[15px]" style={{ color: chrome.text }} />}
-                </button>
+                <BarThemeButton tone={tone} theme={theme} onToggle={onToggleTheme} />
 
                 {/* View toggle — a circle on a phone, the labelled pill above it.
                     One button rather than one per view: they were mirrors of each
                     other, and mirrors are what drift.
 
-                    The pill stands at the icon buttons' own height rather than the
-                    40px it used to: it is the only labelled control on the bar, and
-                    at 40 beside a row of 28px circles it read as a different tier of
-                    control instead of the last item in the same row. Width still
-                    follows the label. */}
+                    The pill stands at the icon buttons' own height — 40px on
+                    desktop — with its width following the label. */}
                 <button
                     onClick={() => onViewChange(view === 'map' ? 'list' : 'map')}
                     aria-label={view === 'map' ? 'List view' : 'Map view'}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-7 md:w-auto md:px-3.5"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-auto md:px-4"
                     style={{ ...rest, fontSize: 13, fontWeight: 600 }}>
                     {view === 'map'
                         ? <List size={13} className="md:size-[15px]" />
                         : <MapIcon size={13} className="md:size-[15px]" />}
                     <span className="hidden md:inline">{view === 'map' ? tAll('search.listView') : tAll('search.mapView')}</span>
                 </button>
+
+                <BarAccountButton tone={tone} />
             </div>
         </div>
+    );
+}
+
+// ─── Parts shared with the flight results bar ─────────────────────────────────
+
+/**
+ * The palette, plus the two looks a bar control takes: at rest, and the inverted
+ * chip a toggle takes while it is on. Exported with the controls below so the
+ * flight results bar (`flight-search-top-bar.tsx`) draws from the same tokens
+ * rather than a copy of them.
+ */
+export function barStyles(tone: 'light' | 'dark') {
+    const chrome = sortPalette(tone);
+    const rest = { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text };
+    // "On" is the brand gradient, the same as a selected sort or a card's price chip.
+    const lit  = { background: ACCENT, border: '1px solid transparent', color: '#FFFFFF' };
+    return { chrome, rest, lit };
+}
+
+/**
+ * Filters. Lit while the panel is open or anything is set, so a narrowed list is
+ * legible from the toolbar without opening it; the dot then says there is a count
+ * behind the icon, which a 28px circle has no room to print.
+ */
+export function BarFiltersButton({
+    tone, barBackground, open, activeCount, onToggle, mobileOnly,
+}: NonNullable<SearchTopBarProps['filters']> & { tone: 'light' | 'dark'; barBackground?: string }) {
+    const tAll = useTranslations();
+    const { chrome, rest, lit } = barStyles(tone);
+    return (
+        <button
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-label={tAll('flights.results.filters')}
+            title={tAll('flights.results.filters')}
+            className={cn(ICON_BTN, 'relative transition-colors', mobileOnly && 'lg:hidden')}
+            style={open || (activeCount ?? 0) > 0 ? lit : rest}>
+            <SlidersHorizontal size={13} className="md:size-[17px]" />
+            {(activeCount ?? 0) > 0 && !open && (
+                <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 rounded-full"
+                    // Rings against the bar it sits on, which the caller
+                    // may have overridden out from under the palette.
+                    style={{ width: 7, height: 7, background: ACCENT, border: `1.5px solid ${barBackground ?? chrome.bar}` }}
+                />
+            )}
+        </button>
+    );
+}
+
+/** Theme. Labelled and drawn for the theme it switches to. */
+export function BarThemeButton({ tone, theme, onToggle }: { tone: 'light' | 'dark'; theme: 'light' | 'dark'; onToggle: () => void }) {
+    const { chrome, rest } = barStyles(tone);
+    return (
+        <button
+            onClick={onToggle}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            className={ICON_BTN}
+            style={rest}>
+            {theme === 'dark'
+                ? <Sun size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
+                : <Moon size={13} className="md:size-[17px]" style={{ color: chrome.text }} />}
+        </button>
+    );
+}
+
+/**
+ * The account control, at the bar's far corner as it is in the app header — the
+ * only one these pages have, since the bar stands in for that header.
+ *
+ * Signed out, it is a Sign in chip that comes back to this exact search: the
+ * `redirect` it carries is the path and query on screen, which the login page
+ * returns to (`returnPath` in use-auth.ts). Signed in, it is the header's own
+ * avatar menu — account settings and sign out — rather than a second copy of it.
+ *
+ * Nothing is drawn until the session check on load has answered, only the space
+ * it will take: otherwise a signed-in traveller sees "Sign in" flash up on every
+ * page before their avatar replaces it.
+ *
+ * Not on a phone. The bar has no width left there — the route was down to "C…" —
+ * and the bottom nav's sheet already carries sign-in and the account, which is
+ * also why the app header drops its own below desktop.
+ */
+export function BarAccountButton({ tone }: { tone: 'light' | 'dark' }) {
+    return (
+        <div className="hidden shrink-0 md:block">
+            <Suspense fallback={<span aria-hidden className="block h-10 w-[92px]" />}>
+                <BarAccountButtonInner tone={tone} />
+            </Suspense>
+        </div>
+    );
+}
+
+function BarAccountButtonInner({ tone }: { tone: 'light' | 'dark' }) {
+    const tAll = useTranslations();
+    const { lit } = barStyles(tone);
+    const user = useAuthStore((s) => s.user);
+    const checking = useAuthStore((s) => s.isLoading);
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    // The store only knows the session after hydration; the server render never does.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    if (!mounted || (checking && !user)) {
+        return <span aria-hidden className="block h-10 w-[92px]" />;
+    }
+
+    if (user) return <SignInDropdown />;
+
+    const query = searchParams?.toString();
+    const redirect = pathname + (query ? `?${query}` : '');
+    return (
+        <Link
+            href={`/login?redirect=${encodeURIComponent(redirect)}`}
+            aria-label={tAll('nav.signIn')}
+            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-4 transition-opacity hover:opacity-85"
+            style={{ ...lit, fontSize: 13, fontWeight: 600 }}>
+            <LogIn size={15} />
+            <span className="whitespace-nowrap">{tAll('nav.signIn')}</span>
+        </Link>
     );
 }

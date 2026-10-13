@@ -1,4 +1,5 @@
 'use client';
+import { BRAND } from '@/shared/lib/palette';
 
 /**
  * The marker standing in for several hotels that are too close together to draw
@@ -71,7 +72,8 @@ export function ClusterPin({ count, priceLabel, active = false, labels }: Cluste
                         height: THUMB,
                         flexShrink: 0,
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg,#667eea,#764ba2)',
+                        // The brand gradient, standing in until the photo loads (or if there is none).
+                        background: BRAND.gradient,
                         boxShadow: 'inset 0 0 0 1px var(--pin-line)',
                         color: '#fff',
                         fontWeight: 700,

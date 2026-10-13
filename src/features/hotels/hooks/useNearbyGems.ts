@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Landmark, Trees, Utensils, Pill, ShoppingBasket, Bus, Search,
 } from 'lucide-react';
@@ -22,22 +22,61 @@ interface PoiFeature {
         place_id?: string;
         mapbox_id?: string;
         photoReference?: string;
-        isStub?: boolean;
         source?: string;
         rating?: number | null;
+        userRatingsTotal?: number;
+        vicinity?: string;
         [key: string]: unknown;
     };
 }
 
+export interface PoiReview {
+    author_name: string;
+    rating: number;
+    text: string;
+    relative_time_description?: string;
+    profile_photo_url?: string;
+}
+
+export interface PoiOpeningHours {
+    open_now?: boolean;
+    weekday_text?: string[];
+}
+
+/** What api-v2's `/photos/poi?full=true` answers with. */
+interface PoiDetailsResponse {
+    nameEn?: string | null;
+    category?: string | null;
+    vicinity?: string | null;
+    rating?: number | string | null;
+    userRatingsTotal?: number | null;
+    reviews?: PoiReview[];
+    phone?: string | null;
+    website?: string | null;
+    openingHours?: PoiOpeningHours | null;
+}
+
 export interface NearbyGem {
     id: string;
+    /** Google's place id. Set only for places that came from Google — a Mapbox id is not one. */
+    placeId?: string;
     name: string;
+    /** Google's English name for the place, when it differs from the local one. */
+    translatedName?: string;
     category: string;
     displayCategory?: string;
     rating: number | null;
+    userRatingsTotal?: number | null;
+    vicinity?: string | null;
+    reviews?: PoiReview[];
+    phone?: string | null;
+    website?: string | null;
+    openingHours?: PoiOpeningHours | null;
+    source?: string;
     imageUrl: string;
     icon: React.ElementType;
     coordinates: { lat: number; lng: number };
+    /** Details not yet attempted or still in flight. A failed lookup settles this to false too. */
     isStub: boolean;
 }
 
@@ -45,7 +84,19 @@ interface UseNearbyGemsProps {
     coordinates?: { lat: number; lng: number };
     category: PoiCategory;
     radiusMeters?: number;
+    /**
+     * Which places get their details fetched. `'all'` (default) enriches every
+     * place; `'stubs'` only the Mapbox ones, which have nothing else to show.
+     * Details cost a billed Google call each, so callers that draw nothing the
+     * details change should pass `'stubs'`.
+     */
+    details?: 'all' | 'stubs';
 }
+
+/** Below this, a place is dropped once its details arrive (v1's bar). */
+const MIN_RATING = 3.5;
+/** Enrichment publishes at most this often, plus once at the end — not once per place. */
+const FLUSH_MS = 800;
 
 const pLimit = (limit: number) => {
     let active = 0;
@@ -81,9 +132,127 @@ export function categoryToBg(cat: string) {
     return 'from-slate-700 to-slate-950';
 }
 
-export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: UseNearbyGemsProps) {
+function toGem(f: PoiFeature, apiBase: string, details: 'all' | 'stubs'): NearbyGem {
+    const name = f.properties?.name ?? '';
+    const category = f.properties?.category ?? '';
+    const [lng, lat] = f.geometry?.coordinates ?? [0, 0];
+    const source = f.properties?.source ?? 'mapbox';
+    const placeId = source === 'google' ? f.properties?.place_id : undefined;
+    const photoRef = f.properties?.photoReference ?? '';
+
+    const qs = new URLSearchParams({ name, lat: String(lat), lng: String(lng) });
+    if (placeId)  qs.set('placeId', placeId);
+    if (category) qs.set('category', category);
+    if (photoRef) qs.set('photo_reference', photoRef);
+
+    return {
+        id:               f.properties?.place_id || name,
+        placeId,
+        name,
+        category,
+        rating:           f.properties?.rating ?? null,
+        userRatingsTotal: typeof f.properties?.userRatingsTotal === 'number' ? f.properties.userRatingsTotal : null,
+        vicinity:         typeof f.properties?.vicinity === 'string' ? f.properties.vicinity : null,
+        source,
+        imageUrl:         `${apiBase}/photos/poi?${qs.toString()}`,
+        icon:             categoryToIcon(category),
+        coordinates:      { lat, lng },
+        // Waiting on details only if they will be fetched for this place.
+        isStub:           details === 'all' || source !== 'google',
+    };
+}
+
+/** One place's details folded into the list — or the place dropped, if they rate it too low. */
+export function mergeDetails(gems: NearbyGem[], id: string, d: PoiDetailsResponse): NearbyGem[] {
+    // The endpoint sends this as a string sometimes; coerce once, here.
+    const rating = d.rating != null ? Number(d.rating) : null;
+    if (rating !== null && rating < MIN_RATING) return gems.filter((g) => g.id !== id);
+    return gems.map((g) => g.id !== id ? g : {
+        ...g,
+        translatedName:   d.nameEn ?? g.translatedName,
+        displayCategory:  d.category ?? g.displayCategory,
+        vicinity:         d.vicinity ?? g.vicinity,
+        rating:           rating ?? g.rating,
+        userRatingsTotal: d.userRatingsTotal ?? g.userRatingsTotal,
+        reviews:          d.reviews?.length ? d.reviews : g.reviews,
+        phone:            d.phone ?? g.phone,
+        website:          d.website ?? g.website,
+        openingHours:     d.openingHours ?? g.openingHours,
+        isStub:           false,
+    });
+}
+
+async function enrich(
+    initial: NearbyGem[],
+    apiBase: string,
+    signal: AbortSignal,
+    publish: (gems: NearbyGem[]) => void,
+    mode: 'all' | 'stubs',
+) {
+    const limiter = pLimit(3);
+    let buffer = [...initial];
+    let lastFlush = Date.now();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const clearTimer = () => { if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
+    const publishNow = () => {
+        clearTimer();
+        if (signal.aborted) return;
+        publish([...buffer]);
+        lastFlush = Date.now();
+    };
+    const flush = (force: boolean) => {
+        if (signal.aborted) { clearTimer(); return; }
+        const wait = FLUSH_MS - (Date.now() - lastFlush);
+        if (force || wait <= 0) publishNow();
+        else if (timer === undefined) timer = setTimeout(publishNow, wait);
+    };
+    signal.addEventListener('abort', clearTimer, { once: true });
+    const settle = (id: string) => {
+        buffer = buffer.map((g) => g.id === id ? { ...g, isStub: false } : g);
+    };
+
+    const targets = mode === 'all' ? initial : initial.filter((g) => g.source !== 'google');
+    await Promise.all(targets.map((gem) => limiter(async () => {
+        if (signal.aborted) return;
+        try {
+            const qs = new URLSearchParams({
+                name: gem.name,
+                lat:  String(gem.coordinates.lat),
+                lng:  String(gem.coordinates.lng),
+                full: 'true',
+            });
+            if (gem.placeId)  qs.set('placeId', gem.placeId);
+            if (gem.category) qs.set('category', gem.category);
+            const res = await fetch(`${apiBase}/photos/poi?${qs.toString()}`, { signal });
+            if (!res.ok) {
+                settle(gem.id);
+            } else {
+                // Read the body first: `buffer` must be read after the await, or a slower
+                // response would write back a stale copy and drop concurrent merges.
+                const details = await res.json() as PoiDetailsResponse;
+                buffer = mergeDetails(buffer, gem.id, details);
+            }
+            flush(false);
+        } catch (e) {
+            // One place's details failing leaves its card as it was, minus the spinner.
+            if (isAbortError(e) || signal.aborted) return;
+            settle(gem.id);
+            flush(false);
+        }
+    })));
+    if (targets.length > 0) flush(true);
+}
+
+/**
+ * Nearby places for a point. `error` means "the lookup was incomplete" — gems
+ * may still be present (e.g. Google failed but Mapbox found places).
+ */
+export function useNearbyGems({ coordinates, category, radiusMeters = 3000, details = 'all' }: UseNearbyGemsProps) {
     const [gems, setGems]       = useState<NearbyGem[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError]     = useState(false);
+    const [attempt, setAttempt] = useState(0);
+    const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
     // Callers build `coordinates` inline, so the effect keys off the two
     // primitives instead of the object — depending on its identity would
@@ -100,16 +269,25 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
 
         const run = async () => {
             setLoading(true);
+            setError(false);
             setGems([]);
 
             try {
-                // Stage 1: Google Places via V2 API proxy
-                const discoverUrl = `${apiBase}/hotels/nearby?lat=${lat}&lng=${lng}&category=${category}&radius=${radiusMeters}`;
-                const discoverRes  = await fetch(discoverUrl, { signal });
-                const discoverData = discoverRes.ok
-                    ? await discoverRes.json() as { features?: PoiFeature[] }
-                    : { features: [] };
-                const features: PoiFeature[] = discoverData.features ?? [];
+                // Stage 1: Google Places via the V2 API. A failure here is reported, not
+                // presented as an empty neighbourhood — but Stage 2 still runs, so whatever
+                // Mapbox has still shows.
+                let features: PoiFeature[] = [];
+                try {
+                    const res = await fetch(
+                        `${apiBase}/hotels/nearby?lat=${lat}&lng=${lng}&category=${category}&radius=${radiusMeters}`,
+                        { signal },
+                    );
+                    if (res.ok) features = ((await res.json()) as { features?: PoiFeature[] }).features ?? [];
+                    else if (!signal.aborted) setError(true);
+                } catch (e) {
+                    if (isAbortError(e)) return;
+                    setError(true);
+                }
 
                 // Stage 2: Mapbox fallback when Google returns sparse results
                 if (features.length < 5 && env.NEXT_PUBLIC_MAPBOX_TOKEN) {
@@ -124,16 +302,23 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     };
                     const cats = mbCats[category] ?? ['tourism'];
 
+                    let mbFailed = 0;
                     const mbResults = await Promise.all(
-                        cats.map(cat =>
+                        cats.map((cat) =>
                             fetch(
                                 `https://api.mapbox.com/search/searchbox/v1/category/${encodeURIComponent(cat)}?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}&language=en&limit=15&proximity=${lng},${lat}`,
-                                { signal }
-                            ).then(r => r.json()).catch(() => ({ features: [] }))
-                        )
+                                { signal },
+                            ).then((r) => {
+                                if (!r.ok) throw new Error(`mapbox ${r.status}`);
+                                return r.json();
+                            }).catch(() => { mbFailed++; return { features: [] }; }),
+                        ),
                     );
+                    // Nothing from Google and nothing from Mapbox because Mapbox failed:
+                    // that is a failed lookup, not an empty neighbourhood.
+                    if (features.length === 0 && mbFailed === cats.length && !signal.aborted) setError(true);
 
-                    const seen = new Set(features.map(f => f.properties?.name));
+                    const seen = new Set(features.map((f) => f.properties?.name));
                     for (const mb of mbResults) {
                         for (const f of (mb.features ?? [])) {
                             const name = f.properties?.name;
@@ -148,7 +333,6 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                                         category: f.properties?.category ?? category,
                                         rating:   null,
                                         source:   'mapbox',
-                                        isStub:   true,
                                     },
                                 });
                             }
@@ -156,78 +340,20 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
                     }
                 }
 
-                if (signal.aborted || features.length === 0) { setLoading(false); return; }
+                if (signal.aborted) return;
+                if (features.length === 0) { setLoading(false); return; }
 
-                const initialGems: NearbyGem[] = features.slice(0, 25).map(f => {
-                    const name     = f.properties?.name ?? '';
-                    const cat      = f.properties?.category ?? '';
-                    const [lng, lat] = f.geometry?.coordinates ?? [0, 0];
-                    const placeId  = f.properties?.place_id ?? '';
-                    const photoRef = f.properties?.photoReference ?? '';
-
-                    const qs = new URLSearchParams({ name, lat: String(lat), lng: String(lng) });
-                    if (placeId)  qs.set('placeId', placeId);
-                    if (cat)      qs.set('category', cat);
-                    if (photoRef) qs.set('photo_reference', photoRef);
-                    const imageUrl = `${apiBase}/photos/poi?${qs.toString()}`;
-
-                    return {
-                        id:          placeId || name,
-                        name,
-                        category:    cat,
-                        rating:      f.properties?.rating ?? null,
-                        imageUrl,
-                        icon:        categoryToIcon(cat),
-                        coordinates: { lat, lng },
-                        isStub:      f.properties?.isStub ?? f.properties?.source === 'mapbox',
-                    };
-                });
-
+                const initialGems = features.slice(0, 25).map((f) => toGem(f, apiBase, details));
                 setGems(initialGems);
                 setLoading(false);
 
-                // Stage 3: background enrichment for stub entries
-                const limiter = pLimit(3);
-                let buffer = [...initialGems];
-
-                await Promise.all(
-                    initialGems.map(gem =>
-                        limiter(async () => {
-                            if (signal.aborted || !gem.isStub) return;
-                            try {
-                                const qs = new URLSearchParams({
-                                    name: gem.name,
-                                    lat:  String(gem.coordinates.lat),
-                                    lng:  String(gem.coordinates.lng),
-                                    placeId:  gem.id,
-                                    category: gem.category,
-                                    full: 'true',
-                                });
-                                const r = await fetch(`${apiBase}/photos/poi?${qs.toString()}`, { signal });
-                                if (!r.ok || signal.aborted) return;
-                                const d = await r.json() as { rating?: number | string; category?: string };
-
-                                const hasLowRating = d.rating !== undefined && d.rating !== null && Number(d.rating) < 3.5;
-                                if (hasLowRating) {
-                                    buffer = buffer.filter(g => g.id !== gem.id);
-                                } else {
-                                    buffer = buffer.map(g => g.id !== gem.id ? g : {
-                                        ...g,
-                                        // The endpoint sends this as a string sometimes — the
-                                        // threshold check above already coerced it, but the raw
-                                        // value was landing in a field typed `number`.
-                                        rating:          d.rating != null ? Number(d.rating) : g.rating,
-                                        displayCategory: d.category ?? g.category,
-                                        isStub:          false,
-                                    });
-                                }
-                                if (!signal.aborted) setGems([...buffer]);
-                            } catch { /* enrichment failure is non-fatal */ }
-                        })
-                    )
-                );
+                // Stage 3: details for every place, published in batches
+                await enrich(initialGems, apiBase, signal, setGems, details);
             } catch (e) {
-                if (!isAbortError(e)) console.error('[useNearbyGems]', e);
+                if (!isAbortError(e) && !signal.aborted) {
+                    console.error('[useNearbyGems]', e);
+                    setError(true);
+                }
             } finally {
                 if (!signal.aborted) setLoading(false);
             }
@@ -235,7 +361,7 @@ export function useNearbyGems({ coordinates, category, radiusMeters = 3000 }: Us
 
         run();
         return () => controller.abort();
-    }, [lat, lng, category, radiusMeters]);
+    }, [lat, lng, category, radiusMeters, details, attempt]);
 
-    return { gems, loading };
+    return { gems, loading, error, retry };
 }

@@ -3,7 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import { BRAND_NAME } from '@/shared/lib/brand';
 import { Suspense } from 'react';
 import { FlightSearchClient } from './flight-search-client';
-import { Header } from '@/shared/components/header';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,8 +35,9 @@ export async function generateMetadata({
 
 export default function FlightSearchPage() {
     return (
+        // No app header: the results page's own top bar stands in for it, as the hotel
+        // search page's does — see FlightSearchTopBar.
         <div className="min-h-screen flex flex-col">
-            <Header />
             <Suspense fallback={null}>
                 <FlightSearchClient />
             </Suspense>

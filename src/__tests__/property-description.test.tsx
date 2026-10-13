@@ -137,7 +137,9 @@ describe('PropertyDescription', () => {
 
         // An amenity is something the stay gives you; a policy is something
         // it asks of you. Suppliers return one flat list of both.
-        const group = (label: string) => screen.getByText(label).closest('div')!;
+        // The groups are named lists — the design prints no label, so the name is the
+        // accessible one.
+        const group = (label: string) => screen.getByRole('list', { name: label });
         expect(group('General Amenities')).toHaveTextContent('Air conditioning');
         expect(group('General Amenities')).toHaveTextContent('Internet Access');
         expect(group('General Amenities')).not.toHaveTextContent('Smoking Allowed');
@@ -149,7 +151,7 @@ describe('PropertyDescription', () => {
 
     it('draws no policies group when the hotel states none', () => {
         render(<PropertyDescription {...base} amenities={['Elevator / Lift', 'Internet Access']} />);
-        expect(screen.queryByText('Rules & Policies')).not.toBeInTheDocument();
+        expect(screen.queryByRole('list', { name: 'Rules & Policies' })).not.toBeInTheDocument();
     });
 
     it('offers no amenities link when they all fit', () => {
