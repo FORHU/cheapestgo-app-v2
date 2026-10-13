@@ -28,11 +28,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Before setup-node: `cache: pnpm` needs the pnpm binary to resolve the store path.
-      # Version 9 matches pnpm-lock.yaml's lockfileVersion 9.0.
+      # Before setup-node: `cache: pnpm` needs the pnpm binary to resolve the store path,
+      # so a pnpm that fails to start also fails that step rather than this one.
+      #
+      # No version here on purpose — the action reads package.json's packageManager field.
+      # Pinning 9 while developers and the Dockerfile's corepack ran 10 is what broke this
+      # workflow: pnpm 9 treats pnpm-workspace.yaml as a workspace definition and rejects it
+      # without a `packages:` key, so every pnpm command died with "packages field missing
+      # or empty". One pin, read by CI, corepack and the image alike, keeps them in step.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
