@@ -149,7 +149,6 @@ function validateGuest(g: GuestInfo): Partial<Record<keyof GuestInfo, string>> {
     if (!g.lastName.trim())  e.lastName  = 'Required';
     if (!g.email.trim())     e.email     = 'Required';
     else if (!validateEmail(g.email)) e.email = 'Invalid email';
-    if (!g.phone.trim())     e.phone     = 'Required';
     return e;
 }
 
