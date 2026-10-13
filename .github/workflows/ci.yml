@@ -5,11 +5,15 @@ name: CI
 # checks. v1 runs type check and test only; this runs lint and build as well, so a deploy
 # workflow added later cannot fail on something CI never looked at.
 
+# Every branch and every pull request, rather than a named list. A list has to be edited
+# each time someone cuts a branch, and the branch nobody added is the one that reaches
+# staging unchecked. `pull_request` also covers the merge: it tests the merge result, not
+# the branch tip, so a change that only breaks once combined is caught before it lands.
 on:
   push:
-    branches: [main, staging, updates]
+    branches: ['**']
   pull_request:
-    branches: [main, staging, updates]
+    branches: ['**']
 
 jobs:
   check:
