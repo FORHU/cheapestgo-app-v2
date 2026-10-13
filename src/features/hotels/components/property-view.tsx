@@ -14,11 +14,9 @@ import { useTranslations } from 'next-intl';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Marker } from 'react-map-gl/mapbox';
 import { http } from '@/shared/lib/http';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
-import { Map } from '@/shared/components/ui/map';
-import { useNearbyGems } from '@/features/hotels/hooks/useNearbyGems';
+import { NearbyExplorer } from '@/features/hotels/components/nearby/NearbyExplorer';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
@@ -199,105 +197,6 @@ function Spinner({ size = 32, accent = 'rgba(255,255,255,.2)' }: { size?: number
             <circle cx="12" cy="12" r="9" fill="none" stroke={accent} strokeWidth="3" />
             <circle cx="12" cy="12" r="9" fill="none" stroke={BRAND_STROKE} strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
         </svg>
-    );
-}
-
-// ─── Haversine distance (miles) ───────────────────────────────────────────────
-
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R    = 3958.8;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a    = Math.sin(dLat / 2) ** 2
-               + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function categoryDotColor(cat: string): string {
-    const c = cat.toLowerCase();
-    if (c.includes('park') || c.includes('garden') || c.includes('nature'))      return '#10b981';
-    if (c.includes('restaurant') || c.includes('cafe') || c.includes('food') || c.includes('bar')) return '#f97316';
-    if (c.includes('museum') || c.includes('landmark') || c.includes('attraction')) return '#818cf8';
-    if (c.includes('shop') || c.includes('market'))                               return '#ec4899';
-    if (c.includes('hospital') || c.includes('pharmacy'))                         return '#60a5fa';
-    return '#94a3b8';
-}
-
-// ─── NearbySection ────────────────────────────────────────────────────────────
-
-function NearbySection({ coordinates, palette }: { coordinates: { lat: number; lng: number }; palette: PropertyPalette }) {
-    const t = useTranslations('property');
-    const { gems } = useNearbyGems({ coordinates, category: 'all', radiusMeters: 2000 });
-    const topGems  = gems.slice(0, 5);
-
-    return (
-        // The map over its list rather than beside it: in the design this
-        // section is a column of its own next to the rooms, and a map given
-        // 42% of *that* would be a thumbnail.
-        <div>
-            {/* Map — the column's full width, at the placeholder's proportions */}
-            <div style={{ width: '100%', height: 360, borderRadius: 12, overflow: 'hidden', background: '#1e293b' }}>
-                <Map
-                    mapStyle={palette.mapStyle}
-                    initialViewState={{ longitude: coordinates.lng, latitude: coordinates.lat, zoom: 14 }}
-                    interactive={false}
-                    className="rounded-2xl"
-                >
-                    {/* Hotel pin */}
-                    <Marker longitude={coordinates.lng} latitude={coordinates.lat} anchor="center">
-                        <div style={{ width: 14, height: 14, borderRadius: '50%', background: ACCENT, border: '2.5px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,.55)' }} />
-                    </Marker>
-                    {/* POI pins */}
-                    {topGems.map(gem => (
-                        <Marker key={gem.id} longitude={gem.coordinates.lng} latitude={gem.coordinates.lat} anchor="center">
-                            <div style={{ width: 9, height: 9, borderRadius: '50%', background: categoryDotColor(gem.category), border: '1.5px solid rgba(255,255,255,.75)', boxShadow: '0 1px 4px rgba(0,0,0,.4)' }} />
-                        </Marker>
-                    ))}
-                </Map>
-            </div>
-
-            {/* Place list. The design shows only the map box, but the map is
-                non-interactive and draws its places as unlabelled dots — on its
-                own it says there is something nearby without saying what. The
-                names and distances stay under it. */}
-            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
-                {topGems.length === 0 && (
-                    <p style={{ color: palette.muted, fontSize: 18 }}>{t('v2.loadingNearby')}</p>
-                )}
-                {topGems.map((gem, i) => {
-                    const dist = haversine(coordinates.lat, coordinates.lng, gem.coordinates.lat, gem.coordinates.lng);
-                    const Icon = gem.icon;
-                    const dot  = categoryDotColor(gem.category);
-                    return (
-                        <div
-                            key={gem.id}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '11px 0',
-                                borderBottom: i < topGems.length - 1 ? `1px solid ${palette.hairline}` : 'none',
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 34, height: 34, borderRadius: 10, background: palette.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <Icon size={21} color={dot} />
-                                </div>
-                                <div>
-                                    <div style={{ fontWeight: 600, fontSize: 18, color: palette.title, lineHeight: 1.25 }}>{gem.name}</div>
-                                    <div style={{ fontSize: 15, color: palette.muted, marginTop: 2, textTransform: 'capitalize' }}>
-                                        {gem.displayCategory || gem.category}
-                                    </div>
-                                </div>
-                            </div>
-                            <div style={{ fontSize: 17, color: palette.soft, fontWeight: 600, paddingLeft: 12, flexShrink: 0 }}>
-                                {dist.toFixed(1)} mi
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
     );
 }
 
@@ -761,7 +660,7 @@ function PropertyContent() {
                     <section className="min-w-0">
                         <h2 className={SECTION_HEADING} style={{ color: palette.title }}>{t('v2.nearbyPlaces')}</h2>
                         <div className="mt-4">
-                            <NearbySection coordinates={coordinates} palette={palette} />
+                            <NearbyExplorer coordinates={coordinates} hotelName={content?.name ?? ''} palette={palette} />
                         </div>
                     </section>
                 )}
