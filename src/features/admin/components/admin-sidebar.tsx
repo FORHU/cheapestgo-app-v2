@@ -7,6 +7,7 @@ import {
     BookOpen,
     Users,
     Tag,
+    MessageCircle,
     PlaneTakeoff,
     ChevronRight,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
     { href: '/admin/bookings',  label: 'Bookings',   icon: BookOpen },
     { href: '/admin/customers', label: 'Customers',  icon: Users },
     { href: '/admin/deals',     label: 'Deals',      icon: Tag },
+    { href: '/admin/support',   label: 'Support',    icon: MessageCircle },
 ] as const;
 
 export function AdminSidebar() {

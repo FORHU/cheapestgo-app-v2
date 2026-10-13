@@ -1,0 +1,152 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { useState, useEffect } from 'react';
+import { BadgeDollarSign, BellOff, Loader2, Check } from 'lucide-react';
+import { http } from '@/shared/lib/http';
+
+interface PriceAlertButtonProps {
+    origin: string;
+    destination: string;
+    adults?: number;
+    cabin?: string;
+}
+
+type AlertState = 'idle' | 'loading' | 'active' | 'error';
+
+export function PriceAlertButton({
+    origin,
+    destination,
+    adults = 1,
+    cabin = 'economy',
+}: PriceAlertButtonProps) {
+    const tAll = useTranslations();
+    const [state, setState] = useState<AlertState>('loading');
+    const [alertId, setAlertId] = useState<string | null>(null);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+    const [feedback, setFeedback] = useState('');
+
+    useEffect(() => {
+        let cancelled = false;
+        async function checkExisting() {
+            try {
+                const res = await http.get<{ data?: Array<{ id: string; origin: string; destination: string; adults: number; cabin_class: string; is_active: boolean }> }>('/api/price-alerts');
+                if (!cancelled) {
+                    setIsLoggedIn(true);
+                    const items = Array.isArray(res) ? res : res?.data ?? [];
+                    const existing = items.find((a) =>
+                        a.origin === origin &&
+                        a.destination === destination &&
+                        a.adults === adults &&
+                        a.cabin_class === cabin &&
+                        a.is_active
+                    );
+                    if (existing) { setAlertId(existing.id); setState('active'); }
+                    else setState('idle');
+                }
+            } catch (err: unknown) {
+                if (!cancelled) {
+                    const status = (err as { status?: number })?.status;
+                    if (status === 401) {
+                        setIsLoggedIn(false);
+                    }
+                    setState('idle');
+                }
+            }
+        }
+        checkExisting();
+        return () => { cancelled = true; };
+    }, [origin, destination, adults, cabin]);
+
+    const createAlert = async () => {
+        setState('loading');
+        try {
+            const res = await http.post<{ success: boolean; data: { id: string } }>('/api/price-alerts', { origin, destination, cabin_class: cabin, adults });
+            if (res.success) {
+                setAlertId(res.data.id);
+                setState('active');
+                setFeedback('Price alerts enabled');
+                setTimeout(() => setFeedback(''), 4000);
+            } else {
+                setFeedback('Failed to create alert');
+                setState('idle');
+                setTimeout(() => setFeedback(''), 3000);
+            }
+        } catch {
+            setState('error');
+            setTimeout(() => setState('idle'), 2000);
+        }
+    };
+
+    const removeAlert = async () => {
+        if (!alertId) return;
+        setState('loading');
+        try {
+            await http.delete(`/api/price-alerts/${alertId}`);
+            setAlertId(null);
+            setState('idle');
+            setFeedback('Alert removed');
+            setTimeout(() => setFeedback(''), 2000);
+        } catch {
+            setState('active');
+        }
+    };
+
+    if (isLoggedIn === false) {
+        return (
+            <button
+                onClick={() => { setFeedback('Sign in required'); setTimeout(() => setFeedback(''), 3000); }}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 dark:border-white/10 dark:bg-slate-900 dark:text-slate-400"
+                title={tAll('flights.priceAlert.signInRequired')}
+            >
+                <BadgeDollarSign size={16} />
+                Track Price
+                {feedback && <span className="ml-1 text-amber-600 dark:text-amber-400">{feedback}</span>}
+            </button>
+        );
+    }
+
+    if (state === 'loading') {
+        return (
+            <div className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-400 dark:border-white/10 dark:bg-slate-900">
+                <Loader2 size={16} className="animate-spin" />
+                <span>{tAll('flights.priceAlert.loading')}</span>
+            </div>
+        );
+    }
+
+    if (state === 'active') {
+        return (
+            <div className="flex items-center gap-1.5">
+                <button
+                    onClick={removeAlert}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                    title={tAll('flights.priceAlert.remove')}
+                >
+                    <BellOff size={16} />
+                    {tAll('flights.priceAlert.active')}
+                </button>
+                {feedback && <span className="text-xs text-emerald-600 dark:text-emerald-400">{feedback}</span>}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-1.5">
+            <button
+                onClick={createAlert}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                title={tAll('flights.priceAlert.emailMe')}
+            >
+                <BadgeDollarSign size={16} />
+                {tAll('flights.priceAlert.track')}
+            </button>
+            {feedback && (
+                <span className={`text-xs flex items-center gap-1 ${feedback === 'Price alerts enabled' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
+                    {feedback === 'Price alerts enabled' && <Check size={11} />}
+                    {feedback}
+                </span>
+            )}
+        </div>
+    );
+}

@@ -1,12 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, History, Plane, Building2, Globe, X } from 'lucide-react';
+import { useRouter } from '@/i18n/navigation';
+import { MapPin, History, Plane, Building2, Globe, X, Hotel } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
 import type { Destination } from '@/shared/types';
+import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import {
     useSearchStore,
     useDestinationQuery,
@@ -14,12 +16,19 @@ import {
     useActiveDropdown,
 } from '@/shared/stores/search.store';
 
+type DropdownField = 'origin' | 'destination';
+
 interface DestinationInputProps {
     forceOpen?: boolean;
     onSelect?: (d: Destination) => void;
     placeholder?: string;
     segmentIndex?: number;
-    field?: string;
+    field?: DropdownField;
+}
+
+function getDropdownKey(segmentIndex?: number, field?: DropdownField): string {
+    if (segmentIndex !== undefined && field) return `flight-${field}`;
+    return 'destination';
 }
 
 function getIcon(type: Destination['type']) {
@@ -27,37 +36,62 @@ function getIcon(type: Destination['type']) {
         case 'history':  return <History size={16} />;
         case 'airport':  return <Plane size={16} />;
         case 'country':  return <Globe size={16} />;
+        case 'hotel':    return <Hotel size={16} />;
         default:         return <Building2 size={16} />;
     }
 }
 
-export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps) {
+interface TrendingDestination {
+    city: string;
+    countryCode: string;
+    countryName: string;
+    imageUrl: string;
+}
+
+export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: DestinationInputProps) {
+    const tAll = useTranslations();
+    const router = useRouter();
     const ref = useRef<HTMLDivElement>(null);
+    const [localQuery, setLocalQuery] = useState('');
 
     const query = useDestinationQuery();
     const recentSearches = useRecentSearches();
     const activeDropdown = useActiveDropdown();
-    const { setDestination, setDestinationQuery, addRecentSearch, setActiveDropdown, removeRecentSearch } =
+    const { setDestination, setDestinationQuery, addRecentSearch, setActiveDropdown, removeRecentSearch, setFlightSegment } =
         useSearchStore();
 
-    const [debouncedQuery, setDebouncedQuery] = useState(query);
+    const dropdownKey = getDropdownKey(segmentIndex, field);
+    const isFlightField = segmentIndex !== undefined && field !== undefined;
+    const activeQuery = isFlightField ? localQuery : query;
+
+    const { data: trendingData } = useQuery<TrendingDestination[]>({
+        queryKey: ['trending-destinations'],
+        queryFn: () =>
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/hotels/trending`)
+                .then(r => r.json())
+                .then((res: { success: boolean; data: TrendingDestination[] }) => res.success ? res.data : []),
+        staleTime: 30 * 60 * 1000,
+        enabled: !isFlightField,
+    });
+
+    const [debouncedQuery, setDebouncedQuery] = useState(activeQuery);
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedQuery(query), 350);
+        const t = setTimeout(() => setDebouncedQuery(activeQuery), 350);
         return () => clearTimeout(t);
-    }, [query]);
+    }, [activeQuery]);
 
     const { data: suggestions = [], isFetching } = useQuery<Destination[]>({
-        queryKey: ['autocomplete', 'destinations', debouncedQuery],
-        queryFn: () =>
-            http.get<{ success: boolean; data: Destination[] }>(
-                `/api/v2/autocomplete?query=${encodeURIComponent(debouncedQuery)}`
-            ).then((res) => (res.success ? res.data : [])),
+        queryKey: ['autocomplete', isFlightField ? 'flights' : 'destinations', debouncedQuery],
+        queryFn: () => autocompleteDestinations(
+            debouncedQuery,
+            isFlightField ? 'flights' : 'hotels',
+        ),
         enabled: debouncedQuery.length >= 2,
         staleTime: 5 * 60 * 1000,
         placeholderData: (prev) => prev,
     });
 
-    const isOpen = forceOpen || activeDropdown === 'destination';
+    const isOpen = forceOpen || activeDropdown === dropdownKey;
 
     useEffect(() => {
         if (isOpen) return;
@@ -71,11 +105,26 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
     }, [isOpen, forceOpen, setActiveDropdown]);
 
     const handleSelect = (d: Destination) => {
-        setDestination(d);
-        setDestinationQuery(d.title);
-        addRecentSearch(d);
+        if (d.type === 'hotel' && d.id) {
+            router.push(`/property/${d.id}`);
+            if (!forceOpen) setActiveDropdown(null);
+            return;
+        }
+        if (isFlightField) {
+            setFlightSegment(segmentIndex!, { [field!]: d });
+            setLocalQuery('');
+        } else {
+            setDestination(d);
+            setDestinationQuery(d.title);
+            addRecentSearch(d);
+        }
         onSelect?.(d);
         if (!forceOpen) setActiveDropdown(null);
+    };
+
+    const handleQueryChange = (val: string) => {
+        if (isFlightField) setLocalQuery(val);
+        else setDestinationQuery(val);
     };
 
     return (
@@ -90,24 +139,24 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                     className={
                         forceOpen
                             ? 'w-full z-10'
-                            : 'absolute top-full left-0 mt-3 w-[480px] min-w-[480px] max-w-[480px] bg-white dark:bg-slate-900 shadow-2xl rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden z-[100]'
+                            : 'absolute top-full left-0 mt-3 w-[480px] min-w-[480px] max-w-[480px] bg-white dark:bg-slate-900 shadow-2xl rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden z-100'
                     }
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Search input inside the dropdown */}
                     <div className="p-4 border-b border-slate-100 dark:border-white/5">
                         <span className="text-[9px] text-slate-500 font-mono font-medium uppercase tracking-wider block mb-1">
-                            Where to?
+                            {tAll('search.results.whereTo')}
                         </span>
                         <div className="flex items-center gap-2">
                             <MapPin className="text-slate-400 shrink-0" size={18} />
                             <input
                                 autoFocus
                                 type="text"
-                                value={query}
-                                onChange={(e) => setDestinationQuery(e.target.value)}
+                                value={activeQuery}
+                                onChange={(e) => handleQueryChange(e.target.value)}
                                 onFocus={(e) => e.target.select()}
-                                placeholder="Search destinations..."
+                                placeholder={tAll('landing.search.searchDestinationsPlaceholder')}
                                 className="bg-transparent border-none p-0 text-[13px] font-bold focus:ring-0 outline-none w-full text-slate-900 dark:text-white placeholder:font-normal placeholder:text-slate-400"
                             />
                             {isFetching && (
@@ -116,9 +165,9 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                                     <div className="absolute inset-0 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                                 </div>
                             )}
-                            {query && (
+                            {activeQuery && (
                                 <button
-                                    onClick={() => setDestinationQuery('')}
+                                    onClick={() => handleQueryChange('')}
                                     className="p-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full"
                                 >
                                     <X size={14} className="text-slate-400" />
@@ -128,12 +177,12 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                     </div>
 
                     {/* Results */}
-                    <div className="max-h-[260px] overflow-y-auto py-2">
+                    <div className="max-h-[380px] overflow-y-auto py-2">
                         {/* Recent searches */}
-                        {!query && recentSearches.length > 0 && (
+                        {!activeQuery && recentSearches.length > 0 && (
                             <>
                                 <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">
-                                    Recent
+                                    {tAll('search.recent')}
                                 </div>
                                 {recentSearches.map((item, i) => (
                                     <div
@@ -163,16 +212,52 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                             </>
                         )}
 
-                        {/* Autocomplete results */}
-                        {query && suggestions.length === 0 && !isFetching && (
-                            <div className="px-6 py-4 text-center text-slate-400 text-sm">
-                                No results found
+                        {/* Trending destinations */}
+                        {!activeQuery && !isFlightField && trendingData && trendingData.length > 0 && (
+                            <div className="px-4 pb-3 pt-1">
+                                <div className="px-2 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">
+                                    {tAll('search.trending')}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-1">
+                                    {trendingData.map((item, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleSelect({
+                                                type:        'city',
+                                                title:       item.city,
+                                                subtitle:    item.countryName,
+                                                countryCode: item.countryCode,
+                                            })}
+                                            className="relative rounded-xl overflow-hidden h-[90px] text-left group focus:outline-none"
+                                        >
+                                            <img
+                                                src={item.imageUrl}
+                                                alt={item.city}
+                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 p-2.5">
+                                                <p className="text-[11px] font-bold text-white leading-tight">{item.city}</p>
+                                                <p className="text-[9px] text-white/70 leading-tight">{item.countryName}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
-                        {query && suggestions.length > 0 && (() => {
+
+                        {/* Autocomplete results */}
+                        {activeQuery && suggestions.length === 0 && !isFetching && (
+                            <div className="px-6 py-4 text-center text-slate-400 text-sm">
+                                {tAll('landing.search.noResults')}
+                            </div>
+                        )}
+                        {activeQuery && suggestions.length > 0 && (() => {
                             const countries = suggestions.filter((s) => s.type === 'country');
-                            const cities = suggestions.filter((s) => s.type !== 'country');
-                            const renderItem = (item: Destination, i: number) => (
+                            const cities    = suggestions.filter((s) => s.type === 'city');
+                            const hotels    = suggestions.filter((s) => s.type === 'hotel');
+
+                            const renderDestItem = (item: Destination, i: number) => (
                                 <div
                                     key={i}
                                     onClick={() => handleSelect(item)}
@@ -201,18 +286,53 @@ export function DestinationInput({ forceOpen, onSelect }: DestinationInputProps)
                                     </div>
                                 </div>
                             );
+
+                            const renderHotelItem = (item: Destination, i: number) => (
+                                <div
+                                    key={i}
+                                    onClick={() => handleSelect(item)}
+                                    className="px-6 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-start gap-3 cursor-pointer group"
+                                >
+                                    {item.image ? (
+                                        <img
+                                            src={item.image}
+                                            alt=""
+                                            className="mt-0.5 w-8 h-8 rounded object-cover shrink-0 opacity-80 group-hover:opacity-100"
+                                        />
+                                    ) : (
+                                        <span className="mt-0.5 text-slate-400 group-hover:text-amber-500 transition-colors">
+                                            <Hotel size={16} />
+                                        </span>
+                                    )}
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-bold text-slate-900 dark:text-white group-hover:text-amber-500">
+                                            {item.title}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 truncate max-w-[300px]">
+                                            {item.subtitle}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+
                             return (
                                 <>
                                     {countries.length > 0 && (
                                         <>
-                                            <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">Countries</div>
-                                            {countries.map(renderItem)}
+                                            <div className="px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider">{tAll('landing.search.countries')}</div>
+                                            {countries.map(renderDestItem)}
                                         </>
                                     )}
                                     {cities.length > 0 && (
                                         <>
-                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', countries.length > 0 && 'mt-1')}>Cities</div>
-                                            {cities.map(renderItem)}
+                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', countries.length > 0 && 'mt-1')}>{tAll('landing.search.cities')}</div>
+                                            {cities.map(renderDestItem)}
+                                        </>
+                                    )}
+                                    {hotels.length > 0 && (
+                                        <>
+                                            <div className={cn('px-6 py-1.5 text-[8px] font-mono font-medium uppercase text-slate-500 tracking-wider', (countries.length > 0 || cities.length > 0) && 'mt-1')}>{tAll('search.hotels')}</div>
+                                            {hotels.map(renderHotelItem)}
                                         </>
                                     )}
                                 </>

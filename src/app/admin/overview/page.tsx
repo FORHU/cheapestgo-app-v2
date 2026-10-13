@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Info, BookOpen, DollarSign, Users, Hotel } from 'lucide-react';
+// /admin sits outside the [locale] segment and is English-only, so it keeps
+// next/link rather than the locale-aware one — see src/i18n/navigation.ts.
+import Link from 'next/link';
+import { Info } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
 import { BookingsTable } from '@/features/admin/components/bookings-table';
@@ -104,9 +107,9 @@ export default function AdminOverviewPage() {
             <section>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-bold text-slate-900">Recent Bookings</h2>
-                    <a href="/admin/bookings" className="text-xs text-blue-600 hover:underline font-medium">
+                    <Link href="/admin/bookings" className="text-xs text-blue-600 hover:underline font-medium">
                         View all →
-                    </a>
+                    </Link>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                     {bookingsLoading ? (

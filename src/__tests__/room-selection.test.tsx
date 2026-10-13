@@ -1,0 +1,318 @@
+import React from 'react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { render as rtlRender, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { RoomSelection } from '@/features/hotels/components/room-selection';
+import { ThemeProvider } from '@/shared/components/ThemeContext';
+import { withIntl } from '@/shared/testing/renderWithIntl';
+import type { RateRow, RoomOption } from '@/features/hotels/types/property.types';
+
+afterEach(cleanup);
+
+/** The section reads the app theme as its `tone` default, so it wants the
+ *  provider the app mounts at its root. */
+const render = (ui: React.ReactElement) => rtlRender(<ThemeProvider>{withIntl(ui)}</ThemeProvider>);
+
+const room = (over: Partial<RoomOption> = {}): RoomOption => ({
+    id: 'r1',
+    name: 'Comfort Leisure Room',
+    price: 169,
+    currency: 'USD',
+    ...over,
+});
+
+const rate = (over: Partial<RateRow> = {}): RateRow => ({
+    offerId: 'o1',
+    price: 169,
+    currency: 'USD',
+    refundable: false,
+    refundableTag: 'NON_REFUNDABLE',
+    ...over,
+});
+
+const base = {
+    tone: 'dark' as const,
+    currency: 'USD',
+    selectedOfferId: null,
+    onSelect: () => {},
+};
+
+/** The room names currently on screen, in order. */
+const shownRooms = () => screen.getAllByRole('heading', { level: 4 }).map(h => h.textContent);
+
+describe('RoomSelection', () => {
+    it('starts on All, with every room showing', () => {
+        render(<RoomSelection {...base} rooms={[room({ id: 'a', name: 'A' }), room({ id: 'b', name: 'B' })]} />);
+        expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+        expect(shownRooms()).toEqual(['A', 'B']);
+    });
+
+    it('keeps only board codes that feed you in the morning', async () => {
+        const user = userEvent.setup();
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[
+                    room({ id: 'a', name: 'Bed and breakfast', boardType: 'BB' }),
+                    room({ id: 'b', name: 'All inclusive',     boardType: 'AI' }),
+                    room({ id: 'c', name: 'Room only',         boardType: 'RO' }),
+                    room({ id: 'd', name: 'Unstated' }),
+                ]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Breakfast Included' }));
+        expect(shownRooms()).toEqual(['Bed and breakfast', 'All inclusive']);
+    });
+
+    it('treats anything not flagged RFN as non-refundable', async () => {
+        const user = userEvent.setup();
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[
+                    room({ id: 'a', name: 'Refundable',   refundableTag: 'RFN' }),
+                    room({ id: 'b', name: 'Non-refund',   refundableTag: 'NRFN' }),
+                    room({ id: 'c', name: 'Unflagged' }),
+                ]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Refundable' }));
+        expect(shownRooms()).toEqual(['Refundable']);
+
+        // The inversion is the point: suppliers are reliable about flagging RFN
+        // and patchy about flagging its opposite, so testing for NRFN alone
+        // would silently drop every rate that carries no tag at all.
+        await user.click(screen.getByRole('button', { name: 'Non-refundable' }));
+        expect(shownRooms()).toEqual(['Non-refund', 'Unflagged']);
+    });
+
+    it('dates the cancellation row, since that is what differs between rates', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    rates: [rate({ refundable: true, cancellationDeadline: '2026-08-28T12:00:00Z' })],
+                })]}
+            />,
+        );
+        expect(screen.getByText('Free cancellation until Aug 28')).toBeInTheDocument();
+    });
+
+    it('still says a rate is refundable when no deadline came with it', () => {
+        render(<RoomSelection {...base} rooms={[room({ rates: [rate({ refundable: true })] })]} />);
+        expect(screen.getByText('Free cancellation')).toBeInTheDocument();
+    });
+
+    it('does not invent a date from a deadline it cannot read', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({ rates: [rate({ refundable: true, cancellationDeadline: 'whenever' })] })]}
+            />,
+        );
+        expect(screen.getByText('Free cancellation')).toBeInTheDocument();
+    });
+
+    it('says nothing about cancellation on a non-refundable rate', () => {
+        render(<RoomSelection {...base} rooms={[room({ rates: [rate({ cancellationDeadline: '2026-08-28T12:00:00Z' })] })]} />);
+        expect(screen.queryByText(/Free cancellation/)).not.toBeInTheDocument();
+    });
+
+    it('says so when a filter matches nothing', async () => {
+        const user = userEvent.setup();
+        render(<RoomSelection {...base} rooms={[room({ boardType: 'RO' })]} />);
+
+        await user.click(screen.getByRole('button', { name: 'Breakfast Included' }));
+        expect(screen.getByText(/No rooms match that rate/)).toBeInTheDocument();
+    });
+
+    it('names the board code on the card', () => {
+        render(<RoomSelection {...base} rooms={[room({ boardType: 'RO' })]} />);
+        expect(screen.getByText('Room Only')).toBeInTheDocument();
+    });
+
+    it('draws no board row for a code it does not recognise', () => {
+        render(<RoomSelection {...base} rooms={[room({ boardType: 'ZZ', bedType: '1 double bed' })]} />);
+        // Neither claim is safe from an unknown code, so the row is left off —
+        // asserted on the card's own rows, since "Breakfast Included" is also
+        // the name of a filter chip above it.
+        expect(screen.getAllByRole('listitem').map(li => li.textContent)).toEqual(['1 double bed']);
+    });
+
+    it('reads the bed out of the room name when the rate does not carry one', () => {
+        render(<RoomSelection {...base} rooms={[room({ name: 'Superior Room, 2 twin beds' })]} />);
+        expect(screen.getByText('2 twin beds')).toBeInTheDocument();
+    });
+
+    it('takes a bed implied by the name as one of them', () => {
+        render(<RoomSelection {...base} rooms={[room({ name: 'Double Room' })]} />);
+        expect(screen.getByText('1 double bed')).toBeInTheDocument();
+    });
+
+    it('prefers the rate own bed type over anything in the name', () => {
+        render(<RoomSelection {...base} rooms={[room({ name: 'Double Room', bedType: '1 king bed' })]} />);
+        expect(screen.getByText('1 king bed')).toBeInTheDocument();
+        expect(screen.queryByText('1 double bed')).not.toBeInTheDocument();
+    });
+
+    it('claims no bed from a name that names none', () => {
+        render(<RoomSelection {...base} rooms={[room({ name: 'Comfort Leisure Room' })]} />);
+        expect(screen.queryByText(/bed/i)).not.toBeInTheDocument();
+    });
+
+    it('falls back to the in-room half of the hotel amenities', async () => {
+        const user = userEvent.setup();
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({ bedType: '1 double bed' })]}
+                hotelAmenities={['Free Wi-Fi', 'Air conditioning', 'Outdoor pool', 'Free parking']}
+            />,
+        );
+
+        // The card face carries the structural rows only, so the fallback has
+        // to be read where the amenities actually land: the room-detail modal.
+        await user.click(screen.getByRole('button', { name: 'View more' }));
+        expect(screen.getByText('Free Wi-Fi')).toBeInTheDocument();
+        expect(screen.getByText('Air conditioning')).toBeInTheDocument();
+        // A pool and a car park are the building's, not the room's.
+        expect(screen.queryByText('Outdoor pool')).not.toBeInTheDocument();
+        expect(screen.queryByText('Free parking')).not.toBeInTheDocument();
+    });
+
+    it('leaves the hotel list alone when the rate brought its own', async () => {
+        const user = userEvent.setup();
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({ bedType: '1 double bed', amenities: ['Rainfall shower'] })]}
+                hotelAmenities={['Free Wi-Fi', 'Air conditioning']}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'View more' }));
+        expect(screen.getByText('Rainfall shower')).toBeInTheDocument();
+        expect(screen.queryByText('Free Wi-Fi')).not.toBeInTheDocument();
+    });
+
+    it('keeps the amenities off the card face, behind View more', async () => {
+        const user = userEvent.setup();
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    bedType: '1 double bed',
+                    amenities: ['City view', 'Wi-Fi', 'Air conditioning', 'Minibar', 'Private bathroom'],
+                })]}
+            />,
+        );
+
+        // However many amenities the rate carried, the face draws the
+        // structural rows and nothing else — every card is one height in the
+        // grid, and the rest is the modal's to list.
+        expect(screen.getAllByRole('listitem').map(li => li.textContent)).toEqual(['1 double bed']);
+        expect(screen.queryByText('Private bathroom')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'View more' }));
+        expect(screen.getByText('Private bathroom')).toBeInTheDocument();
+        expect(screen.getByText('City view')).toBeInTheDocument();
+    });
+
+    it('hands back the room and the rate, without the card swallowing the click', async () => {
+        const onSelect = vi.fn();
+        const user = userEvent.setup();
+        render(<RoomSelection {...base} rooms={[room({ id: 'r7' })]} onSelect={onSelect} />);
+
+        await user.click(screen.getByRole('button', { name: 'Select Room' }));
+        // Once, not twice: the button sits inside a card that is itself a
+        // selection target, and its click must not bubble into it.
+        expect(onSelect).toHaveBeenCalledTimes(1);
+        expect(onSelect.mock.calls[0][0].room.id).toBe('r7');
+        expect(onSelect.mock.calls[0][0].rate.offerId).toBe('r7');
+    });
+
+    it('lights the picked rate', () => {
+        render(<RoomSelection {...base} rooms={[room({ id: 'r7' })]} selectedOfferId="r7" />);
+        expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('draws one card for a room sold several ways, headlined at its cheapest', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    rates: [
+                        rate({ offerId: 'a', price: 169, boardCode: 'RO' }),
+                        rate({ offerId: 'b', price: 200, boardCode: 'BB' }),
+                    ],
+                })]}
+            />,
+        );
+        // One room, one card. Drawn per rate it was the same name and the same
+        // photograph twice down the page, which reads as a duplicate listing.
+        expect(shownRooms()).toEqual(['Comfort Leisure Room']);
+        // The headline is the lowest it can be booked at; the dearer rate is
+        // offered inside the card rather than as a second room.
+        expect(screen.getAllByText('$169').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/\$200/).length).toBeGreaterThan(0);
+        // The card's pill names the board of whichever rate is showing — the
+        // cheapest, on arrival.
+        expect(screen.getByText('Room Only')).toBeInTheDocument();
+    });
+
+    it('re-prices the card when another of the room rates is chosen', async () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({
+                    rates: [
+                        rate({ offerId: 'a', price: 169, boardCode: 'RO' }),
+                        rate({ offerId: 'b', price: 200, boardCode: 'BB' }),
+                    ],
+                })]}
+            />,
+        );
+        // Room Only is the cheaper rate, so it is what the card arrives showing.
+        expect(screen.getByText('Room Only')).toBeInTheDocument();
+
+        // The dearer rate's own chip inside the card.
+        await userEvent.click(screen.getByRole('button', { name: /\$200/ }));
+
+        // The room's pill now names that rate's board instead.
+        expect(screen.getByText('Breakfast')).toBeInTheDocument();
+        expect(screen.queryByText('Room Only')).not.toBeInTheDocument();
+    });
+
+    it('offers one Select per room, not one per rate', () => {
+        render(
+            <RoomSelection
+                {...base}
+                rooms={[room({ rates: [rate({ offerId: 'a' }), rate({ offerId: 'b', price: 200 })] })]}
+                selectedOfferId="a"
+            />,
+        );
+        // Two rates, one room, one action — picking the terms happens inside the card.
+        expect(screen.getAllByRole('button', { name: /^(Selected|Select Room)$/ })).toHaveLength(1);
+        expect(screen.getAllByRole('button', { name: 'Selected' })).toHaveLength(1);
+    });
+
+    it('prints the nightly rate it was given, and does not divide it again', () => {
+        // api-v2 divides the supplier's stay total before sending it, which is v1's own
+        // contract. Dividing here as well quoted a three-night stay at a third of its rate.
+        // The card's own '× N nights' line is where the stay total is rebuilt.
+        render(<RoomSelection {...base} rooms={[room({ price: 200 })]} nights={3} />);
+        expect(screen.getByText('$200')).toBeInTheDocument();
+    });
+
+    it('prices in the guest currency, with the symbol', () => {
+        render(<RoomSelection {...base} currency="PHP" rooms={[room({ price: 2450, currency: 'PHP' })]} />);
+        expect(screen.getByText('₱2,450')).toBeInTheDocument();
+    });
+
+    it('renders nothing when the stay has no rooms', () => {
+        const { container } = render(<RoomSelection {...base} rooms={[]} className="section-under-test" />);
+        expect(container.querySelector('.section-under-test')).toBeNull();
+    });
+});

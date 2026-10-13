@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { CreditCard, Lock } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -58,6 +59,7 @@ function formatExpiry(value: string): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function PaymentSection({ card, errors, onChange }: PaymentSectionProps) {
+    const tAll = useTranslations();
     const handleCardNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
         onChange('cardNumber', formatCardNumber(e.target.value));
     };
@@ -79,11 +81,11 @@ export function PaymentSection({ card, errors, onChange }: PaymentSectionProps) 
                     <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
                         <CreditCard size={14} className="text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h2 className="font-bold text-slate-900 dark:text-white text-base">Payment info</h2>
+                    <h2 className="font-bold text-slate-900 dark:text-white text-base">{tAll('checkout.paymentInfo')}</h2>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
                     <Lock size={10} />
-                    <span>Secured by Stripe</span>
+                    <span>{tAll('checkout.securedByStripe')}</span>
                 </div>
             </div>
 
@@ -106,7 +108,7 @@ export function PaymentSection({ card, errors, onChange }: PaymentSectionProps) 
                     <SectionLabel label="Name on card" />
                     <input
                         type="text"
-                        placeholder="John Doe"
+                        placeholder={tAll('checkout.cardNamePlaceholder')}
                         value={card.nameOnCard}
                         onChange={(e) => onChange('nameOnCard', e.target.value)}
                         className={cn(fieldClass(!!errors.nameOnCard), 'font-sans')}
@@ -170,7 +172,7 @@ export function PaymentSection({ card, errors, onChange }: PaymentSectionProps) 
             {/* Security note */}
             <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
                 <Lock size={9} />
-                Your payment information is encrypted and never stored on our servers.
+                {tAll('checkout.paymentSecure')}
             </p>
         </div>
     );

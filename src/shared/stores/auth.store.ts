@@ -1,0 +1,242 @@
+import { create } from "zustand";
+import { claimRecentSearches, stashRecentSearches } from '@/shared/lib/recentSearchHandoff';
+import { clearBookingInProgress } from '@/shared/lib/bookingInProgress';
+import type { User, AuthStep } from "@/types/auth";
+import { loginSchema, registerSchema, emailSchema, profileSchema, updatePasswordSchema, type RegisterInput, type ProfileInput } from "@/lib/schemas/auth";
+import { http } from "@/shared/lib/http";
+
+/** A user as api-v2 sends it: the `users` row, snake_case, without the password hash. */
+export interface ApiUser {
+    id:          string;
+    email:       string;
+    role?:       string;
+    first_name?: string | null;
+    last_name?:  string | null;
+    avatar_url?: string | null;
+}
+
+/** The API's row in the camelCase shape this store holds. */
+export function toSessionUser(user: ApiUser): User {
+    return {
+        id:        user.id,
+        email:     user.email,
+        firstName: user.first_name ?? '',
+        lastName:  user.last_name ?? '',
+        avatar:    user.avatar_url ?? undefined,
+        role:      (user.role ?? 'user') as User['role'],
+    };
+}
+
+interface AuthState {
+    user: User | null;
+    authStep: AuthStep;
+    email: string;
+    redirectTo: string | null;
+    isLoading: boolean;
+    isAuthModalOpen: boolean;
+
+    setAuthStep: (step: AuthStep) => void;
+    setEmail: (email: string) => void;
+    openAuthModal: (step?: AuthStep, redirectTo?: string) => void;
+    closeAuthModal: () => void;
+    setUser: (user: User | null) => void;
+
+    login: (email: string, password: string) => Promise<void>;
+    register: (data: RegisterInput) => Promise<void>;
+    logout: () => Promise<void>;
+    socialLogin: (provider: "google" | "apple" | "facebook") => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
+    resendConfirmation: (email: string) => Promise<void>;
+    updateProfile: (data: ProfileInput) => Promise<void>;
+    updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+    syncProfile: (profile: Partial<User>) => void;
+    fetchAndSyncRole: () => Promise<void>;
+    initSession: () => Promise<void>;
+}
+
+export const useAuthStore = create<AuthState>((set, get) => {
+    const withLoading = <T>(fn: () => Promise<T>): Promise<T> => {
+        set({ isLoading: true });
+        return fn().finally(() => set({ isLoading: false }));
+    };
+
+    return {
+        user: null,
+        authStep: "email",
+        email: "",
+        redirectTo: null,
+        isLoading: true,
+        isAuthModalOpen: false,
+
+        setAuthStep: (authStep) => set({ authStep }),
+        setEmail: (email) => set({ email }),
+        openAuthModal: (step = 'email', redirectTo?: string) =>
+            set({ isAuthModalOpen: true, authStep: step, redirectTo: redirectTo ?? get().redirectTo }),
+        closeAuthModal: () => set({ isAuthModalOpen: false, redirectTo: null }),
+        setUser: (user) => set({ user, isLoading: false }),
+
+        /**
+         * Bounded for the same reason as the other store's `fetchUser`: every sign-in screen
+         * disables itself on `isLoading`, which starts `true` and clears only here, so a stalled
+         * request left them disabled with no way out (QA BG-15). Ten seconds, then "not signed
+         * in" — the server still decides on every real request.
+         */
+        initSession: async () => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10_000);
+            try {
+                const res = await http.get<{ user: ApiUser | null }>('/auth/me', { signal: controller.signal });
+                set({ user: res.user ? toSessionUser(res.user) : null, isLoading: false });
+            } catch {
+                set({ user: null, isLoading: false });
+            } finally {
+                clearTimeout(timer);
+            }
+        },
+
+        login: async (email, password) => {
+            loginSchema.parse({ email, password });
+            set({ email });
+            return withLoading(async () => {
+                const { user } = await http.post<{ user: User }>('/auth/login', { email, password });
+                set({
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        firstName: user.firstName ?? '',
+                        lastName: user.lastName ?? '',
+                        avatar: user.avatar,
+                        role: user.role ?? 'user',
+                    },
+                });
+            });
+        },
+
+        register: async (data) => {
+            registerSchema.parse(data);
+            set({ email: data.email });
+            return withLoading(async () => {
+                const { user } = await http.post<{ user: User }>('/auth/register', {
+                    email: data.email,
+                    password: data.password,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                });
+                set({
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        firstName: data.firstName ?? '',
+                        lastName: data.lastName ?? '',
+                        role: 'user',
+                    },
+                    authStep: 'email',
+                });
+            });
+        },
+
+        logout: () =>
+            withLoading(async () => {
+                try {
+                    await http.post<void>('/auth/logout', {});
+                    set({ user: null });
+                    // Filed under this account, not thrown away: signing back in brings it
+                    // back, and nobody else at this browser sees it (BG-12).
+                    stashRecentSearches();
+                } finally {
+                    // Even if the request failed: the person clicked sign out, and the next
+                    // one at this browser must not pick up their booking (BG-1).
+                    clearBookingInProgress();
+                }
+            }),
+
+        socialLogin: async (provider) => {
+            if (provider === 'google') {
+                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+                return;
+            }
+            throw new Error(`OAuth provider "${provider}" is not configured yet.`);
+        },
+
+        resetPassword: (email) => {
+            emailSchema.parse({ email });
+            return withLoading(async () => {
+                await http.post('/auth/request-reset', { email });
+            });
+        },
+
+        resendConfirmation: (email) => {
+            emailSchema.parse({ email });
+            return withLoading(async () => {
+                console.warn('[authStore] resendConfirmation: not implemented');
+            });
+        },
+
+        updateProfile: (data) => {
+            profileSchema.parse(data);
+            return withLoading(async () => {
+                await http.patch('/users/preferences', {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                });
+                const { user } = get();
+                if (user) {
+                    set({
+                        user: {
+                            ...user,
+                            firstName: data.firstName ?? user.firstName,
+                            lastName: data.lastName ?? user.lastName,
+                        },
+                    });
+                }
+            });
+        },
+
+        updatePassword: (currentPassword, newPassword) => {
+            updatePasswordSchema.parse({ currentPassword, newPassword });
+            return withLoading(async () => {
+                const { user } = get();
+                if (!user?.email) throw new Error("No user logged in");
+                await http.post('/auth/login', { email: user.email, password: currentPassword });
+                await http.put('/auth/reset-password', { token: '__current__', password: newPassword });
+            });
+        },
+
+        syncProfile: (profile) => {
+            const { user } = get();
+            if (user) set({ user: { ...user, ...profile } });
+        },
+
+        fetchAndSyncRole: async () => {
+            try {
+                const res = await http.get<{ user: User }>('/auth/me');
+                if (res.user?.role) {
+                    set({ user: { ...get().user!, role: res.user.role } });
+                }
+            } catch (err: unknown) {
+                const status = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : 0;
+                // silently ignore 401 (not logged in) and network errors (API unreachable)
+                if (status !== 0 && status !== 401) {
+                    console.error('[authStore] Failed to sync role:', err);
+                }
+            }
+        },
+    };
+});
+
+// Whichever way an account becomes the signed-in one — password, sign-up, the OAuth
+// return, or a session restored on load — the recent searches on screen must belong to
+// it. One subscription covers every path that sets `user`.
+//
+// app-v2 carries two auth stores today and a sign-in through either one has to do this,
+// so both subscribe. Consolidating them is its own job.
+if (typeof window !== 'undefined') {
+    useAuthStore.subscribe((state, prev) => {
+        const id = state.user?.id;
+        if (id && id !== prev.user?.id) claimRecentSearches(id);
+    });
+}
+
+export const useUser = () => useAuthStore((s) => s.user);
+export const useAuthStep = () => useAuthStore((s) => s.authStep);
+export const useAuthLoading = () => useAuthStore((s) => s.isLoading);

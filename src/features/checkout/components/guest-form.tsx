@@ -1,26 +1,59 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import React from 'react';
 import { User, Plane } from 'lucide-react';
-import { Input } from '@/shared/components/ui/input';
 import { cn } from '@/shared/lib/cn';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * The hotel holder, which is exactly what `POST /hotels/confirm` accepts.
+ *
+ * No phone. The form asked for one and had nowhere to put it: `confirm` takes
+ * `holder: { firstName, lastName, email }`, the TGX booking sends
+ * `contactInfo: { email }`, and `bookings` has `holder_first_name`,
+ * `holder_last_name` and `holder_email` with no phone column. A required field that
+ * reaches no system is a question asked for nothing.
+ *
+ * To bring it back it needs all three: a column (a v1 migration — v2 never authors one,
+ * ADR-0018), the field on the confirm schema, and `telephone` on TGX's `contactInfo`,
+ * which has to be checked against their schema first — an unknown field on a GraphQL
+ * mutation is an error, and that mutation books against a live supplier.
+ */
 export interface GuestInfo {
     firstName: string;
     lastName: string;
     email: string;
-    phone: string;
 }
 
+/**
+ * What an airline needs to issue a ticket, which is more than a name and a date.
+ *
+ * `gender` and the two passport companions below were missing until 2026-10-05, and each
+ * failed quietly rather than loudly:
+ *
+ * - **gender** — the order builder reads `pax.gender` and falls through to `'f'`/`'ms'`
+ *   when it is absent, so every passenger was ticketed female. A ticket whose gender does
+ *   not match the passport is refused at check-in, and nothing before the airport says so.
+ * - **passportExpiry, nationality** — `duffelIdentityDocuments` needs all three of number,
+ *   expiry and a two-letter country, and returns nothing at all when one is missing. The
+ *   form made the passport number mandatory and then threw it away, so travellers typed it
+ *   for nobody and supplied it again at check-in.
+ */
 export interface PassengerInfo {
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
     dateOfBirth: string;
+    /** `m` or `f` — the only values Duffel accepts. */
+    gender: string;
     passportNumber: string;
+    /** ISO date. Without it the passport is dropped on the floor. */
+    passportExpiry: string;
+    /** Two-letter issuing country, e.g. `PH`. Without it, likewise. */
+    nationality: string;
 }
 
 interface HotelGuestFormProps {
@@ -71,13 +104,14 @@ function HotelGuestFields({
     errors: Partial<Record<keyof GuestInfo, string>>;
     onChange: (field: keyof GuestInfo, value: string) => void;
 }) {
+    const tAll = useTranslations();
     return (
         <div className="rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
                 <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
                     <User size={14} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <h2 className="font-bold text-slate-900 dark:text-white text-base">Guest details</h2>
+                <h2 className="font-bold text-slate-900 dark:text-white text-base">{tAll('checkout.guestDetails')}</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -85,7 +119,7 @@ function HotelGuestFields({
                     <SectionLabel label="First name" required />
                     <input
                         type="text"
-                        placeholder="First name"
+                        placeholder={tAll('checkout.userDetails.firstNamePlaceholder')}
                         value={guest.firstName}
                         onChange={(e) => onChange('firstName', e.target.value)}
                         className={fieldClass(!!errors.firstName)}
@@ -97,7 +131,7 @@ function HotelGuestFields({
                     <SectionLabel label="Last name" required />
                     <input
                         type="text"
-                        placeholder="Last name"
+                        placeholder={tAll('checkout.userDetails.lastNamePlaceholder')}
                         value={guest.lastName}
                         onChange={(e) => onChange('lastName', e.target.value)}
                         className={fieldClass(!!errors.lastName)}
@@ -109,25 +143,13 @@ function HotelGuestFields({
                     <SectionLabel label="Email" required />
                     <input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={tAll('auth.signIn.emailPlaceholder')}
                         value={guest.email}
                         onChange={(e) => onChange('email', e.target.value)}
                         className={fieldClass(!!errors.email)}
                         autoComplete="email"
                     />
                     <FieldError message={errors.email} />
-                </div>
-                <div>
-                    <SectionLabel label="Phone" required />
-                    <input
-                        type="tel"
-                        placeholder="+1 555 000 0000"
-                        value={guest.phone}
-                        onChange={(e) => onChange('phone', e.target.value)}
-                        className={fieldClass(!!errors.phone)}
-                        autoComplete="tel"
-                    />
-                    <FieldError message={errors.phone} />
                 </div>
             </div>
         </div>

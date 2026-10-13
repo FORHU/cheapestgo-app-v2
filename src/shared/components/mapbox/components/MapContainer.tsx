@@ -1,0 +1,125 @@
+import { Map, type StandardStyleConfig } from '@/shared/components/ui/map';
+import { AttributionControl, MapRef, type MapEvent, type MapMouseEvent, type ViewStateChangeEvent } from 'react-map-gl/mapbox';
+import { Layers } from 'lucide-react';
+import { MapDetailsPanel } from './MapDetailsPanel';
+import { useMapDetails } from '../hooks/useMapDetails';
+
+interface MapContainerProps {
+    mapRef: React.RefObject<MapRef | null>;
+    initialViewState: {
+        longitude?: number;
+        latitude?: number;
+        zoom?: number;
+        pitch?: number;
+        bearing?: number;
+        bounds?: [number, number, number, number] | [[number, number], [number, number]];
+        fitBoundsOptions?: { padding?: number; maxZoom?: number; duration?: number };
+    };
+    onLoad: (e: MapEvent) => void;
+    onClick: (e: MapMouseEvent) => void;
+    onMouseMove: (e: MapMouseEvent) => void;
+    onMove?: (e: ViewStateChangeEvent) => void;
+    onMoveEnd?: (e: ViewStateChangeEvent) => void;
+    onDragStart?: (e: ViewStateChangeEvent) => void;
+    children?: React.ReactNode;
+    hideLayersButton?: boolean;
+    mapStyle?: string;
+    standardConfig?: StandardStyleConfig;
+    enable3DTerrain?: boolean;
+    antialias?: boolean;
+    maxPitch?: number;
+    onStyleReady?: (map: mapboxgl.Map) => void;
+    /** Lock the map to top-down zoom-only (no pitch, no rotation) */
+    topViewOnly?: boolean;
+}
+
+export const MapContainer = ({
+    mapRef,
+    initialViewState,
+    onLoad,
+    onClick,
+    onMouseMove,
+    onMove,
+    onMoveEnd,
+    onDragStart,
+    children,
+    hideLayersButton = false,
+    mapStyle: propMapStyle,
+    standardConfig: propStandardConfig,
+    enable3DTerrain: propEnable3DTerrain,
+    antialias: propAntialias,
+    maxPitch: propMaxPitch,
+    onStyleReady,
+    topViewOnly = false,
+}: MapContainerProps) => {
+    const internal = useMapDetails();
+
+    const finalMapStyle       = propMapStyle       ?? internal.mapStyleUrl;
+    const finalStandardConfig = propStandardConfig ?? (internal.mapType === 'default-3d' ? internal.standardConfig : undefined);
+    const finalTerrainEnabled = propEnable3DTerrain ?? internal.terrainEnabled;
+
+    return (
+        <Map
+            ref={mapRef as React.RefObject<MapRef>}
+            mapStyle={finalMapStyle}
+            standardConfig={finalStandardConfig}
+            enable3DTerrain={finalTerrainEnabled}
+            terrainExaggeration={1.5}
+            initialViewState={{
+                pitch: topViewOnly ? 0 : 20,
+                bearing: topViewOnly ? 0 : -10,
+                ...initialViewState,
+            }}
+            maxPitch={topViewOnly ? 0 : (propMaxPitch ?? 85)}
+            dragRotate={!topViewOnly}
+            touchPitch={!topViewOnly}
+            onClick={onClick}
+            onMouseMove={onMouseMove}
+            onMove={onMove}
+            onMoveEnd={onMoveEnd}
+            onDragStart={onDragStart}
+            onLoad={onLoad}
+            onStyleReady={onStyleReady}
+            enable3DBuildings={false}
+            antialias={propAntialias ?? false}
+            attributionControl={false}
+            className="rounded-md min-h-0 w-full h-full"
+        >
+            {/* No NavigationControl — the search map has no zoom buttons; wheel,
+                pinch and double-tap still zoom. */}
+            <AttributionControl position="top-right" compact />
+            {children}
+
+            {!hideLayersButton && (
+                <>
+                    {!internal.showDetailsPanel && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                internal.setShowDetailsPanel(true);
+                            }}
+                            className="absolute top-4 left-4 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 px-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 group h-[38px]"
+                        >
+                            <Layers className="w-5 h-5 text-slate-700 dark:text-slate-300 group-hover:text-blue-500 transition-colors" />
+                            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+                            <svg className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    )}
+
+                    <MapDetailsPanel
+                        isOpen={internal.showDetailsPanel}
+                        onClose={() => internal.setShowDetailsPanel(false)}
+                        mapType={internal.mapType}
+                        onMapTypeChange={internal.setMapType}
+                        details={internal.mapDetails}
+                        onDetailToggle={internal.handleDetailToggle}
+                        showLabels={internal.showLabels}
+                        onLabelsToggle={() => internal.setShowLabels((prev) => !prev)}
+                    />
+                </>
+            )}
+        </Map>
+    );
+};

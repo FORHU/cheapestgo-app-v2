@@ -14,14 +14,27 @@ export type AuthStep = 'email' | 'password' | 'register' | 'verify-email' | 'for
 // ─── Search / Destinations ────────────────────────────────────────────────────
 
 export interface Destination {
-    type: 'city' | 'airport' | 'history' | 'country';
+    type: 'city' | 'airport' | 'history' | 'country' | 'hotel';
     title: string;
     subtitle: string;
     code?: string;
     countryCode?: string;
     id?: string;
+    /** Geocoded centre — passed to hotel search so the map can open on the city. */
+    lat?: number;
+    lng?: number;
     lowestPrice?: number;
     priceCurrency?: string;
+    /** Thumbnail URL for hotel-type suggestions. */
+    image?: string | null;
+    /** Granularity ladder rung — drives which resolution path the search uses. */
+    rung?: 'country' | 'province' | 'city' | 'district' | 'poi';
+    /** Mapbox bounding box [minLng, minLat, maxLng, maxLat] — used to scope map pins. */
+    bbox?: [number, number, number, number];
+    /** Original district/neighbourhood name when this result is a sub-city area. */
+    districtName?: string;
+    /** Canonical city for TGX search when user searched a district alias. */
+    canonicalCity?: string;
 }
 
 export interface DateRange {
@@ -74,56 +87,81 @@ export interface FlightState {
     };
 }
 
+/** Normalized segment as returned by the backend search endpoint */
+/**
+ * One end of a segment. `time` is Local Airport Time with no offset — see `formatTime`.
+ * The airport and city names are the provider's, absent when it sent none.
+ */
+export interface SegmentEnd {
+    airport: string;
+    airportName?: string;
+    city?: string;
+    terminal?: string;
+    time: string;
+}
+
+export interface NormalizedSegment {
+    segmentIndex: number;
+    airline: string;
+    airlineName?: string;
+    origin: string;
+    destination: string;
+    flightNumber?: string;
+    departure: SegmentEnd;
+    arrival: SegmentEnd;
+    duration: number;
+    stops: number;
+    aircraft?: string;
+    cabinClass?: string;
+}
+
+/** Normalized flight offer as returned by GET /api/v2/flights/search */
 export interface FlightOffer {
-    id: string;
-    totalAmount: string;
-    totalCurrency: string;
-    slices: FlightSlice[];
-    passengers: FlightPassenger[];
+    offerId: string;
+    provider: string;
+    price: {
+        total: number;
+        base: number;
+        taxes: number;
+        currency: string;
+        pricePerAdult: number;
+    };
+    segments: NormalizedSegment[];
+    totalDuration: number;
+    /** Each direction's own elapsed time in minutes, by `segmentIndex`. */
+    sliceDurations?: number[];
+    totalStops: number;
+    refundable: boolean;
+    farePolicy?: {
+        isRefundable: boolean;
+        isChangeable: boolean;
+        refundPenaltyAmount?: number | null;
+        refundPenaltyCurrency?: string | null;
+    } | null;
+    seatsRemaining?: number;
+    baggage?: {
+        checkedBags?: number;
+        weightPerBag?: string;
+        cabinBag?: boolean;
+    };
+    brandedFare?: {
+        brandName?: string;
+        brandId?: string;
+        fareType?: string;
+    };
+    alternatives?: FlightOffer[];
+    tripType?: 'one-way' | 'round-trip' | 'multi-city';
+    traceId?: string;
+    normalizedPriceUsd: number;
+    bestScore: number;
+    physicalFlightId: string;
+    _rawOffer?: unknown;
 }
 
-export interface FlightSlice {
-    id: string;
-    origin: FlightAirport;
-    destination: FlightAirport;
-    duration: number;
-    segments: FlightSegmentData[];
-    departureAt: string;
-    arrivalAt: string;
-}
-
-export interface FlightSegmentData {
-    id: string;
-    origin: FlightAirport;
-    destination: FlightAirport;
-    departingAt: string;
-    arrivingAt: string;
-    duration: number;
-    operatingCarrierFlightNumber: string;
-    marketingCarrier: Carrier;
-    operatingCarrier: Carrier;
-    aircraft: { iataCode: string; name: string };
-}
-
-export interface FlightAirport {
-    iataCode: string;
-    name: string;
-    cityName: string;
-    countryName: string;
-    timeZone?: string;
-}
-
-export interface Carrier {
-    iataCode: string;
-    name: string;
-    logoSymbolUrl?: string;
-    logotype_url?: string;
-}
-
+/** @deprecated — kept for reference only. Use FlightOffer above. */
 export interface FlightPassenger {
     id: string;
     type: 'adult' | 'child' | 'infant_without_seat';
-    baggageAllowance?: { quantity: number; type: string };
 }
 
 // ─── Hotels / Properties ──────────────────────────────────────────────────────
@@ -131,15 +169,45 @@ export interface FlightPassenger {
 export interface Property {
     id: string;
     name: string;
-    address: string;
-    city: string;
-    country: string;
+    location: string;
+    description: string;
+    rating: number;
+    reviews: number;
+    price: number;
+    currency?: string;
+    originalPrice?: number;
+    image: string;
+    images: string[];
+    amenities: string[];
+    badges: string[];
+    type: 'hotel' | 'apartment' | 'resort' | 'villa';
+    coordinates: { lat: number; lng: number };
+    refundableTag?: 'RFN' | 'NRFN' | string;
+    distance?: string;
+    boardTypes?: string[];
+    city?: string;
     starRating?: number;
-    reviewScore?: number;
-    reviewCount?: number;
-    images?: string[];
-    coordinates?: { lat: number; lng: number };
-    propertyType?: string;
+    provider?: 'travelgatex' | 'duffel';
+    priceLoading?: boolean;
+    rateId?: string;
+    offerId?: string;
+    _tgx?: {
+        optionId: string;
+        token: string;
+        accessCode: string;
+        supplierCode?: string;
+        boardCode?: string;
+        rateRules?: string[];
+    };
+    checkIn?: string;
+    checkOut?: string;
+    importantInformation?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    contactWeb?: string;
+    amenityGroups?: Array<{ amenityCode: string; type?: string; texts?: Array<{ language: string; text: string }> }>;
+    giataId?: string;
+    chainCode?: string;
 }
 
 export interface HotelOffer {
@@ -223,6 +291,27 @@ export interface HotelBooking {
         hotelRemarks?: string[];
     };
     provider?: string;
+
+    // ── What a guest shows at the front desk ──────────────────────────────────
+    //
+    // These already arrive: `listForUser` spreads the whole row, so they have been on
+    // the wire all along without being declared. The voucher is the first thing to need
+    // them by name.
+
+    /** Ours, the `GG-` series. Not what the property's system holds. */
+    booking_reference?: string;
+    /** The supplier's own reference, and `provider_metadata.supplierRef` is where it lives. */
+    provider_metadata?: {
+        supplierRef?: string;
+        hotelCode?: string;
+        clientReference?: string;
+        /** Snapshotted at booking: part of the rate bought, not of the property today. */
+        board?: string;
+        checkInTime?: string;
+        checkOutTime?: string;
+    };
+    voucher_code?: string;
+    charged_price?: number;
 }
 
 /** Extended flight booking as returned by GET /api/bookings */
@@ -258,6 +347,17 @@ export interface FlightBooking {
         refundPenaltyAmount?: number;
         refundPenaltyCurrency?: string;
     };
+
+    /**
+     * When the airline actually issued the ticket — not when the order was placed.
+     *
+     * A PNR exists before issuance, so it is not evidence of a ticket. Nothing may call
+     * itself an e-ticket, or print a ticket number, until this is set.
+     */
+    ticketed_at?: string | null;
+    ticket_numbers?: string[];
+    booking_reference?: string;
+    provider_order_id?: string;
 }
 
 export type AnyBooking = HotelBooking | FlightBooking;
@@ -308,3 +408,92 @@ export interface PaginatedResponse<T> {
     page: number;
     pageSize: number;
 }
+
+// ─── Auth (client-side) ───────────────────────────────────────────────────────
+
+export interface RegisterData {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+}
+
+export type SocialProvider = 'google' | 'apple' | 'facebook';
+
+// ─── Landing / Content types ──────────────────────────────────────────────────
+
+export interface RecentItem {
+    id: string;
+    destination: string;
+    dates: string;
+    type: string;
+    image: string;
+    price: number;
+}
+
+export interface TelemetryData {
+    label: string;
+    value: string;
+    subValue: string;
+    trend: 'up' | 'down' | 'stable';
+    icon: 'chart' | 'plane' | 'sun';
+}
+
+export interface Deal {
+    id: string;
+    title: string;
+    subtitle: string;
+    discount: string;
+    originalPrice: number;
+    salePrice: number;
+    currency?: string;
+    image: string;
+    endsIn: string;
+    tag?: string;
+    origin?: string;
+    destination?: string;
+    departure_date?: string;
+    return_date?: string;
+    cabinClass?: string;
+    lastRefreshedAt?: string;
+}
+
+export interface WeekendDeal {
+    id: string | number;
+    name: string;
+    location: string;
+    rating: number;
+    reviews: number;
+    originalPrice: number;
+    salePrice: number;
+    currency: string;
+    image: string;
+    badge?: string;
+    hotelCode?: string;
+    checkIn?: string;
+    checkOut?: string;
+}
+
+export interface RecentSearch {
+    id: string | number;
+    destination: string;
+    dates: string;
+    travelers: string;
+    rooms: string;
+}
+
+export interface VacationPackage {
+    id: string | number;
+    name: string;
+    location: string;
+    rating: number;
+    reviews: number;
+    originalPrice: number;
+    salePrice: number;
+    image: string;
+    includes: string[];
+    destinationCode?: string;
+}
+
+export const packageTabs = ["All Places", "Ho Chi Minh City", "Bali", "Seoul", "Bangkok"] as const;
+export const styleTabs = ['Beach', 'Kid-Friendly', 'Ski', 'Romantic', 'Wellness and Relaxation'] as const;

@@ -1,5 +1,12 @@
 import { create } from 'zustand';
+import { asDay, defaultStay, earliestBookableDay } from '@/shared/lib/stay';
 import { persist } from 'zustand/middleware';
+import type { DistanceUnit } from '@/shared/lib/distance';
+
+/** How many recent destinations the search bar offers. Shared with the sign-in handoff,
+ *  which merges two lists and must cap the result the same way. */
+export const MAX_RECENT_SEARCHES = 5;
+import { useShallow } from 'zustand/react/shallow';
 import type {
     Destination,
     DateRange,
@@ -34,6 +41,8 @@ interface SearchState {
     // Locale prefs (persisted)
     userCurrency: string;
     userCountry: string;
+    /** km or miles, as the viewer picked. `null` until they pick — the browser region decides till then. */
+    distanceUnit: DistanceUnit | null;
 
     // Recent searches (persisted)
     recentSearches: Destination[];
@@ -60,6 +69,7 @@ interface SearchState {
     setTravelers: (t: Partial<TravelersConfig>) => void;
     setUserCurrency: (c: string) => void;
     setUserCountry: (c: string) => void;
+    setDistanceUnit: (u: DistanceUnit) => void;
     addRecentSearch: (d: Destination) => void;
     removeRecentSearch: (title: string) => void;
     clearRecentSearches: () => void;
@@ -127,6 +137,7 @@ export const useSearchStore = create<SearchState>()(
             travelers: initialTravelers,
             userCurrency: 'KRW',
             userCountry: 'KR',
+            distanceUnit: null,
             recentSearches: [],
             activeDropdown: null,
             isSearching: false,
@@ -139,20 +150,22 @@ export const useSearchStore = create<SearchState>()(
             setDestination: (destination) => set({ destination }),
             setDestinationQuery: (destinationQuery) => set({ destinationQuery }),
 
+            /**
+             * A stay that cannot be booked becomes the **Default Stay**.
+             *
+             * It used to become *tomorrow*, which is the other half of the same empty
+             * window — OTV holds near-zero inventory for same-day and next-day stays, so
+             * this rescued an unbookable date into a barely-bookable one and the search
+             * came back with rooms nobody could take. One rule, shared with every other
+             * caller, rather than a second opinion kept here.
+             */
             setDates: (dates) => set((s) => {
                 const next = { ...s.dates, ...dates };
-                if (next.checkIn) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    if (next.checkIn <= today) {
-                        const tomorrow = new Date(today);
-                        tomorrow.setDate(today.getDate() + 1);
-                        next.checkIn = tomorrow;
-                        if (next.checkOut && next.checkOut <= next.checkIn) {
-                            const d2 = new Date(tomorrow);
-                            d2.setDate(tomorrow.getDate() + 1);
-                            next.checkOut = d2;
-                        }
+                if (next.checkIn && asDay(next.checkIn) < earliestBookableDay()) {
+                    const stay = defaultStay();
+                    next.checkIn = new Date(`${stay.checkIn}T00:00:00`);
+                    if (!next.checkOut || next.checkOut <= next.checkIn) {
+                        next.checkOut = new Date(`${stay.checkOut}T00:00:00`);
                     }
                 }
                 return { dates: next };
@@ -161,10 +174,11 @@ export const useSearchStore = create<SearchState>()(
             setTravelers: (t) => set((s) => ({ travelers: { ...s.travelers, ...t } })),
             setUserCurrency: (userCurrency) => set({ userCurrency }),
             setUserCountry: (userCountry) => set({ userCountry }),
+            setDistanceUnit: (distanceUnit) => set({ distanceUnit }),
 
             addRecentSearch: (destination) => set((s) => {
                 const filtered = s.recentSearches.filter((d) => d.title !== destination.title);
-                return { recentSearches: [destination, ...filtered].slice(0, 5) };
+                return { recentSearches: [destination, ...filtered].slice(0, MAX_RECENT_SEARCHES) };
             }),
             removeRecentSearch: (title) => set((s) => ({
                 recentSearches: s.recentSearches.filter((d) => d.title !== title),
@@ -293,6 +307,7 @@ export const useSearchStore = create<SearchState>()(
                 destinationQuery: s.destinationQuery,
                 userCurrency: s.userCurrency,
                 userCountry: s.userCountry,
+                distanceUnit: s.distanceUnit,
                 searchMode: s.searchMode,
                 flightState: s.flightState,
             }) as SearchState,
@@ -313,3 +328,24 @@ export const useIsSearching = () => useSearchStore((s) => s.isSearching);
 export const useSearchMode = () => useSearchStore((s) => s.searchMode);
 export const useFlightState = () => useSearchStore((s) => s.flightState);
 export const useSearchFilters = () => useSearchStore((s) => s.filters);
+
+export const useSearchActions = () =>
+    useSearchStore(
+        useShallow((state) => ({
+            setDestination: state.setDestination,
+            setDestinationQuery: state.setDestinationQuery,
+            setDates: state.setDates,
+            setTravelers: state.setTravelers,
+            setUserCurrency: state.setUserCurrency,
+            setUserCountry: state.setUserCountry,
+            setDistanceUnit: state.setDistanceUnit,
+            setActiveDropdown: state.setActiveDropdown,
+            setFilters: state.setFilters,
+            setIsMobileFiltersOpen: state.setIsMobileFiltersOpen,
+            resetFilters: state.resetFilters,
+            addRecentSearch: state.addRecentSearch,
+            removeRecentSearch: state.removeRecentSearch,
+            clearRecentSearches: state.clearRecentSearches,
+            reset: state.reset,
+        }))
+    );
