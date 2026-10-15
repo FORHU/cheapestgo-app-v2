@@ -187,3 +187,24 @@ describe('leaving', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('a hotel that will not cancel', () => {
+    it('says what the server says: the booking is unchanged and nothing was refunded', async () => {
+        const refusal = Object.assign(new Error('refused'), {
+            status: 409, code: 'CANCEL_REFUSED',
+            body: { error: 'CANCEL_REFUSED', message: 'The hotel did not accept the cancellation, so your booking has not changed and you have not been refunded.' },
+        });
+        setup(FULL, () => { throw refusal; });
+
+        fireEvent.click(await screen.findByRole('button', { name: /cancel and get/i }));
+
+        expect(await screen.findByText(/did not accept the cancellation/i)).toBeInTheDocument();
+        expect(screen.queryByText(/refund is on its way/i)).not.toBeInTheDocument();
+    });
+
+    it('keeps the generic message for an ordinary failure', async () => {
+        setup(FULL, () => { throw Object.assign(new Error('boom'), { status: 500, body: { error: 'INTERNAL_ERROR' } }); });
+        fireEvent.click(await screen.findByRole('button', { name: /cancel and get/i }));
+        expect(await screen.findByText(/couldn't cancel this booking/i)).toBeInTheDocument();
+    });
+});

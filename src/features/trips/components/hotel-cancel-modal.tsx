@@ -56,6 +56,8 @@ export function HotelCancelModal({
     /** The figure the traveller is looking at — and the one a confirmation is checked against. */
     const [preview, setPreview] = useState<CancelPreview | null>(null);
     const [result, setResult] = useState<CancelResult | null>(null);
+    /** The server's own words when the hotel refused or did not answer; otherwise the generic one. */
+    const [cancelError, setCancelError] = useState<string | null>(null);
 
     // Set before anything is awaited: two clicks in one tick must reach the network once.
     const inFlight = useRef(false);
@@ -99,7 +101,16 @@ export function HotelCancelModal({
             setResult(outcome.result);
             setStage('done');
             onDone(outcome.result);
-        } catch {
+        } catch (err) {
+            // A refusal the hotel gave, or an answer it never gave, is explained by the server in
+            // terms that matter (your booking is unchanged; nothing was refunded). Say those.
+            const e = err as { code?: string; body?: { error?: string; message?: string } };
+            const code = e?.body?.error ?? e?.code;
+            setCancelError(
+                (code === 'CANCEL_REFUSED' || code === 'CANCEL_UNCONFIRMED') && e?.body?.message
+                    ? e.body.message
+                    : null,
+            );
             setStage('cancel_error');
         } finally {
             inFlight.current = false;
@@ -207,7 +218,7 @@ export function HotelCancelModal({
                                 )}
 
                                 {stage === 'cancel_error' && (
-                                    <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">{t('failed')}</p>
+                                    <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">{cancelError ?? t('failed')}</p>
                                 )}
 
                                 <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2">
