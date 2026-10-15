@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -12,7 +12,13 @@ import { useAuthStore } from '@/shared/auth/store';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { env } from '@/shared/lib/env';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
-import { buildConfirmGuests, formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
+import { formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
+import { useHotelCheckout } from '@/features/checkout/hooks/use-hotel-checkout';
+import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/hotel-checkout-machine';
+import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
+import {
+    BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
+} from '@/features/checkout/components/booking-state-panels';
 import { nightsBetween } from '@/shared/lib/stay';
 import { ACCENT, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
 
@@ -20,16 +26,6 @@ import { ACCENT, GREEN, DANGER, checkoutPalette, type Palette } from '@/features
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
-/** The server's figures for a hotel checkout — see api-v2 `preBook`. */
-interface HotelDisplay {
-    currency:     string;
-    subtotal:     number;
-    taxes:        number;
-    total:        number;
-    serviceFee:   number;
-    chargedTotal: number;
-    converted:    boolean;
-}
 
 function getStripe() {
     if (!stripePromise) {
@@ -99,24 +95,6 @@ const DIAL_CODES: { code: string; dial: string; flag: string; name: string }[] =
 
 function validateEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validateGuest(g: GuestInfo): Partial<Record<keyof GuestInfo, string>> {
-    const e: Partial<Record<keyof GuestInfo, string>> = {};
-    if (!g.firstName.trim()) e.firstName = 'Required';
-    if (!g.lastName.trim())  e.lastName  = 'Required';
-    if (!g.email.trim())     e.email     = 'Required';
-    else if (!validateEmail(g.email)) e.email = 'Invalid email';
-    return e;
-}
-
-function validateCoGuests(list: CoGuest[]): Record<string, string> {
-    const e: Record<string, string> = {};
-    list.forEach((g, i) => {
-        if (!g.firstName.trim()) e[`${i}.firstName`] = 'Required';
-        if (!g.lastName.trim())  e[`${i}.lastName`]  = 'Required';
-    });
-    return e;
 }
 
 function validatePassengers(passengers: PassengerInfo[]): Record<string, string> {
@@ -534,7 +512,9 @@ function ConfirmedScreen({
         : '';
 
     const addressLine = [hotelAddress, hotelCity, hotelCountry].filter(Boolean).join(', ');
-    const ref = bookingId || ('CG-' + Math.random().toString(36).slice(2, 8).toUpperCase());
+    // The reference is the booking's, or there is none to show. This used to mint a random one
+    // when it had none — a receipt for a booking that does not exist.
+    const ref = bookingId;
 
     return (
         <div style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
@@ -709,6 +689,10 @@ function CheckoutContent() {
     const hotelCity    = searchParams.get('hotelCity')    ?? '';
     const hotelCountry = searchParams.get('hotelCountry') ?? '';
     const hotelImage   = searchParams.get('hotelImage')   ?? '';
+    // A total the browser did not convert, to compare the server's quote with; absent otherwise.
+    const expectedTotalParam = parseFloat(searchParams.get('expectedTotal') ?? '');
+    // The search may have asked for several rooms. Checkout books one, and says so.
+    const roomsRequested = Math.max(1, parseInt(searchParams.get('rooms') ?? '1', 10) || 1);
 
     // ── Flight params ──
     const totalAmount    = parseFloat(searchParams.get('totalAmount') ?? '0');
@@ -725,22 +709,12 @@ function CheckoutContent() {
         : '';
 
     // ── State ──
-    const [step, setStep]           = useState<Step>('form');
+    // The flight checkout's step. The hotel's comes from its state machine (`step` below).
+    const [flightStep, setStep]     = useState<Step>('form');
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg]   = useState<string | null>(null);
 
-    // Booking state
-    const [prebookId, setPrebookId]         = useState<string | null>(null);
-    /** The board the rate was quoted with. Snapshotted on the booking so the voucher can
-     *  state the meal plan that was bought rather than the property's current one. */
-    const [board, setBoard]                 = useState<string | undefined>(undefined);
-    /**
-     * What the customer is shown, as the server worked it out — room total, service fee and
-     * the total they pay, in their own currency. This page used to add a hardcoded 6% itself
-     * while the server charged 5.9%, so the figure on the Pay button was never the one
-     * billed. Null until prebook answers.
-     */
-    const [display, setDisplay] = useState<HotelDisplay | null>(null);
+    // Flight booking state. The hotel's lives in `useHotelCheckout`.
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
     /** The booking session `/flights/book` opened, which `/flights/confirm` settles. */
     const [flightSessionId, setFlightSessionId] = useState<string>('');
@@ -748,13 +722,19 @@ function CheckoutContent() {
 
     // Hotel guest form — passenger 1 is the booking holder
     const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '', phone: '', phoneCode: '+63' });
-    const [guestErrors, setGuestErrors] = useState<Partial<Record<keyof GuestInfo, string>>>({});
 
     // Hotel co-guests — passenger 2..N, name only
     const [coGuests, setCoGuests]           = useState<CoGuest[]>(() =>
         Array.from({ length: Math.max(0, adults - 1) }, () => ({ firstName: '', lastName: '' }))
     );
-    const [coGuestErrors, setCoGuestErrors] = useState<Record<string, string>>({});
+    // Each child: their age is what a supplier admits and prices them by. A name is optional.
+    const [kids, setKids] = useState<HotelGuestForm['children']>(() =>
+        Array.from({ length: Math.max(0, children) }, () => ({ firstName: '', lastName: '', age: '' }))
+    );
+    const [specialRequests, setSpecialRequests] = useState('');
+    /** Keyed by field path (`holder.email`, `coGuests.1.lastName`); the values are message keys. */
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const fieldError = (path: string) => (fieldErrors[path] ? t(fieldErrors[path] as never) : undefined);
 
     // Flight form
     const [passengers, setPassengers]         = useState<PassengerInfo[]>(() =>
@@ -773,169 +753,114 @@ function CheckoutContent() {
     }, [user]);
 
     // ── Guest helpers ──
+    const clearError = useCallback((path: string) => {
+        setFieldErrors(e => { if (!(path in e)) return e; const n = { ...e }; delete n[path]; return n; });
+    }, []);
+
     const onGuest = useCallback((field: keyof GuestInfo, value: string) => {
         setGuest(g => ({ ...g, [field]: value }));
-        setGuestErrors(e => { const n = { ...e }; delete n[field]; return n; });
-    }, []);
+        clearError(`holder.${field}`);
+    }, [clearError]);
 
     const onCoGuest = useCallback((index: number, field: keyof CoGuest, value: string) => {
         setCoGuests(gs => gs.map((g, i) => i === index ? { ...g, [field]: value } : g));
-        setCoGuestErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
-    }, []);
+        clearError(`coGuests.${index}.${field}`);
+    }, [clearError]);
+
+    const onKid = useCallback((index: number, field: 'firstName' | 'lastName' | 'age', value: string) => {
+        setKids(ks => ks.map((k, i) => i === index ? { ...k, [field]: value } : k));
+        clearError(`children.${index}.${field}`);
+    }, [clearError]);
 
     const onPassenger = useCallback((index: number, field: keyof PassengerInfo, value: string) => {
         setPassengers(ps => ps.map((p, i) => i === index ? { ...p, [field]: value } : p));
         setPassengerErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
     }, []);
 
-    /**
-     * Prebook as soon as the page opens, so the summary shows the server's figures before the
-     * customer types anything. A quote is a valuation, not a reservation (ADR-0021), so
-     * asking for one on arrival costs nothing at the supplier — and a room that has gone
-     * is better learned now than after the form is filled in.
-     */
-    const runPrebook = useCallback(async () => {
-        const pbRes = await http.post<{ success: boolean; data: { prebookId: string; display?: HotelDisplay; boardCode?: string } }>(
-            '/api/hotels/prebook',
-            { offerId: rateKey, roomName, adults, children, currency },
-        );
-        setPrebookId(pbRes.data.prebookId);
-        if (pbRes.data.boardCode) setBoard(pbRes.data.boardCode);
-        setDisplay(pbRes.data.display ?? null);
-        return pbRes.data;
-    }, [rateKey, roomName, adults, children, currency]);
+    // ── Hotel checkout ──
+    //
+    // The whole hotel conversation — quote on arrival, the payment, the confirm, and finding
+    // out what became of a confirm whose answer was lost — is `useHotelCheckout`. The page
+    // keeps the form and what is drawn.
+    const stay = useMemo(
+        () => ({ hotelName, roomName, hotelImage, checkIn, checkOut, adults, children, currency }),
+        [hotelName, roomName, hotelImage, checkIn, checkOut, adults, children, currency],
+    );
+    const hotel = useHotelCheckout({
+        enabled: mode === 'hotel' && !!rateKey,
+        rateKey,
+        stay,
+        placeholderTotal: totalPrice,
+        initialExpectedTotal: Number.isFinite(expectedTotalParam) && expectedTotalParam > 0 ? expectedTotalParam : undefined,
+    });
+    const hotelState: HotelCheckoutState = hotel.state;
+    const display: HotelDisplay | null = hotelState.quote?.display ?? null;
 
+    /** Which of the three steps the traveller is on. */
+    const hotelStep: Step =
+        hotelState.phase === 'awaiting_payment' || hotelState.phase === 'confirming' ? 'payment'
+        : hotelState.phase === 'confirmed' ? 'confirmed'
+        : 'form';
+    const step: Step = mode === 'hotel' ? hotelStep : flightStep;
+
+    // A refresh, a back-button or an email link must not drop the traveller back into a checkout
+    // whose payment has been taken. Once there is a booking, its address is the page.
     useEffect(() => {
-        if (mode !== 'hotel' || !rateKey) return;
-        runPrebook().catch((err) => {
-            setErrorMsg(err instanceof Error ? err.message : 'This room is no longer available.');
-        });
-    }, [mode, rateKey, runPrebook]);
+        if (mode !== 'hotel' || !hotelState.reference) return;
+        if (!['confirmed', 'pending', 'needs_review'].includes(hotelState.phase)) return;
+        const path = window.location.pathname.replace(/\/checkout\/?$/, `/booking/${encodeURIComponent(hotelState.reference)}`);
+        if (path !== window.location.pathname) window.history.replaceState(null, '', path);
+    }, [mode, hotelState.phase, hotelState.reference]);
 
-    /**
-     * A currency picked from the toolbar mid-payment. The PaymentIntent was opened in the
-     * old currency and cannot be re-priced, so the traveller goes back a step: the re-run
-     * prebook above shows the new figures, and continuing opens a fresh intent in them.
-     */
-    const lastCurrency = React.useRef(currency);
-    useEffect(() => {
-        if (lastCurrency.current === currency) return;
-        lastCurrency.current = currency;
-        if (step === 'payment') {
-            setClientSecret(null);
-            setStep('form');
-        }
-    }, [currency, step]);
+    /** Who is staying, in the shape the validator and the payload builder share. */
+    const guestForm: HotelGuestForm = {
+        holder: {
+            firstName: guest.firstName, lastName: guest.lastName, email: guest.email,
+            phoneCode: guest.phoneCode, phone: guest.phone,
+        },
+        coGuests,
+        children: kids,
+        specialRequests,
+    };
 
-    // ── Hotel step 1: guest → payment intent ──
-    const handleHotelSubmitForm = useCallback(async () => {
-        const gErr = validateGuest(guest);
-        const cErr = validateCoGuests(coGuests);
-        if (Object.keys(gErr).length > 0 || Object.keys(cErr).length > 0) {
-            setGuestErrors(gErr);
-            setCoGuestErrors(cErr);
+    // ── Hotel step 1: details → payment ──
+    const handleHotelSubmitForm = async () => {
+        const result = validateHotelGuestForm(guestForm);
+        if (!result.ok) {
+            setFieldErrors(result.errors);
             return;
         }
-
         if (!user) {
             router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
+        setFieldErrors({});
+        await hotel.submitDetails(buildHotelGuestPayload(guestForm));
+    };
 
+    // ── Flight: Stripe confirmed the card → settle the order ──
+    // A paid flight is turned into a booking by its own endpoint — the airline order already
+    // exists, so this is the step that records the ticket against it.
+    const handleFlightPaid = useCallback(async (stripePaymentIntentId: string) => {
         setSubmitting(true); setErrorMsg(null);
         try {
-            // The quote may have lapsed while the form was being filled in, or never arrived.
-            const quoted = prebookId && display ? { prebookId, display } : await runPrebook();
-            const shown = quoted.display;
-            if (!shown) {
-                setErrorMsg('We could not confirm the price in your currency just now. Please try again in a moment.');
-                return;
-            }
-
-            const payRes = await http.post<{ success: boolean; data: { clientSecret: string; paymentIntentId: string; chargedTotal?: number; serviceFee?: number; currency?: string } }>(
-                '/api/hotels/create-payment',
-                {
-                    prebookId:      quoted.prebookId,
-                    amount:         shown.total,
-                    currency:       shown.currency,
-                    // What the summary showed, fee included — nothing is billed above it.
-                    displayedTotal: shown.chargedTotal,
-                    holderEmail:    guest.email,
-                    propertyName:   hotelName,
-                    roomName,
-                    checkIn,
-                    checkOut,
-                }
+            const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
+                '/flights/confirm',
+                { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
             );
-            // The payment step shows what this intent is actually for.
-            if (typeof payRes.data.chargedTotal === 'number') {
-                setDisplay({ ...shown, chargedTotal: payRes.data.chargedTotal, serviceFee: payRes.data.serviceFee ?? shown.serviceFee });
-            }
-            setClientSecret(payRes.data.clientSecret);
-            setStep('payment');
-        } catch (err) {
-            const body = (err as { body?: { error?: string; serverPrice?: number; currency?: string } })?.body;
-            if (body?.error === 'PRICE_CHANGED' && typeof body.serverPrice === 'number') {
-                // The total moved beyond what can be absorbed. Show the new one and let the
-                // customer decide, rather than billing it or failing without a figure.
-                setDisplay(null);
-                setPrebookId(null);
-                setErrorMsg(`The price has changed to ${body.currency ?? currency} ${body.serverPrice.toLocaleString()}. Please review it before paying.`);
-                runPrebook().catch(() => {});
-            } else {
-                setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
-            }
-        } finally {
-            setSubmitting(false);
-        }
-    }, [guest, coGuests, user, router, prebookId, display, runPrebook, currency, hotelName, roomName, checkIn, checkOut]);
-
-    // ── Hotel step 2: Stripe confirms → then call /confirm ──
-    const handleStripeSuccess = useCallback(async (stripePaymentIntentId: string) => {
-        setSubmitting(true); setErrorMsg(null);
-        try {
-            // A paid flight is turned into a booking by its own endpoint — the airline
-            // order already exists, so this is the step that records the ticket against it.
-            if (mode === 'flight') {
-                const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
-                    '/flights/confirm',
-                    { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
-                );
-                setBookingId(flightRes.bookingId);
-                setStep('confirmed');
-                return;
-            }
-
-            const res = await http.post<{ success: boolean; data: { bookingId: string; status: string } }>(
-                '/api/hotels/confirm',
-                {
-                    paymentIntentId: stripePaymentIntentId,
-                    prebookId,
-                    holder:  { firstName: guest.firstName, lastName: guest.lastName, email: guest.email },
-                    holderPhone: `${guest.phoneCode} ${guest.phone}`.trim(),
-                    guests:  buildConfirmGuests(
-                        { firstName: guest.firstName, lastName: guest.lastName, email: guest.email },
-                        coGuests,
-                    ),
-                    propertyName: hotelName,
-                    roomName,
-                    checkIn,
-                    checkOut,
-                    adults,
-                    children,
-                    currency,
-                    quotedPrice: totalPrice,
-                    board,
-                }
-            );
-            setBookingId(res.data.bookingId);
+            setBookingId(flightRes.bookingId);
             setStep('confirmed');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Booking confirmation failed. Contact support with your payment reference.');
         } finally {
             setSubmitting(false);
         }
-    }, [mode, flightSessionId, board, prebookId, guest, coGuests, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
+    }, [flightSessionId]);
+
+    // The same Stripe form serves both; what happens after a card is authorised does not.
+    const handleStripeSuccess = mode === 'flight' ? handleFlightPaid : hotel.onCardAuthorised;
+    const handleStripeError = (msg: string) => (mode === 'flight' ? setErrorMsg(msg) : hotel.onCardError(msg));
+    const hotelSubmitting = submitting || hotel.busy;
 
     // ── Flight submit ──
     const handleFlightSubmit = useCallback(async () => {
@@ -992,7 +917,8 @@ function CheckoutContent() {
 
     // ── Back handler ──
     function handleBack() {
-        if (step === 'payment') setStep('form');
+        if (mode === 'hotel' && step === 'payment') hotel.backToDetails();
+        else if (step === 'payment') setStep('form');
         else router.back();
     }
 
@@ -1042,7 +968,7 @@ function CheckoutContent() {
         return (
             <ConfirmedScreen
                 palette={palette}
-                bookingId={bookingId}
+                bookingId={mode === 'hotel' ? (hotelState.reference ?? null) : bookingId}
                 hotelName={hotelName}
                 hotelAddress={hotelAddress}
                 hotelCity={hotelCity}
@@ -1062,6 +988,23 @@ function CheckoutContent() {
                 onHome={() => router.push('/')}
                 onTrips={() => router.push('/trips')}
             />
+        );
+    }
+
+    // ── Booked, but not settled ──
+    if (mode === 'hotel' && (hotelState.phase === 'pending' || hotelState.phase === 'needs_review')) {
+        return (
+            <div style={rootStyle}>
+                {fieldCss}
+                <div style={{ maxWidth: 640, margin: '0 auto', padding: 'clamp(24px,5vw,64px) 16px' }}>
+                    <SettlingPanel
+                        phase={hotelState.phase}
+                        reference={hotelState.reference}
+                        palette={palette}
+                        onViewTrips={() => router.push('/trips')}
+                    />
+                </div>
+            </div>
         );
     }
 
@@ -1256,7 +1199,7 @@ function CheckoutContent() {
                                 <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                     <StripePaymentForm
                                         onSuccess={handleStripeSuccess}
-                                        onError={msg => setErrorMsg(msg)}
+                                        onError={handleStripeError}
                                         total={totalAmount}
                                         currency={flightCurrency}
                                         submitting={submitting}
@@ -1314,10 +1257,63 @@ function CheckoutContent() {
                             </div>
                         )}
 
+                        {roomsRequested > 1 && <MultiRoomNotice palette={palette} />}
+
+                        {hotelState.phase === 'price_changed' && (
+                            <PriceMovedPanel
+                                change={hotelState.quote?.priceChange}
+                                refreshing={hotel.busy}
+                                palette={palette}
+                                onAccept={hotel.acceptPrice}
+                                onChooseAnother={() => router.back()}
+                            />
+                        )}
+                        {hotelState.phase === 'unavailable' && (
+                            <RoomUnavailablePanel
+                                kind={hotelState.failure?.kind === 'not_payable_online' ? 'not_payable_online' : 'unavailable'}
+                                palette={palette}
+                                onChooseAnother={() => router.back()}
+                            />
+                        )}
+                        {hotelState.phase === 'supplier_down' && (
+                            <SupplierDownPanel palette={palette} busy={hotel.busy} onRetry={() => void hotel.refreshQuote()} />
+                        )}
+                        {hotelState.phase === 'failed' && hotelState.failure?.kind === 'duplicate' && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                <div>{t('duplicateBookingTitle', { hotel: hotelName })}</div>
+                                <div style={{ marginTop: 4, color: palette.soft }}>{t('duplicateBookingDesc')}</div>
+                                {hotelState.failure.existingBookingId && (
+                                    <Link href={`/trips/${hotelState.failure.existingBookingId}`} style={{ color: ACCENT, fontWeight: 700 }}>
+                                        {t('viewExistingBooking')}
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+                        {hotelState.phase === 'failed' && hotelState.failure?.kind !== 'duplicate' && (
+                            <BookingFailedPanel
+                                released={hotelState.outcome?.kind === 'failed' ? hotelState.outcome.released : false}
+                                message={hotelState.outcome?.kind === 'failed' ? hotelState.outcome.message : (hotelState.failure?.message ?? '')}
+                                palette={palette}
+                                onTryAgain={hotel.restart}
+                            />
+                        )}
+                        {/* A refusal the traveller can act on in place: the form stays, with the reason. */}
+                        {hotelState.phase === 'quoted' && hotelState.failure && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                {hotelState.failure.message}
+                            </div>
+                        )}
+                        {/* A declined card is retried on the same payment. */}
+                        {hotelState.phase === 'awaiting_payment' && hotelState.message && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                {hotelState.message}
+                            </div>
+                        )}
+
                         <AuthBanner />
 
                         {/* Step 1: guest details */}
-                        {step === 'form' && (
+                        {step === 'form' && hotelState.phase !== 'unavailable' && hotelState.phase !== 'failed' && (
                             <>
                                 {/* Guest 1 — the booking holder */}
                                 <section style={{ marginBottom: 28 }}>
@@ -1325,13 +1321,13 @@ function CheckoutContent() {
                                     <div style={fieldGrid}>
                                         <div>
                                             <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!guestErrors.firstName)} />
-                                            <ErrText msg={guestErrors.firstName} />
+                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!fieldError('holder.firstName'))} />
+                                            <ErrText msg={fieldError('holder.firstName')} />
                                         </div>
                                         <div>
                                             <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!guestErrors.lastName)} />
-                                            <ErrText msg={guestErrors.lastName} />
+                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!fieldError('holder.lastName'))} />
+                                            <ErrText msg={fieldError('holder.lastName')} />
                                         </div>
                                         {/* Email and phone keep to the left column, as drawn — a
                                             name splits in two, a contact detail does not. On a
@@ -1339,8 +1335,8 @@ function CheckoutContent() {
                                             take the full row. */}
                                         <div className="col-span-2 sm:col-span-1 sm:col-start-1">
                                             <Label palette={palette} icon={Mail}>{t('userDetails.emailPlaceholder')}</Label>
-                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="eg.johndoe@gmail.com" className="cg-field" style={mkField(palette, !!guestErrors.email)} />
-                                            <ErrText msg={guestErrors.email} />
+                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="eg.johndoe@gmail.com" className="cg-field" style={mkField(palette, !!fieldError('holder.email'))} />
+                                            <ErrText msg={fieldError('holder.email')} />
                                         </div>
                                         <div className="col-span-2 sm:col-span-1 sm:col-start-1">
                                             <Label palette={palette} icon={Phone}>{t('userDetails.phoneNumber')}</Label>
@@ -1350,9 +1346,9 @@ function CheckoutContent() {
                                                 number={guest.phone}
                                                 onCode={v => onGuest('phoneCode', v)}
                                                 onNumber={v => onGuest('phone', v)}
-                                                error={guestErrors.phone}
+                                                error={fieldError('holder.phone')}
                                             />
-                                            <ErrText msg={guestErrors.phone} />
+                                            <ErrText msg={fieldError('holder.phone')} />
                                         </div>
                                     </div>
                                 </section>
@@ -1364,20 +1360,54 @@ function CheckoutContent() {
                                         <div style={fieldGrid}>
                                             <div>
                                                 <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder="Mike" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.firstName`])} />
-                                                <ErrText msg={coGuestErrors[`${i}.firstName`]} />
+                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder="Mike" className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.firstName`))} />
+                                                <ErrText msg={fieldError(`coGuests.${i}.firstName`)} />
                                             </div>
                                             <div>
                                                 <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder="Hunt" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.lastName`])} />
-                                                <ErrText msg={coGuestErrors[`${i}.lastName`]} />
+                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder="Hunt" className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.lastName`))} />
+                                                <ErrText msg={fieldError(`coGuests.${i}.lastName`)} />
                                             </div>
                                         </div>
                                     </section>
                                 ))}
 
+                                {/* Children — an age is what a supplier admits and prices them by */}
+                                {kids.map((k, i) => (
+                                    <section key={`kid-${i}`} style={{ marginBottom: 28 }}>
+                                        <div style={sectionLabelStyle}>{t('userDetails.childN', { n: i + 1 })}</div>
+                                        <div style={fieldGrid}>
+                                            <div>
+                                                <Label palette={palette}>{t('userDetails.age')}</Label>
+                                                <input
+                                                    type="number" inputMode="numeric" min={0} max={17} step={1}
+                                                    value={k.age} onChange={e => onKid(i, 'age', e.target.value)}
+                                                    placeholder={t('userDetails.agePlaceholder')}
+                                                    className="cg-field"
+                                                    style={mkField(palette, !!fieldError(`children.${i}.age`))}
+                                                />
+                                                <ErrText msg={fieldError(`children.${i}.age`)} />
+                                            </div>
+                                        </div>
+                                    </section>
+                                ))}
+
+                                {/* Special requests: passed to the property, not guaranteed by it */}
+                                <section style={{ marginBottom: 28 }}>
+                                    <div style={sectionLabelStyle}>{t('specialRequests.title')}</div>
+                                    <textarea
+                                        value={specialRequests}
+                                        onChange={e => { setSpecialRequests(e.target.value); clearError('specialRequests'); }}
+                                        placeholder={t('specialRequests.placeholder')}
+                                        rows={3}
+                                        className="cg-field"
+                                        style={{ ...mkField(palette, !!fieldError('specialRequests')), height: 'auto', padding: '12px 16px', borderRadius: 20, resize: 'vertical' }}
+                                    />
+                                    <ErrText msg={fieldError('specialRequests')} />
+                                </section>
+
                                 <div style={{ marginTop: 40 }}>
-                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting} palette={palette}>
+                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={hotelSubmitting} disabled={!hotel.canSubmit} palette={palette}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
                                 </div>
@@ -1385,14 +1415,14 @@ function CheckoutContent() {
                         )}
 
                         {/* Step 2: Stripe payment */}
-                        {step === 'payment' && clientSecret && (
-                            <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                        {step === 'payment' && hotelState.clientSecret && (
+                            <Elements stripe={getStripe()} options={{ clientSecret: hotelState.clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                 <StripePaymentForm
                                     onSuccess={handleStripeSuccess}
-                                    onError={msg => setErrorMsg(msg)}
+                                    onError={handleStripeError}
                                     total={total}
                                     currency={shownCurrency}
-                                    submitting={submitting}
+                                    submitting={hotelSubmitting}
                                     setSubmitting={setSubmitting}
                                     palette={palette}
                                 />

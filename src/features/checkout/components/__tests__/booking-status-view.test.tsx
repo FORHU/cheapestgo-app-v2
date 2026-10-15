@@ -10,7 +10,9 @@ const status = vi.fn();
 
 vi.mock('next/navigation', () => ({ useParams: () => ({ reference: 'CG-ABC123' }) }));
 vi.mock('@/i18n/navigation', () => ({
-    Link: ({ href, children, ...rest }: any) => <a href={href} {...rest}>{children}</a>,
+    Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode } & Record<string, unknown>) => (
+        <a href={href} {...rest}>{children}</a>
+    ),
     useRouter: () => ({ push }),
 }));
 vi.mock('@/shared/auth/store', () => ({ useAuthStore: () => auth }));

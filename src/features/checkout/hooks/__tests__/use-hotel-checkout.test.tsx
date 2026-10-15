@@ -25,7 +25,9 @@ type FakeClient = CheckoutHttp & {
 };
 
 /** A client whose routes can each be replaced per test. */
-function fakeClient(routes: Partial<Record<'prebook' | 'pay' | 'confirm' | 'status', (body: any) => unknown>> = {}): FakeClient {
+type Route = (body: never) => unknown;
+
+function fakeClient(routes: Partial<Record<'prebook' | 'pay' | 'confirm' | 'status', Route>> = {}): FakeClient {
     const defaults = {
         prebook: () => ({ success: true, data: { prebookId: 'MOCK:abc', display: DISPLAY, boardCode: 'BB' } }),
         pay:     () => ({ success: true, data: { clientSecret: 'cs_1', paymentIntentId: 'pi_1', bookingReference: 'CG-ABC123', chargedTotal: 254, serviceFee: 14 } }),
@@ -35,12 +37,12 @@ function fakeClient(routes: Partial<Record<'prebook' | 'pay' | 'confirm' | 'stat
     const r = { ...defaults, ...routes };
     return {
         post: vi.fn(async (path: string, body: unknown) => {
-            if (path.endsWith('/prebook')) return r.prebook(body);
-            if (path.endsWith('/create-payment')) return r.pay(body);
-            if (path.endsWith('/confirm')) return r.confirm(body);
+            if (path.endsWith('/prebook')) return r.prebook(body as never);
+            if (path.endsWith('/create-payment')) return r.pay(body as never);
+            if (path.endsWith('/confirm')) return r.confirm(body as never);
             throw new Error(`unexpected POST ${path}`);
         }),
-        get: vi.fn(async () => r.status({})),
+        get: vi.fn(async () => r.status({} as never)),
     } as FakeClient;
 }
 
