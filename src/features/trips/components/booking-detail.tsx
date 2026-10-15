@@ -10,14 +10,16 @@ import { useRouter } from '@/i18n/navigation';
 import {
     ArrowLeft, Calendar, Users, Plane, Hotel,
     CreditCard, Shield, CheckCircle, XCircle,
-    Clock, RotateCcw, AlertTriangle, Loader2,
+    Clock, RotateCcw, AlertTriangle,
 } from 'lucide-react';
 import { http } from '@/shared/lib/http';
+import { fetchBooking as loadBooking } from '../lib/bookings-api';
 import { formatCurrency } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/cn';
 import type { AnyBooking, HotelBooking, FlightBooking } from '@/shared/types';
 
 import { CancellationModal } from '@/app/[locale]/trips/components/CancellationModal';
+import { HotelCancelModal } from './hotel-cancel-modal';
 import { nightsBetween } from '@/shared/lib/stay';
 
 // ─── Status maps ──────────────────────────────────────────────────────────────
@@ -92,9 +94,9 @@ function fmtTime(s: string) {
 
 function HotelDetail({ booking }: { booking: HotelBooking }) {
     const tAll = useTranslations();
-    const [cancelling, setCancelling] = useState(false);
-    const [cancelled, setCancelled] = useState(false);
-    const [cancelError, setCancelError] = useState<string | null>(null);
+    const [cancelOpen, setCancelOpen] = useState(false);
+    /** The booking's status once cancelled from here, as the API names it. */
+    const [cancelledStatus, setCancelledStatus] = useState<string | null>(null);
 
     const checkIn = new Date(booking.check_in);
     const checkOut = new Date(booking.check_out);
@@ -103,22 +105,10 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
     const refundable = policy?.refundableTag === 'RFN';
     const freeCancelDeadline = policy?.cancelPolicyInfos?.[0]?.cancelTime;
 
-    const canCancel = !cancelled && (booking.status === 'confirmed' || booking.status === 'pending');
+    // A booking cancelled whose refund failed can be cancelled again: that retries the money.
+    const canCancel = !cancelledStatus && !!booking.booking_id
+        && ['confirmed', 'pending', 'cancelled_refund_failed'].includes(booking.status);
 
-    const handleCancel = async () => {
-        if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) return;
-        setCancelling(true);
-        setCancelError(null);
-        try {
-            await http.post('/hotels/cancel', { bookingRef: booking.booking_id });
-            setCancelled(true);
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Cancellation failed. Please contact support.';
-            setCancelError(msg);
-        } finally {
-            setCancelling(false);
-        }
-    };
 
     return (
         <div className="space-y-4">
@@ -146,7 +136,7 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
                         </div>
                     )}
                     <div className={cn('flex flex-col gap-1', !booking.property_image ? 'items-end' : 'w-full flex-row items-center justify-between')}>
-                        <StatusBadge status={cancelled ? 'cancelled' : booking.status} isHotel={true} />
+                        <StatusBadge status={cancelledStatus ?? booking.status} isHotel={true} />
                         {booking.booking_id && (
                             <p className="text-xs text-slate-400 mt-0.5">{tAll('trips.pages.ref')} <span className="font-mono">{booking.booking_id}</span></p>
                         )}
@@ -223,26 +213,28 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
             {/* Cancel action */}
             {canCancel && (
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
-                    {cancelError && (
-                        <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-700 dark:text-red-400">
-                            {cancelError}
-                        </div>
-                    )}
                     <button
-                        onClick={handleCancel}
-                        disabled={cancelling}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
+                        onClick={() => setCancelOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-sm font-semibold transition-colors"
                     >
-                        {cancelling ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
-                        {cancelling ? 'Cancelling…' : 'Cancel Booking'}
+                        <XCircle size={14} />
+                        {booking.status === 'cancelled_refund_failed' ? tAll('trips.bookingCard.actions.retryRefund') : 'Cancel Booking'}
                     </button>
                 </div>
             )}
-            {cancelled && (
+            {cancelledStatus && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
                     <CheckCircle size={16} />
                     {tAll('trips.flightBookingCard.successBanners.cancelled')}
                 </div>
+            )}
+            {cancelOpen && booking.booking_id && (
+                <HotelCancelModal
+                    reference={booking.booking_id}
+                    propertyName={booking.property_name}
+                    onClose={() => setCancelOpen(false)}
+                    onDone={(result) => setCancelledStatus(result.status)}
+                />
             )}
         </div>
     );
@@ -409,7 +401,8 @@ export function BookingDetail({ id }: BookingDetailProps) {
 
     const fetchBooking = useCallback(() => {
         setIsLoading(true);
-        http.get<AnyBooking>(`/api/bookings/${id}`)
+        // By row id or reference — the card links one, an email the other.
+        loadBooking(http, id)
             .then(setBooking)
             .catch((err: Error & { status?: number }) => {
                 if (err.status === 401) {

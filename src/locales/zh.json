@@ -2395,7 +2395,39 @@
     "pageSubtitle": "查看和管理您的所有预订。",
     "viewDetails": "查看详情",
     "emptyHint": "准备好出发了吗？以最优价格找到机票和酒店。",
-    "bookingDetails": "预订详情"
+    "bookingDetails": "预订详情",
+    "loadFailed": {
+      "title": "无法加载您的行程",
+      "retry": "重试"
+    },
+    "hotelCancel": {
+      "title": "确定要取消此预订吗？",
+      "loading": "正在核算可退款金额…",
+      "loadError": "无法确认取消条款，请重试。",
+      "paid": "已支付",
+      "penalty": "取消费用",
+      "refund": "可退还金额",
+      "freeUntil": "{date}前可免费取消",
+      "feeRisesOn": "取消费用将于 {date} 起上调",
+      "fullRefund": "将全额退款。",
+      "partialRefund": "将退还部分款项。",
+      "noRefund": "您将无法获得退款——该价格方案目前不可退。",
+      "confirm": "取消预订",
+      "confirmRefund": "取消并退还 {amount}",
+      "confirmNoRefund": "仍然取消（不退款）",
+      "keep": "保留预订",
+      "working": "正在取消…",
+      "changedTitle": "金额已发生变化",
+      "changedBody": "自您打开此页面后已过去一段时间，可退金额有所不同。预订尚未被取消，请重新查看。",
+      "alreadyCancelled": "该预订已被取消。",
+      "notCancellable": "该预订无法在此取消，请联系客服。",
+      "refundRetry": "该预订已取消，但退款未成功。我们现在将重新处理。",
+      "doneRefunded": "预订已取消，退款正在处理中。款项可能需要 3–5 个工作日才会显示在账单上。",
+      "doneNoRefund": "预订已取消。由于该价格方案不可退，未产生退款。",
+      "doneRefundFailed": "预订已取消，但退款未成功。请联系客服，我们会为您处理。",
+      "failed": "无法取消该预订。请重试，或联系客服。",
+      "close": "关闭"
+    }
   },
   "support": {
     "title": "客户支持",

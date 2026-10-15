@@ -2395,7 +2395,39 @@
     "pageSubtitle": "모든 예약을 확인하고 관리하세요.",
     "viewDetails": "상세 보기",
     "emptyHint": "떠날 준비가 되셨나요? 최저가 항공편과 호텔을 찾아보세요.",
-    "bookingDetails": "예약 상세"
+    "bookingDetails": "예약 상세",
+    "loadFailed": {
+      "title": "여행 정보를 불러오지 못했습니다",
+      "retry": "다시 시도"
+    },
+    "hotelCancel": {
+      "title": "이 예약을 취소하시겠습니까?",
+      "loading": "환불받을 금액을 확인하는 중…",
+      "loadError": "취소 조건을 확인하지 못했습니다. 다시 시도해 주세요.",
+      "paid": "결제 금액",
+      "penalty": "취소 수수료",
+      "refund": "환불 금액",
+      "freeUntil": "{date}까지 무료 취소 가능",
+      "feeRisesOn": "{date}부터 수수료가 올라갑니다",
+      "fullRefund": "전액 환불됩니다.",
+      "partialRefund": "결제 금액의 일부가 환불됩니다.",
+      "noRefund": "환불되는 금액이 없습니다. 현재 시점에서는 환불이 불가능한 요금입니다.",
+      "confirm": "예약 취소",
+      "confirmRefund": "취소하고 {amount} 환불받기",
+      "confirmNoRefund": "환불 없이 취소",
+      "keep": "예약 유지",
+      "working": "취소하는 중…",
+      "changedTitle": "금액이 변경되었습니다",
+      "changedBody": "창을 연 이후 시간이 지나 환불 금액이 달라졌습니다. 아직 취소되지 않았습니다. 다시 확인해 주세요.",
+      "alreadyCancelled": "이미 취소된 예약입니다.",
+      "notCancellable": "이 예약은 여기서 취소할 수 없습니다. 고객센터에 문의해 주세요.",
+      "refundRetry": "이미 취소된 예약이지만 환불이 처리되지 않았습니다. 지금 다시 시도합니다.",
+      "doneRefunded": "예약이 취소되었고 환불이 진행 중입니다. 명세서에 반영되기까지 영업일 기준 3~5일이 걸릴 수 있습니다.",
+      "doneNoRefund": "예약이 취소되었습니다. 환불 불가 요금이어서 환불되는 금액은 없습니다.",
+      "doneRefundFailed": "예약은 취소되었지만 환불이 처리되지 않았습니다. 고객센터에 문의해 주시면 처리해 드리겠습니다.",
+      "failed": "예약을 취소하지 못했습니다. 다시 시도하거나 고객센터에 문의해 주세요.",
+      "close": "닫기"
+    }
   },
   "support": {
     "title": "고객지원",

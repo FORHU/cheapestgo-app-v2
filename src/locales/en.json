@@ -2395,7 +2395,39 @@
     "pageSubtitle": "View and manage all your bookings.",
     "viewDetails": "View Details",
     "emptyHint": "Ready to explore? Find flights and hotels at the best prices.",
-    "bookingDetails": "Booking Details"
+    "bookingDetails": "Booking Details",
+    "loadFailed": {
+      "title": "We couldn't load your trips",
+      "retry": "Try again"
+    },
+    "hotelCancel": {
+      "title": "Cancel this booking?",
+      "loading": "Checking what you'd get back…",
+      "loadError": "We couldn't check the cancellation terms. Please try again.",
+      "paid": "You paid",
+      "penalty": "Cancellation fee",
+      "refund": "You'll get back",
+      "freeUntil": "Free to cancel until {date}",
+      "feeRisesOn": "The fee goes up on {date}",
+      "fullRefund": "You'll be refunded in full.",
+      "partialRefund": "You'll get part of your payment back.",
+      "noRefund": "You won't get anything back — this rate isn't refundable at this point.",
+      "confirm": "Cancel booking",
+      "confirmRefund": "Cancel and get {amount} back",
+      "confirmNoRefund": "Cancel anyway — no refund",
+      "keep": "Keep my booking",
+      "working": "Cancelling…",
+      "changedTitle": "The amount has changed",
+      "changedBody": "Time has passed since you opened this, and what you'd get back is different. Nothing has been cancelled. Please look again.",
+      "alreadyCancelled": "This booking has already been cancelled.",
+      "notCancellable": "This booking can't be cancelled here. Please contact support.",
+      "refundRetry": "This booking is already cancelled, but the refund didn't go through. We'll try it again now.",
+      "doneRefunded": "Your booking is cancelled and your refund is on its way. It can take 3–5 business days to appear on your statement.",
+      "doneNoRefund": "Your booking is cancelled. Nothing was refunded, as the rate was non-refundable.",
+      "doneRefundFailed": "Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out.",
+      "failed": "We couldn't cancel this booking. Please try again, or contact support.",
+      "close": "Close"
+    }
   },
   "support": {
     "title": "Support",

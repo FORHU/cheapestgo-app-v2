@@ -206,3 +206,39 @@ mistranslation in either direction is a support ticket at best.
 | `checkout.validation.emailInvalid` | Enter a valid email address | 올바른 이메일 주소를 입력해 주세요 | 有効なメールアドレスを入力してください | 请输入有效的邮箱地址 |
 | `checkout.validation.ageInvalid` | Enter an age from 0 to 17 | 0세에서 17세 사이의 나이를 입력해 주세요 | 0〜17歳の年齢を入力してください | 请输入 0 至 17 岁之间的年龄 |
 | `checkout.validation.specialRequestsTooLong` | Please keep special requests under 500 characters | 특별 요청은 500자 이내로 작성해 주세요 | 特別なご要望は500文字以内でご入力ください | 特殊要求请控制在 500 字以内 |
+
+## Hotel cancellation — what you would get back, before you cancel
+
+Best-effort translations. `changedTitle` / `changedBody` and the three `done*` messages say what
+happened to the traveller's money, so they want a native reader before they ship.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|---|---|---|---|---|
+| `trips.loadFailed.title` | We couldn't load your trips | 여행 정보를 불러오지 못했습니다 | 旅行情報を読み込めませんでした | 无法加载您的行程 |
+| `trips.loadFailed.retry` | Try again | 다시 시도 | もう一度試す | 重试 |
+| `trips.hotelCancel.title` | Cancel this booking? | 이 예약을 취소하시겠습니까? | このご予約をキャンセルしますか？ | 确定要取消此预订吗？ |
+| `trips.hotelCancel.loading` | Checking what you'd get back… | 환불받을 금액을 확인하는 중… | 返金額を確認しています… | 正在核算可退款金额… |
+| `trips.hotelCancel.loadError` | We couldn't check the cancellation terms. Please try again. | 취소 조건을 확인하지 못했습니다. 다시 시도해 주세요. | キャンセル条件を確認できませんでした。もう一度お試しください。 | 无法确认取消条款，请重试。 |
+| `trips.hotelCancel.paid` | You paid | 결제 금액 | お支払い金額 | 已支付 |
+| `trips.hotelCancel.penalty` | Cancellation fee | 취소 수수료 | キャンセル料 | 取消费用 |
+| `trips.hotelCancel.refund` | You'll get back | 환불 금액 | 返金額 | 可退还金额 |
+| `trips.hotelCancel.freeUntil` | Free to cancel until {date} | {date}까지 무료 취소 가능 | {date}まで無料でキャンセルできます | {date}前可免费取消 |
+| `trips.hotelCancel.feeRisesOn` | The fee goes up on {date} | {date}부터 수수료가 올라갑니다 | {date}からキャンセル料が上がります | 取消费用将于 {date} 起上调 |
+| `trips.hotelCancel.fullRefund` | You'll be refunded in full. | 전액 환불됩니다. | 全額返金されます。 | 将全额退款。 |
+| `trips.hotelCancel.partialRefund` | You'll get part of your payment back. | 결제 금액의 일부가 환불됩니다. | お支払い金額の一部が返金されます。 | 将退还部分款项。 |
+| `trips.hotelCancel.noRefund` | You won't get anything back — this rate isn't refundable at this point. | 환불되는 금액이 없습니다. 현재 시점에서는 환불이 불가능한 요금입니다. | 返金はありません。現時点では返金不可の料金です。 | 您将无法获得退款——该价格方案目前不可退。 |
+| `trips.hotelCancel.confirm` | Cancel booking | 예약 취소 | 予約をキャンセル | 取消预订 |
+| `trips.hotelCancel.confirmRefund` | Cancel and get {amount} back | 취소하고 {amount} 환불받기 | キャンセルして{amount}の返金を受ける | 取消并退还 {amount} |
+| `trips.hotelCancel.confirmNoRefund` | Cancel anyway — no refund | 환불 없이 취소 | 返金なしでキャンセル | 仍然取消（不退款） |
+| `trips.hotelCancel.keep` | Keep my booking | 예약 유지 | 予約を維持する | 保留预订 |
+| `trips.hotelCancel.working` | Cancelling… | 취소하는 중… | キャンセルしています… | 正在取消… |
+| `trips.hotelCancel.changedTitle` | The amount has changed | 금액이 변경되었습니다 | 金額が変更されました | 金额已发生变化 |
+| `trips.hotelCancel.changedBody` | Time has passed since you opened this, and what you'd get back is different. Nothing has been cancelled. Please look again. | 창을 연 이후 시간이 지나 환불 금액이 달라졌습니다. 아직 취소되지 않았습니다. 다시 확인해 주세요. | 画面を開いてから時間が経ち、返金額が変わりました。まだキャンセルされていません。もう一度ご確認ください。 | 自您打开此页面后已过去一段时间，可退金额有所不同。预订尚未被取消，请重新查看。 |
+| `trips.hotelCancel.alreadyCancelled` | This booking has already been cancelled. | 이미 취소된 예약입니다. | このご予約はすでにキャンセル済みです。 | 该预订已被取消。 |
+| `trips.hotelCancel.notCancellable` | This booking can't be cancelled here. Please contact support. | 이 예약은 여기서 취소할 수 없습니다. 고객센터에 문의해 주세요. | このご予約はここではキャンセルできません。サポートまでお問い合わせください。 | 该预订无法在此取消，请联系客服。 |
+| `trips.hotelCancel.refundRetry` | This booking is already cancelled, but the refund didn't go through. We'll try it again now. | 이미 취소된 예약이지만 환불이 처리되지 않았습니다. 지금 다시 시도합니다. | このご予約はキャンセル済みですが、返金が完了していません。今から再度処理します。 | 该预订已取消，但退款未成功。我们现在将重新处理。 |
+| `trips.hotelCancel.doneRefunded` | Your booking is cancelled and your refund is on its way. It can take 3–5 business days to appear on your statement. | 예약이 취소되었고 환불이 진행 중입니다. 명세서에 반영되기까지 영업일 기준 3~5일이 걸릴 수 있습니다. | ご予約をキャンセルし、返金手続きを行いました。明細への反映には3〜5営業日かかる場合があります。 | 预订已取消，退款正在处理中。款项可能需要 3–5 个工作日才会显示在账单上。 |
+| `trips.hotelCancel.doneNoRefund` | Your booking is cancelled. Nothing was refunded, as the rate was non-refundable. | 예약이 취소되었습니다. 환불 불가 요금이어서 환불되는 금액은 없습니다. | ご予約をキャンセルしました。返金不可の料金のため、返金はありません。 | 预订已取消。由于该价格方案不可退，未产生退款。 |
+| `trips.hotelCancel.doneRefundFailed` | Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out. | 예약은 취소되었지만 환불이 처리되지 않았습니다. 고객센터에 문의해 주시면 처리해 드리겠습니다. | ご予約はキャンセルされましたが、返金が完了しませんでした。サポートまでご連絡ください。対応いたします。 | 预订已取消，但退款未成功。请联系客服，我们会为您处理。 |
+| `trips.hotelCancel.failed` | We couldn't cancel this booking. Please try again, or contact support. | 예약을 취소하지 못했습니다. 다시 시도하거나 고객센터에 문의해 주세요. | ご予約をキャンセルできませんでした。もう一度お試しいただくか、サポートまでお問い合わせください。 | 无法取消该预订。请重试，或联系客服。 |
+| `trips.hotelCancel.close` | Close | 닫기 | 閉じる | 关闭 |
