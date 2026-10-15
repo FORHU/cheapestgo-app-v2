@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/shared/stores/auth.store';
@@ -17,7 +18,7 @@ import SignInDropdown from '@/shared/auth/SignInDropdown';
  *
  * The controls drop below 760px, where the search bar takes the whole viewport.
  */
-export function LandingHeader() {
+function LandingHeaderContent() {
     const user = useAuthStore((s) => s.user);
     const tAll = useTranslations();
     const brand = useBrandName();
@@ -52,5 +53,19 @@ export function LandingHeader() {
                 </div>
             </div>
         </header>
+    );
+}
+
+/**
+ * CurrencySelector reads useSearchParams, which bails out of prerendering, so the
+ * landing page cannot export without a boundary around it: without this, building
+ * /en fails with "useSearchParams() should be wrapped in a suspense boundary".
+ * `shared/components/header.tsx` wraps the app-wide header the same way.
+ */
+export function LandingHeader() {
+    return (
+        <Suspense fallback={null}>
+            <LandingHeaderContent />
+        </Suspense>
     );
 }

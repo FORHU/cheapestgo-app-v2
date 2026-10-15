@@ -1,0 +1,25 @@
+# Keeping these out matters for more than build speed: a host node_modules built
+# for another platform would overwrite the one pnpm installs in the image, and a
+# stale .next would be served instead of the freshly built one.
+node_modules
+.next
+.next-*
+out
+
+.git
+.github
+.vscode
+
+.env
+.env.*
+!.env.example
+
+npm-debug.log*
+pnpm-debug.log*
+
+coverage
+docs
+README.md
+CLAUDE.md
+AGENTS.md
+CONTEXT.md
