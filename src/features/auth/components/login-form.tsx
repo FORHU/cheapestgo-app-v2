@@ -50,28 +50,28 @@ export function LoginForm() {
                 autoComplete="email"
             />
 
-            <div className="relative">
-                <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    label="Password"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setErrors((prev) => ({ ...prev, password: undefined })); }}
-                    placeholder={tAll('auth.passwordPlaceholder')}
-                    icon={Lock}
-                    error={errors.password}
-                    autoComplete="current-password"
-                    className="pr-10"
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    tabIndex={-1}
-                >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-            </div>
+            <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                label="Password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setErrors((prev) => ({ ...prev, password: undefined })); }}
+                placeholder={tAll('auth.passwordPlaceholder')}
+                icon={Lock}
+                error={errors.password}
+                autoComplete="current-password"
+                className="pr-11"
+                trailing={
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? tAll('auth.hidePassword') : tAll('auth.showPassword')}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:hover:text-slate-300"
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                }
+            />
 
             {/*
                 "Keep me signed in" was here and did nothing: it was `defaultChecked`, never

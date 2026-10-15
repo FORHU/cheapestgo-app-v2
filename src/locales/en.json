@@ -46,6 +46,8 @@
     "forgotPasswordQ": "Forgot password?",
     "createOne": "Create one",
     "passwordPlaceholder": "Your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "createAccount": "Create account",
     "lastNameShort": "Last",
     "strongPassword": "Create a strong password",

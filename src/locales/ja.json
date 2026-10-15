@@ -46,6 +46,8 @@
     "forgotPasswordQ": "パスワードをお忘れですか？",
     "createOne": "アカウントを作成",
     "passwordPlaceholder": "パスワード",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを非表示",
     "createAccount": "アカウントを作成",
     "lastNameShort": "姓",
     "strongPassword": "強力なパスワードを作成してください",

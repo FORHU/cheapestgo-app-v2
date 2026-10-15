@@ -46,6 +46,8 @@
     "forgotPasswordQ": "비밀번호를 잊으셨나요?",
     "createOne": "계정 만들기",
     "passwordPlaceholder": "비밀번호",
+    "showPassword": "비밀번호 표시",
+    "hidePassword": "비밀번호 숨기기",
     "createAccount": "계정 만들기",
     "lastNameShort": "성",
     "strongPassword": "안전한 비밀번호를 만드세요",

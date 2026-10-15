@@ -46,6 +46,8 @@
     "forgotPasswordQ": "忘记密码？",
     "createOne": "创建账户",
     "passwordPlaceholder": "您的密码",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
     "createAccount": "创建账户",
     "lastNameShort": "姓",
     "strongPassword": "创建一个高强度密码",
