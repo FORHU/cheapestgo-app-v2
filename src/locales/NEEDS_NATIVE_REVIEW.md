@@ -158,3 +158,51 @@ restaurant/attraction/grocery/medical/transit came from v1 and are not listed.
 | `property.nearby.directions.toHotel` | {minutes} min to the hotel | 호텔까지 {minutes}분 | ホテルまで{minutes}分 | 到酒店约 {minutes} 分钟 |
 | `property.nearby.weather.feelsLike` | Feels like {temp} | 체감 온도 {temp} | 体感気温 {temp} | 体感温度 {temp} |
 | `property.nearby.weather.highLow` | {high} / {low} | {high} / {low} | {high} / {low} | {high} / {low} |
+
+## Hotel checkout — price change, unavailable, settling, failed, booking page
+
+Best-effort translations of the Phase 4 checkout states. The wording matters more than usual here:
+`needsReview.*` and `failed.unknown` tell a traveller whether their money has moved, and a
+mistranslation in either direction is a support ticket at best.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|---|---|---|---|---|
+| `checkout.priceMoved.title` | The price has changed | 가격이 변경되었습니다 | 料金が変更されました | 价格已变动 |
+| `checkout.priceMoved.up` | This room now costs more than when you chose it. | 이 객실의 가격이 선택하신 때보다 올랐습니다. | このお部屋の料金は、選択時より高くなっています。 | 该房型的价格比您选择时更高。 |
+| `checkout.priceMoved.down` | Good news — this room now costs less than when you chose it. | 이 객실의 가격이 선택하신 때보다 내렸습니다. | このお部屋の料金は、選択時より安くなりました。 | 该房型的价格比您选择时更低。 |
+| `checkout.priceMoved.was` | Was | 이전 | 変更前 | 原价 |
+| `checkout.priceMoved.now` | Now | 현재 | 変更後 | 现价 |
+| `checkout.priceMoved.accept` | Continue at the new price | 새 가격으로 계속 | 新しい料金で続ける | 按新价格继续 |
+| `checkout.priceMoved.chooseAnother` | Choose another room | 다른 객실 선택 | 別のお部屋を選ぶ | 选择其他房型 |
+| `checkout.priceMoved.refreshing` | Checking the latest price… | 최신 가격을 확인하는 중… | 最新の料金を確認しています… | 正在核实最新价格… |
+| `checkout.unavailable.title` | This room is no longer available | 이 객실은 더 이상 예약할 수 없습니다 | このお部屋はご利用いただけなくなりました | 该房型已无法预订 |
+| `checkout.unavailable.description` | Someone else booked it, or the hotel closed it, while you were deciding. You have not been charged. | 고민하시는 동안 다른 분이 예약했거나 호텔에서 판매를 중단했습니다. 결제는 이루어지지 않았습니다. | 検討中に他のお客様が予約したか、ホテルが販売を終了しました。お支払いは発生していません。 | 您考虑期间，它已被他人预订或酒店已停售。您未被扣款。 |
+| `checkout.unavailable.chooseAnother` | Choose another room | 다른 객실 선택 | 別のお部屋を選ぶ | 选择其他房型 |
+| `checkout.notPayableOnline.title` | This room can't be paid for online | 이 객실은 온라인으로 결제할 수 없습니다 | このお部屋はオンラインでお支払いできません | 该房型无法在线支付 |
+| `checkout.notPayableOnline.description` | The hotel collects payment for this rate itself. Choose a different room to book and pay here. | 이 요금은 호텔에서 직접 결제를 받습니다. 여기서 예약하고 결제하려면 다른 객실을 선택해 주세요. | このプランはホテルが直接お支払いを受け付けます。こちらで予約・お支払いするには、別のお部屋をお選びください。 | 此价格方案由酒店直接收款。如需在此预订并支付，请选择其他房型。 |
+| `checkout.notPayableOnline.chooseAnother` | Choose another room | 다른 객실 선택 | 別のお部屋を選ぶ | 选择其他房型 |
+| `checkout.supplierDown.title` | We couldn't reach the hotel just now | 지금은 호텔에 연결할 수 없습니다 | ただいまホテルに接続できません | 暂时无法连接酒店 |
+| `checkout.supplierDown.description` | Nothing is wrong with your booking — the hotel's system didn't answer. Please try again in a moment. | 예약에는 문제가 없습니다. 호텔 시스템이 응답하지 않았습니다. 잠시 후 다시 시도해 주세요. | ご予約に問題はありません。ホテルのシステムから応答がありませんでした。しばらくしてからもう一度お試しください。 | 您的预订没有问题，只是酒店系统未响应。请稍后重试。 |
+| `checkout.supplierDown.retry` | Try again | 다시 시도 | もう一度試す | 重试 |
+| `checkout.settling.title` | Confirming your booking | 예약을 확인하는 중입니다 | ご予約を確認しています | 正在确认您的预订 |
+| `checkout.settling.description` | The hotel is confirming your reservation. Please keep this page open. | 호텔에서 예약을 확정하고 있습니다. 이 페이지를 닫지 마세요. | ホテルが予約を確定しています。このページを閉じないでください。 | 酒店正在确认预订，请勿关闭此页面。 |
+| `checkout.settling.doNotPayAgain` | Please don't pay again — you won't be charged twice. | 다시 결제하지 마세요. 이중으로 결제되지 않습니다. | 再度お支払いいただく必要はありません。二重に請求されることはありません。 | 请勿重复支付，您不会被重复扣款。 |
+| `checkout.settling.checkTrips` | View my trips | 내 여행 보기 | マイトリップを見る | 查看我的行程 |
+| `checkout.needsReview.title` | We're confirming this with the hotel | 호텔과 예약을 확인하고 있습니다 | ホテルに予約を確認しています | 正在与酒店确认预订 |
+| `checkout.needsReview.description` | Your payment hasn't been taken yet. We'll email you as soon as it's confirmed, or release the hold on your card if it isn't. | 결제 금액은 아직 청구되지 않았습니다. 예약이 확정되면 이메일로 알려 드리고, 확정되지 않으면 카드 승인을 해제해 드립니다. | お支払いはまだ請求されていません。予約が確定次第メールでお知らせします。確定しない場合は、カードの与信を解除します。 | 款项尚未扣取。预订确认后我们会通过邮件通知您；若未能确认，将解除对您银行卡的预授权。 |
+| `checkout.failed.title` | We couldn't complete your booking | 예약을 완료하지 못했습니다 | ご予約を完了できませんでした | 未能完成您的预订 |
+| `checkout.failed.released` | You have not been charged — the hold on your card has been released. | 결제되지 않았습니다. 카드 승인이 해제되었습니다. | お支払いは行われていません。カードの与信は解除されました。 | 您未被扣款，银行卡的预授权已解除。 |
+| `checkout.failed.unknown` | We couldn't confirm whether your payment was taken. Check your trips or contact support before trying again. | 결제가 처리되었는지 확인하지 못했습니다. 다시 시도하기 전에 내 여행을 확인하거나 고객센터에 문의해 주세요. | お支払いが処理されたかどうかを確認できませんでした。もう一度お試しになる前に、マイトリップをご確認いただくか、サポートまでお問い合わせください。 | 我们无法确认款项是否已被扣取。重试之前，请先查看我的行程或联系客服。 |
+| `checkout.failed.tryAgain` | Try again | 다시 시도 | もう一度試す | 重试 |
+| `checkout.multiRoom.title` | One room at a time | 한 번에 객실 하나씩 | 一度に1部屋ずつ | 一次只能预订一间房 |
+| `checkout.multiRoom.description` | Booking several rooms at once isn't available yet — this checkout is for a single room for your whole party. Please book rooms separately for now. | 여러 객실을 한 번에 예약하는 기능은 아직 지원되지 않습니다. 이 결제는 전체 인원을 위한 객실 1개 기준입니다. 객실은 각각 따로 예약해 주세요. | 複数のお部屋を一度に予約する機能はまだご利用いただけません。このお支払いは、ご利用人数全員で1部屋分です。お部屋は別々にご予約ください。 | 暂不支持一次预订多间房。本次结算按整个团队共用一间房计算。请分别预订各房间。 |
+| `checkout.bookingPage.loading` | Checking your booking… | 예약을 확인하는 중… | ご予約を確認しています… | 正在查询您的预订… |
+| `checkout.bookingPage.notFound` | We couldn't find that booking | 예약을 찾을 수 없습니다 | ご予約が見つかりません | 未找到该预订 |
+| `checkout.bookingPage.notFoundDescription` | It may belong to a different account. Sign in with the account you booked with. | 다른 계정의 예약일 수 있습니다. 예약하신 계정으로 로그인해 주세요. | 別のアカウントのご予約かもしれません。ご予約時のアカウントでログインしてください。 | 该预订可能属于其他账户。请使用预订时的账户登录。 |
+| `checkout.bookingPage.reference` | Booking reference | 예약 번호 | 予約番号 | 预订编号 |
+| `checkout.bookingPage.refresh` | Refresh status | 상태 새로고침 | 状況を更新 | 刷新状态 |
+| `checkout.bookingPage.viewTrips` | View my trips | 내 여행 보기 | マイトリップを見る | 查看我的行程 |
+| `checkout.bookingPage.stillWorking` | Still working on it — this page updates by itself. | 아직 처리 중입니다. 이 페이지는 자동으로 업데이트됩니다. | 処理中です。このページは自動的に更新されます。 | 仍在处理中，此页面会自动更新。 |
+| `checkout.validation.emailInvalid` | Enter a valid email address | 올바른 이메일 주소를 입력해 주세요 | 有効なメールアドレスを入力してください | 请输入有效的邮箱地址 |
+| `checkout.validation.ageInvalid` | Enter an age from 0 to 17 | 0세에서 17세 사이의 나이를 입력해 주세요 | 0〜17歳の年齢を入力してください | 请输入 0 至 17 岁之间的年龄 |
+| `checkout.validation.specialRequestsTooLong` | Please keep special requests under 500 characters | 특별 요청은 500자 이내로 작성해 주세요 | 特別なご要望は500文字以内でご入力ください | 特殊要求请控制在 500 字以内 |

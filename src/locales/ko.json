@@ -329,7 +329,10 @@
       "sessionExpiredCharge": "결제 중 세션이 만료되었습니다. 카드가 청구되었습니다 — 결제 참조 번호({id})와 함께 고객지원에 문의해 주세요.",
       "refreshingSession": "가격 보장을 갱신 중입니다…",
       "quoteExpiringSoon": "가격 보장이 5분 후 만료됩니다 — 빨리 예약을 완료해 주세요.",
-      "required": "필수 입력"
+      "required": "필수 입력",
+      "emailInvalid": "올바른 이메일 주소를 입력해 주세요",
+      "ageInvalid": "0세에서 17세 사이의 나이를 입력해 주세요",
+      "specialRequestsTooLong": "특별 요청은 500자 이내로 작성해 주세요"
     },
     "priceChanged": {
       "title": "가격이 변경되었습니다",
@@ -387,7 +390,61 @@
     "whosCheckingInYou": "체크인하실 분은 누구인가요? (본인 정보)",
     "paymentDetailsTitle": "결제 정보",
     "securedPoweredBy": "<b>{brand}</b> 보안 결제",
-    "payNow": "{amount} 결제하기"
+    "payNow": "{amount} 결제하기",
+    "priceMoved": {
+      "title": "가격이 변경되었습니다",
+      "up": "이 객실의 가격이 선택하신 때보다 올랐습니다.",
+      "down": "이 객실의 가격이 선택하신 때보다 내렸습니다.",
+      "was": "이전",
+      "now": "현재",
+      "accept": "새 가격으로 계속",
+      "chooseAnother": "다른 객실 선택",
+      "refreshing": "최신 가격을 확인하는 중…"
+    },
+    "unavailable": {
+      "title": "이 객실은 더 이상 예약할 수 없습니다",
+      "description": "고민하시는 동안 다른 분이 예약했거나 호텔에서 판매를 중단했습니다. 결제는 이루어지지 않았습니다.",
+      "chooseAnother": "다른 객실 선택"
+    },
+    "notPayableOnline": {
+      "title": "이 객실은 온라인으로 결제할 수 없습니다",
+      "description": "이 요금은 호텔에서 직접 결제를 받습니다. 여기서 예약하고 결제하려면 다른 객실을 선택해 주세요.",
+      "chooseAnother": "다른 객실 선택"
+    },
+    "supplierDown": {
+      "title": "지금은 호텔에 연결할 수 없습니다",
+      "description": "예약에는 문제가 없습니다. 호텔 시스템이 응답하지 않았습니다. 잠시 후 다시 시도해 주세요.",
+      "retry": "다시 시도"
+    },
+    "settling": {
+      "title": "예약을 확인하는 중입니다",
+      "description": "호텔에서 예약을 확정하고 있습니다. 이 페이지를 닫지 마세요.",
+      "doNotPayAgain": "다시 결제하지 마세요. 이중으로 결제되지 않습니다.",
+      "checkTrips": "내 여행 보기"
+    },
+    "needsReview": {
+      "title": "호텔과 예약을 확인하고 있습니다",
+      "description": "결제 금액은 아직 청구되지 않았습니다. 예약이 확정되면 이메일로 알려 드리고, 확정되지 않으면 카드 승인을 해제해 드립니다."
+    },
+    "failed": {
+      "title": "예약을 완료하지 못했습니다",
+      "released": "결제되지 않았습니다. 카드 승인이 해제되었습니다.",
+      "unknown": "결제가 처리되었는지 확인하지 못했습니다. 다시 시도하기 전에 내 여행을 확인하거나 고객센터에 문의해 주세요.",
+      "tryAgain": "다시 시도"
+    },
+    "multiRoom": {
+      "title": "한 번에 객실 하나씩",
+      "description": "여러 객실을 한 번에 예약하는 기능은 아직 지원되지 않습니다. 이 결제는 전체 인원을 위한 객실 1개 기준입니다. 객실은 각각 따로 예약해 주세요."
+    },
+    "bookingPage": {
+      "loading": "예약을 확인하는 중…",
+      "notFound": "예약을 찾을 수 없습니다",
+      "notFoundDescription": "다른 계정의 예약일 수 있습니다. 예약하신 계정으로 로그인해 주세요.",
+      "reference": "예약 번호",
+      "refresh": "상태 새로고침",
+      "viewTrips": "내 여행 보기",
+      "stillWorking": "아직 처리 중입니다. 이 페이지는 자동으로 업데이트됩니다."
+    }
   },
   "currencyPicker": {
     "label": "통화 선택"
