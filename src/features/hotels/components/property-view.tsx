@@ -22,7 +22,7 @@ import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
 import { useUserCurrency } from '@/stores/searchStore';
-import { checkoutMoney } from '@/features/hotels/lib/checkout-money';
+import { checkoutMoney, checkoutExpectedTotal } from '@/features/hotels/lib/checkout-money';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
 import { formatCurrency } from '@/shared/lib/format';
@@ -219,6 +219,8 @@ function PropertyContent() {
     );
     const adults   = Number(searchParams.get('adults')   ?? 2);
     const children = Number(searchParams.get('children') ?? 0);
+    /** How many rooms the search asked for. Checkout books one; it needs to know to say so. */
+    const roomsWanted = Math.max(1, Number(searchParams.get('rooms') ?? 1) || 1);
 
     /** Everything with a price on this page is drawn in the guest's own
      *  currency, not whichever one the supplier happened to quote in. */
@@ -353,6 +355,11 @@ function PropertyContent() {
         if (checkOut)         p.set('checkOut',     checkOut);
         if (adults)           p.set('adults',        String(adults));
         if (children)         p.set('children',      String(children));
+        if (roomsWanted > 1)  p.set('rooms',         String(roomsWanted));
+        // Only when the browser did no converting, so the server's quote is compared with a
+        // figure from the same source rather than from a second set of exchange rates.
+        const expected = checkoutExpectedTotal(selectedRate, currency, nights);
+        if (expected) p.set('expectedTotal', expected);
         if (content?.address) p.set('hotelAddress',  content.address);
         if (content?.city)    p.set('hotelCity',     content.city);
         if (content?.country) p.set('hotelCountry',  content.country);

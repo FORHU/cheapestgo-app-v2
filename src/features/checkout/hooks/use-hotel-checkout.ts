@@ -75,6 +75,8 @@ export interface UseHotelCheckout {
     onCardAuthorised: (paymentIntentId: string) => Promise<void>;
     onCardError:  (message: string) => void;
     backToDetails: () => void;
+    /** Start over from a booking that failed: forget it, and take a fresh quote. */
+    restart: () => void;
 }
 
 const SETTLING_MESSAGE =
@@ -105,6 +107,8 @@ export function useHotelCheckout(options: UseHotelCheckoutOptions): UseHotelChec
     const inFlight = useRef({ pay: false, confirm: false });
     /** Polls made for the booking being settled; survives the phase changes that restart the effect. */
     const polled = useRef({ reference: '', count: 0 });
+    /** A quote refused as a price change is taken once more, then left to the traveller. */
+    const requotedOnPriceChange = useRef(false);
 
     // ── Quote ────────────────────────────────────────────────────────────────
 
@@ -127,11 +131,21 @@ export function useHotelCheckout(options: UseHotelCheckoutOptions): UseHotelChec
             });
             if (gen !== generation.current) return;
             if (quote.display) shown.current = { total: quote.display.total, currency: quote.display.currency };
+            requotedOnPriceChange.current = false;
             dispatch({ type: 'QUOTE_RECEIVED', quote });
         } catch (err) {
             if (gen !== generation.current) return;
-            dispatch({ type: 'QUOTE_FAILED', failure: classifyCheckoutError(err) });
+            const failure = classifyCheckoutError(err);
+            dispatch({ type: 'QUOTE_FAILED', failure });
+
+            // The server named a new price but sent no quote at it. Without one the panel has
+            // nothing to show, so ask again — once; a second refusal is left to the traveller.
+            if (failure.kind === 'price_changed' && !requotedOnPriceChange.current) {
+                requotedOnPriceChange.current = true;
+                void refreshQuote();
+            }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads everything through `latest`, and calls itself
     }, []);
 
     // On arrival, and whenever what is being quoted changes.
@@ -267,6 +281,12 @@ export function useHotelCheckout(options: UseHotelCheckoutOptions): UseHotelChec
         onCardAuthorised,
         onCardError:   useCallback((message: string) => dispatch({ type: 'CARD_FAILED', message }), []),
         backToDetails: useCallback(() => dispatch({ type: 'BACK_TO_DETAILS' }), []),
+        restart: useCallback(() => {
+            inFlight.current = { pay: false, confirm: false };
+            polled.current = { reference: '', count: 0 };
+            dispatch({ type: 'RESET' });
+            void refreshQuote();
+        }, [refreshQuote]),
     };
 }
 

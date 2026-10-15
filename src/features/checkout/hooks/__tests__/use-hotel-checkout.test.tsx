@@ -375,3 +375,49 @@ describe('confirming', () => {
         });
     });
 });
+
+describe('when the quote itself is refused as a price change', () => {
+    it('takes it once more, so there is a figure to show', async () => {
+        let calls = 0;
+        const c = fakeClient({
+            prebook: () => {
+                calls += 1;
+                if (calls === 1) throw httpError(409, { error: 'PRICE_CHANGED', message: 'moved', serverPrice: 259.2, currency: 'USD' });
+                return { success: true, data: { prebookId: 'MOCK:abc', display: { ...DISPLAY, total: 259.2 } } };
+            },
+        });
+        const { result } = setup(c);
+
+        await waitFor(() => expect(result.current.state.phase).toBe('quoted'));
+        expect(calls).toBe(2);
+    });
+
+    it('does not loop when the second answer is the same refusal', async () => {
+        const c = fakeClient({
+            prebook: () => { throw httpError(409, { error: 'PRICE_CHANGED', message: 'moved', serverPrice: 259.2, currency: 'USD' }); },
+        });
+        const { result } = setup(c);
+
+        await waitFor(() => expect(result.current.state.phase).toBe('price_changed'));
+        await act(async () => { await new Promise((r) => setTimeout(r, 40)); });
+
+        expect(prebookBodies(c)).toHaveLength(2);
+    });
+});
+
+describe('restart', () => {
+    it('starts again from a failed booking with a fresh quote', async () => {
+        const c = fakeClient({ confirm: () => ({ success: false, providerConfirmed: false, error: 'Room is gone' }) });
+        const { result } = setup(c);
+        await waitFor(() => expect(result.current.state.phase).toBe('quoted'));
+        await act(async () => { await result.current.submitDetails(GUEST); });
+        await act(async () => { await result.current.onCardAuthorised('pi_1'); });
+        expect(result.current.state.phase).toBe('failed');
+
+        await act(async () => { result.current.restart(); });
+
+        await waitFor(() => expect(result.current.state.phase).toBe('quoted'));
+        expect(result.current.state.reference).toBeUndefined();
+        expect(prebookBodies(c)).toHaveLength(2);
+    });
+});
