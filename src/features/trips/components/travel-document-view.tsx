@@ -13,6 +13,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Printer, Clock } from 'lucide-react';
 import { http } from '@/shared/lib/http';
+import { fetchBooking } from '../lib/bookings-api';
 import { useAuthStore } from '@/shared/auth/store';
 import type { AnyBooking, FlightBooking, HotelBooking } from '@/shared/types';
 import { availableDocuments, pendingReason, type TravelDocument } from '@/features/trips/lib/documents';
@@ -74,8 +75,8 @@ function Inner() {
     useEffect(() => {
         if (isLoading) return;
         setIsFetching(true);
-        http.get<{ booking: AnyBooking }>(`/bookings/${id}?type=${type}`)
-            .then(({ booking: b }) => { setBooking(b); setFetchError(''); })
+        fetchBooking(http, id)
+            .then((b) => { setBooking(b); setFetchError(''); })
             .catch((err: Error) => setFetchError(err.message || 'Failed to load booking.'))
             .finally(() => setIsFetching(false));
     }, [id, type, isLoading]);

@@ -8,6 +8,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { env } from '@/shared/lib/env';
 import { useAuthStore } from '@/shared/auth/store';
 import { http } from '@/shared/lib/http';
+import { fetchBooking } from '@/features/trips/lib/bookings-api';
 import { formatCurrency } from '@/shared/lib/format';
 import type { HotelBooking, FlightBooking } from '@/shared/types';
 import { nightsBetween } from '@/shared/lib/stay';
@@ -317,8 +318,9 @@ function InvoicePageContent() {
         if (isLoading) return;
 
         setIsFetching(true);
-        http.get<{ booking: AnyBooking }>(`/bookings/${id}?type=${type}`)
-            .then(({ booking: b }) => {
+        // `type` is a hint from the link, not a filter: a flight opened without it must still be found.
+        fetchBooking(http, id)
+            .then((b) => {
                 setBooking(b);
                 setFetchError('');
             })
