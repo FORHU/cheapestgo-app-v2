@@ -3,7 +3,7 @@
 **Date:** 2026-10-14
 **Repos:** `cheapestgo-api-v2` (domain, ADR-0017) and `cheapestgo-app-v2` (UI)
 **Branch:** `feat/hotel-booking-flow` in both, cut from the current `feat/nearby-*` tips (see *Decisions*)
-**Status:** approved to proceed ("continue", 2026-10-14); phase plans follow this document
+**Status:** implemented (all six phases). What was built, how it behaves and where each scenario is tested is in api-v2's `docs/booking-flow.md`; this document remains the reasoning behind it.
 
 ## 1. Goal
 
