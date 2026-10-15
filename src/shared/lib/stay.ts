@@ -110,7 +110,11 @@ export const earliestBookableDay = (): string => {
 
 export function defaultStay(): { checkIn: string; checkOut: string } {
     const now = new Date();
-    const daysUntilFriday = ((5 - now.getDay() + 7) % 7) || 7;   // at least one day ahead
+    // The next Friday that is still bookable. 'At least one day ahead' was not enough: on a Thursday
+    // that is tomorrow, which `earliestBookableDay` (today + 2) and `resolveStayDates` both reject,
+    // so the default stay was one the app itself would not quote.
+    let daysUntilFriday = (5 - now.getDay() + 7) % 7;
+    if (daysUntilFriday < 2) daysUntilFriday += 7;
     const checkIn = new Date(now);
     checkIn.setDate(now.getDate() + daysUntilFriday);
     const checkOut = new Date(checkIn);
