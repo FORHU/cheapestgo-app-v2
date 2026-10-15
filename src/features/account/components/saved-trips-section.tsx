@@ -16,7 +16,7 @@ export function SavedTripsSection() {
     const [removingId, setRemovingId] = useState<string | null>(null);
 
     useEffect(() => {
-        http.get<SavedTrip[] | { data?: SavedTrip[] }>('/api/bookings/saved-trips')
+        http.get<SavedTrip[] | { data?: SavedTrip[] }>('/api/saved-trips')
             .then(res => {
                 const data = Array.isArray(res) ? res : (res as { data?: SavedTrip[] }).data ?? [];
                 setSavedTrips(data);
@@ -28,7 +28,7 @@ export function SavedTripsSection() {
     const handleRemove = async (id: string) => {
         setRemovingId(id);
         try {
-            await http.delete(`/api/bookings/saved-trips/${id}`);
+            await http.delete(`/api/saved-trips/${id}`);
             setSavedTrips(prev => prev.filter(t => t.id !== id));
         } catch {
             // silently ignore

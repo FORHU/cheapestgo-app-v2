@@ -15,7 +15,7 @@ export function PriceAlertsSection() {
     const [removingId, setRemovingId] = useState<string | null>(null);
 
     useEffect(() => {
-        http.get<PriceAlert[] | { data?: PriceAlert[] }>('/api/bookings/price-alerts')
+        http.get<PriceAlert[] | { data?: PriceAlert[] }>('/api/price-alerts')
             .then(res => {
                 const data = Array.isArray(res) ? res : (res as { data?: PriceAlert[] }).data ?? [];
                 setAlerts(data);
@@ -27,7 +27,7 @@ export function PriceAlertsSection() {
     const handleDelete = async (id: string) => {
         setRemovingId(id);
         try {
-            await http.delete(`/api/bookings/price-alerts/${id}`);
+            await http.delete(`/api/price-alerts/${id}`);
             setAlerts(prev => prev.filter(a => a.id !== id));
         } catch {
             // silently ignore
