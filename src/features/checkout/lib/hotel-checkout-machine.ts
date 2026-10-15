@@ -89,7 +89,7 @@ export type HotelCheckoutEvent =
     | { type: 'QUOTE_FAILED'; failure: CheckoutFailure }
     | { type: 'PRICE_ACCEPTED' }
     | { type: 'PAYMENT_REQUESTED' }
-    | { type: 'PAYMENT_READY'; clientSecret: string; paymentIntentId: string; chargedTotal?: number; serviceFee?: number }
+    | { type: 'PAYMENT_READY'; clientSecret: string; paymentIntentId: string; reference?: string; chargedTotal?: number; serviceFee?: number }
     | { type: 'PAYMENT_FAILED'; failure: CheckoutFailure }
     | { type: 'CARD_FAILED'; message: string }
     | { type: 'PAYMENT_AUTHORISED' }
@@ -174,6 +174,8 @@ export function hotelCheckoutReducer(state: HotelCheckoutState, event: HotelChec
                 phase: 'awaiting_payment',
                 clientSecret: event.clientSecret,
                 paymentIntentId: event.paymentIntentId,
+                // Known from here on, so a confirm whose answer is lost can still be asked about.
+                reference: event.reference ?? state.reference,
                 quote: state.quote && display
                     ? {
                         ...state.quote,

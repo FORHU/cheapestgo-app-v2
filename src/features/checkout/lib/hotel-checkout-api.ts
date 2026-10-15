@@ -122,6 +122,8 @@ function stayBody(input: CallInput) {
 export interface PaymentReady {
     clientSecret:    string;
     paymentIntentId: string;
+    /** The booking's reference, which the status endpoint answers to. */
+    reference?:      string;
     chargedTotal?:   number;
     serviceFee?:     number;
 }
@@ -136,7 +138,7 @@ export async function createHotelPayment(client: CheckoutHttp, input: CallInput)
 
     const res = await client.post<{
         success: boolean;
-        data: { clientSecret: string; paymentIntentId: string; chargedTotal?: number; serviceFee?: number };
+        data: { clientSecret: string; paymentIntentId: string; bookingReference?: string; chargedTotal?: number; serviceFee?: number };
     }>('/api/hotels/create-payment', {
         prebookId:      input.quote.prebookId,
         amount:         display.total,
@@ -147,9 +149,10 @@ export async function createHotelPayment(client: CheckoutHttp, input: CallInput)
         ...stayBody(input),
     });
 
-    const { clientSecret, paymentIntentId, chargedTotal, serviceFee } = res.data;
+    const { clientSecret, paymentIntentId, bookingReference, chargedTotal, serviceFee } = res.data;
     return {
         clientSecret, paymentIntentId,
+        ...(bookingReference ? { reference: bookingReference } : {}),
         ...(typeof chargedTotal === 'number' ? { chargedTotal } : {}),
         ...(typeof serviceFee === 'number' ? { serviceFee } : {}),
     };

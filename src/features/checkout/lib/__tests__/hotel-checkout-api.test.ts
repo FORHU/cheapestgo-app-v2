@@ -77,7 +77,7 @@ describe('requestQuote', () => {
 describe('createHotelPayment', () => {
     it('charges from the server\'s display figures and says who is staying', async () => {
         const c = client();
-        c.post.mockResolvedValue({ success: true, data: { clientSecret: 'cs_1', paymentIntentId: 'pi_1', chargedTotal: 254, serviceFee: 14, currency: 'USD' } });
+        c.post.mockResolvedValue({ success: true, data: { clientSecret: 'cs_1', paymentIntentId: 'pi_1', bookingReference: 'CG-ABC123', chargedTotal: 254, serviceFee: 14, currency: 'USD' } });
 
         const out = await createHotelPayment(c, { quote: QUOTE, guest: GUEST, stay: STAY, placeholderTotal: 238 });
 
@@ -97,7 +97,7 @@ describe('createHotelPayment', () => {
             checkIn: '2026-11-10', checkOut: '2026-11-12',
             board: 'BB',
         }));
-        expect(out).toEqual({ clientSecret: 'cs_1', paymentIntentId: 'pi_1', chargedTotal: 254, serviceFee: 14 });
+        expect(out).toEqual({ clientSecret: 'cs_1', paymentIntentId: 'pi_1', reference: 'CG-ABC123', chargedTotal: 254, serviceFee: 14 });
     });
 
     it('refuses to charge at all when the server\'s figures never arrived', async () => {

@@ -210,3 +210,16 @@ describe('reset', () => {
         expect(hotelCheckoutReducer(quoted(), { type: 'RESET' })).toEqual(INITIAL_HOTEL_CHECKOUT);
     });
 });
+
+describe('the booking reference', () => {
+    it('is known from the moment the payment is ready, so a lost confirm can be followed up', () => {
+        const s = run(
+            { type: 'QUOTE_REQUESTED' }, { type: 'QUOTE_RECEIVED', quote: QUOTE }, { type: 'PAYMENT_REQUESTED' },
+            { type: 'PAYMENT_READY', clientSecret: 'cs_1', paymentIntentId: 'pi_1', reference: 'CG-ABC123' },
+        );
+        expect(s.reference).toBe('CG-ABC123');
+
+        const confirming = hotelCheckoutReducer(s, { type: 'PAYMENT_AUTHORISED' });
+        expect(confirming.reference).toBe('CG-ABC123');
+    });
+});
