@@ -3,11 +3,12 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Settings, ChevronDown } from 'lucide-react';
-import { useAuthStore } from '@/shared/stores/auth.store';
+import { useAuthStore, useAuthStore as useModalStore } from '@/shared/stores/auth.store';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import { useLogout } from '@/features/auth/hooks/use-auth';
 
 function getInitials(firstName?: string | null, lastName?: string | null, email?: string | null): string {
     const first = firstName?.[0] ?? '';
@@ -25,7 +26,9 @@ interface SignInDropdownProps {
 
 const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', collapsible = false, onNavigate, onToggleOpen }) => {
     const tAll = useTranslations();
-    const { user, logout } = useAuthStore();
+    const { user } = useAuthStore();
+    const openAuthModal = useModalStore((state) => state.openAuthModal);
+    const signOut = useLogout();
     const t = useTranslations('nav');
     const [isOpen, setIsOpen] = useState(false);
     const [isInlineOpen, setIsInlineOpen] = useState(false);
@@ -70,6 +73,10 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
     }, [variant]);
 
     const handleNav = () => { setIsOpen(false); setIsInlineOpen(false); onNavigate?.(); };
+    const handleSignOut = () => {
+        handleNav();
+        signOut.mutate();
+    };
 
     if (variant === 'inline') {
         const inlineContent = (mounted && user) ? (
@@ -92,13 +99,9 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                     </Link>
                 </div>
                 <button
-                    onClick={async () => {
-                        try {
-                            await logout();
-                            handleNav();
-                        } catch (e) { console.error('Error during logout', e); }
-                        finally { window.location.href = '/'; }
-                    }}
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={signOut.isPending}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
                 >
                     <LogOut className="h-5 w-5" />
@@ -107,9 +110,9 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
             </>
         ) : (
             <div className="space-y-3">
-                <Link href={getRedirectLink('/login')} onClick={handleNav} className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-full transition-colors text-center shadow-lg shadow-blue-500/20">
+                <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-full transition-colors text-center shadow-lg shadow-blue-500/20">
                     {t('signIn')}
-                </Link>
+                </button>
                 <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className="block w-full py-3 px-4 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-sm font-semibold rounded-full hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-center">
                     {t('createAccount')}
                 </Link>
@@ -151,9 +154,9 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                                 <p className="text-[clamp(0.8125rem,1.5vw,0.875rem)] text-blue-100 mt-1">{t('membersSaveSubtitle')}</p>
                             </div>
                             <div className="p-4 space-y-3">
-                                <Link href={getRedirectLink('/login')} onClick={handleNav} className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full transition-colors text-center">
+                                <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full transition-colors text-center">
                                     {t('signIn')}
-                                </Link>
+                                </button>
                                 <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className="block w-full py-3 px-4 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-center">
                                     {t('createAccount')}
                                 </Link>
@@ -196,7 +199,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                             </Link>
                         </div>
                         <div className="border-t border-slate-100 dark:border-white/5 p-2">
-                            <button onClick={async () => { await logout(); window.location.href = '/'; }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors">
+                            <button type="button" onClick={handleSignOut} disabled={signOut.isPending} className="w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors disabled:opacity-50">
                                 <LogOut className="h-5 w-5" />
                                 {t('signOut')}
                             </button>

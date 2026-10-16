@@ -9,14 +9,17 @@ import { Input } from '@/shared/components/ui/input';
 import { useLogin } from '../hooks/use-auth';
 import { SocialLoginButtons } from './social-login-buttons';
 
-export function LoginForm() {
+export function LoginForm({ onSuccess }: { onSuccess?: () => void } = {}) {
     const tAll = useTranslations();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-    const login = useLogin();
+    const login = useLogin({
+        redirectAfterLogin: !onSuccess,
+        onSuccess,
+    });
 
     const validate = () => {
         const e: typeof errors = {};

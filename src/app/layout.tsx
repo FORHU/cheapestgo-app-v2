@@ -19,6 +19,7 @@ import { BrandProvider } from '@/shared/components/BrandProvider';
 import { BrandPreviewSwitcher } from '@/shared/components/BrandPreviewSwitcher';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
+import { LoginModal } from '@/features/auth/components/login-modal';
 
 // Plus Jakarta Sans is the app-wide typeface: one variable family covering the
 // 400–800 range, carrying both body and display weights (see globals.css, which
@@ -140,6 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                             <MobileBottomNav />
                             <InstallPWAPrompt />
                         </div>
+                        <LoginModal />
                         <PWAServiceWorkerRegistrar />
                         {/* Only where the brand preview is on. On production the control is
                             never rendered, so there is nothing to find or to switch. */}
