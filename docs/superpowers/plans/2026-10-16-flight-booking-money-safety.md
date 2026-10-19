@@ -112,7 +112,7 @@ Commits use the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.co
 ## Task 1 — Migration (show before applying)
 
 - [x] Write `db/migrations/20261016000001_flight_booking_lifecycle.sql` per §2, including the backfill and a `-- migrate:down` that drops only what it added. *(Written, **uncommitted** pending review. Differences from §2, all deliberate: the column is added nullable, backfilled `WHERE lifecycle_status IS NULL`, then given its default and `NOT NULL` — so re-running the hand-applied file cannot reset live attempts to `EXPIRED`; legacy `booked` maps to `CONFIRMED` beside `completed`; the CHECK lists **seven** states, §2 said "six" but names seven; a duplicate-PaymentIntent check is in the header, to run before the unique index; the up section is one `BEGIN … COMMIT` — no other migration here uses one — so it applies whole or not at all and no row can land between the backfill and `NOT NULL`.)*
-- [ ] **Show the SQL to the user and wait.** It is applied by hand to the shared database; nothing in this plan applies it.
+- [ ] **Show the SQL to the user and wait.** It is applied by hand to the shared database; nothing in this plan applies it. *(2026-10-19: the file was committed with the auth WIP in `5f02a95`. Not applied anywhere this session knows of — the local dev DB does not have it. Checked on a throwaway copy of `booking_sessions` on Postgres 17: the up section applies cleanly and re-running it is harmless.)*
 - [ ] After it is applied: `prisma db pull`. Until then the code uses raw SQL.
 
 ## Task 2 — State machine
@@ -122,65 +122,65 @@ Commits use the trailer `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.co
 
 ## Task 3 — Repository
 
-- [ ] Tests (mock the DB client as the hotel repository tests do): a transition applies once and a racing second caller gets `'lost'`; a missing column/table returns `'unavailable'` and never throws; every applied move writes an event with actor and reason.
-- [ ] Implement `flightBookingLifecycle.repository.ts`.
+- [x] Tests (mock the DB client as the hotel repository tests do): a transition applies once and a racing second caller gets `'lost'`; a missing column/table returns `'unavailable'` and never throws; every applied move writes an event with actor and reason.
+- [x] Implement `flightBookingLifecycle.repository.ts`. *(API `af07b5f`. Keyed by session id. `booking_sessions` has no failure-code or Duffel-order columns and the migration adds none, so both travel in the event `payload` and a read takes them from the latest event that recorded them — the migration is unchanged. `findAbandoned` carries the sweeper guard below in SQL. Checked against Postgres 17 with the migration applied: three concurrent claims, one applied.)*
 
 ## Task 4 — Extractions (no behaviour change)
 
-- [ ] Extract `completeDuffelBooking(sessionId, paymentIntentId, order)` from `handleDuffel`. `handleDuffel` calls it. The existing `/internal/create-booking` tests must pass unchanged.
-- [ ] Extract `buildOrderPassengers(rawOffer, passengers, contact)` from `FlightsService.book`. Existing `duffelIdentityDocuments` and `flights.service` tests must pass unchanged.
-- [ ] Compare the hotel `capture` / `voidAuthorisation` with what flights needs. Identical → move to `src/lib/payments/stripeCapture.ts`, hotel service delegates, hotel suites green. Different → leave both, note why here.
+- [x] Extract `completeDuffelBooking(sessionId, paymentIntentId, order)` from `handleDuffel`. `handleDuffel` calls it. The existing `/internal/create-booking` tests must pass unchanged. *(API `3189452`. There were no create-booking tests: its Duffel path was pinned first by `internal.createBooking.duffel.test.ts`, written against the code before it moved and unchanged since, and checked to fail under mutation. Placed in `src/services/flightBookingCompletion.ts`, not `src/lib/flights/`, and its writes moved into `FlightsRepository` — CONTEXT.md forbids raw queries outside repositories and pays layer debt down as a slice touches it.)*
+- [x] Extract `buildOrderPassengers(rawOffer, passengers, contact)` from `FlightsService.book`. Existing `duffelIdentityDocuments` and `flights.service` tests must pass unchanged. *(Split into `orderPhoneNumber(contact)` and `buildOrderPassengers(rawOffer, passengers, { email, phone })`, so `src/lib` stays free of `AppError` and `book` can refuse a bad phone before the card.)*
+- [x] Compare the hotel `capture` / `voidAuthorisation` with what flights needs. Identical → move to `src/lib/payments/stripeCapture.ts`, hotel service delegates, hotel suites green. Different → leave both, note why here. *(Different: flights capture with `amount_to_capture` when the fare came down after authorisation, and key per session. Left both.)*
 
 ## Task 5 — `FlightBookingLifecycleService`
 
-- [ ] Tests, one per outcome-table row plus: lost claim answers from the winner's record; capture retries once then reports; void is skipped after a timeout; price down → partial capture; price up → void + `PRICE_CHANGED`; timeout with a recovered order → `CONFIRMED`; recovered nothing → `NEEDS_REVIEW` and the hold is kept.
-- [ ] Implement `claim`, `complete` (re-fetch the stored `_offerId`, `placeDuffelOrder` with the session's idempotency key, record `supplier_booking_attempts` first), `capture`, `voidAuthorisation`.
-- [ ] `complete` re-derives the charge from the new Duffel total with the same `applyMarkup` / FX path as `book`, so the capture amount is computed, never assumed.
+- [x] Tests, one per outcome-table row plus: lost claim answers from the winner's record; capture retries once then reports; void is skipped after a timeout; price down → partial capture; price up → void + `PRICE_CHANGED`; timeout with a recovered order → `CONFIRMED`; recovered nothing → `NEEDS_REVIEW` and the hold is kept.
+- [x] Implement `claim`, `complete` (re-fetch the stored `_offerId`, `placeDuffelOrder` with the session's idempotency key, record `supplier_booking_attempts` first), `capture`, `voidAuthorisation`. *(API `7aef9f8`. Deviation: the Duffel key is `flight-order-<session id>`, not the session's stored `idempotency_key` — that is the browser's per-offer key, and Duffel would answer a corrected retry with the first attempt's refusal. Other additions: a claim fallback to the legacy `status` lock while the lifecycle is unavailable; 5xx and dropped connections treated as no answer; capture failure and an unwritable sale both go to `NEEDS_REVIEW` with the order id, never a `flight_bookings` row; `confirm` now checks the session belongs to the caller — it did not. Mutation-tested: voiding on no answer, writing the sale before capture, and capturing above the authorisation each fail the suite.)*
+- [x] `complete` re-derives the charge from the new Duffel total with the same `applyMarkup` / FX path as `book`, so the capture amount is computed, never assumed. *(`authorised × markup(new) / markup(booked)` — the ratio keeps the exchange rate the hold was taken at; never above the authorisation.)*
 
 ## Task 6 — Rewire `FlightsService`
 
-- [ ] `book`: delete the Duffel pre-order block, `findLivePreOrder`, `cancelDuffelOrderQuietly` use and the orphan guard. Keep offer re-fetch, duplicate guard, seat/bag totals, pricing. Compare the re-fetched offer total with `confirmedPrice` using `getFlightPriceTolerance()` and throw `PRICE_CHANGED` before the card is shown.
-- [ ] `capture_method: 'manual'`; keep metadata (`type: 'flight' | 'flight_bundle'`, `bookingSessionId`); write `lifecycle_status = PAYMENT_PENDING`. Write `booking_sessions.capture_method = 'manual'` as well as the Stripe parameter — today nothing writes that column (it sits at its `automatic` default; `flights.service.ts:560` is the Stripe parameter), and the sweeper and `auto-recover` guards below key on it.
-- [ ] `confirm`: verify session/PI match, accept `requires_capture`, call the lifecycle service, map outcomes to the existing response shape. Drop the internal HTTP fetch to `/api/internal/create-booking`.
-- [ ] Update `flights.service.test.ts` deliberately; each changed expectation maps to a row in §3.
+- [x] `book`: delete the Duffel pre-order block, `findLivePreOrder`, `cancelDuffelOrderQuietly` use and the orphan guard. Keep offer re-fetch, duplicate guard, seat/bag totals, pricing. Compare the re-fetched offer total with `confirmedPrice` using `getFlightPriceTolerance()` and throw `PRICE_CHANGED` before the card is shown. *(API `4133550`. The offer is now re-fetched always, not only for an offer id; seats and bags are priced from it — `getDuffelOffer` gained `{ withServices }`, since Duffel leaves services out unless asked — and refused with `SERVICE_UNAVAILABLE` when no longer sold. A fare that came down is not a price change. `preorderReuse.ts` and its repository methods are deleted.)*
+- [x] `capture_method: 'manual'`; keep metadata (`type: 'flight' | 'flight_bundle'`, `bookingSessionId`); write `lifecycle_status = PAYMENT_PENDING`. Write `booking_sessions.capture_method = 'manual'` as well as the Stripe parameter — today nothing writes that column (it sits at its `automatic` default; `flights.service.ts:560` is the Stripe parameter), and the sweeper and `auto-recover` guards below key on it. *(The column default supplies `PAYMENT_PENDING`; `book` records the creation event.)*
+- [x] `confirm`: verify session/PI match, accept `requires_capture`, call the lifecycle service, map outcomes to the existing response shape. Drop the internal HTTP fetch to `/api/internal/create-booking`. *("Still processing" is `409 BOOKING_PROCESSING` with `pending`/`needsReview`/`sessionId`, deliberately not a 2xx: the mobile route spreads the result into `success: true`. A session booked before the release — automatic capture, order placed at `book` — is finished in process under its status lock, so nobody paying across the deploy is stranded.)*
+- [x] Update `flights.service.test.ts` deliberately; each changed expectation maps to a row in §3.
 
 ## Task 7 — Webhook completion
 
-- [ ] Test (pattern: `webhooks.stripe.hotelAuthorisation.test.ts`): a `flight` and a `flight_bundle` PaymentIntent route to the flight completion; a hotel one does not; a thrown error is logged, not rethrown.
-- [ ] Add the metadata branch to `payment_intent.amount_capturable_updated` in `webhooks.route.ts`.
+- [x] Test (pattern: `webhooks.stripe.hotelAuthorisation.test.ts`): a `flight` and a `flight_bundle` PaymentIntent route to the flight completion; a hotel one does not; a thrown error is logged, not rethrown.
+- [x] Add the metadata branch to `payment_intent.amount_capturable_updated` in `webhooks.route.ts`. *(API `ff28401`. A pre-release automatic-capture payment is left alone.)*
 
 ## Task 8 — Sweeper
 
-- [ ] Test `sweep()` with injected `now`: stale pending/authorised-with-no-attempt are voided; fresh ones are untouched; stuck `SUPPLIER_BOOKING` / `NEEDS_REVIEW` are reported, never touched; the sweeper imports nothing from `lib/flights/duffel`.
-- [ ] Add `GET /flight-booking-sweep` to `cron.route.ts` and the `docker/cron/crontab` line (10 min), mirroring the hotel sweep.
+- [x] Test `sweep()` with injected `now`: stale pending/authorised-with-no-attempt are voided; fresh ones are untouched; stuck `SUPPLIER_BOOKING` / `NEEDS_REVIEW` are reported, never touched; the sweeper imports nothing from `lib/flights/duffel`. *(API `6a2f84f`. `sweep` lives in the lifecycle service, as the hotel one does, so "imports nothing" is asserted as behaviour: no Duffel function is called during a sweep. An attempt whose PaymentIntent was never created is expired with nothing to release, rather than reported forever.)*
+- [x] Add `GET /flight-booking-sweep` to `cron.route.ts` and the `docker/cron/crontab` line (10 min), mirroring the hotel sweep. *(Note: `hotel-booking-sweep` is not in the crontab either.)*
 
 ## Task 9 — Status read
 
-- [ ] `getBookingStatus` also reports the lifecycle (`pending` / `processing` / `needs_review` / `failed`) when no `flight_bookings` row exists yet, so a refresh mid-completion shows progress instead of "not found". Keep the existing fields.
+- [x] `getBookingStatus` also reports the lifecycle (`pending` / `processing` / `needs_review` / `failed`) when no `flight_bookings` row exists yet, so a refresh mid-completion shows progress instead of "not found". Keep the existing fields. *(API `5a1d9e1`. Owner only. Neither the web app nor mobile calls this endpoint today.)*
 
 ## Task 10 — App (`cheapestgo-app-v2-nearby`)
 
 Already true: the shared Stripe form accepts `requires_capture` (`checkout/page.tsx:453`).
 
-- [ ] `handleFlightPaid`: map `PRICE_CHANGED`, `OFFER_EXPIRED` and "still processing" to distinct messages. Processing links to trips rather than showing an error.
-- [ ] Copy on the payment step: the card is authorised now and charged when the airline confirms.
-- [ ] Idempotency key is `flight-${offerId}-${email}` per offer, not per attempt. Confirm that a retry after a void is not answered by a stale session; if it is, add an attempt nonce.
-- [ ] Component tests for the three error paths.
+- [x] `handleFlightPaid`: map `PRICE_CHANGED`, `OFFER_EXPIRED` and "still processing" to distinct messages. Processing links to trips rather than showing an error. *(App `82eeac8`, branch `feat/flight-booking-money-safety`. Through `readFlightConfirmError`; processing reuses `SettlingPanel` with flight wording. After any refusal that released the hold the page returns to the details — the PaymentIntent behind the card form is void.)*
+- [x] Copy on the payment step: the card is authorised now and charged when the airline confirms. *(All four locales; ko/ja/zh listed in `NEEDS_NATIVE_REVIEW.md`.)*
+- [x] Idempotency key is `flight-${offerId}-${email}` per offer, not per attempt. Confirm that a retry after a void is not answered by a stale session; if it is, add an attempt nonce. *(It is not: every `book` creates a new session, the PaymentIntent key is per session, and the Duffel order key is now per session. No nonce needed.)*
+- [x] Component tests for the three error paths. *(`checkout-flight-page.test.tsx`, plus a refusal in the server's words and the payment-step copy.)*
 
 ## Task 11 — Mobile (open item)
 
-- [ ] The mobile app is not in this workspace. Before release, confirm it does not wait for PaymentIntent status `succeeded` after `confirmPayment` — with manual capture it will see `requires_capture`. Record the answer here.
+- [x] The mobile app is not in this workspace. Before release, confirm it does not wait for PaymentIntent status `succeeded` after `confirmPayment` — with manual capture it will see `requires_capture`. Record the answer here. *(Read from `cheapestGo-mobile-app` on disk, branch `chore/bare-react-native`: it uses PaymentSheet and, once `presentPaymentSheet()` returns without error, calls `/mobile/flights/confirm` without looking at the PaymentIntent status — so `requires_capture` is fine. It shows any error as a "Booking Failed" alert with the message, so `BOOKING_PROCESSING` reads "Booking Failed: … check your trips shortly" — not mistaken for success, but the title is wrong for it. Worth a mobile change.)*
 
 ## Task 12 — Docs and verification
 
-- [ ] `docs/flight-booking-flow.md` in the API repo, in the style of `docs/booking-flow.md`: the flow, the outcome table, every failure path, how to read `flight_booking_events`.
-- [ ] Suite, `tsc`, lint at or better than the Task 0 baseline.
-- [ ] Sandbox end-to-end with the Duffel test token and Stripe test cards: happy path; offer expired between `book` and `confirm`; browser closed after authorisation (webhook completes); abandoned checkout (sweeper voids); confirm and webhook racing (one order only).
-- [ ] Verify via `flight_booking_events` that no path leaves money captured without an order, or an order without a booking row.
+- [x] `docs/flight-booking-flow.md` in the API repo, in the style of `docs/booking-flow.md`: the flow, the outcome table, every failure path, how to read `flight_booking_events`. *(API `4fc7911`; includes how to settle each `NEEDS_REVIEW` code by hand.)*
+- [x] Suite, `tsc`, lint at or better than the Task 0 baseline. *(2026-10-19: API **97 files / 1306 tests**, `tsc` 0, lint **0 errors / 20 warnings** (baseline 25). App **72 files / 1253 tests**, `tsc` 0.)*
+- [ ] Sandbox end-to-end with the Duffel test token and Stripe test cards: happy path; offer expired between `book` and `confirm`; browser closed after authorisation (webhook completes); abandoned checkout (sweeper voids); confirm and webhook racing (one order only). *(Not done: needs the migration applied to the database the API runs against, and real sandbox calls. In its place, the lifecycle ran end to end against a scratch Postgres 17 with the migration applied, Stripe and Duffel faked: happy path with its event trail, browser + webhook racing → one order and one sale, refusal → void, timeout → hold kept, capture failure → no sale, the sweeper's selectivity, both cron guards.)*
+- [ ] Verify via `flight_booking_events` that no path leaves money captured without an order, or an order without a booking row. *(In the scratch run, yes for every path above; `SALE_NOT_RECORDED` is by design captured with an order and no row, and goes to `NEEDS_REVIEW`. Repeat against the sandbox.)*
 
 ## Found while executing Task 1 — two existing crons the plan did not cover
 
-Both run every 10 minutes (`docker/cron/crontab`) and both act on flight sessions or orders. Neither is mentioned above. **Settle these before Task 6 changes what `book` writes.**
+Both run every 10 minutes (`docker/cron/crontab`) and both act on flight sessions or orders. Neither is mentioned above. **Settle these before Task 6 changes what `book` writes.** *(Settled in API `6a2f84f`, committed after Task 6 on the same unreleased branch: both queries moved into `FlightsRepository` with the exclusions below, tested, and checked against Postgres. The sale-after-capture rule in fix 2 is pinned by the lifecycle service tests.)*
 
 1. **`POST /internal/auto-recover`** (`internal.route.ts:639`). Takes any `booking_sessions` row with a `payment_intent_id`, legacy `status` not in `booked/expired/completed/failed`, older than 5 min and younger than 24 h, with no `flight_bookings` row. For Duffel it recovers only if the PaymentIntent is `succeeded`; otherwise it sets `status = 'expired'`. Under manual capture an authorised card is `requires_capture`, so a legitimately authorised, not-yet-completed attempt — or one held in `SUPPLIER_BOOKING` / `NEEDS_REVIEW` — is stamped `expired`, contradicting `lifecycle_status`. **Fix (Task 8):** exclude the new flow's sessions (`provider = 'duffel' AND capture_method = 'manual'`) from this query; the new sweeper owns them.
 2. **`GET /cron/cleanup-orphaned-duffel-orders`** (`cron.route.ts:406`). Cancels the Duffel order of any `flight_bookings` row whose `status` is `payment_initiated/initiated/pending`, older than 35 min, whose PaymentIntent is not `succeeded`. If `completeDuffelBooking` writes the `flight_bookings` row **before capture**, a kept hold (`NEEDS_REVIEW`, capture failed) would have its order cancelled. **Fix (Task 4/5):** `completeDuffelBooking` runs **after** a successful capture and writes a non-pending status, as the hotel flow writes its sale only once money is captured; the Duffel order id for a capture-failed attempt is kept in `flight_booking_events.payload`. Add a test that pins this. Then exclude lifecycle-governed rows from the cron as a second guard.
