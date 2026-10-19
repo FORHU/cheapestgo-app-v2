@@ -17,6 +17,8 @@ import { useHotelCheckout } from '@/features/checkout/hooks/use-hotel-checkout';
 import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/hotel-checkout-machine';
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
+import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
+import { DateField } from '@/features/checkout/components/date-field';
 import {
     BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
 } from '@/features/checkout/components/booking-state-panels';
@@ -703,6 +705,8 @@ function CheckoutContent() {
     const origin         = searchParams.get('origin')         ?? '';
     const destination    = searchParams.get('destination')    ?? '';
     const departureDate  = searchParams.get('departureDate')  ?? checkIn;
+    /** Local `YYYY-MM-DD`: the date fields' limits are counted from it. */
+    const todayIso = useMemo(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }, []);
     const cabin          = searchParams.get('cabin')          ?? undefined;
 
     // ── Date helpers ──
@@ -1250,7 +1254,10 @@ function CheckoutContent() {
 
                                                 <div className={half}>
                                                     <Label palette={palette} icon={Calendar} htmlFor={id('dateOfBirth')}>{tAll('checkout.userDetails.dateOfBirth')}</Label>
-                                                    <input id={id('dateOfBirth')} type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
+                                                    {/* Only the birthdays the airline accepts for this passenger's type, on the day they fly. */}
+                                                    <DateField id={id('dateOfBirth')} value={p.dateOfBirth} onChange={v => onPassenger(i, 'dateOfBirth', v)}
+                                                        {...birthDateBounds(p.type, departureDate, todayIso)} openTo="year"
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
                                                     <ErrText msg={err('dateOfBirth')} />
                                                 </div>
                                                 <div className={half}>
@@ -1271,7 +1278,9 @@ function CheckoutContent() {
                                                 </div>
                                                 <div className={half}>
                                                     <Label palette={palette} icon={Calendar} htmlFor={id('passportExpiry')}>{tAll('checkout.userDetails.passportExpiry')}</Label>
-                                                    <input id={id('passportExpiry')} type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
+                                                    <DateField id={id('passportExpiry')} value={p.passportExpiry} onChange={v => onPassenger(i, 'passportExpiry', v)}
+                                                        {...passportExpiryBounds(departureDate, todayIso)} openTo="day"
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
                                                     <ErrText msg={err('passportExpiry')} />
                                                 </div>
                                                 <div className={half}>

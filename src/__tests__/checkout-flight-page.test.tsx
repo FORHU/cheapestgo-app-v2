@@ -8,7 +8,7 @@
  * traveller as what it is, not as the same red sentence.
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import en from '@/locales/en.json';
@@ -83,11 +83,30 @@ function fillPassenger(n = 0, dob = '1990-01-01') {
         fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: 'juan@example.com' } });
         fireEvent.change(screen.getByLabelText(/^phone number/i), { target: { value: '9171234567' } });
     }
-    type(/^date of birth/i, dob);
+    pickDate(screen.getAllByLabelText(/^date of birth/i)[n], dob);
     type(/^gender/i, 'M');
     type(/^passport number/i, 'P1234567');
-    type(/^passport expiry/i, '2031-01-01');
+    // In the month it opens on: valid on departure, one choice.
+    pickDate(screen.getAllByLabelText(/^passport expiry/i)[n], '2026-12-20');
     type(/^nationality/i, 'PH');
+}
+
+/** Picks `iso` in a date field the way a traveller does: open it, then year, month, day. */
+function pickDate(trigger: HTMLElement, iso: string) {
+    const [y, m, d] = iso.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    fireEvent.click(trigger);
+    const panel = within(screen.getByRole('dialog'));
+    const dayName = date.toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' });
+    const onShow = panel.queryByRole('button', { name: dayName });
+    if (onShow) { fireEvent.click(onShow); return; }
+    // Climb to the years, from wherever it opened.
+    const up = (name: string) => { const b = panel.queryByRole('button', { name }); if (b) fireEvent.click(b); };
+    up('Choose year and month');
+    up('Choose year');
+    fireEvent.click(panel.getByRole('button', { name: String(y) }));
+    fireEvent.click(panel.getByRole('button', { name: date.toLocaleDateString('en', { month: 'long', year: 'numeric' }) }));
+    fireEvent.click(panel.getByRole('button', { name: date.toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' }) }));
 }
 
 /** Details, then the card. */
@@ -163,6 +182,36 @@ describe('the passenger form', () => {
         }
     });
 
+    it('asks for dates with the checkout\'s own picker, not the browser\'s', () => {
+        const { container } = renderPage();
+        expect(container.querySelector('input[type="date"]')).toBeNull();
+        expect(screen.getByLabelText(/^date of birth/i)).toHaveAttribute('aria-haspopup', 'dialog');
+        expect(screen.getByLabelText(/^passport expiry/i)).toHaveAttribute('aria-haspopup', 'dialog');
+    });
+
+    it('offers an adult only birthdays that make them twelve or over on the day they fly', () => {
+        renderPage();
+        // Departs 2026-12-01: the youngest adult was born on 2014-12-01.
+        fireEvent.click(screen.getByLabelText(/^date of birth/i));
+        const panel = within(screen.getByRole('dialog'));
+        // Opens around a likely adult birth year; the latest years are two pages on.
+        fireEvent.click(panel.getByRole('button', { name: 'Later years' }));
+        fireEvent.click(panel.getByRole('button', { name: 'Later years' }));
+        expect(panel.getByRole('button', { name: '2014' })).toBeEnabled();
+        expect(panel.getByRole('button', { name: '2015' })).toBeDisabled();
+        expect(panel.getByRole('button', { name: 'Later years' })).toBeDisabled();
+    });
+
+    it('offers only passports still valid on the day they fly', () => {
+        renderPage();
+        fireEvent.click(screen.getByLabelText(/^passport expiry/i));
+        const panel = within(screen.getByRole('dialog'));
+        expect(panel.getByText('December 2026')).toBeInTheDocument();
+        expect(panel.getByRole('button', { name: 'December 1, 2026' })).toBeEnabled();
+        // Nothing before the departure month is on offer.
+        expect(panel.getByRole('button', { name: 'Previous month' })).toBeDisabled();
+    });
+
     it('sends the mobile number with the country code chosen beside it', async () => {
         renderPage();
         fillPassenger();
@@ -202,7 +251,8 @@ describe('the passenger form', () => {
         expect(bookCalls()[0].passengers.map((p) => p.type)).toEqual(['ADT', 'CHD', 'INF']);
         expect(bookCalls()[0].passengers.map((p) => p.dateOfBirth))
             .toEqual(['1990-01-01', '2018-05-05', '2026-03-01']);
-    });
+    // Three travellers' forms, six date pickers, each click a full page render.
+    }, 20_000);
 });
 
 describe('the payment step', () => {

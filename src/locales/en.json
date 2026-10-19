@@ -450,6 +450,17 @@
         "description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed."
       }
     },
+    "datePicker": {
+      "placeholder": "Select date",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "previousYear": "Previous year",
+      "nextYear": "Next year",
+      "previousYears": "Earlier years",
+      "nextYears": "Later years",
+      "chooseMonth": "Choose year and month",
+      "chooseYear": "Choose year"
+    },
     "multiRoom": {
       "title": "One room at a time",
       "description": "Booking several rooms at once isn't available yet — this checkout is for a single room for your whole party. Please book rooms separately for now."

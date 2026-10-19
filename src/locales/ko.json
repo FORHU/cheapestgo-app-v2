@@ -450,6 +450,17 @@
         "description": "담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다."
       }
     },
+    "datePicker": {
+      "placeholder": "날짜 선택",
+      "previousMonth": "이전 달",
+      "nextMonth": "다음 달",
+      "previousYear": "이전 연도",
+      "nextYear": "다음 연도",
+      "previousYears": "이전 연도들",
+      "nextYears": "다음 연도들",
+      "chooseMonth": "연도와 월 선택",
+      "chooseYear": "연도 선택"
+    },
     "multiRoom": {
       "title": "한 번에 객실 하나씩",
       "description": "여러 객실을 한 번에 예약하는 기능은 아직 지원되지 않습니다. 이 결제는 전체 인원을 위한 객실 1개 기준입니다. 객실은 각각 따로 예약해 주세요."

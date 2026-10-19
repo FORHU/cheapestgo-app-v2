@@ -450,6 +450,17 @@
         "description": "担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。"
       }
     },
+    "datePicker": {
+      "placeholder": "日付を選択",
+      "previousMonth": "前の月",
+      "nextMonth": "次の月",
+      "previousYear": "前の年",
+      "nextYear": "次の年",
+      "previousYears": "前の年代",
+      "nextYears": "次の年代",
+      "chooseMonth": "年と月を選択",
+      "chooseYear": "年を選択"
+    },
     "multiRoom": {
       "title": "一度に1部屋ずつ",
       "description": "複数のお部屋を一度に予約する機能はまだご利用いただけません。このお支払いは、ご利用人数全員で1部屋分です。お部屋は別々にご予約ください。"

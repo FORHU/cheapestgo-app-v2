@@ -450,6 +450,17 @@
         "description": "我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。"
       }
     },
+    "datePicker": {
+      "placeholder": "选择日期",
+      "previousMonth": "上个月",
+      "nextMonth": "下个月",
+      "previousYear": "上一年",
+      "nextYear": "下一年",
+      "previousYears": "更早的年份",
+      "nextYears": "更晚的年份",
+      "chooseMonth": "选择年份和月份",
+      "chooseYear": "选择年份"
+    },
     "multiRoom": {
       "title": "一次只能预订一间房",
       "description": "暂不支持一次预订多间房。本次结算按整个团队共用一间房计算。请分别预订各房间。"
