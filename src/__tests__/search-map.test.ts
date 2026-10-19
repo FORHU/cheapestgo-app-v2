@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { toMappable, applyContentPatch } from '@/shared/components/map/toMappable';
 
 // ─── Inline the pure functions under test ──────────────────────────────────
 // (copied from page.tsx so we can test without importing the entire Next.js page)
@@ -23,45 +24,10 @@ type MappableProperty = {
     originalPrice?: number;
 };
 
-// Inlined for the same reason as MappableProperty above — the real one lives in
-// @/shared/components/map/types, and this file stays free of app imports.
-type ApiHotel = {
-    id?: string; hotelId?: string; name?: string;
-    price?: number | string; currency?: string;
-    lat?: number | string; latitude?: number | string; lng?: number | string; longitude?: number | string;
-    coordinates?: { lat?: number | string; lng?: number | string };
-    images?: string[]; thumbnailUrl?: string; image?: string;
-    rating?: number; reviewScore?: number; reviewCount?: number;
-    refundableTag?: string; starRating?: number;
-    location?: string; city?: string; country?: string; boardType?: string;
-    priceLoading?: boolean; originalPrice?: number;
-};
-
-function toMappable(h: ApiHotel): MappableProperty | null {
-    const lat = h.lat ?? h.latitude ?? h.coordinates?.lat;
-    const lng = h.lng ?? h.longitude ?? h.coordinates?.lng;
-    if (!lat || !lng) return null;
-    return {
-        id: (h.id ?? h.hotelId) as string,
-        name: h.name as string,
-        price: typeof h.price === 'number' ? h.price : parseFloat(h.price ?? '0'),
-        currency: h.currency ?? 'USD',
-        coordinates: { lat: Number(lat), lng: Number(lng) },
-        images: h.images ?? (h.thumbnailUrl ? [h.thumbnailUrl] : []),
-        image: h.images?.[0] ?? h.thumbnailUrl ?? h.image,
-        rating: h.reviewScore ?? h.rating,
-        reviewScore: h.reviewScore,
-        reviewCount: h.reviewCount,
-        refundableTag: h.refundableTag,
-        starRating: h.starRating,
-        location: h.location,
-        city: h.city,
-        country: h.country,
-        boardType: h.boardType,
-        priceLoading: h.priceLoading,
-        originalPrice: h.originalPrice,
-    };
-}
+// `toMappable` is imported, not copied. It used to be inlined here "so we can
+// test without importing the entire Next.js page", and that is exactly how the
+// bug below shipped: the copy was asserted, the real one never was, and the
+// suite stayed green while the search page rendered nothing at all.
 
 function filterMappable(properties: MappableProperty[]): MappableProperty[] {
     return properties.filter(
@@ -72,13 +38,25 @@ function filterMappable(properties: MappableProperty[]): MappableProperty[] {
 // ─── Issue 1: Map pins — coordinate parsing ───────────────────────────────
 
 describe('toMappable — coordinate parsing', () => {
-    it('returns null when hotel has no lat/lng', () => {
-        expect(toMappable({ id: '1', name: 'Hotel A', price: 100 })).toBeNull();
+    it('returns null only when the hotel has no id', () => {
+        expect(toMappable({ name: 'Hotel A', price: 100 })).toBeNull();
     });
 
-    it('returns null when lat is 0 and lng is 0 (falsy check)', () => {
-        // 0,0 passes the !lat check as falsy — these hotels are excluded upstream
-        expect(toMappable({ id: '1', name: 'Hotel A', price: 100, lat: 0, lng: 0 })).toBeNull();
+    // Regression. The search stream answers before content is resolved: it sends
+    // 0,0 and fills the real position in a later `content` event. These two cases
+    // used to assert `toBeNull()`, which is the behaviour that emptied the page —
+    // every hotel was discarded on arrival, so the content patch found nothing to
+    // patch and both the list and the map stayed blank.
+    it('keeps a hotel whose coordinates have not arrived yet', () => {
+        const r = toMappable({ id: '1', name: 'Hotel A', price: 100, lat: 0, lng: 0 });
+        expect(r).not.toBeNull();
+        expect(r!.coordinates).toEqual({ lat: 0, lng: 0 });
+    });
+
+    it('keeps a hotel that carries no lat/lng fields at all', () => {
+        const r = toMappable({ id: '1', name: 'Hotel A', price: 100 });
+        expect(r).not.toBeNull();
+        expect(r!.coordinates).toEqual({ lat: 0, lng: 0 });
     });
 
     it('parses top-level lat/lng fields', () => {
@@ -224,5 +202,58 @@ describe('horizontal scroll wheel handler', () => {
 
         expect(container.scrollLeft).toBe(80);
         expect(preventDefaultCalled).toBe(true);
+    });
+});
+
+// ─── Regression: the Seoul search that rendered nothing ──────────────────────
+// Captured from dev.cheapestgo.com on 2026-10-19. When the supplier portfolio
+// comes back empty, every hotel in the `hotels` event arrives unnamed at 0,0
+// and the `content` event that follows carries the name and the position.
+// Both halves have to work or the page is blank — which is what shipped.
+describe('search stream — hotels arrive before their coordinates', () => {
+    const hotelsEvent = [
+        { hotelId: '10110462', id: '10110462', name: '10110462', price: 1430, currency: 'PHP', lat: 0, lng: 0, images: [] },
+        { hotelId: '10487569', id: '10487569', name: '10487569', price: 1439, currency: 'PHP', lat: 0, lng: 0, images: [] },
+        { hotelId: '11162318', id: '11162318', name: '11162318', price: 1667, currency: 'PHP', lat: 0, lng: 0, images: [] },
+    ];
+
+    const contentEvent = {
+        '10110462': { name: 'Guro Namyangjang', lat: 37.481, lng: 126.89, images: ['https://cdn.worldota.net/a.JPEG'] },
+        '10487569': { name: 'Seoul Hotel TAO', lat: 37.620457, lng: 126.9195, images: ['https://cdn.worldota.net/b.jpeg'] },
+        '11162318': { name: 'Miasageori Station Daewon', lat: 37.613094, lng: 127.029594, images: ['https://cdn.worldota.net/c.JPEG'] },
+    };
+
+    const mapped = () => hotelsEvent.map(toMappable).flatMap(h => (h ? [h] : []));
+
+    it('keeps every hotel rather than discarding the whole page', () => {
+        expect(mapped()).toHaveLength(3);
+    });
+
+    it('resolves names and Seoul positions once content arrives', () => {
+        const patched = applyContentPatch(mapped(), contentEvent);
+
+        expect(patched.map(h => h.name)).toEqual([
+            'Guro Namyangjang', 'Seoul Hotel TAO', 'Miasageori Station Daewon',
+        ]);
+        // Inside Seoul, not at Null Island.
+        for (const h of patched) {
+            expect(h.coordinates.lat).toBeGreaterThan(37.3);
+            expect(h.coordinates.lat).toBeLessThan(37.8);
+            expect(h.coordinates.lng).toBeGreaterThan(126.7);
+            expect(h.coordinates.lng).toBeLessThan(127.3);
+        }
+        expect(patched.every(h => h.image?.startsWith('https://'))).toBe(true);
+    });
+
+    it('does not overwrite a hotel that already has a real name and position', () => {
+        const placed = toMappable({
+            id: '10110462', name: 'Real Name', price: 1430, lat: 37.5, lng: 127.0,
+            images: ['https://example.test/original.jpg'],
+        })!;
+        const [patched] = applyContentPatch([placed], contentEvent);
+
+        expect(patched.name).toBe('Real Name');
+        expect(patched.coordinates).toEqual({ lat: 37.5, lng: 127.0 });
+        expect(patched.image).toBe('https://example.test/original.jpg');
     });
 });
