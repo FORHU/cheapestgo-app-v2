@@ -258,3 +258,16 @@ can be under review after its payment was taken.
 | `checkout.flight.settling.description` | The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued. | 항공사에서 항공권을 확정하고 있습니다. 몇 분 정도 걸릴 수 있으며, 발권되는 즉시 내 여행에 표시됩니다. | 航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。 | 航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。 |
 | `checkout.flight.needsReview.title` | We're confirming this with the airline | 항공사와 예약을 확인하고 있습니다 | 航空会社に予約を確認しています | 正在与航空公司确认预订 |
 | `checkout.flight.needsReview.description` | Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed. | 담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다. | 担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。 | 我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。 |
+
+## Flight checkout — passenger form
+
+Headings per traveller type, and the hints beside the name and contact fields. `nameHint`
+matters most: a name that does not match the passport is refused at the gate.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|---|---|---|---|---|
+| `checkout.flight.adultN` | ADULT {n} | 성인 {n} | 大人 {n} | 成人 {n} |
+| `checkout.flight.infantN` | INFANT {n} | 유아 {n} | 幼児 {n} | 婴儿 {n} |
+| `checkout.flight.nameHint` | Enter names exactly as they appear on the passport. | 여권에 표기된 것과 동일하게 이름을 입력해 주세요. | お名前はパスポートの記載どおりに入力してください。 | 请按照护照上的写法填写姓名。 |
+| `checkout.flight.contactHint` | Your e-ticket is sent here, and the airline uses this number for flight changes. | 전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다. | eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。 | 电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。 |
+| `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |

@@ -46,9 +46,13 @@ interface GuestInfo {
 }
 
 interface PassengerInfo {
+    /** Adult, child or infant — in the order the offer lists its passengers. */
+    type:           'ADT' | 'CHD' | 'INF';
     firstName:      string;
     lastName:       string;
+    /** The lead traveller's only: they are the booking's contact. */
     email:          string;
+    /** National number; its dial code is `contactPhoneCode`. Lead traveller only. */
     phone:          string;
     dateOfBirth:    string;
     /** 'M' | 'F', as the API takes it; '' until chosen. */
@@ -103,9 +107,11 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
     passengers.forEach((p, i) => {
         if (!p.firstName.trim())      errors[`${i}.firstName`]      = 'Required';
         if (!p.lastName.trim())       errors[`${i}.lastName`]       = 'Required';
-        if (!p.email.trim())          errors[`${i}.email`]          = 'Required';
-        else if (!validateEmail(p.email)) errors[`${i}.email`]      = 'Invalid email';
-        if (!p.phone.trim())          errors[`${i}.phone`]          = 'Required';
+        if (i === 0) {
+            if (!p.email.trim())          errors[`${i}.email`]      = 'Required';
+            else if (!validateEmail(p.email)) errors[`${i}.email`]  = 'Invalid email';
+            if (!p.phone.trim())          errors[`${i}.phone`]      = 'Required';
+        }
         if (!p.dateOfBirth)           errors[`${i}.dateOfBirth`]    = 'Required';
         // Gender, because the order builder defaults a missing one to female and a ticket
         // whose gender disagrees with the passport is refused at the gate.
@@ -130,13 +136,13 @@ function mkField(palette: Palette, hasError = false): React.CSSProperties {
     };
 }
 
-function Label({ children, palette, icon: Icon }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon }) {
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 }}>
-            {Icon && <Icon size={13} strokeWidth={1.75} style={{ flexShrink: 0 }} />}
-            {children}
-        </div>
-    );
+/** A field's caption. With `htmlFor` it is a real `<label>`, so the field is named by it. */
+function Label({ children, palette, icon: Icon, htmlFor }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon; htmlFor?: string }) {
+    const style: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 };
+    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} style={{ flexShrink: 0 }} />}{children}</>;
+    return htmlFor
+        ? <label htmlFor={htmlFor} style={style}>{content}</label>
+        : <div style={style}>{content}</div>;
 }
 
 function ErrText({ msg }: { msg?: string }) {
@@ -202,7 +208,7 @@ function PrimaryBtn({
  * the guest (`phoneCode` + `phone`) and only joined when the booking is sent.
  */
 function PhoneField({
-    palette, code, number, onCode, onNumber, error,
+    palette, code, number, onCode, onNumber, error, inputId, placeholder,
 }: {
     palette: Palette;
     code:    string;
@@ -210,6 +216,9 @@ function PhoneField({
     onCode:   (dial: string) => void;
     onNumber: (value: string) => void;
     error?:  string;
+    /** For a `<label htmlFor>` naming the number input. */
+    inputId?:     string;
+    placeholder?: string;
 }) {
     const [open, setOpen] = useState(false);
     const current = DIAL_CODES.find(d => d.dial === code) ?? DIAL_CODES[0];
@@ -238,9 +247,11 @@ function PhoneField({
                 </button>
                 <div style={{ width: 1, height: 22, background: palette.hairline, flexShrink: 0 }} />
                 <input
+                    id={inputId}
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel-national"
+                    placeholder={placeholder}
                     value={number}
                     onChange={e => onNumber(e.target.value)}
                     className="cg-field"
@@ -681,6 +692,8 @@ function CheckoutContent() {
     const checkOut     = searchParams.get('checkOut')     ?? '';
     const adults       = parseInt(searchParams.get('adults') ?? '1', 10);
     const children     = parseInt(searchParams.get('children') ?? '0', 10);
+    // Flights only: hotels admit children by age, and have no infant seat to price.
+    const infants      = parseInt(searchParams.get('infants') ?? '0', 10);
     const totalPrice   = parseFloat(searchParams.get('totalPrice') ?? '0');
     const currency     = searchParams.get('currency')     ?? 'USD';
     const rateKey      = searchParams.get('rateKey')      ?? searchParams.get('offerId') ?? '';
@@ -740,12 +753,21 @@ function CheckoutContent() {
     const fieldError = (path: string) => (fieldErrors[path] ? t(fieldErrors[path] as never) : undefined);
 
     // Flight form
-    const [passengers, setPassengers]         = useState<PassengerInfo[]>(() =>
-        Array.from({ length: Math.max(1, adults) }, () => ({
-            firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
+    // One form per traveller the fare was priced for — adults, then children, then infants,
+    // the order the offer lists them in and the order the airline matches them by.
+    const [passengers, setPassengers]         = useState<PassengerInfo[]>(() => {
+        const blank = (type: PassengerInfo['type']): PassengerInfo => ({
+            type, firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
             gender: '', passportNumber: '', passportExpiry: '', nationality: '',
-        }))
-    );
+        });
+        return [
+            ...Array.from({ length: Math.max(1, adults) }, () => blank('ADT')),
+            ...Array.from({ length: Math.max(0, children) }, () => blank('CHD')),
+            ...Array.from({ length: Math.max(0, infants) }, () => blank('INF')),
+        ];
+    });
+    /** The lead traveller's dial code. Without it the API reads a national number as Korean. */
+    const [contactPhoneCode, setContactPhoneCode] = useState('+63');
     const [passengerErrors, setPassengerErrors] = useState<Record<string, string>>({});
 
     // Pre-fill from logged-in user
@@ -909,15 +931,17 @@ function CheckoutContent() {
                 '/flights/book',
                 {
                     offerId, currency: flightCurrency,
-                    contact: { email: passengers[0].email, phone: passengers[0].phone },
+                    contact: { email: passengers[0].email, phone: passengers[0].phone, countryCode: contactPhoneCode },
                     // Stable per attempt, so a retry after a dropped response cannot buy a
                     // second ticket.
                     idempotencyKey: `flight-${offerId}-${passengers[0].email}`,
                     passengers: passengers.map(p => ({
-                        firstName: p.firstName, lastName: p.lastName, email: p.email,
-                        phone: p.phone, dateOfBirth: p.dateOfBirth, gender: p.gender,
+                        firstName: p.firstName, lastName: p.lastName,
+                        // Duffel puts the booking's contact on every passenger.
+                        email: passengers[0].email, phone: passengers[0].phone,
+                        dateOfBirth: p.dateOfBirth, gender: p.gender,
                         passportNumber: p.passportNumber, passportExpiry: p.passportExpiry,
-                        nationality: p.nationality.trim().toUpperCase(), type: 'adult',
+                        nationality: p.nationality.trim().toUpperCase(), type: p.type,
                     })),
                 },
             );
@@ -929,7 +953,7 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, user, router, offerId, flightCurrency]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency]);
 
     // ── Price helpers ──
     //
@@ -1180,59 +1204,92 @@ function CheckoutContent() {
                         <div style={{ flex: '1 1 420px', minWidth: 280 }}>
                             <AuthBanner />
                             {step === 'form' && <>
-                            {passengers.map((p, i) => (
+                            {passengers.map((p, i) => {
+                                const id = (field: string) => `pax-${i}-${field}`;
+                                const err = (field: string) => passengerErrors[`${i}.${field}`];
+                                // Numbered within its own type, as the airline lists them.
+                                const nth = passengers.slice(0, i + 1).filter(q => q.type === p.type).length;
+                                const heading = p.type === 'CHD' ? tAll('checkout.userDetails.childN', { n: nth })
+                                    : p.type === 'INF' ? t('flight.infantN', { n: nth })
+                                        : t('flight.adultN', { n: nth });
+                                return (
                                 <div key={i} style={formCardStyle}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: palette.title, marginBottom: 18 }}>
-                                        Passenger {passengers.length > 1 ? i + 1 : ''}
+                                    <div style={{ fontWeight: 700, fontSize: 16, color: palette.title, marginBottom: 6 }}>
+                                        {heading}
                                     </div>
+                                    <div style={{ fontSize: 12, color: palette.muted, marginBottom: 18 }}>{t('flight.nameHint')}</div>
                                     <Grid2>
                                         <div>
-                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.firstName`])} />
-                                            <ErrText msg={passengerErrors[`${i}.firstName`]} />
+                                            <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
+                                            <input id={id('firstName')} type="text" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('firstName'))} />
+                                            <ErrText msg={err('firstName')} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.lastName`])} />
-                                            <ErrText msg={passengerErrors[`${i}.lastName`]} />
+                                            <Label palette={palette} icon={User} htmlFor={id('lastName')}>{tAll('checkout.userDetails.lastName')}</Label>
+                                            <input id={id('lastName')} type="text" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('lastName'))} />
+                                            <ErrText msg={err('lastName')} />
                                         </div>
                                     </Grid2>
-                                    <FieldRow>
-                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.email`])} />
-                                        <ErrText msg={passengerErrors[`${i}.email`]} />
-                                    </FieldRow>
-                                    <FieldRow>
-                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder={tAll('checkout.userDetails.phone')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.phone`])} />
-                                        <ErrText msg={passengerErrors[`${i}.phone`]} />
-                                    </FieldRow>
+                                    {/* Contact details once, on the lead traveller: they are the booking's
+                                        contact, where the e-ticket goes and what the airline calls. */}
+                                    {i === 0 && <>
+                                        <FieldRow>
+                                            <Label palette={palette} icon={Mail} htmlFor={id('email')}>{tAll('checkout.userDetails.email')}</Label>
+                                            <input id={id('email')} type="email" autoComplete="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} className="cg-field" style={mkField(palette, !!err('email'))} />
+                                            <ErrText msg={err('email')} />
+                                        </FieldRow>
+                                        <FieldRow>
+                                            <Label palette={palette} icon={Phone} htmlFor={id('phone')}>{tAll('checkout.userDetails.phoneNumber')}</Label>
+                                            <PhoneField
+                                                palette={palette}
+                                                inputId={id('phone')}
+                                                placeholder={tAll('checkout.userDetails.phonePlaceholder')}
+                                                code={contactPhoneCode}
+                                                number={p.phone}
+                                                onCode={setContactPhoneCode}
+                                                onNumber={v => onPassenger(i, 'phone', v)}
+                                                error={err('phone')}
+                                            />
+                                            <ErrText msg={err('phone')} />
+                                            <div style={{ fontSize: 12, color: palette.muted, marginTop: 6, paddingLeft: 4 }}>{t('flight.contactHint')}</div>
+                                        </FieldRow>
+                                    </>}
                                     <Grid2>
                                         <div>
-                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder={tAll('checkout.userDetails.dateOfBirth')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.dateOfBirth`])} />
-                                            <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
+                                            <Label palette={palette} icon={Calendar} htmlFor={id('dateOfBirth')}>{tAll('checkout.userDetails.dateOfBirth')}</Label>
+                                            <input id={id('dateOfBirth')} type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
+                                            <ErrText msg={err('dateOfBirth')} />
                                         </div>
                                         <div>
+                                            <Label palette={palette} htmlFor={id('gender')}>{tAll('checkout.userDetails.gender')}</Label>
                                             {/* Required by the check above and sent with the booking, but the
                                                 control was missing, so the form could never be submitted. */}
-                                            <select value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} aria-label={tAll('checkout.userDetails.gender')} className="cg-field" style={{ ...mkField(palette, !!passengerErrors[`${i}.gender`]), color: p.gender ? palette.text : palette.faint }}>
+                                            <select id={id('gender')} value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} className="cg-field" style={{ ...mkField(palette, !!err('gender')), color: p.gender ? palette.text : palette.faint }}>
                                                 <option value="" disabled>{tAll('checkout.userDetails.gender')}</option>
                                                 <option value="M">{tAll('checkout.userDetails.genderMale')}</option>
                                                 <option value="F">{tAll('checkout.userDetails.genderFemale')}</option>
                                             </select>
-                                            <ErrText msg={passengerErrors[`${i}.gender`]} />
+                                            <ErrText msg={err('gender')} />
                                         </div>
                                         <div>
-                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportNumber`])} />
-                                            <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
+                                            <Label palette={palette} htmlFor={id('passportNumber')}>{tAll('checkout.userDetails.passportNumber')}</Label>
+                                            <input id={id('passportNumber')} type="text" autoComplete="off" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={t('flight.passportPlaceholder')} className="cg-field" style={mkField(palette, !!err('passportNumber'))} />
+                                            <ErrText msg={err('passportNumber')} />
                                         </div>
                                         <div>
-                                            <input type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} placeholder={tAll('checkout.userDetails.passportExpiry')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportExpiry`])} />
-                                            <ErrText msg={passengerErrors[`${i}.passportExpiry`]} />
+                                            <Label palette={palette} icon={Calendar} htmlFor={id('passportExpiry')}>{tAll('checkout.userDetails.passportExpiry')}</Label>
+                                            <input id={id('passportExpiry')} type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
+                                            <ErrText msg={err('passportExpiry')} />
                                         </div>
                                     </Grid2>
                                     <FieldRow>
-                                        <input type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder={tAll('checkout.userDetails.nationality')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.nationality`])} />
-                                        <ErrText msg={passengerErrors[`${i}.nationality`]} />
+                                        <Label palette={palette} htmlFor={id('nationality')}>{tAll('checkout.userDetails.nationality')}</Label>
+                                        <input id={id('nationality')} type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder="PH" className="cg-field" style={mkField(palette, !!err('nationality'))} />
+                                        <ErrText msg={err('nationality')} />
                                     </FieldRow>
                                 </div>
-                            ))}
+                                );
+                            })}
                             <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
                                 Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </PrimaryBtn>

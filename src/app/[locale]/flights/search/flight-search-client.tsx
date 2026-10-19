@@ -24,6 +24,7 @@ import {
     DEFAULT_FLIGHT_FILTERS, activeFilterCount as countActiveFilters, applyFlightFilters, type FlightFilterState,
 } from '@/features/flights/lib/filter-offers';
 import type { FlightOffer } from '@/shared/types';
+import { flightCheckoutQuery } from '@/features/flights/lib/flight-checkout-query';
 
 // ─── City name → IATA code lookup ─────────────────────────────────────────────
 const CITY_TO_IATA: Record<string, string> = {
@@ -273,23 +274,11 @@ export function FlightSearchClient() {
             children: params.children,
             infants: params.infants,
         }));
-        const qs = new URLSearchParams();
-        qs.set('offerId', chosen.offerId);
-        // Checkout reads the trip from the URL, never from sessionStorage, so with the
-        // offer id alone it drew an empty route and a USD 0 total. The server still
-        // prices the booking from the offer; these are what the page shows meanwhile.
-        const first = chosen.segments?.[0];
-        const last  = chosen.segments?.[chosen.segments.length - 1];
-        qs.set('totalAmount', String(chosen.price?.total ?? 0));
-        qs.set('currency', chosen.price?.currency ?? 'USD');
-        if (first?.origin)                    qs.set('origin', first.origin);
-        if (last?.destination)                qs.set('destination', last.destination);
-        if (first?.departure?.time)           qs.set('departureDate', first.departure.time.slice(0, 10));
-        if (first?.cabinClass)                qs.set('cabin', first.cabinClass);
-        qs.set('adults', String(params.adults));
-        if (bundleHotelId) {
-            qs.set('bundleHotelId', bundleHotelId);
-        }
+        const qs = flightCheckoutQuery(
+            chosen,
+            { adults: Number(params.adults) || 1, children: Number(params.children) || 0, infants: Number(params.infants) || 0 },
+            bundleHotelId,
+        );
         router.push(`/flights/book?${qs.toString()}`);
     }, [router, params.adults, params.children, params.infants, bundleHotelId]);
 

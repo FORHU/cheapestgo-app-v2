@@ -436,6 +436,11 @@
       "cardHeld": "Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing.",
       "priceChanged": "The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare.",
       "offerExpired": "This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again.",
+      "adultN": "ADULT {n}",
+      "infantN": "INFANT {n}",
+      "nameHint": "Enter names exactly as they appear on the passport.",
+      "contactHint": "Your e-ticket is sent here, and the airline uses this number for flight changes.",
+      "passportPlaceholder": "e.g. P1234567A",
       "settling": {
         "description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued."
       },

@@ -73,18 +73,21 @@ function api(confirm: Confirm = () => ({ bookingId: 'bk-1', pnr: 'ABC123', statu
 const renderPage = () =>
     render(<NextIntlClientProvider locale="en" messages={en as never}><CheckoutPage /></NextIntlClientProvider>);
 
-function fillPassenger() {
-    const type = (placeholder: string, value: string) =>
-        fireEvent.change(screen.getAllByPlaceholderText(placeholder)[0], { target: { value } });
-    type('First name', 'Juan');
-    type('Last name', 'Cruz');
-    type('Email', 'juan@example.com');
-    type('Phone', '+639171234567');
-    type('Date of birth', '1990-01-01');
-    type('Passport number', 'P1234567');
-    type('Passport expiry', '2031-01-01');
-    type('Nationality (e.g. PH)', 'PH');
-    fireEvent.change(screen.getByLabelText('Gender'), { target: { value: 'M' } });
+/** Fills passenger `n` (0-based) by the labels a traveller reads. Contact details are the lead's only. */
+function fillPassenger(n = 0, dob = '1990-01-01') {
+    const type = (label: RegExp, value: string) =>
+        fireEvent.change(screen.getAllByLabelText(label)[n], { target: { value } });
+    type(/^first name/i, 'Juan');
+    type(/^last name/i, 'Cruz');
+    if (n === 0) {
+        fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: 'juan@example.com' } });
+        fireEvent.change(screen.getByLabelText(/^phone number/i), { target: { value: '9171234567' } });
+    }
+    type(/^date of birth/i, dob);
+    type(/^gender/i, 'M');
+    type(/^passport number/i, 'P1234567');
+    type(/^passport expiry/i, '2031-01-01');
+    type(/^nationality/i, 'PH');
 }
 
 /** Details, then the card. */
@@ -105,6 +108,66 @@ beforeEach(() => {
 });
 
 // ── the tests ────────────────────────────────────────────────────────────────
+
+interface BookBody {
+    contact:    { email: string; phone: string; countryCode: string };
+    passengers: Array<{ type: string; dateOfBirth: string }>;
+}
+const bookCalls = () => post.mock.calls.filter((c) => c[0] === '/flights/book').map((c) => c[1] as BookBody);
+
+describe('the passenger form', () => {
+    it('labels every field, so two blank dates are not a guess', () => {
+        renderPage();
+        for (const label of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^date of birth/i,
+            /^gender/i, /^passport number/i, /^passport expiry/i, /^nationality/i]) {
+            expect(screen.getByLabelText(label)).toBeInTheDocument();
+        }
+        for (const field of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^passport number/i, /^nationality/i]) {
+            expect(screen.getByLabelText(field)).toHaveAttribute('placeholder');
+        }
+    });
+
+    it('sends the mobile number with the country code chosen beside it', async () => {
+        renderPage();
+        fillPassenger();
+        // Without a code the API reads a national number as Korean: 0917… became +82917….
+        fireEvent.click(screen.getByRole('button', { name: '+63' }));
+        fireEvent.click(screen.getByRole('button', { name: /south korea/i }));
+        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+
+        await waitFor(() => expect(bookCalls()).toHaveLength(1));
+        expect(bookCalls()[0].contact).toEqual({ email: 'juan@example.com', phone: '9171234567', countryCode: '+82' });
+    });
+
+    it('defaults the country code to the Philippines', async () => {
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+        await waitFor(() => expect(bookCalls()).toHaveLength(1));
+        expect(bookCalls()[0].contact.countryCode).toBe('+63');
+    });
+
+    it('asks for every traveller the fare was priced for, in the airline\'s order, and contact details once', async () => {
+        query = new URLSearchParams({ ...FLIGHT_QUERY, adults: '1', children: '1', infants: '1' }).toString();
+        renderPage();
+
+        expect(screen.getByText('ADULT 1')).toBeInTheDocument();
+        expect(screen.getByText('CHILD 1')).toBeInTheDocument();
+        expect(screen.getByText('INFANT 1')).toBeInTheDocument();
+        expect(screen.getAllByLabelText(/^email/i)).toHaveLength(1);
+        expect(screen.getAllByLabelText(/^phone number/i)).toHaveLength(1);
+
+        fillPassenger(0);
+        fillPassenger(1, '2018-05-05');
+        fillPassenger(2, '2026-03-01');
+        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+
+        await waitFor(() => expect(bookCalls()).toHaveLength(1));
+        expect(bookCalls()[0].passengers.map((p) => p.type)).toEqual(['ADT', 'CHD', 'INF']);
+        expect(bookCalls()[0].passengers.map((p) => p.dateOfBirth))
+            .toEqual(['1990-01-01', '2018-05-05', '2026-03-01']);
+    });
+});
 
 describe('the payment step', () => {
     it('says the card is held now and charged only when the airline confirms', async () => {
