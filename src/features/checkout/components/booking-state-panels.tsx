@@ -181,22 +181,28 @@ export function SupplierDownPanel({
 // ─── Booking in progress / awaiting review ────────────────────────────────────
 
 export function SettlingPanel({
-    phase, reference, palette, onViewTrips,
+    phase, reference, palette, onViewTrips, kind = 'hotel',
 }: {
     phase:      'pending' | 'needs_review';
     reference?: string;
     palette:    Palette;
     onViewTrips: () => void;
+    /**
+     * Whose confirmation is awaited. A flight under review is never told its card was not
+     * charged: one whose booking could not be recorded after capture is under review too.
+     */
+    kind?:      'hotel' | 'flight';
 }) {
     const t = useTranslations('checkout');
     const review = phase === 'needs_review';
+    const ns = kind === 'flight' ? 'flight.' : '';
 
     return (
         <Panel
             palette={palette} tone={review ? ACCENT : GREEN} role="status" icon={Clock}
-            title={review ? t('needsReview.title') : t('settling.title')}
+            title={review ? t(`${ns}needsReview.title`) : t('settling.title')}
         >
-            <Body palette={palette}>{review ? t('needsReview.description') : t('settling.description')}</Body>
+            <Body palette={palette}>{review ? t(`${ns}needsReview.description`) : t(`${ns}settling.description`)}</Body>
             <Body palette={palette}>{t('settling.doNotPayAgain')}</Body>
             {reference && (
                 <Body palette={palette}>

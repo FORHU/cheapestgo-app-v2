@@ -16,6 +16,7 @@ import { formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.
 import { useHotelCheckout } from '@/features/checkout/hooks/use-hotel-checkout';
 import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/hotel-checkout-machine';
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
+import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import {
     BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
 } from '@/features/checkout/components/booking-state-panels';
@@ -719,6 +720,8 @@ function CheckoutContent() {
     /** The booking session `/flights/book` opened, which `/flights/confirm` settles. */
     const [flightSessionId, setFlightSessionId] = useState<string>('');
     const [bookingId, setBookingId]         = useState<string | null>(null);
+    /** Paid for, but the airline has not settled it yet: the API answered BOOKING_PROCESSING. */
+    const [flightSettling, setFlightSettling] = useState<'pending' | 'needs_review' | null>(null);
 
     // Hotel guest form — passenger 1 is the booking holder
     const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '', phone: '', phoneCode: '+63' });
@@ -838,11 +841,13 @@ function CheckoutContent() {
         await hotel.submitDetails(buildHotelGuestPayload(guestForm));
     };
 
-    // ── Flight: Stripe confirmed the card → settle the order ──
-    // A paid flight is turned into a booking by its own endpoint — the airline order already
-    // exists, so this is the step that records the ticket against it.
+    // ── Flight: Stripe authorised the card → ask the airline ──
+    // The card is held, not charged. `/flights/confirm` places the airline order and takes
+    // the money only once the airline has said yes; when it says no, the hold is released
+    // and the payment form behind this step has nothing left to pay with.
     const handleFlightPaid = useCallback(async (stripePaymentIntentId: string) => {
         setSubmitting(true); setErrorMsg(null);
+        const backToDetails = () => { setClientSecret(null); setFlightSessionId(''); setStep('form'); };
         try {
             const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
                 '/flights/confirm',
@@ -851,11 +856,33 @@ function CheckoutContent() {
             setBookingId(flightRes.bookingId);
             setStep('confirmed');
         } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'Booking confirmation failed. Contact support with your payment reference.');
+            const failure = readFlightConfirmError(err);
+            switch (failure.kind) {
+                case 'processing':
+                    setFlightSettling(failure.needsReview ? 'needs_review' : 'pending');
+                    break;
+                case 'price_changed':
+                    setErrorMsg(t('flight.priceChanged', {
+                        was: `${failure.currency} ${failure.was.toLocaleString()}`,
+                        now: `${failure.currency} ${failure.now.toLocaleString()}`,
+                    }));
+                    backToDetails();
+                    break;
+                case 'offer_expired':
+                    setErrorMsg(t('flight.offerExpired'));
+                    backToDetails();
+                    break;
+                case 'refused':
+                    setErrorMsg(failure.message || t('failed.released'));
+                    backToDetails();
+                    break;
+                default:
+                    setErrorMsg(failure.message || 'Booking confirmation failed. Contact support with your payment reference.');
+            }
         } finally {
             setSubmitting(false);
         }
-    }, [flightSessionId]);
+    }, [flightSessionId, t]);
 
     // The same Stripe form serves both; what happens after a card is authorised does not.
     const handleStripeSuccess = mode === 'flight' ? handleFlightPaid : hotel.onCardAuthorised;
@@ -874,10 +901,10 @@ function CheckoutContent() {
 
         setSubmitting(true); setErrorMsg(null);
         try {
-            // `/flights/book` places the airline order and opens a PaymentIntent; it does
-            // not take the money. This used to jump straight to "confirmed" on its
-            // response, so the one step that charges the traveller never ran — the same
-            // two-step the hotel path has always done, missing on the flight path.
+            // `/flights/book` opens a PaymentIntent that holds the card; it orders nothing
+            // and takes nothing. The airline is asked once the card is authorised, by
+            // `/flights/confirm`. This used to jump straight to "confirmed" on its response,
+            // so the step that pays never ran.
             const res = await http.post<{ clientSecret: string; sessionId: string; paymentIntentId: string }>(
                 '/flights/book',
                 {
@@ -992,6 +1019,21 @@ function CheckoutContent() {
     }
 
     // ── Booked, but not settled ──
+    if (mode === 'flight' && flightSettling) {
+        return (
+            <div style={rootStyle}>
+                {fieldCss}
+                <div style={{ maxWidth: 640, margin: '0 auto', padding: 'clamp(24px,5vw,64px) 16px' }}>
+                    <SettlingPanel
+                        kind="flight"
+                        phase={flightSettling}
+                        palette={palette}
+                        onViewTrips={() => router.push('/trips')}
+                    />
+                </div>
+            </div>
+        );
+    }
     if (mode === 'hotel' && (hotelState.phase === 'pending' || hotelState.phase === 'needs_review')) {
         return (
             <div style={rootStyle}>
@@ -1196,17 +1238,20 @@ function CheckoutContent() {
                             </PrimaryBtn>
                             </>}
                             {step === 'payment' && clientSecret && (
-                                <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
-                                    <StripePaymentForm
-                                        onSuccess={handleStripeSuccess}
-                                        onError={handleStripeError}
-                                        total={totalAmount}
-                                        currency={flightCurrency}
-                                        submitting={submitting}
-                                        setSubmitting={setSubmitting}
-                                        palette={palette}
-                                    />
-                                </Elements>
+                                <>
+                                    <p style={{ fontSize: 13, color: palette.text, margin: '0 4px 14px' }}>{t('flight.cardHeld')}</p>
+                                    <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                                        <StripePaymentForm
+                                            onSuccess={handleStripeSuccess}
+                                            onError={handleStripeError}
+                                            total={totalAmount}
+                                            currency={flightCurrency}
+                                            submitting={submitting}
+                                            setSubmitting={setSubmitting}
+                                            palette={palette}
+                                        />
+                                    </Elements>
+                                </>
                             )}
                             <p style={{ fontSize: 10, color: palette.faint, textAlign: 'center', marginTop: 12 }}>
                                 {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.

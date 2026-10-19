@@ -242,3 +242,19 @@ happened to the traveller's money, so they want a native reader before they ship
 | `trips.hotelCancel.doneRefundFailed` | Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out. | 예약은 취소되었지만 환불이 처리되지 않았습니다. 고객센터에 문의해 주시면 처리해 드리겠습니다. | ご予約はキャンセルされましたが、返金が完了しませんでした。サポートまでご連絡ください。対応いたします。 | 预订已取消，但退款未成功。请联系客服，我们会为您处理。 |
 | `trips.hotelCancel.failed` | We couldn't cancel this booking. Please try again, or contact support. | 예약을 취소하지 못했습니다. 다시 시도하거나 고객센터에 문의해 주세요. | ご予約をキャンセルできませんでした。もう一度お試しいただくか、サポートまでお問い合わせください。 | 无法取消该预订。请重试，或联系客服。 |
 | `trips.hotelCancel.close` | Close | 닫기 | 閉じる | 关闭 |
+
+## Flight checkout — card held, fare changed, sold out, settling
+
+The flight checkout now holds the card and charges it only once the airline confirms. These
+strings say whether money has moved, so they carry the same weight as the hotel ones above.
+`flight.needsReview.description` deliberately does not say the card was not charged: a flight
+can be under review after its payment was taken.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|---|---|---|---|---|
+| `checkout.flight.cardHeld` | Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing. | 지금은 카드 승인만 진행되며, 항공사가 항공권을 확정한 후에 결제됩니다. 확정되지 않으면 승인이 해제되며 비용이 청구되지 않습니다. | 現在はカードの与信のみを行い、航空会社が航空券を確定した時点で請求されます。確定できなかった場合は与信が解除され、料金は発生しません。 | 现在仅对您的银行卡进行预授权，航空公司确认机票后才会扣款。若无法确认，预授权将被解除，您无需支付任何费用。 |
+| `checkout.flight.priceChanged` | The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare. | 항공사가 확정하기 전에 요금이 {was}에서 {now}(으)로 변경되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 새 요금으로 예약하려면 정보를 다시 제출해 주세요. | 航空会社が確定する前に運賃が{was}から{now}に変更されました。料金は請求されておらず、カードの与信は解除されています。新しい運賃で予約するには、もう一度お客様情報を送信してください。 | 在航空公司确认之前，票价已从 {was} 变为 {now}。您未被扣款，银行卡预授权已解除。如需按新票价预订，请重新提交您的信息。 |
+| `checkout.flight.offerExpired` | This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again. | 항공사가 확정하기 전에 이 요금이 매진되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 다시 검색해 주세요. | 航空会社が確定する前にこの運賃は売り切れました。料金は請求されておらず、カードの与信は解除されています。もう一度検索してください。 | 在航空公司确认之前，该票价已售罄。您未被扣款，银行卡预授权已解除。请重新搜索。 |
+| `checkout.flight.settling.description` | The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued. | 항공사에서 항공권을 확정하고 있습니다. 몇 분 정도 걸릴 수 있으며, 발권되는 즉시 내 여행에 표시됩니다. | 航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。 | 航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。 |
+| `checkout.flight.needsReview.title` | We're confirming this with the airline | 항공사와 예약을 확인하고 있습니다 | 航空会社に予約を確認しています | 正在与航空公司确认预订 |
+| `checkout.flight.needsReview.description` | Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed. | 담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다. | 担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。 | 我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。 |
