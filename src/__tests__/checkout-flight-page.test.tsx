@@ -42,7 +42,9 @@ vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn(async () => ({})) }));
 vi.mock('@stripe/react-stripe-js', () => ({
     Elements: ({ children }: { children: React.ReactNode }) => <div data-testid="stripe-elements">{children}</div>,
-    PaymentElement: () => <div data-testid="payment-element" />,
+    PaymentElement: ({ options }: { options?: { defaultValues?: { billingDetails?: { address?: { country?: string } } } } }) => (
+        <div data-testid="payment-element" data-country={options?.defaultValues?.billingDetails?.address?.country} />
+    ),
     useStripe: () => ({
         confirmPayment: vi.fn(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } })),
     }),
@@ -78,7 +80,7 @@ const renderPage = () =>
     render(<NextIntlClientProvider locale="en" messages={en as never}><CheckoutPage /></NextIntlClientProvider>);
 
 /** Fills passenger `n` (0-based) by the labels a traveller reads. Contact details are the lead's only. */
-function fillPassenger(n = 0, dob = '1990-01-01') {
+function fillPassenger(n = 0, dob = '1990-01-01', country = 'PH') {
     const type = (label: RegExp, value: string) =>
         fireEvent.change(screen.getAllByLabelText(label)[n], { target: { value } });
     type(/^first name/i, 'Juan');
@@ -93,7 +95,8 @@ function fillPassenger(n = 0, dob = '1990-01-01') {
     type(/^passport number/i, 'P1234567');
     // In the month it opens on: valid on departure, one choice.
     pickDate(screen.getAllByLabelText(/^passport expiry/i)[n], '2026-12-20');
-    type(/^nationality/i, 'PH');
+    fireEvent.click(screen.getAllByLabelText(/^country/i)[n]);
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: new RegExp(`\\(${country}\\)$`, 'i') }));
 }
 
 /** Picks `iso` in a date field the way a traveller does: open it, then year, month, day. */
@@ -135,7 +138,7 @@ beforeEach(() => {
 
 interface BookBody {
     contact:    { email: string; phone: string; countryCode: string };
-    passengers: Array<{ type: string; dateOfBirth: string }>;
+    passengers: Array<{ type: string; dateOfBirth: string; nationality: string }>;
 }
 const bookCalls = () => post.mock.calls.filter((c) => c[0] === '/flights/book').map((c) => c[1] as BookBody);
 
@@ -181,20 +184,26 @@ describe('the passenger form', () => {
     it('labels every field, so two blank dates are not a guess', () => {
         renderPage();
         for (const label of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^date of birth/i,
-            /^gender/i, /^passport number/i, /^passport expiry/i, /^nationality/i]) {
+            /^gender/i, /^passport number/i, /^passport expiry/i, /^country/i]) {
             expect(screen.getByLabelText(label)).toBeInTheDocument();
         }
-        for (const field of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^passport number/i, /^nationality/i]) {
+        for (const field of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^passport number/i]) {
             expect(screen.getByLabelText(field)).toHaveAttribute('placeholder');
         }
+        expect(screen.getByLabelText(/^country/i)).toHaveAttribute('aria-haspopup', 'listbox');
     });
 
-    it('opens every picker — date, gender, dial code — in the same panel', () => {
+    it('opens every picker — date, gender, country and dial code — in the same panel', () => {
         renderPage();
         const panelOf = (el: HTMLElement) => el.closest('.cg-picker-panel');
 
         fireEvent.click(screen.getByLabelText(/^gender/i));
         expect(panelOf(screen.getByRole('listbox'))).not.toBeNull();
+        fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+
+        fireEvent.click(screen.getByLabelText(/^country/i));
+        expect(panelOf(screen.getByRole('listbox'))).not.toBeNull();
+        expect(within(screen.getByRole('listbox')).getByRole('option', { name: /United States \(US\)/i })).toBeInTheDocument();
         fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
 
         fireEvent.click(screen.getByRole('button', { name: '+63' }));
@@ -261,6 +270,15 @@ describe('the passenger form', () => {
         expect(bookCalls()[0].contact.countryCode).toBe('+63');
     });
 
+    it('prefills Stripe billing country from the booking form country', async () => {
+        renderPage();
+        fillPassenger(0, '1990-01-01', 'US');
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        expect(await screen.findByTestId('payment-element')).toHaveAttribute('data-country', 'US');
+        expect(bookCalls()[0].passengers[0].nationality).toBe('US');
+    });
+
     it('asks for every traveller the fare was priced for, in the airline\'s order, and contact details once', async () => {
         query = new URLSearchParams({ ...FLIGHT_QUERY, adults: '1', children: '1', infants: '1' }).toString();
         renderPage();
@@ -280,6 +298,7 @@ describe('the passenger form', () => {
         expect(bookCalls()[0].passengers.map((p) => p.type)).toEqual(['ADT', 'CHD', 'INF']);
         expect(bookCalls()[0].passengers.map((p) => p.dateOfBirth))
             .toEqual(['1990-01-01', '2018-05-05', '2026-03-01']);
+        expect(bookCalls()[0].passengers.map((p) => p.nationality)).toEqual(['PH', 'PH', 'PH']);
     // Three travellers' forms, six date pickers, each click a full page render.
     }, 20_000);
 });

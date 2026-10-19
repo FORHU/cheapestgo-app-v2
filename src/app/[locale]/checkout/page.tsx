@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown, ChevronLeft, Sun, Moon, User, Mail, Phone, type LucideIcon } from 'lucide-react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
@@ -20,6 +20,7 @@ import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-e
 import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
 import { DateField } from '@/features/checkout/components/date-field';
 import { OptionList, SelectField } from '@/features/checkout/components/select-field';
+import { getCountryOptions } from '@/features/checkout/lib/country-options';
 import {
     BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
 } from '@/features/checkout/components/booking-state-panels';
@@ -63,8 +64,8 @@ interface PassengerInfo {
     gender:         string;
     passportNumber: string;
     passportExpiry: string;
-    /** Issuing country, ISO 3166 alpha-2. */
-    nationality:    string;
+    /** Passport issuing country, ISO 3166 alpha-2. */
+    country:        string;
 }
 
 
@@ -124,7 +125,7 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
         // Expiry and issuing country travel with the number or the airline gets none of
         // it: `duffelIdentityDocuments` returns nothing unless all three are present.
         if (!p.passportExpiry)        errors[`${i}.passportExpiry`] = 'Required';
-        if (p.nationality.trim().length !== 2) errors[`${i}.nationality`] = '2-letter country code';
+        if (p.country.trim().length !== 2) errors[`${i}.country`] = '2-letter country code';
     });
     return errors;
 }
@@ -436,12 +437,13 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
 // ─── Stripe payment form ──────────────────────────────────────────────────────
 
 function StripePaymentForm({
-    onSuccess, onError, total, currency, submitting, setSubmitting, palette,
+    onSuccess, onError, total, currency, country, submitting, setSubmitting, palette,
 }: {
     onSuccess: (paymentIntentId: string) => void;
     onError:   (msg: string) => void;
     total:     number;
     currency:  string;
+    country?:  string;
     submitting: boolean;
     setSubmitting: (v: boolean) => void;
     palette:   Palette;
@@ -474,7 +476,10 @@ function StripePaymentForm({
     return (
         <>
             <div style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
-                <PaymentElement options={{ layout: 'accordion' }} />
+                <PaymentElement options={{
+                    layout: 'accordion',
+                    ...(country ? { defaultValues: { billingDetails: { address: { country } } } } : {}),
+                }} />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 'clamp(20px,3vw,32px)', fontSize: 12, color: palette.muted }}>
                     <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
                 </div>
@@ -675,6 +680,7 @@ function ConfirmedScreen({
 function CheckoutContent() {
     const tAll = useTranslations();
     const t            = useTranslations('checkout');
+    const locale       = useLocale();
     // The footer's namespace, for the two link labels in the consent line below.
     const tRoot        = useTranslations();
     const searchParams = useSearchParams();
@@ -682,6 +688,7 @@ function CheckoutContent() {
     const { user }     = useAuthStore();
     const { theme }    = useTheme();
     const palette      = checkoutPalette(theme);
+    const countryOptions = useMemo(() => getCountryOptions(locale), [locale]);
 
     // ── Detect mode ──
     const offerId = searchParams.get('offerId');
@@ -761,7 +768,7 @@ function CheckoutContent() {
     const [passengers, setPassengers]         = useState<PassengerInfo[]>(() => {
         const blank = (type: PassengerInfo['type']): PassengerInfo => ({
             type, firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
-            gender: '', passportNumber: '', passportExpiry: '', nationality: '',
+            gender: '', passportNumber: '', passportExpiry: '', country: '',
         });
         return [
             ...Array.from({ length: Math.max(1, adults) }, () => blank('ADT')),
@@ -944,7 +951,7 @@ function CheckoutContent() {
                         email: passengers[0].email, phone: passengers[0].phone,
                         dateOfBirth: p.dateOfBirth, gender: p.gender,
                         passportNumber: p.passportNumber, passportExpiry: p.passportExpiry,
-                        nationality: p.nationality.trim().toUpperCase(), type: p.type,
+                        nationality: p.country.trim().toUpperCase(), type: p.type,
                     })),
                 },
             );
@@ -1296,9 +1303,11 @@ function CheckoutContent() {
                                                     <ErrText msg={err('passportExpiry')} />
                                                 </div>
                                                 <div className={half}>
-                                                    <Label palette={palette} htmlFor={id('nationality')}>{tAll('checkout.userDetails.nationality')}</Label>
-                                                    <input id={id('nationality')} type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder="PH" className="cg-field" style={mkField(palette, !!err('nationality'))} />
-                                                    <ErrText msg={err('nationality')} />
+                                                    <Label palette={palette} htmlFor={id('country')}>{tAll('checkout.userDetails.country')}</Label>
+                                                    <SelectField id={id('country')} value={p.country} onChange={v => onPassenger(i, 'country', v)}
+                                                        placeholder={t('flight.countryPlaceholder')} options={countryOptions}
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('country'))} />
+                                                    <ErrText msg={err('country')} />
                                                 </div>
                                             </div>
                                         </section>
@@ -1321,6 +1330,7 @@ function CheckoutContent() {
                                             onError={handleStripeError}
                                             total={totalAmount}
                                             currency={flightCurrency}
+                                            country={passengers[0].country}
                                             submitting={submitting}
                                             setSubmitting={setSubmitting}
                                             palette={palette}

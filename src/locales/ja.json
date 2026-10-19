@@ -301,7 +301,7 @@
       "guestN": "ゲスト {n}",
       "lastName": "姓 *",
       "lastNamePlaceholder": "姓",
-      "nationality": "国籍（例：PH）",
+      "country": "国",
       "no": "いいえ",
       "passportExpiry": "パスポート有効期限",
       "passportNumber": "パスポート番号",
@@ -440,6 +440,7 @@
       "infantN": "幼児 {n}",
       "nameHint": "お名前はパスポートの記載どおりに入力してください。",
       "contactHint": "eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。",
+      "countryPlaceholder": "国を選択",
       "passportPlaceholder": "例：P1234567A",
       "whosFlying": "ご搭乗者はどなたですか？",
       "settling": {

@@ -301,7 +301,7 @@
       "guestN": "房客 {n}",
       "lastName": "姓氏 *",
       "lastNamePlaceholder": "姓氏",
-      "nationality": "国籍（例如 PH）",
+      "country": "国家/地区",
       "no": "否",
       "passportExpiry": "护照有效期",
       "passportNumber": "护照号码",
@@ -440,6 +440,7 @@
       "infantN": "婴儿 {n}",
       "nameHint": "请按照护照上的写法填写姓名。",
       "contactHint": "电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。",
+      "countryPlaceholder": "选择国家/地区",
       "passportPlaceholder": "例如：P1234567A",
       "whosFlying": "谁将乘机？",
       "settling": {

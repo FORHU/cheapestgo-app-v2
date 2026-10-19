@@ -301,7 +301,7 @@
       "guestN": "게스트 {n}",
       "lastName": "성 *",
       "lastNamePlaceholder": "성",
-      "nationality": "국적 (예: PH)",
+      "country": "국가",
       "no": "아니요",
       "passportExpiry": "여권 만료일",
       "passportNumber": "여권 번호",
@@ -440,6 +440,7 @@
       "infantN": "유아 {n}",
       "nameHint": "여권에 표기된 것과 동일하게 이름을 입력해 주세요.",
       "contactHint": "전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다.",
+      "countryPlaceholder": "국가 선택",
       "passportPlaceholder": "예: P1234567A",
       "whosFlying": "누가 탑승하시나요?",
       "settling": {

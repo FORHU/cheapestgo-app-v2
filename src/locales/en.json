@@ -301,7 +301,7 @@
       "guestN": "GUEST {n}",
       "lastName": "Last Name *",
       "lastNamePlaceholder": "Last name",
-      "nationality": "Nationality (e.g. PH)",
+      "country": "Country",
       "no": "No",
       "passportExpiry": "Passport expiry",
       "passportNumber": "Passport number",
@@ -440,6 +440,7 @@
       "infantN": "INFANT {n}",
       "nameHint": "Enter names exactly as they appear on the passport.",
       "contactHint": "Your e-ticket is sent here, and the airline uses this number for flight changes.",
+      "countryPlaceholder": "Select country",
       "passportPlaceholder": "e.g. P1234567A",
       "whosFlying": "Who's flying?",
       "settling": {
