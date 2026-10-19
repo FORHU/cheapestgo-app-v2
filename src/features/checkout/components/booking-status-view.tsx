@@ -20,7 +20,8 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthStore } from '@/shared/auth/store';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { useBookingStatus } from '../hooks/use-booking-status';
-import { checkoutPalette, GREEN, type Palette } from '../lib/palette';
+import { ACCENT_FILL, checkoutPalette, GREEN, type Palette } from '../lib/palette';
+import { BRAND } from '@/shared/lib/palette';
 import { BookingFailedPanel, SettlingPanel } from './booking-state-panels';
 
 function Shell({ palette, children }: { palette: Palette; children: React.ReactNode }) {
@@ -58,7 +59,7 @@ function StatusBody({ reference, palette }: { reference: string; palette: Palett
         return (
             <>
                 <Quiet palette={palette}>{t('supplierDown.description')}</Quiet>
-                <button type="button" onClick={() => void refresh()} style={buttonStyle(palette)}>
+                <button type="button" onClick={() => void refresh()} style={buttonStyle()}>
                     {t('bookingPage.refresh')}
                 </button>
             </>
@@ -80,7 +81,7 @@ function StatusBody({ reference, palette }: { reference: string; palette: Palett
                     {t('bookingReference')}:{' '}
                     <strong style={{ color: palette.title, userSelect: 'all' }}>{outcome.reference}</strong>
                 </p>
-                <Link href="/trips" style={{ ...buttonStyle(palette), display: 'inline-block', textDecoration: 'none' }}>
+                <Link href="/trips" style={{ ...buttonStyle(), display: 'inline-block', textDecoration: 'none' }}>
                     {tSuccess('viewMyTrips')}
                 </Link>
             </section>
@@ -107,7 +108,7 @@ function StatusBody({ reference, palette }: { reference: string; palette: Palett
                 onViewTrips={() => router.push('/trips')}
             />
             {exhausted ? (
-                <button type="button" onClick={() => void refresh()} style={buttonStyle(palette)}>
+                <button type="button" onClick={() => void refresh()} style={buttonStyle()}>
                     {t('bookingPage.refresh')}
                 </button>
             ) : (
@@ -117,10 +118,12 @@ function StatusBody({ reference, palette }: { reference: string; palette: Palett
     );
 }
 
-function buttonStyle(palette: Palette): React.CSSProperties {
+/** The page's one action, in the brand gradient — the same fill as the checkout's own. */
+function buttonStyle(): React.CSSProperties {
     return {
         padding: '12px 22px', borderRadius: 999, border: 'none', fontWeight: 700, fontSize: 14,
-        fontFamily: 'inherit', cursor: 'pointer', background: palette.title, color: palette.bg, marginTop: 16,
+        fontFamily: 'inherit', cursor: 'pointer', background: ACCENT_FILL, boxShadow: BRAND.gradientShadow,
+        color: '#fff', marginTop: 16,
     };
 }
 
@@ -144,7 +147,7 @@ export function BookingStatusView() {
         return (
             <Shell palette={palette}>
                 <h1 style={{ color: palette.title, fontSize: 22 }}>{t('signInToComplete')}</h1>
-                <Link href={`/login?redirect=${redirect}`} style={{ ...buttonStyle(palette), display: 'inline-block', textDecoration: 'none' }}>
+                <Link href={`/login?redirect=${redirect}`} style={{ ...buttonStyle(), display: 'inline-block', textDecoration: 'none' }}>
                     {t('signIn')}
                 </Link>
             </Shell>

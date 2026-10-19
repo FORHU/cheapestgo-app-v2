@@ -305,3 +305,35 @@ describe('paying and confirming', () => {
         expect(payments()).toHaveLength(0);
     });
 });
+
+describe('the form, in the brand\'s look', () => {
+    const ringed = (el: Element | null) => el?.getAttribute('style') ?? '';
+
+    it('rings every field in the brand gradient before anything is typed', async () => {
+        visit({ adults: '2', children: '1' });
+        renderPage();
+
+        // blue-600 → cyan-500, as jsdom writes them back.
+        const gradientRing = /linear-gradient\(90deg, rgb\(37, 99, 235\) 0%, rgb\(6, 182, 212\) 100%\) border-box/;
+        for (const placeholder of ['John', 'Doe', 'eg.johndoe@gmail.com', 'Mike', 'Hunt']) {
+            expect(ringed(await screen.findByPlaceholderText(placeholder))).toMatch(gradientRing);
+        }
+        expect(ringed(document.querySelector('.cg-phone'))).toMatch(gradientRing);
+        expect(ringed(document.querySelector('textarea'))).toMatch(gradientRing);
+    });
+
+    it('trades the ring for a red edge on a field that is wrong', async () => {
+        renderPage();
+        await screen.findByPlaceholderText('John');
+        proceed();
+
+        const first = await screen.findByPlaceholderText('John');
+        await waitFor(() => expect(ringed(first)).not.toMatch(/linear-gradient/));
+        expect(first).toHaveStyle({ borderColor: '#E4685A' });
+    });
+
+    it('fills the main action with the brand gradient', async () => {
+        renderPage();
+        expect(ringed(await screen.findByRole('button', { name: /continue to payment/i }))).toMatch(/linear-gradient/);
+    });
+});

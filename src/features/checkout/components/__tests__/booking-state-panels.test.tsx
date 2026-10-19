@@ -48,6 +48,13 @@ describe('PriceMovedPanel', () => {
         expect(onChooseAnother).toHaveBeenCalledTimes(1);
     });
 
+    it('fills the way forward with the brand gradient, and leaves the way out plain', () => {
+        wrap(<PriceMovedPanel change={rise} palette={palette} onAccept={vi.fn()} onChooseAnother={vi.fn()} />);
+
+        expect(screen.getByRole('button', { name: /continue at the new price/i }).getAttribute('style')).toMatch(/linear-gradient/);
+        expect(screen.getByRole('button', { name: /choose another room/i }).getAttribute('style')).not.toMatch(/linear-gradient/);
+    });
+
     it('does not let a price be accepted that has not been shown yet', () => {
         wrap(<PriceMovedPanel palette={palette} refreshing onAccept={vi.fn()} onChooseAnother={vi.fn()} />);
 

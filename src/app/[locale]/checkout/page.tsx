@@ -130,11 +130,23 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
 
 // ─── Shared UI helpers ────────────────────────────────────────────────────────
 
+/**
+ * A field's fill and edge: the brand gradient, blue-600 → cyan-500, as a ring — the
+ * search card's glow, drawn as an outline. The ring is two background layers: the field's
+ * fill painted to the padding box, the gradient to the border box, showing only through the
+ * transparent border. A field that is wrong trades the ring for a plain red edge.
+ */
+function fieldEdge(palette: Palette, hasError = false): React.CSSProperties {
+    return hasError
+        ? { border: `1.5px solid ${DANGER}`, background: palette.fieldBg }
+        : { border: '1.5px solid transparent', background: `linear-gradient(${palette.fieldBg},${palette.fieldBg}) padding-box,${ACCENT_FILL} border-box` };
+}
+
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
         width: '100%', height: 40, padding: '0 16px', borderRadius: 999,
-        border: `1.5px solid ${hasError ? DANGER : palette.fieldBorder}`,
-        background: palette.fieldBg, color: palette.text,
+        ...fieldEdge(palette, hasError),
+        color: palette.text,
         fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
     };
 }
@@ -220,8 +232,7 @@ function PhoneField({
                 className="cg-phone"
                 style={{
                     display: 'flex', alignItems: 'center', width: '100%', height: 40,
-                    borderRadius: 999, background: palette.fieldBg,
-                    border: `1.5px solid ${error ? DANGER : palette.fieldBorder}`, boxSizing: 'border-box',
+                    borderRadius: 999, ...fieldEdge(palette, !!error), boxSizing: 'border-box',
                 }}
             >
                 <button
@@ -412,8 +423,10 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
             accordionItemLabelSelectedFontWeight: '400',
         },
         rules: {
-            '.Input':         { border: `1.5px solid ${palette.fieldBorder}`, boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
-            '.Input:focus':   { boxShadow: `0 0 0 1.5px ${ACCENT}` },
+            // Stripe's rules take no gradient, so its inputs are ringed in the gradient's
+            // blue: the nearest the iframe can come to the fields on the details step.
+            '.Input':         { border: `1.5px solid ${palette.icon}`, boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
+            '.Input:focus':   { boxShadow: `0 0 0 4px ${BRAND.primaryWash}` },
             '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '400', marginBottom: '8px' },
             '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingTop: '0', paddingLeft: '0', paddingRight: '0' },
             '.Tab':           { border: 'none', boxShadow: 'none' },
@@ -985,8 +998,8 @@ function CheckoutContent() {
         <style>{`
             @keyframes spin{to{transform:rotate(360deg)}}
             .cg-field::placeholder{color:${palette.muted};opacity:1}
-            .cg-field:focus,.cg-phone:focus-within{border-color:transparent !important;background:linear-gradient(${palette.fieldBg},${palette.fieldBg}) padding-box,${ACCENT_FILL} border-box !important;box-shadow:0 0 0 4px ${BRAND.primaryWash}}
-            .cg-phone .cg-field:focus{background:none !important;box-shadow:none}
+            .cg-field:focus,.cg-phone:focus-within{box-shadow:0 0 0 4px ${BRAND.primaryWash}}
+            .cg-phone .cg-field:focus{box-shadow:none}
             .cg-field:-webkit-autofill,
             .cg-field:-webkit-autofill:hover,
             .cg-field:-webkit-autofill:focus,

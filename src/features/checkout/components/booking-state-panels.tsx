@@ -25,7 +25,8 @@ import React from 'react';
 import { AlertTriangle, CheckCircle2, Clock, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Palette } from '../lib/palette';
-import { ACCENT, DANGER, GREEN } from '../lib/palette';
+import { ACCENT, ACCENT_FILL, DANGER, GREEN } from '../lib/palette';
+import { BRAND } from '@/shared/lib/palette';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -90,8 +91,10 @@ function Button({
                 padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
                 cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1,
                 border: primary ? 'none' : `1.5px solid ${palette.cardLine}`,
-                background: primary ? palette.title : 'transparent',
-                color: primary ? palette.bg : palette.title,
+                // The way forward in the brand gradient, as the checkout's own main action.
+                background: primary ? ACCENT_FILL : 'transparent',
+                boxShadow: primary && !disabled ? BRAND.gradientShadow : 'none',
+                color: primary ? '#fff' : palette.title,
             }}
         >
             {children}

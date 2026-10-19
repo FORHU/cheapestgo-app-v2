@@ -155,11 +155,13 @@ describe('the page, in the checkout\'s own design', () => {
         expect(current?.getAttribute('style')).toMatch(/linear-gradient/);
     });
 
-    it('rings the field being typed in with the brand gradient', () => {
+    it('rings the fields in the brand gradient, and haloes the one being typed in', () => {
         const { container } = renderPage();
+        const field = container.querySelector('input.cg-field');
+        // blue-600 → cyan-500, as jsdom writes them back.
+        expect(field?.getAttribute('style')).toMatch(/linear-gradient\(90deg, rgb\(37, 99, 235\) 0%, rgb\(6, 182, 212\) 100%\) border-box/);
         const css = Array.from(container.querySelectorAll('style')).map((s) => s.textContent).join('\n');
-        expect(css).toMatch(/\.cg-field:focus[^{]*\{[^}]*linear-gradient\(90deg,#2563eb 0%,#06b6d4 100%\) border-box/);
-        expect(css).toMatch(/\.cg-phone:focus-within[^{]*\{[^}]*linear-gradient/);
+        expect(css).toMatch(/\.cg-field:focus,\.cg-phone:focus-within\{box-shadow:0 0 0 4px rgba\(59,130,246,0\.18\)\}/);
     });
 
     it('writes the confirmation in the theme\'s ink — not white on the light theme\'s white', async () => {

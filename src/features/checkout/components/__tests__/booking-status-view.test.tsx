@@ -84,7 +84,9 @@ describe('BookingStatusView', () => {
         wrap();
 
         expect(screen.queryByText(/this page updates by itself/i)).not.toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: /refresh status/i }));
+        const button = screen.getByRole('button', { name: /refresh status/i });
+        expect(button.getAttribute('style')).toMatch(/linear-gradient/);
+        fireEvent.click(button);
         expect(refresh).toHaveBeenCalledTimes(1);
     });
 

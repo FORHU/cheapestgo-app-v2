@@ -22,10 +22,9 @@ describe('checkout palette', () => {
         expect(p.muted).toBe(b.muted);
     });
 
-    it('sets fields on the brand\'s slate in the dark, and on white with a slate rule in the light', () => {
+    it('fills fields with the brand\'s slate in the dark, and white in the light', () => {
         expect(checkoutPalette('dark').fieldBg).toBe('#1e293b');
         expect(checkoutPalette('light').fieldBg).toBe('#ffffff');
-        expect(checkoutPalette('light').fieldBorder).toBe('#e2e8f0');
     });
 
     it('draws icons in the theme\'s blue', () => {
