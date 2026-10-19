@@ -129,10 +129,25 @@ describe('the page, in the checkout\'s own design', () => {
         expect(screen.getByText('Sign in to complete your booking')).toBeInTheDocument();
     });
 
+    it('fills the main action and the current step with the brand gradient', () => {
+        renderPage();
+        expect(screen.getByRole('button', { name: 'Continue to payment' }).getAttribute('style')).toMatch(/linear-gradient/);
+        const current = screen.getByText('Details').closest('li')?.querySelector('div > div');
+        expect(current?.getAttribute('style')).toMatch(/linear-gradient/);
+    });
+
+    it('rings the field being typed in with the brand gradient', () => {
+        const { container } = renderPage();
+        const css = Array.from(container.querySelectorAll('style')).map((s) => s.textContent).join('\n');
+        expect(css).toMatch(/\.cg-field:focus[^{]*\{[^}]*linear-gradient\(90deg,#2563eb 0%,#06b6d4 100%\) border-box/);
+        expect(css).toMatch(/\.cg-phone:focus-within[^{]*\{[^}]*linear-gradient/);
+    });
+
     it('writes the confirmation in the theme\'s ink — not white on the light theme\'s white', async () => {
         await payForFlight();
         const heading = await screen.findByText("You're all set!");
-        expect(heading).toHaveStyle({ color: 'rgb(17, 17, 17)' });
+        // The brand's slate-900.
+        expect(heading).toHaveStyle({ color: 'rgb(15, 23, 42)' });
     });
 });
 

@@ -21,7 +21,8 @@ import {
     BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
 } from '@/features/checkout/components/booking-state-panels';
 import { nightsBetween } from '@/shared/lib/stay';
-import { ACCENT, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
+import { ACCENT, ACCENT_FILL, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
+import { BRAND } from '@/shared/lib/palette';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
 
@@ -130,7 +131,7 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
         width: '100%', height: 40, padding: '0 16px', borderRadius: 999,
-        border: `1.5px solid ${hasError ? DANGER : 'transparent'}`,
+        border: `1.5px solid ${hasError ? DANGER : palette.fieldBorder}`,
         background: palette.fieldBg, color: palette.text,
         fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
     };
@@ -139,7 +140,7 @@ function mkField(palette: Palette, hasError = false): React.CSSProperties {
 /** A field's caption. With `htmlFor` it is a real `<label>`, so the field is named by it. */
 function Label({ children, palette, icon: Icon, htmlFor }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon; htmlFor?: string }) {
     const style: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 };
-    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} style={{ flexShrink: 0 }} />}{children}</>;
+    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} color={palette.icon} style={{ flexShrink: 0 }} />}{children}</>;
     return htmlFor
         ? <label htmlFor={htmlFor} style={style}>{content}</label>
         : <div style={style}>{content}</div>;
@@ -160,14 +161,14 @@ function Spinner({ color = '#fff' }: { color?: string }) {
 }
 
 /**
- * The design's primary action: an inverted pill — the page's own title colour
- * filled, the page ground for the label — so it reads white-on-black in the
- * dark theme and black-on-white in the light one.
+ * The page's primary action: a pill in the brand gradient, blue-600 → cyan-500, with
+ * white text — the same fill the landing and search pages give the thing to press next.
+ * The same in both themes.
  */
 function PrimaryBtn({
-    onClick, loading, disabled, palette, children,
+    onClick, loading, disabled, children,
 }: {
-    onClick?: () => void; loading: boolean; disabled?: boolean; palette: Palette; children: React.ReactNode;
+    onClick?: () => void; loading: boolean; disabled?: boolean; children: React.ReactNode;
 }) {
     const dead = loading || disabled;
     return (
@@ -176,14 +177,14 @@ function PrimaryBtn({
             disabled={dead}
             style={{
                 width: '100%', padding: '17px 0', borderRadius: 999, border: 'none',
-                background: palette.title, color: palette.bg,
+                background: ACCENT_FILL, color: '#fff', boxShadow: dead ? 'none' : BRAND.gradientShadow,
                 fontWeight: 700, fontSize: 15, cursor: dead ? 'default' : 'pointer',
                 opacity: dead ? 0.55 : 1, fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 transition: 'opacity .15s ease',
             }}
         >
-            {loading ? <Spinner color={palette.bg} /> : children}
+            {loading ? <Spinner /> : children}
         </button>
     );
 }
@@ -218,7 +219,7 @@ function PhoneField({
                 style={{
                     display: 'flex', alignItems: 'center', width: '100%', height: 40,
                     borderRadius: 999, background: palette.fieldBg,
-                    border: `1.5px solid ${error ? DANGER : 'transparent'}`, boxSizing: 'border-box',
+                    border: `1.5px solid ${error ? DANGER : palette.fieldBorder}`, boxSizing: 'border-box',
                 }}
             >
                 <button
@@ -316,8 +317,8 @@ function ProgressBar({ step, palette }: { step: Step; palette: Palette }) {
                                 width: 32, height: 32, borderRadius: '50%',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: 14, fontWeight: 700,
-                                background: active ? palette.title : palette.stepIdle,
-                                color:      active ? palette.bg    : palette.title,
+                                background: active ? ACCENT_FILL : palette.stepIdle,
+                                color:      active ? '#fff'      : palette.title,
                             }}>
                                 {s.num}
                             </div>
@@ -409,7 +410,7 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
             accordionItemLabelSelectedFontWeight: '400',
         },
         rules: {
-            '.Input':         { border: 'none', boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
+            '.Input':         { border: `1.5px solid ${palette.fieldBorder}`, boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
             '.Input:focus':   { boxShadow: `0 0 0 1.5px ${ACCENT}` },
             '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '400', marginBottom: '8px' },
             '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingTop: '0', paddingLeft: '0', paddingRight: '0' },
@@ -466,7 +467,7 @@ function StripePaymentForm({
                     <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
                 </div>
             </div>
-            <PrimaryBtn onClick={handlePay} loading={submitting} disabled={!stripe || !elements} palette={palette}>
+            <PrimaryBtn onClick={handlePay} loading={submitting} disabled={!stripe || !elements}>
                 {t('payNow', { amount: `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
             </PrimaryBtn>
         </>
@@ -640,7 +641,7 @@ function ConfirmedScreen({
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button
                             onClick={onHome}
-                            style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+                            style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT_FILL, boxShadow: BRAND.gradientShadow, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
                         >
                             {t('planAnotherTrip')}
                         </button>
@@ -980,8 +981,8 @@ function CheckoutContent() {
         <style>{`
             @keyframes spin{to{transform:rotate(360deg)}}
             .cg-field::placeholder{color:${palette.muted};opacity:1}
-            .cg-field:focus{border-color:${ACCENT} !important}
-            .cg-phone:focus-within{border-color:${ACCENT}}
+            .cg-field:focus,.cg-phone:focus-within{border-color:transparent !important;background:linear-gradient(${palette.fieldBg},${palette.fieldBg}) padding-box,${ACCENT_FILL} border-box !important;box-shadow:0 0 0 4px ${BRAND.primaryWash}}
+            .cg-phone .cg-field:focus{background:none !important;box-shadow:none}
             .cg-field:-webkit-autofill,
             .cg-field:-webkit-autofill:hover,
             .cg-field:-webkit-autofill:focus,
@@ -1284,7 +1285,7 @@ function CheckoutContent() {
                                 })}
 
                                 <div style={{ marginTop: 40 }}>
-                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
+                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
                                 </div>
@@ -1510,7 +1511,7 @@ function CheckoutContent() {
                                 </section>
 
                                 <div style={{ marginTop: 40 }}>
-                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={hotelSubmitting} disabled={!hotel.canSubmit} palette={palette}>
+                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={hotelSubmitting} disabled={!hotel.canSubmit}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
                                 </div>
