@@ -94,7 +94,7 @@ function fillPassenger(n = 0, dob = '1990-01-01') {
 async function payForFlight() {
     renderPage();
     fillPassenger();
-    fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+    fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
     fireEvent.click(await screen.findByRole('button', { name: /pay usd 250/i }));
 }
 
@@ -115,6 +115,27 @@ interface BookBody {
 }
 const bookCalls = () => post.mock.calls.filter((c) => c[0] === '/flights/book').map((c) => c[1] as BookBody);
 
+describe('the page, in the checkout\'s own design', () => {
+    it('has the checkout\'s heading and steps, and its "Continue to payment" action', () => {
+        renderPage();
+        expect(screen.getByRole('heading', { level: 1, name: 'Complete your booking' })).toBeInTheDocument();
+        expect(screen.getByText('Details')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Continue to payment' })).toBeInTheDocument();
+    });
+
+    it('asks a signed-out traveller to sign in, in the page\'s language', () => {
+        auth.user = null;
+        renderPage();
+        expect(screen.getByText('Sign in to complete your booking')).toBeInTheDocument();
+    });
+
+    it('writes the confirmation in the theme\'s ink — not white on the light theme\'s white', async () => {
+        await payForFlight();
+        const heading = await screen.findByText("You're all set!");
+        expect(heading).toHaveStyle({ color: 'rgb(17, 17, 17)' });
+    });
+});
+
 describe('the passenger form', () => {
     it('labels every field, so two blank dates are not a guess', () => {
         renderPage();
@@ -133,7 +154,7 @@ describe('the passenger form', () => {
         // Without a code the API reads a national number as Korean: 0917… became +82917….
         fireEvent.click(screen.getByRole('button', { name: '+63' }));
         fireEvent.click(screen.getByRole('button', { name: /south korea/i }));
-        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
         await waitFor(() => expect(bookCalls()).toHaveLength(1));
         expect(bookCalls()[0].contact).toEqual({ email: 'juan@example.com', phone: '9171234567', countryCode: '+82' });
@@ -142,7 +163,7 @@ describe('the passenger form', () => {
     it('defaults the country code to the Philippines', async () => {
         renderPage();
         fillPassenger();
-        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
         await waitFor(() => expect(bookCalls()).toHaveLength(1));
         expect(bookCalls()[0].contact.countryCode).toBe('+63');
     });
@@ -160,7 +181,7 @@ describe('the passenger form', () => {
         fillPassenger(0);
         fillPassenger(1, '2018-05-05');
         fillPassenger(2, '2026-03-01');
-        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
         await waitFor(() => expect(bookCalls()).toHaveLength(1));
         expect(bookCalls()[0].passengers.map((p) => p.type)).toEqual(['ADT', 'CHD', 'INF']);
@@ -173,7 +194,7 @@ describe('the payment step', () => {
     it('says the card is held now and charged only when the airline confirms', async () => {
         renderPage();
         fillPassenger();
-        fireEvent.click(screen.getByRole('button', { name: /confirm booking/i }));
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
         expect(await screen.findByText(/charged only once the airline confirms your ticket/i)).toBeInTheDocument();
     });
@@ -218,7 +239,7 @@ describe('after the card', () => {
         expect(screen.getByText(/hold on your card has been released/i)).toBeInTheDocument();
         // The PaymentIntent behind the card form was voided: there is nothing left to pay with.
         expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /confirm booking/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
     });
 
     it('says the fare sold out, that nothing was charged, and goes back to the details', async () => {

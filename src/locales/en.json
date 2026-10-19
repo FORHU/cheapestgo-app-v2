@@ -441,6 +441,7 @@
       "nameHint": "Enter names exactly as they appear on the passport.",
       "contactHint": "Your e-ticket is sent here, and the airline uses this number for flight changes.",
       "passportPlaceholder": "e.g. P1234567A",
+      "whosFlying": "Who's flying?",
       "settling": {
         "description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued."
       },

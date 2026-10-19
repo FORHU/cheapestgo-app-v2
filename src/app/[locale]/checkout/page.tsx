@@ -150,18 +150,6 @@ function ErrText({ msg }: { msg?: string }) {
     return <div style={{ fontSize: 11, color: DANGER, marginTop: 5, fontWeight: 600 }}>{msg}</div>;
 }
 
-function FieldRow({ children }: { children: React.ReactNode }) {
-    return <div style={{ marginBottom: 14 }}>{children}</div>;
-}
-
-function Grid2({ children }: { children: React.ReactNode }) {
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-            {children}
-        </div>
-    );
-}
-
 function Spinner({ color = '#fff' }: { color?: string }) {
     return (
         <svg width="22" height="22" viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
@@ -555,16 +543,16 @@ function ConfirmedScreen({
                         <Check size={24} strokeWidth={3} />
                         <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>{t('booked')}</div>
                     </div>
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: '#fff', marginTop: 20 }}>
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: palette.title, marginTop: 20 }}>
                         {t('allSet')}
                     </div>
-                    <div style={{ fontSize: 13, color: 'rgba(245,239,228,.55)', marginTop: 6 }}>
+                    <div style={{ fontSize: 13, color: palette.muted, marginTop: 6 }}>
                         {t('receiptSent', { email: guestEmail })}
                     </div>
                 </div>
 
                 <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
                     <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
                 </div>
 
@@ -588,53 +576,53 @@ function ConfirmedScreen({
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginBottom: 24 }}>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkIn)}
                                 </div>
                                 <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkIn)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkOut)}
                                 </div>
                                 <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkOut)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Users size={13} color={ACCENT} />
                                     {guestName}
                                 </div>
-                                <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
+                                <div style={{ fontSize: 11, color: palette.muted, marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
-                                {nights && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
+                                {nights && <div style={{ fontSize: 11, color: palette.muted, marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
                             </div>
                         </div>
 
                         <div style={{ height: 1, background: palette.hairline, margin: '0 0 20px' }} />
 
                         <div style={{ marginBottom: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
                             {nights && nightlyPrice > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
                                     <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {(nightlyPrice * nights).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                 </div>
                             )}
                             {fee > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
                                     <span>{t('serviceFee')}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#fff', paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: palette.title, paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
                                 <span>{t('totalPaid')}</span>
                                 <span style={{ color: GREEN }}>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                             </div>
@@ -979,14 +967,6 @@ function CheckoutContent() {
         color: palette.text,
     };
 
-    const formCardStyle: React.CSSProperties = {
-        background: palette.fieldBg,
-        border: `1px solid ${palette.summaryBorder}`,
-        borderRadius: 18,
-        padding: 22,
-        marginBottom: 16,
-    };
-
     const sectionLabelStyle: React.CSSProperties = {
         fontWeight: 700,
         fontSize: 14,
@@ -1075,15 +1055,16 @@ function CheckoutContent() {
     }
 
     // ── Not logged in helper ──
+    // Tinted with the checkout's accent, as its other notices are, and in the page's language.
     function AuthBanner() {
-    const tAll = useTranslations();
         if (user) return null;
         return (
-            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(255,193,7,.3)', background: 'rgba(255,193,7,.08)', fontSize: 13, color: 'rgba(245,239,228,.85)' }}>
-                <strong style={{ color: '#FFC107' }}>{tAll('nav.signIn')}</strong> to complete your booking.{' '}
+            <div style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${ACCENT}55`, background: `${ACCENT}14`, fontSize: 13, color: palette.soft }}>
+                <strong style={{ color: palette.title }}>{tAll('checkout.signInToComplete')}</strong>
+                <div style={{ marginTop: 2 }}>{tAll('checkout.signInBannerDesc')}</div>
                 <button
                     onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-                    style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
+                    style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0, marginTop: 8 }}
                 >
                     {tAll('checkout.signInArrow')}
                 </button>
@@ -1175,128 +1156,143 @@ function CheckoutContent() {
     }
 
     // ── Flight checkout: passengers, then payment ────────────────────────────
-    // It was drawn as a single step, so the payment step `handleFlightSubmit` moves to
-    // never appeared: the airline order and Stripe intent were created, and the page
-    // stayed on the passenger form with nothing to pay with.
+    // Drawn with the same parts as the hotel checkout below — toolbar, steps, heading, labelled
+    // sections over a two-column field grid, the summary beside it — so the two read as one
+    // checkout rather than a page and its older cousin.
     if (mode === 'flight') {
+        const flightBackLabel = step === 'payment' ? t('backToBookingDetails') : tAll('property.v2.goBack');
+        const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 18 };
+        // A contact detail or a single answer takes the left column, as on the hotel form;
+        // on a phone the half is too narrow, so it takes the row.
+        const half = 'col-span-2 sm:col-span-1';
+
         return (
             <div style={rootStyle}>
                 {fieldCss}
-                <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'clamp(20px,4vw,48px)', paddingBottom: 60 }}>
-                    <button
-                        onClick={handleBack}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: palette.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0, fontFamily: 'inherit' }}
-                    >
-                        <ArrowLeft size={15} /> {tAll('checkout.back')}
-                    </button>
+                <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(20px,4vw,44px) clamp(16px,4vw,44px) 72px' }}>
+                    <CheckoutToolbar palette={palette} backLabel={flightBackLabel} onBack={handleBack} />
 
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: palette.title, margin: '18px 0 26px' }}>
-                        {t('completeYourBooking')}
-                    </div>
-
-                    {errorMsg && (
-                        <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                            {errorMsg}
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
+                        <div className="lg:col-start-2 lg:row-start-1 flex lg:justify-center mb-8 lg:mb-0 lg:pt-1.5">
+                            <ProgressBar step={step} palette={palette} />
                         </div>
-                    )}
 
-                    <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                        <div style={{ flex: '1 1 420px', minWidth: 280 }}>
-                            <AuthBanner />
-                            {step === 'form' && <>
-                            {passengers.map((p, i) => {
-                                const id = (field: string) => `pax-${i}-${field}`;
-                                const err = (field: string) => passengerErrors[`${i}.${field}`];
-                                // Numbered within its own type, as the airline lists them.
-                                const nth = passengers.slice(0, i + 1).filter(q => q.type === p.type).length;
-                                const heading = p.type === 'CHD' ? tAll('checkout.userDetails.childN', { n: nth })
-                                    : p.type === 'INF' ? t('flight.infantN', { n: nth })
-                                        : t('flight.adultN', { n: nth });
-                                return (
-                                <div key={i} style={formCardStyle}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: palette.title, marginBottom: 6 }}>
-                                        {heading}
-                                    </div>
-                                    <div style={{ fontSize: 12, color: palette.muted, marginBottom: 18 }}>{t('flight.nameHint')}</div>
-                                    <Grid2>
-                                        <div>
-                                            <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
-                                            <input id={id('firstName')} type="text" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('firstName'))} />
-                                            <ErrText msg={err('firstName')} />
-                                        </div>
-                                        <div>
-                                            <Label palette={palette} icon={User} htmlFor={id('lastName')}>{tAll('checkout.userDetails.lastName')}</Label>
-                                            <input id={id('lastName')} type="text" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('lastName'))} />
-                                            <ErrText msg={err('lastName')} />
-                                        </div>
-                                    </Grid2>
-                                    {/* Contact details once, on the lead traveller: they are the booking's
-                                        contact, where the e-ticket goes and what the airline calls. */}
-                                    {i === 0 && <>
-                                        <FieldRow>
-                                            <Label palette={palette} icon={Mail} htmlFor={id('email')}>{tAll('checkout.userDetails.email')}</Label>
-                                            <input id={id('email')} type="email" autoComplete="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} className="cg-field" style={mkField(palette, !!err('email'))} />
-                                            <ErrText msg={err('email')} />
-                                        </FieldRow>
-                                        <FieldRow>
-                                            <Label palette={palette} icon={Phone} htmlFor={id('phone')}>{tAll('checkout.userDetails.phoneNumber')}</Label>
-                                            <PhoneField
-                                                palette={palette}
-                                                inputId={id('phone')}
-                                                placeholder={tAll('checkout.userDetails.phonePlaceholder')}
-                                                code={contactPhoneCode}
-                                                number={p.phone}
-                                                onCode={setContactPhoneCode}
-                                                onNumber={v => onPassenger(i, 'phone', v)}
-                                                error={err('phone')}
-                                            />
-                                            <ErrText msg={err('phone')} />
-                                            <div style={{ fontSize: 12, color: palette.muted, marginTop: 6, paddingLeft: 4 }}>{t('flight.contactHint')}</div>
-                                        </FieldRow>
-                                    </>}
-                                    <Grid2>
-                                        <div>
-                                            <Label palette={palette} icon={Calendar} htmlFor={id('dateOfBirth')}>{tAll('checkout.userDetails.dateOfBirth')}</Label>
-                                            <input id={id('dateOfBirth')} type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
-                                            <ErrText msg={err('dateOfBirth')} />
-                                        </div>
-                                        <div>
-                                            <Label palette={palette} htmlFor={id('gender')}>{tAll('checkout.userDetails.gender')}</Label>
-                                            {/* Required by the check above and sent with the booking, but the
-                                                control was missing, so the form could never be submitted. */}
-                                            <select id={id('gender')} value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} className="cg-field" style={{ ...mkField(palette, !!err('gender')), color: p.gender ? palette.text : palette.faint }}>
-                                                <option value="" disabled>{tAll('checkout.userDetails.gender')}</option>
-                                                <option value="M">{tAll('checkout.userDetails.genderMale')}</option>
-                                                <option value="F">{tAll('checkout.userDetails.genderFemale')}</option>
-                                            </select>
-                                            <ErrText msg={err('gender')} />
-                                        </div>
-                                        <div>
-                                            <Label palette={palette} htmlFor={id('passportNumber')}>{tAll('checkout.userDetails.passportNumber')}</Label>
-                                            <input id={id('passportNumber')} type="text" autoComplete="off" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={t('flight.passportPlaceholder')} className="cg-field" style={mkField(palette, !!err('passportNumber'))} />
-                                            <ErrText msg={err('passportNumber')} />
-                                        </div>
-                                        <div>
-                                            <Label palette={palette} icon={Calendar} htmlFor={id('passportExpiry')}>{tAll('checkout.userDetails.passportExpiry')}</Label>
-                                            <input id={id('passportExpiry')} type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
-                                            <ErrText msg={err('passportExpiry')} />
-                                        </div>
-                                    </Grid2>
-                                    <FieldRow>
-                                        <Label palette={palette} htmlFor={id('nationality')}>{tAll('checkout.userDetails.nationality')}</Label>
-                                        <input id={id('nationality')} type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder="PH" className="cg-field" style={mkField(palette, !!err('nationality'))} />
-                                        <ErrText msg={err('nationality')} />
-                                    </FieldRow>
+                        <div className="lg:col-start-1 lg:row-start-1">
+                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                                {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
+                            </h1>
+                            {step === 'form' && (
+                                <p style={{ fontSize: 'clamp(19px,2.2vw,32px)', fontWeight: 400, lineHeight: 1.25, color: palette.text, margin: '10px 0 0' }}>
+                                    {t('flight.whosFlying')}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="lg:col-start-1 lg:row-start-2 min-w-0" style={{ marginTop: step === 'form' ? 30 : 26 }}>
+                            {errorMsg && (
+                                <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                    {errorMsg}
                                 </div>
-                                );
-                            })}
-                            <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
-                                Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </PrimaryBtn>
+                            )}
+
+                            <AuthBanner />
+
+                            {step === 'form' && <>
+                                {passengers.map((p, i) => {
+                                    const id = (field: string) => `pax-${i}-${field}`;
+                                    const err = (field: string) => passengerErrors[`${i}.${field}`];
+                                    // Numbered within its own type, as the airline lists them.
+                                    const nth = passengers.slice(0, i + 1).filter(q => q.type === p.type).length;
+                                    const heading = p.type === 'CHD' ? tAll('checkout.userDetails.childN', { n: nth })
+                                        : p.type === 'INF' ? t('flight.infantN', { n: nth })
+                                            : t('flight.adultN', { n: nth });
+                                    return (
+                                        <section key={i} style={{ marginBottom: 28 }}>
+                                            <div style={{ ...sectionLabelStyle, marginBottom: 6 }}>{heading}</div>
+                                            <p style={{ fontSize: 12, color: palette.muted, margin: '0 0 16px' }}>{t('flight.nameHint')}</p>
+                                            <div style={fieldGrid}>
+                                                <div>
+                                                    <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
+                                                    <input id={id('firstName')} type="text" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('firstName'))} />
+                                                    <ErrText msg={err('firstName')} />
+                                                </div>
+                                                <div>
+                                                    <Label palette={palette} icon={User} htmlFor={id('lastName')}>{tAll('checkout.userDetails.lastName')}</Label>
+                                                    <input id={id('lastName')} type="text" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('lastName'))} />
+                                                    <ErrText msg={err('lastName')} />
+                                                </div>
+
+                                                {/* Contact details once, on the lead traveller: they are the booking's
+                                                    contact, where the e-ticket goes and what the airline calls. */}
+                                                {i === 0 && <>
+                                                    <div className={`${half} sm:col-start-1`}>
+                                                        <Label palette={palette} icon={Mail} htmlFor={id('email')}>{tAll('checkout.userDetails.email')}</Label>
+                                                        <input id={id('email')} type="email" autoComplete="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} className="cg-field" style={mkField(palette, !!err('email'))} />
+                                                        <ErrText msg={err('email')} />
+                                                    </div>
+                                                    <div className={`${half} sm:col-start-1`}>
+                                                        <Label palette={palette} icon={Phone} htmlFor={id('phone')}>{tAll('checkout.userDetails.phoneNumber')}</Label>
+                                                        <PhoneField
+                                                            palette={palette}
+                                                            inputId={id('phone')}
+                                                            placeholder={tAll('checkout.userDetails.phonePlaceholder')}
+                                                            code={contactPhoneCode}
+                                                            number={p.phone}
+                                                            onCode={setContactPhoneCode}
+                                                            onNumber={v => onPassenger(i, 'phone', v)}
+                                                            error={err('phone')}
+                                                        />
+                                                        <ErrText msg={err('phone')} />
+                                                    </div>
+                                                    <p className="col-span-2" style={{ fontSize: 12, color: palette.muted, margin: '-8px 4px 0' }}>{t('flight.contactHint')}</p>
+                                                </>}
+
+                                                <div className={half}>
+                                                    <Label palette={palette} icon={Calendar} htmlFor={id('dateOfBirth')}>{tAll('checkout.userDetails.dateOfBirth')}</Label>
+                                                    <input id={id('dateOfBirth')} type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
+                                                    <ErrText msg={err('dateOfBirth')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} icon={User} htmlFor={id('gender')}>{tAll('checkout.userDetails.gender')}</Label>
+                                                    {/* Required by the check above and sent with the booking, but the
+                                                        control was missing, so the form could never be submitted. */}
+                                                    <select id={id('gender')} value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} className="cg-field" style={{ ...mkField(palette, !!err('gender')), color: p.gender ? palette.text : palette.muted }}>
+                                                        <option value="" disabled>{tAll('checkout.userDetails.gender')}</option>
+                                                        <option value="M">{tAll('checkout.userDetails.genderMale')}</option>
+                                                        <option value="F">{tAll('checkout.userDetails.genderFemale')}</option>
+                                                    </select>
+                                                    <ErrText msg={err('gender')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} htmlFor={id('passportNumber')}>{tAll('checkout.userDetails.passportNumber')}</Label>
+                                                    <input id={id('passportNumber')} type="text" autoComplete="off" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={t('flight.passportPlaceholder')} className="cg-field" style={mkField(palette, !!err('passportNumber'))} />
+                                                    <ErrText msg={err('passportNumber')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} icon={Calendar} htmlFor={id('passportExpiry')}>{tAll('checkout.userDetails.passportExpiry')}</Label>
+                                                    <input id={id('passportExpiry')} type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
+                                                    <ErrText msg={err('passportExpiry')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} htmlFor={id('nationality')}>{tAll('checkout.userDetails.nationality')}</Label>
+                                                    <input id={id('nationality')} type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder="PH" className="cg-field" style={mkField(palette, !!err('nationality'))} />
+                                                    <ErrText msg={err('nationality')} />
+                                                </div>
+                                            </div>
+                                        </section>
+                                    );
+                                })}
+
+                                <div style={{ marginTop: 40 }}>
+                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
+                                        {t('continueToPayment')}
+                                    </PrimaryBtn>
+                                </div>
                             </>}
+
                             {step === 'payment' && clientSecret && (
                                 <>
-                                    <p style={{ fontSize: 13, color: palette.text, margin: '0 4px 14px' }}>{t('flight.cardHeld')}</p>
+                                    <p style={{ fontSize: 13, lineHeight: 1.5, color: palette.soft, margin: '0 0 18px' }}>{t('flight.cardHeld')}</p>
                                     <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                         <StripePaymentForm
                                             onSuccess={handleStripeSuccess}
@@ -1310,11 +1306,16 @@ function CheckoutContent() {
                                     </Elements>
                                 </>
                             )}
-                            <p style={{ fontSize: 10, color: palette.faint, textAlign: 'center', marginTop: 12 }}>
-                                {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
+
+                            <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                                {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                             </p>
                         </div>
-                        <SummaryCard />
+
+                        {/* Right: summary, under the steps */}
+                        <aside className="lg:col-start-2 lg:row-start-2 mt-10 lg:mt-0" style={{ paddingTop: step === 'form' ? 50 : 80 }}>
+                            <SummaryCard />
+                        </aside>
                     </div>
                 </div>
             </div>

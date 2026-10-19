@@ -441,6 +441,7 @@
       "nameHint": "请按照护照上的写法填写姓名。",
       "contactHint": "电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。",
       "passportPlaceholder": "例如：P1234567A",
+      "whosFlying": "谁将乘机？",
       "settling": {
         "description": "航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。"
       },

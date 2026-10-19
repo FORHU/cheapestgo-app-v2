@@ -271,3 +271,4 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.nameHint` | Enter names exactly as they appear on the passport. | 여권에 표기된 것과 동일하게 이름을 입력해 주세요. | お名前はパスポートの記載どおりに入力してください。 | 请按照护照上的写法填写姓名。 |
 | `checkout.flight.contactHint` | Your e-ticket is sent here, and the airline uses this number for flight changes. | 전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다. | eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。 | 电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。 |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
+| `checkout.flight.whosFlying` | Who's flying? | 누가 탑승하시나요? | ご搭乗者はどなたですか？ | 谁将乘机？ |
