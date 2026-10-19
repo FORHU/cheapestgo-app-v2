@@ -46,6 +46,8 @@ describe('DateField', () => {
         render(<Harness spy={spy} />);
         open();
 
+        // The checkout's one picker panel, shared with its dropdowns.
+        expect(dialog().classList.contains('cg-picker-panel')).toBe(true);
         // Opens on the years around the likely one, not on this month.
         fireEvent.click(within(dialog()).getByRole('button', { name: '1990' }));
         fireEvent.click(within(dialog()).getByRole('button', { name: 'May 1990' }));
@@ -115,7 +117,7 @@ describe('DateField', () => {
     it('closes when the page around it is clicked', () => {
         render(<Harness />);
         open();
-        fireEvent.click(screen.getByTestId('date-field-backdrop'));
+        fireEvent.click(screen.getByTestId('picker-backdrop'));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 });

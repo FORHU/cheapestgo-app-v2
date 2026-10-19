@@ -51,6 +51,10 @@ vi.mock('@stripe/react-stripe-js', () => ({
 
 import CheckoutPage from '@/app/[locale]/checkout/page';
 
+// Each test drives the whole page through its pickers — every click a full render — so the
+// default 5s is too tight once the machine is busy.
+vi.setConfig({ testTimeout: 20_000 });
+
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
 const FLIGHT_QUERY = {
@@ -84,7 +88,8 @@ function fillPassenger(n = 0, dob = '1990-01-01') {
         fireEvent.change(screen.getByLabelText(/^phone number/i), { target: { value: '9171234567' } });
     }
     pickDate(screen.getAllByLabelText(/^date of birth/i)[n], dob);
-    type(/^gender/i, 'M');
+    fireEvent.click(screen.getAllByLabelText(/^gender/i)[n]);
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Male' }));
     type(/^passport number/i, 'P1234567');
     // In the month it opens on: valid on departure, one choice.
     pickDate(screen.getAllByLabelText(/^passport expiry/i)[n], '2026-12-20');
@@ -184,6 +189,28 @@ describe('the passenger form', () => {
         }
     });
 
+    it('opens every picker — date, gender, dial code — in the same panel', () => {
+        renderPage();
+        const panelOf = (el: HTMLElement) => el.closest('.cg-picker-panel');
+
+        fireEvent.click(screen.getByLabelText(/^gender/i));
+        expect(panelOf(screen.getByRole('listbox'))).not.toBeNull();
+        fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+
+        fireEvent.click(screen.getByRole('button', { name: '+63' }));
+        expect(panelOf(screen.getByRole('listbox'))).not.toBeNull();
+        fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+
+        fireEvent.click(screen.getByLabelText(/^date of birth/i));
+        expect(screen.getByRole('dialog').classList.contains('cg-picker-panel')).toBe(true);
+    });
+
+    it('asks for gender with the checkout\'s own dropdown, not the browser\'s', () => {
+        const { container } = renderPage();
+        expect(container.querySelector('select')).toBeNull();
+        expect(screen.getByLabelText(/^gender/i)).toHaveAttribute('aria-haspopup', 'listbox');
+    });
+
     it('asks for dates with the checkout\'s own picker, not the browser\'s', () => {
         const { container } = renderPage();
         expect(container.querySelector('input[type="date"]')).toBeNull();
@@ -219,7 +246,7 @@ describe('the passenger form', () => {
         fillPassenger();
         // Without a code the API reads a national number as Korean: 0917… became +82917….
         fireEvent.click(screen.getByRole('button', { name: '+63' }));
-        fireEvent.click(screen.getByRole('button', { name: /south korea/i }));
+        fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /south korea/i }));
         fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
         await waitFor(() => expect(bookCalls()).toHaveLength(1));

@@ -19,6 +19,7 @@ import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } f
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
 import { DateField } from '@/features/checkout/components/date-field';
+import { OptionList, SelectField } from '@/features/checkout/components/select-field';
 import {
     BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
 } from '@/features/checkout/components/booking-state-panels';
@@ -225,6 +226,9 @@ function PhoneField({
 }) {
     const [open, setOpen] = useState(false);
     const current = DIAL_CODES.find(d => d.dial === code) ?? DIAL_CODES[0];
+    const codeRef = React.useRef<HTMLButtonElement>(null);
+    const codeId = `${inputId ?? 'phone'}-code`;
+    const close = () => { setOpen(false); codeRef.current?.focus(); };
 
     return (
         <div style={{ position: 'relative' }}>
@@ -236,8 +240,12 @@ function PhoneField({
                 }}
             >
                 <button
+                    ref={codeRef}
+                    id={codeId}
                     type="button"
-                    onClick={() => setOpen(o => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={open}
+                    onClick={() => (open ? close() : setOpen(true))}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px', height: '100%',
                         background: 'none', border: 'none', color: palette.text, fontSize: 14,
@@ -245,7 +253,7 @@ function PhoneField({
                     }}
                 >
                     <span>{current.dial}</span>
-                    <ChevronDown size={14} style={{ opacity: 0.55 }} />
+                    <ChevronDown size={14} color={palette.icon} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s ease' }} />
                 </button>
                 <div style={{ width: 1, height: 22, background: palette.hairline, flexShrink: 0 }} />
                 <input
@@ -264,36 +272,25 @@ function PhoneField({
                 />
             </div>
 
+            {/* The checkout's one picker panel, as the date picker and the dropdowns use. */}
             {open && (
-                <>
-                    <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                    <div
-                        style={{
-                            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 41,
-                            width: 268, maxHeight: 244, overflowY: 'auto',
-                            background: palette.menuBg, border: `1px solid ${palette.summaryBorder}`,
-                            borderRadius: 12, padding: 6, boxShadow: '0 16px 44px rgba(0,0,0,.45)',
-                        }}
-                    >
-                        {DIAL_CODES.map((d, i) => (
-                            <button
-                                key={`${d.code}-${i}`}
-                                type="button"
-                                onClick={() => { onCode(d.dial); setOpen(false); }}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 10px',
-                                    background: d.dial === code ? palette.fieldBg : 'none', border: 'none',
-                                    borderRadius: 8, color: palette.text, fontSize: 13, cursor: 'pointer',
-                                    textAlign: 'left', fontFamily: 'inherit',
-                                }}
-                            >
-                                <span style={{ fontSize: 15 }}>{d.flag}</span>
-                                <span style={{ flex: 1 }}>{d.name}</span>
-                                <span style={{ opacity: 0.55 }}>{d.dial}</span>
-                            </button>
-                        ))}
-                    </div>
-                </>
+                <OptionList
+                    labelledBy={codeId}
+                    options={DIAL_CODES.map(d => ({
+                        value: d.code,
+                        label: `${d.name} ${d.dial}`,
+                        content: <>
+                            <span style={{ fontSize: 15 }}>{d.flag}</span>
+                            <span style={{ flex: 1 }}>{d.name}</span>
+                            <span style={{ opacity: 0.6 }}>{d.dial}</span>
+                        </>,
+                    }))}
+                    value={current.code}
+                    onPick={(c) => { onCode(DIAL_CODES.find(d => d.code === c)?.dial ?? code); close(); }}
+                    onClose={close}
+                    palette={palette}
+                    width={280}
+                />
             )}
         </div>
     );
@@ -1277,11 +1274,13 @@ function CheckoutContent() {
                                                     <Label palette={palette} icon={User} htmlFor={id('gender')}>{tAll('checkout.userDetails.gender')}</Label>
                                                     {/* Required by the check above and sent with the booking, but the
                                                         control was missing, so the form could never be submitted. */}
-                                                    <select id={id('gender')} value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} className="cg-field" style={{ ...mkField(palette, !!err('gender')), color: p.gender ? palette.text : palette.muted }}>
-                                                        <option value="" disabled>{tAll('checkout.userDetails.gender')}</option>
-                                                        <option value="M">{tAll('checkout.userDetails.genderMale')}</option>
-                                                        <option value="F">{tAll('checkout.userDetails.genderFemale')}</option>
-                                                    </select>
+                                                    <SelectField id={id('gender')} value={p.gender} onChange={v => onPassenger(i, 'gender', v)}
+                                                        placeholder={tAll('checkout.userDetails.gender')}
+                                                        options={[
+                                                            { value: 'M', label: tAll('checkout.userDetails.genderMale') },
+                                                            { value: 'F', label: tAll('checkout.userDetails.genderFemale') },
+                                                        ]}
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('gender'))} />
                                                     <ErrText msg={err('gender')} />
                                                 </div>
                                                 <div className={half}>

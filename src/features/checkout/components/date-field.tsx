@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ACCENT_FILL, type Palette } from '../lib/palette';
+import type { Palette } from '../lib/palette';
+import { PickerPanel, pickStyle } from './picker-panel';
 
 /**
  * A date field for the dates a booking form asks for that are nowhere near today — a date of
@@ -105,7 +106,7 @@ export function DateField({
     // ── Pieces ───────────────────────────────────────────────────────────────
 
     const navBtn = (label: string, disabled: boolean, onClick: () => void, Icon: typeof ChevronLeft) => (
-        <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="cg-date-nav"
+        <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="cg-pick-nav"
             style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: palette.surface, color: palette.text, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.3 : 1 }}>
             <Icon size={15} />
@@ -116,7 +117,7 @@ export function DateField({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             {prev}
             {onClick ? (
-                <button type="button" aria-label={label} onClick={onClick} className="cg-date-title"
+                <button type="button" aria-label={label} onClick={onClick} className="cg-pick-title"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', color: palette.title,
                         fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: '6px 10px', borderRadius: 999, fontFamily: 'inherit' }}>
                     {text}<ChevronDown size={14} style={{ opacity: 0.6 }} />
@@ -128,15 +129,7 @@ export function DateField({
         </div>
     );
 
-    const cell = (selected: boolean, disabled: boolean, ring: boolean): React.CSSProperties => ({
-        border: 'none', borderRadius: 999, fontFamily: 'inherit', fontSize: 13,
-        fontWeight: selected ? 700 : 500,
-        color: selected ? '#fff' : palette.text,
-        background: selected ? ACCENT_FILL : 'transparent',
-        boxShadow: ring && !selected ? `inset 0 0 0 1px ${palette.icon}` : 'none',
-        opacity: disabled ? 0.3 : 1,
-        cursor: disabled ? 'default' : 'pointer',
-    });
+    const cell = (selected: boolean, disabled: boolean, ring: boolean) => pickStyle(palette, { selected, disabled, ring });
 
     const chosen = value ? parts(value) : null;
 
@@ -174,7 +167,7 @@ export function DateField({
                                             aria-label={fmt.full.format(asDate(day))} aria-pressed={selected}
                                             aria-current={day === today ? 'date' : undefined}
                                             tabIndex={isCursor ? 0 : -1} disabled={disabled}
-                                            onClick={() => pick(day)} className="cg-date-cell"
+                                            onClick={() => pick(day)} className="cg-pick"
                                             style={{ ...cell(selected, disabled, day === today), width: 36, height: 36, margin: '0 auto', display: 'block' }}>
                                             {date}
                                         </button>
@@ -201,7 +194,7 @@ export function DateField({
                         return (
                             <button key={i} type="button" disabled={disabled} data-cursor={i === m}
                                 aria-label={fmt.title.format(new Date(y, i, 1))} aria-pressed={selected}
-                                onClick={() => { move(iso(y, i, 1)); setView('day'); }} className="cg-date-cell"
+                                onClick={() => { move(iso(y, i, 1)); setView('day'); }} className="cg-pick"
                                 style={{ ...cell(selected, disabled, false), height: 40 }}>
                                 {fmt.short.format(new Date(y, i, 1))}
                             </button>
@@ -227,7 +220,7 @@ export function DateField({
                         return (
                             <button key={year} type="button" disabled={disabled} data-cursor={year === y}
                                 aria-pressed={!!chosen && chosen.y === year}
-                                onClick={() => { move(iso(year, m, 1)); setView('month'); }} className="cg-date-cell"
+                                onClick={() => { move(iso(year, m, 1)); setView('month'); }} className="cg-pick"
                                 style={{ ...cell(!!chosen && chosen.y === year, disabled, false), height: 40 }}>
                                 {year}
                             </button>
@@ -240,11 +233,6 @@ export function DateField({
 
     return (
         <div style={{ position: 'relative' }}>
-            <style>{`
-                .cg-date-cell:not(:disabled):not([aria-pressed="true"]):hover,
-                .cg-date-title:hover, .cg-date-nav:not(:disabled):hover { background: ${palette.stepIdle} !important; }
-                .cg-date-cell:focus-visible, .cg-date-title:focus-visible, .cg-date-nav:focus-visible { outline: 2px solid ${palette.icon}; outline-offset: 2px; }
-            `}</style>
             <button
                 ref={triggerRef}
                 id={id}
@@ -262,23 +250,11 @@ export function DateField({
             </button>
 
             {open && (
-                <>
-                    <div data-testid="date-field-backdrop" onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                    <div
-                        ref={panelRef}
-                        role="dialog"
-                        aria-labelledby={id}
-                        onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } }}
-                        style={{
-                            position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 41,
-                            width: 'min(304px, calc(100vw - 32px))', padding: 14, borderRadius: 18,
-                            background: palette.menuBg, border: `1px solid ${palette.summaryBorder}`,
-                            boxShadow: '0 18px 44px rgba(2,6,23,.45)', color: palette.text,
-                        }}
-                    >
+                <PickerPanel palette={palette} role="dialog" labelledBy={id} onClose={close}>
+                    <div ref={panelRef}>
                         {view === 'day' ? dayView() : view === 'month' ? monthView() : yearView()}
                     </div>
-                </>
+                </PickerPanel>
             )}
         </div>
     );
