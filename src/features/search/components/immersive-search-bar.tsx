@@ -7,6 +7,7 @@ import { useSearchStore } from '@/shared/stores/search.store';
 import { http } from '@/shared/lib/http';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
+import { excludeOrigin } from '@/features/search/lib/exclude-origin';
 import { nightsBetween } from '@/shared/lib/stay';
 import { BRAND } from '@/shared/lib/palette';
 
@@ -526,7 +527,9 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
         const acMode = mode === 'flights' ? 'flights' : 'hotels';
         destSugT.current = setTimeout(async () => {
             try {
-                setDestSugs((await autocompleteDestinations(q, acMode)).slice(0, 6));
+                // Kept whole: the origin is dropped from it at render, and the six
+                // shown are counted after that, not before.
+                setDestSugs(await autocompleteDestinations(q, acMode));
             } catch { setDestSugs([]); }
             finally { setDestSugLoading(false); }
         }, 280);
@@ -707,6 +710,8 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
     // ── Derived ───────────────────────────────────────────────────────────────
 
     const originValue = pickedOrigin ? pickedOrigin.name : 'wherever you are';
+    // A flight's destination is never the airport it leaves from.
+    const destOrigin = mode === 'flights' ? pickedOrigin?.name : null;
     const destValue   = pickedDest   ? pickedDest.name   : tAll('search.prose.anywhere');
 
     const isOneway = tripType === 'oneway';
@@ -858,13 +863,13 @@ export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinati
                                         <DestPanel
                                             query={destQuery}
                                             onQueryChange={setDestQuery}
-                                            suggestions={destSugs}
+                                            suggestions={excludeOrigin(destSugs, destOrigin).slice(0, 6)}
                                             sugLoading={destSugLoading}
                                             onPickSuggestion={pickDestSuggestion}
                                             {...(mode === 'flights'
                                                 // Airports, not the stays cards: a flight is booked to one.
                                                 ? {
-                                                    airports:      POPULAR_AIRPORTS,
+                                                    airports:      excludeOrigin(POPULAR_AIRPORTS, destOrigin),
                                                     noMatchLabel:  tAll('search.noAirportsMatch', { query: destQuery.trim() }),
                                                     placeholder:   tAll('search.cityAirportPlaceholder'),
                                                     trendingLabel: tAll('search.popularAirports'),

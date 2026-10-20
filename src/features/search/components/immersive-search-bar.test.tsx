@@ -60,6 +60,25 @@ describe('ImmersiveSearchBar — flights pickers', () => {
         expect(screen.getByText('Osaka (KIX)')).toBeInTheDocument();
     });
 
+    it('leaves the picked origin out of the destination suggestions', async () => {
+        const mnl = { type: 'airport', title: 'Manila (MNL)', subtitle: 'Ninoy Aquino International Airport · Philippines', code: 'MNL', countryCode: '' };
+        autocompleteDestinations.mockResolvedValue([mnl, kix]);
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar />);
+        await user.click(screen.getByRole('button', { name: 'Flights' }));
+        await user.click(screen.getByText('wherever you are'));
+        await user.click(screen.getByText('MNL'));
+
+        // Picking the origin moves straight on to the destination, popular airports first.
+        expect(screen.getByText('Popular airports')).toBeInTheDocument();
+        expect(screen.getByText('ICN')).toBeInTheDocument();
+        expect(screen.queryByText('MNL')).not.toBeInTheDocument();
+
+        await user.type(screen.getByRole('textbox'), 'Manila');
+        expect(await screen.findByText('KIX')).toBeInTheDocument();
+        expect(screen.queryByText('MNL')).not.toBeInTheDocument();
+    });
+
     it('says so when nothing matches, rather than showing city cards', async () => {
         autocompleteDestinations.mockResolvedValue([]);
         const user = await openFlightsDestination();

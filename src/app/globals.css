@@ -712,3 +712,16 @@ body {
     padding: 8px 12px;
   }
 }
+
+/*
+ * The language switch's cross-fade (src/i18n/localeTransition.ts): the old page
+ * dissolves into the new one. The browser's own default is a 250ms linear-ish
+ * fade; a touch longer and eased reads as one page turning into the other rather
+ * than a flicker. No reduced-motion rule here — a visitor who asked for less
+ * motion never gets a transition started at all.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}

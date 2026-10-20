@@ -3,23 +3,18 @@ import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JetBrains_Mono, Fredoka, Open_Sans, Plus_Jakarta_Sans } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getLocale } from 'next-intl/server';
+import { getLocale } from 'next-intl/server';
 import './globals.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Providers } from '@/shared/components/providers';
 import { AuthListener } from '@/shared/auth/AuthListener';
 import { ExchangeRateListener } from '@/shared/components/ExchangeRateListener';
 import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
-import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
-import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
 import { brandProfile, brandPreviewEnabled } from '@/shared/lib/brand';
 import { getBrandName } from '@/shared/lib/brand.server';
 import { BrandProvider } from '@/shared/components/BrandProvider';
 import { BrandPreviewSwitcher } from '@/shared/components/BrandPreviewSwitcher';
-import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
-import { LoginModal } from '@/features/auth/components/login-modal';
 
 // Plus Jakarta Sans is the app-wide typeface: one variable family covering the
 // 400–800 range, carrying both body and display weights (see globals.css, which
@@ -98,8 +93,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+    // The locale for the first render's `lang` only. The translations are provided by
+    // app/[locale]/layout.tsx, which a language switch renders again; this layout it does
+    // not, so `HtmlLang` keeps `lang` current from there.
     const locale = await getLocale();
-    const messages = await getMessages();
     const brand = await getBrandName();
 
     return (
@@ -116,8 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         __html: "try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light')}catch(e){document.documentElement.classList.add('light')}",
                     }}
                 />
-                <NextIntlClientProvider locale={locale} messages={messages}>
-                    <BrandProvider name={brand}>
+                <BrandProvider name={brand}>
                     <Providers>
                         <AuthListener />
                         <ExchangeRateListener />
@@ -137,18 +133,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                             <div className="app-shell-main relative flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+96px)] lg:pb-0">
                                 {children}
                             </div>
-                            <ScrollToTop />
-                            <MobileBottomNav />
-                            <InstallPWAPrompt />
                         </div>
-                        <LoginModal />
                         <PWAServiceWorkerRegistrar />
                         {/* Only where the brand preview is on. On production the control is
                             never rendered, so there is nothing to find or to switch. */}
                         {brandPreviewEnabled() && <BrandPreviewSwitcher current={brand} />}
                     </Providers>
-                    </BrandProvider>
-                </NextIntlClientProvider>
+                </BrandProvider>
                 <Analytics />
                 <SpeedInsights />
             </body>
