@@ -710,6 +710,12 @@ function HotelSearchContent() {
         // and keeps the map correctly centred on the destination.
         const isNearby = (h: MappableProperty) => {
             if (!searchLat || !searchLng) return true;
+            // Position not resolved yet: the search leg sends 0,0 and the `content`
+            // event places the hotel a moment later. Measuring now compares the
+            // search against Null Island — about 11,000km from anywhere real — so
+            // every hotel failed this and the page rendered empty. Let them pass;
+            // they are measured once placed, where this filter is applied again.
+            if (!h.coordinates.lat && !h.coordinates.lng) return true;
             const dlat = h.coordinates.lat - searchLat;
             const dlng = h.coordinates.lng - searchLng;
             return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
@@ -789,7 +795,10 @@ function HotelSearchContent() {
                             // costs more than it buys. See applyContentPatch for why the
                             // placeholders cannot be detected with `||`.
                             const patches = chunk.data as Record<string, ContentPatch>;
-                            if (!cancelled) setHotels(prev => applyContentPatch(prev, patches));
+                            // Re-applied here because the patch is what finally gives these
+                            // hotels a position: isNearby waved them through unplaced, so
+                            // this is the first point at which the distance can be judged.
+                            if (!cancelled) setHotels(prev => applyContentPatch(prev, patches).filter(isNearby));
                         } else if (chunk.type === 'remove' && Array.isArray(chunk.ids)) {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
@@ -845,8 +854,12 @@ function HotelSearchContent() {
     useEffect(() => {
         if (mapCenter) return;
         if (geocodedCoords) { setMapCenter(geocodedCoords); return; }
-        const first = hotels.find(h => h.coordinates);
-        if (first?.coordinates) setMapCenter(first.coordinates);
+        // A hotel whose position has actually arrived. Every hotel now carries a
+        // `coordinates` object from the moment it streams in, 0,0 until the
+        // `content` event places it, so testing the object alone centred the map
+        // on Null Island — and `if (mapCenter) return` above never corrects it.
+        const first = hotels.find(h => h.coordinates.lat || h.coordinates.lng);
+        if (first) setMapCenter(first.coordinates);
     }, [hotels, mapCenter, geocodedCoords]);
 
     const effectiveLat = lat ? Number(lat) : geocodedCoords?.lat ?? null;
