@@ -77,6 +77,13 @@ export interface ContentPatch {
     name?: string;
     lat?: number;
     lng?: number;
+    /**
+     * Street address. Lands on `location`, which is the field the card renders —
+     * the search leg leaves it empty, so without this every result in a Seoul
+     * search is labelled only "Seoul" and a hotel by Gimpo Airport looks the same
+     * as one in Gangnam.
+     */
+    address?: string;
 }
 
 /**
@@ -109,6 +116,7 @@ export function applyContentPatch(
             images: h.images?.length ? h.images : (patch.images ?? h.images),
             image: h.image || patch.images?.[0] || h.image,
             name: unnamed && patch.name ? patch.name : h.name,
+            location: h.location || patch.address || h.location,
             coordinates: unplaced && placeable
                 ? { lat: Number(patch.lat), lng: Number(patch.lng) }
                 : h.coordinates,

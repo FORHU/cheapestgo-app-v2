@@ -309,3 +309,30 @@ describe('search stream — full ingest path', () => {
         expect(far).toHaveLength(0);
     });
 });
+
+describe('content patch — street address', () => {
+    const unplaced = () =>
+        toMappable({ id: '1', name: '1', price: 100, lat: 0, lng: 0 })!;
+
+    it('fills location from the patch address so the card can name the district', () => {
+        const [h] = applyContentPatch([unplaced()], {
+            '1': { name: 'Lotte City Hotel Gimpo Airport', lat: 37.5638, lng: 126.8028,
+                   address: '38, Haneul-gil, Gangseo-gu, Seoul' },
+        });
+        expect(h.location).toBe('38, Haneul-gil, Gangseo-gu, Seoul');
+        expect(h.name).toBe('Lotte City Hotel Gimpo Airport');
+    });
+
+    it('leaves an address the search leg already supplied alone', () => {
+        const withAddr = toMappable({
+            id: '1', name: 'Real', price: 100, lat: 37.5, lng: 127.0, location: 'Original address',
+        })!;
+        const [h] = applyContentPatch([withAddr], { '1': { address: 'Patched address' } });
+        expect(h.location).toBe('Original address');
+    });
+
+    it('copes with a patch that has no address', () => {
+        const [h] = applyContentPatch([unplaced()], { '1': { name: 'X', lat: 37.5, lng: 127.0 } });
+        expect(h.location).toBeUndefined();
+    });
+});
