@@ -92,6 +92,7 @@ const USED = [
     'checkout.flight.nameHint',
     'checkout.flight.contactHint',
     'checkout.flight.countryPlaceholder',
+    'checkout.flight.countryNoResults',
     'checkout.flight.passportPlaceholder',
     'checkout.flight.whosFlying',
     'checkout.signInToComplete',

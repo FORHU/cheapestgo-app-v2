@@ -441,6 +441,7 @@
       "nameHint": "여권에 표기된 것과 동일하게 이름을 입력해 주세요.",
       "contactHint": "전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다.",
       "countryPlaceholder": "국가 선택",
+      "countryNoResults": "검색된 국가가 없습니다",
       "passportPlaceholder": "예: P1234567A",
       "whosFlying": "누가 탑승하시나요?",
       "settling": {

@@ -441,6 +441,7 @@
       "nameHint": "お名前はパスポートの記載どおりに入力してください。",
       "contactHint": "eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。",
       "countryPlaceholder": "国を選択",
+      "countryNoResults": "該当する国がありません",
       "passportPlaceholder": "例：P1234567A",
       "whosFlying": "ご搭乗者はどなたですか？",
       "settling": {

@@ -96,6 +96,9 @@ function fillPassenger(n = 0, dob = '1990-01-01', country = 'PH') {
     // In the month it opens on: valid on departure, one choice.
     pickDate(screen.getAllByLabelText(/^passport expiry/i)[n], '2026-12-20');
     fireEvent.click(screen.getAllByLabelText(/^country/i)[n]);
+    fireEvent.change(screen.getAllByLabelText(/^country/i)[n], {
+        target: { value: country === 'PH' ? 'Philippines' : 'United States' },
+    });
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: new RegExp(`\\(${country}\\)$`, 'i') }));
 }
 
@@ -190,10 +193,11 @@ describe('the passenger form', () => {
         for (const field of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^passport number/i]) {
             expect(screen.getByLabelText(field)).toHaveAttribute('placeholder');
         }
-        expect(screen.getByLabelText(/^country/i)).toHaveAttribute('aria-haspopup', 'listbox');
+        expect(screen.getByLabelText(/^country/i)).toHaveAttribute('role', 'combobox');
+        expect(screen.getByLabelText(/^country/i)).toHaveAttribute('aria-autocomplete', 'list');
     });
 
-    it('opens every picker — date, gender, country and dial code — in the same panel', () => {
+    it('opens every picker — date, gender, country autocomplete and dial code — in the same panel', () => {
         renderPage();
         const panelOf = (el: HTMLElement) => el.closest('.cg-picker-panel');
 
@@ -204,6 +208,8 @@ describe('the passenger form', () => {
         fireEvent.click(screen.getByLabelText(/^country/i));
         expect(panelOf(screen.getByRole('listbox'))).not.toBeNull();
         expect(within(screen.getByRole('listbox')).getByRole('option', { name: /United States \(US\)/i })).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText(/^country/i), { target: { value: 'United States' } });
+        expect(within(screen.getByRole('listbox')).getAllByRole('option')).toHaveLength(1);
         fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
 
         fireEvent.click(screen.getByRole('button', { name: '+63' }));

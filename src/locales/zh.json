@@ -441,6 +441,7 @@
       "nameHint": "请按照护照上的写法填写姓名。",
       "contactHint": "电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。",
       "countryPlaceholder": "选择国家/地区",
+      "countryNoResults": "未找到国家/地区",
       "passportPlaceholder": "例如：P1234567A",
       "whosFlying": "谁将乘机？",
       "settling": {

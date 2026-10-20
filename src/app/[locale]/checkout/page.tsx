@@ -19,6 +19,7 @@ import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } f
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
 import { DateField } from '@/features/checkout/components/date-field';
+import { AutocompleteSelectField } from '@/features/checkout/components/autocomplete-select-field';
 import { OptionList, SelectField } from '@/features/checkout/components/select-field';
 import { getCountryOptions } from '@/features/checkout/lib/country-options';
 import {
@@ -1304,8 +1305,8 @@ function CheckoutContent() {
                                                 </div>
                                                 <div className={half}>
                                                     <Label palette={palette} htmlFor={id('country')}>{tAll('checkout.userDetails.country')}</Label>
-                                                    <SelectField id={id('country')} value={p.country} onChange={v => onPassenger(i, 'country', v)}
-                                                        placeholder={t('flight.countryPlaceholder')} options={countryOptions}
+                                                    <AutocompleteSelectField id={id('country')} value={p.country} onChange={v => onPassenger(i, 'country', v)}
+                                                        placeholder={t('flight.countryPlaceholder')} noResults={t('flight.countryNoResults')} options={countryOptions}
                                                         palette={palette} className="cg-field" style={mkField(palette, !!err('country'))} />
                                                     <ErrText msg={err('country')} />
                                                 </div>
