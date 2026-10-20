@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toMappable, applyContentPatch } from '@/shared/components/map/toMappable';
+import { toMappable, applyContentPatch, isWithinKm } from '@/shared/components/map/toMappable';
 
 // ─── Inline the pure functions under test ──────────────────────────────────
 // (copied from page.tsx so we can test without importing the entire Next.js page)
@@ -255,5 +255,57 @@ describe('search stream — hotels arrive before their coordinates', () => {
         expect(patched.name).toBe('Real Name');
         expect(patched.coordinates).toEqual({ lat: 37.5, lng: 127.0 });
         expect(patched.image).toBe('https://example.test/original.jpg');
+    });
+});
+
+// ─── The whole ingest path, as the page runs it ──────────────────────────────
+// Three fixes were needed and each was hidden behind the previous one, so this
+// replays every stage in order against the real Seoul payload rather than
+// testing one function and assuming the rest. Seoul is the searched point.
+describe('search stream — full ingest path', () => {
+    const SEARCH_LAT = 37.5;
+    const SEARCH_LNG = 127.0;
+
+    const hotelsEvent = [
+        { hotelId: '10110462', id: '10110462', name: '10110462', price: 1430, currency: 'PHP', lat: 0, lng: 0, images: [] },
+        { hotelId: '10487569', id: '10487569', name: '10487569', price: 1439, currency: 'PHP', lat: 0, lng: 0, images: [] },
+        { hotelId: '11162318', id: '11162318', name: '11162318', price: 1667, currency: 'PHP', lat: 0, lng: 0, images: [] },
+    ];
+    const contentEvent = {
+        '10110462': { name: 'Guro Namyangjang', lat: 37.481, lng: 126.89, images: ['https://cdn.worldota.net/a.JPEG'] },
+        '10487569': { name: 'Seoul Hotel TAO', lat: 37.620457, lng: 126.9195, images: ['https://cdn.worldota.net/b.jpeg'] },
+        '11162318': { name: 'Miasageori Station Daewon', lat: 37.613094, lng: 127.029594, images: ['https://cdn.worldota.net/c.JPEG'] },
+    };
+
+    const nearby = (h: Parameters<typeof isWithinKm>[0]) => isWithinKm(h, SEARCH_LAT, SEARCH_LNG, 150);
+
+    it('survives every stage and ends up placed in Seoul', () => {
+        // 1. hotels event → adapter, then the ingest distance filter
+        const ingested = hotelsEvent.map(toMappable).flatMap(h => (h ? [h] : [])).filter(nearby);
+        expect(ingested).toHaveLength(3);
+
+        // 2. content event → patch, then the filter re-applied now they are placed
+        const patched = applyContentPatch(ingested, contentEvent).filter(nearby);
+        expect(patched).toHaveLength(3);
+
+        // 3. the list memo applies the same rule a second time
+        const listed = patched.filter(nearby);
+        expect(listed).toHaveLength(3);
+
+        expect(listed.map(h => h.name)).toEqual([
+            'Guro Namyangjang', 'Seoul Hotel TAO', 'Miasageori Station Daewon',
+        ]);
+        for (const h of listed) {
+            expect(h.coordinates.lat).toBeGreaterThan(37.3);
+            expect(h.coordinates.lat).toBeLessThan(37.8);
+        }
+    });
+
+    it('still excludes a hotel that is genuinely far away once placed', () => {
+        const far = applyContentPatch(
+            hotelsEvent.slice(0, 1).map(toMappable).flatMap(h => (h ? [h] : [])),
+            { '10110462': { name: 'Tokyo Hotel', lat: 35.68, lng: 139.69 } },
+        ).filter(nearby);
+        expect(far).toHaveLength(0);
     });
 });

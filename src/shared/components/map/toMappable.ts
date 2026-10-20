@@ -48,6 +48,29 @@ export function toMappable(h: ApiHotel): MappableProperty | null {
     };
 }
 
+/**
+ * Is this hotel within `km` of the searched point?
+ *
+ * A hotel whose position has not arrived yet always passes: the search leg
+ * sends 0,0 and the `content` event places it a moment later, so measuring now
+ * compares the search against Null Island — about 14,700km from Seoul, past any
+ * sane radius. That is what emptied the results page: `toMappable` kept the
+ * unplaced rows and this predicate discarded them one line later. Callers
+ * re-apply it after the patch, which is the first point a real distance exists.
+ */
+export function isWithinKm(
+    h: MappableProperty,
+    searchLat: number | null,
+    searchLng: number | null,
+    km: number,
+): boolean {
+    if (!searchLat || !searchLng) return true;
+    if (!h.coordinates.lat && !h.coordinates.lng) return true;
+    const dlat = h.coordinates.lat - searchLat;
+    const dlng = h.coordinates.lng - searchLng;
+    return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= km;
+}
+
 /** What the stream's `content` event carries for one hotel. */
 export interface ContentPatch {
     images?: string[];

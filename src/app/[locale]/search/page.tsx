@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import type { MappableProperty, ApiHotel } from '@/shared/components/map/types';
-import { toMappable, applyContentPatch, type ContentPatch } from '@/shared/components/map/toMappable';
+import { toMappable, applyContentPatch, isWithinKm, type ContentPatch } from '@/shared/components/map/toMappable';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
 import { HotelFilters, type HotelFiltersState } from '@/features/hotels/components/hotel-filters';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
@@ -708,18 +708,7 @@ function HotelSearchContent() {
         // Drop hotels that are clearly outside the searched area (> 150 km away).
         // This prevents worldwide TGX portfolio results from appearing on a city search
         // and keeps the map correctly centred on the destination.
-        const isNearby = (h: MappableProperty) => {
-            if (!searchLat || !searchLng) return true;
-            // Position not resolved yet: the search leg sends 0,0 and the `content`
-            // event places the hotel a moment later. Measuring now compares the
-            // search against Null Island — about 11,000km from anywhere real — so
-            // every hotel failed this and the page rendered empty. Let them pass;
-            // they are measured once placed, where this filter is applied again.
-            if (!h.coordinates.lat && !h.coordinates.lng) return true;
-            const dlat = h.coordinates.lat - searchLat;
-            const dlng = h.coordinates.lng - searchLng;
-            return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
-        };
+        const isNearby = (h: MappableProperty) => isWithinKm(h, searchLat, searchLng, 150);
 
         const run = async () => {
             const body: Record<string, string | number> = {
@@ -866,14 +855,10 @@ function HotelSearchContent() {
     const effectiveLng = lng ? Number(lng) : geocodedCoords?.lng ?? null;
 
     const sorted = useMemo(() => {
-        let base = hotels;
-        if (effectiveLat && effectiveLng) {
-            base = hotels.filter(h => {
-                const dlat = h.coordinates.lat - effectiveLat;
-                const dlng = h.coordinates.lng - effectiveLng;
-                return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
-            });
-        }
+        // Same 150km rule as the ingest filter, and the same reason to share it:
+        // written out again here it dropped every hotel still waiting on its
+        // position, so the list stayed empty even once the ingest side was fixed.
+        const base = hotels.filter(h => isWithinKm(h, effectiveLat, effectiveLng, 150));
         return sortHotels(base, sortBy);
     }, [hotels, sortBy, effectiveLat, effectiveLng]);
 
