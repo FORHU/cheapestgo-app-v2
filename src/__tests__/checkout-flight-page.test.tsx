@@ -19,6 +19,7 @@ let query = '';
 const push = vi.fn();
 const back = vi.fn();
 const post = vi.fn();
+const get = vi.fn();
 const auth: { user: unknown; isLoading: boolean } = { user: { email: 'juan@example.com', first_name: '', last_name: '' }, isLoading: false };
 
 vi.mock('next/navigation', () => ({
@@ -32,7 +33,7 @@ vi.mock('@/i18n/navigation', () => ({
     useRouter: () => ({ push, back, replace: vi.fn() }),
 }));
 vi.mock('@/shared/lib/http', () => ({
-    http: { post: (...a: unknown[]) => post(...a), get: vi.fn() },
+    http: { post: (...a: unknown[]) => post(...a), get: (...a: unknown[]) => get(...a) },
 }));
 vi.mock('@/shared/auth/store', () => ({ useAuthStore: () => auth }));
 vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', toggleTheme: vi.fn() }) }));
@@ -73,6 +74,31 @@ function api(confirm: Confirm = () => ({ bookingId: 'bk-1', pnr: 'ABC123', statu
         if (path === '/flights/book') return { clientSecret: 'cs_1', sessionId: 'sess-1', paymentIntentId: 'pi_1' };
         if (path === '/flights/confirm') return confirm();
         throw new Error(`unexpected POST ${path}`);
+    });
+}
+
+/** What `GET /flights/offers/:offerId` answers — the confirmation screen's only source for
+ *  terminals, airport names, duration and baggage; the URL carries none of it. */
+const FLIGHT_OFFER = {
+    offerId: 'off_1', provider: 'duffel',
+    price: { total: 250, base: 250, taxes: 0, currency: 'USD', pricePerAdult: 250 },
+    segments: [{
+        segmentIndex: 0, airline: 'ZZ', airlineName: 'Duffel Airways', flightNumber: 'ZZ2200',
+        origin: 'MNL', destination: 'NRT',
+        departure: { airport: 'MNL', airportName: 'Ninoy Aquino International Airport', city: 'Manila', terminal: '2', time: '2026-12-01T13:56:00' },
+        arrival:   { airport: 'NRT', airportName: 'Narita International Airport',       city: 'Tokyo',  terminal: '1', time: '2026-12-01T19:35:00' },
+        duration: 279, stops: 0, cabinClass: 'economy',
+    }],
+    totalDuration: 279, sliceDurations: [279], totalStops: 0,
+    refundable: true, farePolicy: { isRefundable: true, isChangeable: true, refundPenaltyAmount: null, refundPenaltyCurrency: null },
+    baggage: { checkedBags: 1, cabinBag: true },
+    normalizedPriceUsd: 250, bestScore: 0, physicalFlightId: 'off_1',
+};
+
+function mockOffer(offer: unknown = FLIGHT_OFFER) {
+    get.mockImplementation(async (path: string) => {
+        if (path === '/flights/offers/off_1') return offer;
+        throw new Error(`unexpected GET ${path}`);
     });
 }
 
@@ -135,6 +161,7 @@ beforeEach(() => {
     auth.user = { email: 'juan@example.com', first_name: '', last_name: '' };
     query = new URLSearchParams(FLIGHT_QUERY).toString();
     api();
+    mockOffer();
 });
 
 // ── the tests ────────────────────────────────────────────────────────────────
@@ -195,6 +222,14 @@ describe('the passenger form', () => {
         }
         expect(screen.getByLabelText(/^country/i)).toHaveAttribute('role', 'combobox');
         expect(screen.getByLabelText(/^country/i)).toHaveAttribute('aria-autocomplete', 'list');
+    });
+
+    it('shows the name fields with an example name, not their own labels again', () => {
+        // The one example person every booking form uses, split across the two fields so the
+        // first-name box is not read as asking for a full name.
+        renderPage();
+        expect(screen.getByLabelText(/^first name/i)).toHaveAttribute('placeholder', 'John');
+        expect(screen.getByLabelText(/^last name/i)).toHaveAttribute('placeholder', 'Doe');
     });
 
     it('opens every picker — date, gender, country autocomplete and dial code — in the same panel', () => {
@@ -326,6 +361,63 @@ describe('after the card', () => {
         await waitFor(() => expect(confirmCalls()).toHaveLength(1));
         expect(confirmCalls()[0][1]).toEqual({ paymentIntentId: 'pi_1', sessionId: 'sess-1' });
         expect(await screen.findByText('bk-1')).toBeInTheDocument();
+    });
+
+    it('gives a flight receipt — the itinerary, the passenger, the airline reference and the fare paid — not a hotel stay', async () => {
+        // An account email that is not the contact's, so the receipt line has to name the
+        // address the e-ticket goes to.
+        auth.user = { email: 'account@example.com', first_name: '', last_name: '' };
+        await payForFlight();
+
+        expect(await screen.findByText("You're all set!")).toBeInTheDocument();
+        // Itinerary detail only the GET /flights/offers/:offerId fetch carries — wait for it.
+        expect(await screen.findByText('Duffel Airways')).toBeInTheDocument();
+
+        // The route, by city, in the toolbar.
+        expect(screen.getByText(/Manila \(MNL\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Tokyo \(NRT\)/)).toBeInTheDocument();
+        // The receipt goes to the contact's address, not the signed-in account's — named
+        // both in the hero line and again in the passenger section.
+        expect(screen.getAllByText('juan@example.com').length).toBeGreaterThanOrEqual(2);
+
+        // The flight itself.
+        expect(screen.getByText('13:56')).toBeInTheDocument();
+        expect(screen.getByText('19:35')).toBeInTheDocument();
+        expect(screen.getByText(/ZZ2200/)).toBeInTheDocument();
+        expect(screen.getByText(/ABC123/)).toBeInTheDocument(); // the airline's own PNR
+        expect(screen.getByText('Terminal 2')).toBeInTheDocument();
+        expect(screen.getByText('Terminal 1')).toBeInTheDocument();
+        expect(screen.getByText('Refundable (fees may apply)')).toBeInTheDocument();
+        expect(screen.getByText(/1 carry-on bag/)).toBeInTheDocument();
+        expect(screen.getByText(/1 checked bag/)).toBeInTheDocument();
+
+        // The passenger, and what was paid.
+        expect(screen.getByText('Juan Cruz')).toBeInTheDocument();
+        expect(screen.getByText('ADULT 1')).toBeInTheDocument();
+        expect(screen.getByText('USD 250.00')).toBeInTheDocument();
+        expect(screen.getByText('250')).toBeInTheDocument();
+        expect(screen.getByText('bk-1')).toBeInTheDocument();
+
+        // What a flight used to be told it had booked.
+        expect(screen.queryByText('Hotel')).not.toBeInTheDocument();
+        expect(screen.queryByText('Standard Room')).not.toBeInTheDocument();
+        expect(screen.queryByText('USD 0')).not.toBeInTheDocument();
+    });
+
+    it('goes back, not home, from the flight receipt', async () => {
+        await payForFlight();
+        await screen.findByText("You're all set!");
+
+        fireEvent.click(screen.getByRole('button', { name: /go back/i }));
+        expect(back).toHaveBeenCalledTimes(1);
+    });
+
+    it('labels the trips button "View Bookings" on the flight receipt', async () => {
+        await payForFlight();
+        await screen.findByText("You're all set!");
+
+        fireEvent.click(screen.getByRole('button', { name: 'View Bookings' }));
+        expect(push).toHaveBeenCalledWith('/trips');
     });
 
     it('shows a booking the airline has not settled yet as one being confirmed, with the way to their trips', async () => {

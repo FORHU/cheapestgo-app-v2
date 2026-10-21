@@ -93,14 +93,16 @@ const renderPage = () =>
 const prebooks = () => post.mock.calls.filter((c) => String(c[0]).endsWith('/prebook')).map((c) => c[1] as Record<string, unknown>);
 const payments = () => post.mock.calls.filter((c) => String(c[0]).endsWith('/create-payment')).map((c) => c[1] as Record<string, unknown>);
 
+// Every guest's name fields carry the same example name, so the lead guest is the first pair
+// on the form and the co-guest the second.
 function fillHolder() {
-    fireEvent.change(screen.getByPlaceholderText('John'), { target: { value: 'Juan' } });
-    fireEvent.change(screen.getByPlaceholderText('Doe'), { target: { value: 'dela Cruz' } });
+    fireEvent.change(screen.getAllByPlaceholderText('John')[0], { target: { value: 'Juan' } });
+    fireEvent.change(screen.getAllByPlaceholderText('Doe')[0], { target: { value: 'dela Cruz' } });
     fireEvent.change(screen.getByPlaceholderText('eg.johndoe@gmail.com'), { target: { value: 'juan@example.com' } });
 }
 function fillCoGuest() {
-    fireEvent.change(screen.getByPlaceholderText('Mike'), { target: { value: 'Maria' } });
-    fireEvent.change(screen.getByPlaceholderText('Hunt'), { target: { value: 'dela Cruz' } });
+    fireEvent.change(screen.getAllByPlaceholderText('John')[1], { target: { value: 'Maria' } });
+    fireEvent.change(screen.getAllByPlaceholderText('Doe')[1], { target: { value: 'dela Cruz' } });
 }
 const proceed = () => fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
@@ -226,6 +228,17 @@ describe('the details form', () => {
         expect(await screen.findByText(/enter an age from 0 to 17/i)).toBeInTheDocument();
         expect(payments()).toHaveLength(0);
     });
+
+    it('shows every guest\'s name fields with the same example name', async () => {
+        // One example person across the booking forms — the lead guest and every other
+        // guest alike, rather than a second, different made-up name for the co-guest.
+        visit({ adults: '2' });
+        renderPage();
+        await screen.findByText(/USD 254/);
+
+        expect(screen.getAllByPlaceholderText('John')).toHaveLength(2);
+        expect(screen.getAllByPlaceholderText('Doe')).toHaveLength(2);
+    });
 });
 
 describe('paying and confirming', () => {
@@ -315,8 +328,10 @@ describe('the form, in the brand\'s look', () => {
 
         // blue-600 → cyan-500, as jsdom writes them back.
         const gradientRing = /linear-gradient\(90deg, rgb\(37, 99, 235\) 0%, rgb\(6, 182, 212\) 100%\) border-box/;
-        for (const placeholder of ['John', 'Doe', 'eg.johndoe@gmail.com', 'Mike', 'Hunt']) {
-            expect(ringed(await screen.findByPlaceholderText(placeholder))).toMatch(gradientRing);
+        for (const placeholder of ['John', 'Doe', 'eg.johndoe@gmail.com']) {
+            for (const field of await screen.findAllByPlaceholderText(placeholder)) {
+                expect(ringed(field)).toMatch(gradientRing);
+            }
         }
         expect(ringed(document.querySelector('.cg-phone'))).toMatch(gradientRing);
         expect(ringed(document.querySelector('textarea'))).toMatch(gradientRing);
@@ -324,10 +339,11 @@ describe('the form, in the brand\'s look', () => {
 
     it('trades the ring for a red edge on a field that is wrong', async () => {
         renderPage();
-        await screen.findByPlaceholderText('John');
+        await screen.findAllByPlaceholderText('John');
         proceed();
 
-        const first = await screen.findByPlaceholderText('John');
+        // The lead guest's first name — the first of the form's name fields.
+        const [first] = await screen.findAllByPlaceholderText('John');
         await waitFor(() => expect(ringed(first)).not.toMatch(/linear-gradient/));
         expect(first).toHaveStyle({ borderColor: '#E4685A' });
     });

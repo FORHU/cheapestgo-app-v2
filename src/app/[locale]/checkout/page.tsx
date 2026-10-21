@@ -17,6 +17,7 @@ import { useHotelCheckout } from '@/features/checkout/hooks/use-hotel-checkout';
 import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/hotel-checkout-machine';
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
+import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
 import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
 import { DateField } from '@/features/checkout/components/date-field';
 import { AutocompleteSelectField } from '@/features/checkout/components/autocomplete-select-field';
@@ -101,6 +102,14 @@ const DIAL_CODES: { code: string; dial: string; flag: string; name: string }[] =
     { code: 'NL', dial: '+31',  flag: '🇳🇱', name: 'Netherlands' },
     { code: 'NZ', dial: '+64',  flag: '🇳🇿', name: 'New Zealand' },
 ];
+
+/**
+ * The example person in every name field on the booking forms — flight passengers, the lead
+ * guest and every other guest alike, in every language. Split across the two fields, so the
+ * first-name box reads as asking for a first name and not a whole one.
+ */
+const EXAMPLE_FIRST_NAME = 'John';
+const EXAMPLE_LAST_NAME  = 'Doe';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -492,7 +501,9 @@ function StripePaymentForm({
     );
 }
 
-// ─── Confirmation receipt screen ──────────────────────────────────────────────
+// ─── Confirmation receipt screen (hotel) ───────────────────────────────────────
+// The flight equivalent is `FlightConfirmedScreen`, a separate component: the two no longer
+// share one layout — see its file for why.
 
 function ConfirmedScreen({
     palette, bookingId, hotelName, hotelAddress, hotelCity, hotelCountry, hotelImage,
@@ -583,7 +594,9 @@ function ConfirmedScreen({
                     )}
 
                     <div style={{ padding: 28 }}>
-                        <div style={{ fontWeight: 800, fontSize: 20, color: palette.title, marginBottom: 4 }}>{hotelName}</div>
+                        <div style={{ fontWeight: 800, fontSize: 20, color: palette.title, marginBottom: 4 }}>
+                            {hotelName}
+                        </div>
                         {addressLine && (
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, fontSize: 12, color: palette.muted, marginBottom: 20 }}>
                                 <MapPin size={12} style={{ marginTop: 1, flexShrink: 0 }} />
@@ -744,6 +757,8 @@ function CheckoutContent() {
     /** The booking session `/flights/book` opened, which `/flights/confirm` settles. */
     const [flightSessionId, setFlightSessionId] = useState<string>('');
     const [bookingId, setBookingId]         = useState<string | null>(null);
+    /** The airline's record locator, for the receipt. */
+    const [pnr, setPnr]                     = useState<string | null>(null);
     /** Paid for, but the airline has not settled it yet: the API answered BOOKING_PROCESSING. */
     const [flightSettling, setFlightSettling] = useState<'pending' | 'needs_review' | null>(null);
 
@@ -887,6 +902,7 @@ function CheckoutContent() {
                 { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
             );
             setBookingId(flightRes.bookingId);
+            setPnr(flightRes.pnr ?? null);
             setStep('confirmed');
         } catch (err) {
             const failure = readFlightConfirmError(err);
@@ -1019,10 +1035,36 @@ function CheckoutContent() {
 
     // ── Confirmed ─────────────────────────────────────────────────────────────
     if (step === 'confirmed') {
+        if (mode === 'flight') {
+            return (
+                <FlightConfirmedScreen
+                    palette={palette}
+                    offerId={offerId ?? ''}
+                    bookingId={bookingId}
+                    pnr={pnr}
+                    origin={origin}
+                    destination={destination}
+                    departureDate={departureDate}
+                    cabin={cabin}
+                    currency={flightCurrency}
+                    total={totalAmount}
+                    adults={adults}
+                    childPassengers={children}
+                    infants={infants}
+                    passengers={passengers}
+                    // The lead passenger's contact address, which need not be the signed-in
+                    // account's — the e-ticket goes where they said to send it.
+                    contactEmail={passengers[0].email}
+                    onBack={() => router.back()}
+                    onHome={() => router.push('/')}
+                    onTrips={() => router.push('/trips')}
+                />
+            );
+        }
         return (
             <ConfirmedScreen
                 palette={palette}
-                bookingId={mode === 'hotel' ? (hotelState.reference ?? null) : bookingId}
+                bookingId={hotelState.reference ?? null}
                 hotelName={hotelName}
                 hotelAddress={hotelAddress}
                 hotelCity={hotelCity}
@@ -1236,12 +1278,12 @@ function CheckoutContent() {
                                             <div style={fieldGrid}>
                                                 <div>
                                                     <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
-                                                    <input id={id('firstName')} type="text" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('firstName'))} />
+                                                    <input id={id('firstName')} type="text" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!err('firstName'))} />
                                                     <ErrText msg={err('firstName')} />
                                                 </div>
                                                 <div>
                                                     <Label palette={palette} icon={User} htmlFor={id('lastName')}>{tAll('checkout.userDetails.lastName')}</Label>
-                                                    <input id={id('lastName')} type="text" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!err('lastName'))} />
+                                                    <input id={id('lastName')} type="text" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!err('lastName'))} />
                                                     <ErrText msg={err('lastName')} />
                                                 </div>
 
@@ -1457,12 +1499,12 @@ function CheckoutContent() {
                                     <div style={fieldGrid}>
                                         <div>
                                             <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!fieldError('holder.firstName'))} />
+                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!fieldError('holder.firstName'))} />
                                             <ErrText msg={fieldError('holder.firstName')} />
                                         </div>
                                         <div>
                                             <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!fieldError('holder.lastName'))} />
+                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!fieldError('holder.lastName'))} />
                                             <ErrText msg={fieldError('holder.lastName')} />
                                         </div>
                                         {/* Email and phone keep to the left column, as drawn — a
@@ -1496,12 +1538,12 @@ function CheckoutContent() {
                                         <div style={fieldGrid}>
                                             <div>
                                                 <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder="Mike" className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.firstName`))} />
+                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.firstName`))} />
                                                 <ErrText msg={fieldError(`coGuests.${i}.firstName`)} />
                                             </div>
                                             <div>
                                                 <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder="Hunt" className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.lastName`))} />
+                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.lastName`))} />
                                                 <ErrText msg={fieldError(`coGuests.${i}.lastName`)} />
                                             </div>
                                         </div>
