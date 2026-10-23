@@ -20,7 +20,7 @@ export function LandingFooter() {
         <footer>
             <div className="mx-auto max-w-[1240px] px-6 pt-8 pb-10">
                 <div className="flex flex-wrap items-center justify-between gap-6 max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-5">
-                    <LogoWordmark height={20} />
+                    <LogoWordmark height={36} />
 
                     <nav className="flex flex-wrap gap-6 text-[13px]">
                         {FOOTER_LINKS.map(({ key, href }) => (

@@ -30,6 +30,11 @@ const queryWrapper = ({ children }: { children: React.ReactNode }) => (
 describe('LandingHeader', () => {
     beforeEach(() => useAuthStore.setState({ user: null, isAuthModalOpen: false }));
 
+    it('links to the bookings list, signed in or not', async () => {
+        renderWithIntl(<LandingHeader />, { wrapper: queryWrapper });
+        expect(await screen.findByRole('link', { name: 'Bookings' })).toHaveAttribute('href', '/trips');
+    });
+
     it('links guests to the full-page sign-in screen', async () => {
         renderWithIntl(<LandingHeader />, { wrapper: queryWrapper });
         expect(await screen.findByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');

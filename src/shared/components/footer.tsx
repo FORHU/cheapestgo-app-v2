@@ -17,9 +17,9 @@ const StandardFooter = () => {
                 <div className="flex flex-col gap-2 lg:gap-4 w-full lg:w-auto">
                     <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-slate-100 dark:bg-white/5 rounded-lg lg:bg-transparent lg:p-0">
-                            <PlaneTakeoff className="w-4 h-4 lg:w-6 lg:h-6 text-blue-500 lg:text-slate-400" />
+                            <PlaneTakeoff className="w-7 h-7 lg:w-9 lg:h-9 text-blue-500 lg:text-slate-400" />
                         </div>
-                        <span className="text-slate-900 dark:text-white font-bold text-[15px] lg:text-xl tracking-tight">{brand}</span>
+                        <span className="text-slate-900 dark:text-white font-bold text-2xl lg:text-4xl tracking-tight">{brand}</span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 text-[10px] lg:text-sm max-w-xs leading-relaxed opacity-80 lg:opacity-100">
                         {t('tagline')} <br className="hidden lg:block" />{t('taglinePrecision')}

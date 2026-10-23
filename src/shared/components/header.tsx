@@ -56,7 +56,7 @@ const HeaderContent = () => {
         <div suppressHydrationWarning className="max-w-[1400px] mx-auto px-4 sm:px-6 h-11 md:h-14 flex items-center justify-between landscape-compact-header">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
-            <h1 className="text-base sm:text-lg md:text-xl text-slate-900 dark:text-white font-display font-bold tracking-tight truncate max-w-[120px] sm:max-w-none">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white font-display font-bold tracking-tight truncate max-w-[180px] sm:max-w-none">
               {wordmark.head}<span className="text-alabaster-accent dark:text-obsidian-accent">{wordmark.tail}</span>
             </h1>
           </Link>

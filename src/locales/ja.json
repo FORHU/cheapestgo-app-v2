@@ -450,6 +450,32 @@
       "needsReview": {
         "title": "航空会社に予約を確認しています",
         "description": "担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。"
+      },
+      "receipt": {
+        "confirmedToDestination": "{destination}行きのフライトが確定しました。",
+        "receiptSentRich": "領収書を<b>{email}</b>宛に送信しました。",
+        "passengersCount": "{count}名",
+        "copyReference": "コピー",
+        "copyReferenceDone": "コピーしました",
+        "confirmedBadge": "確定",
+        "outbound": "往路",
+        "return": "復路",
+        "departFrom": "出発地",
+        "arriveAt": "到着地",
+        "terminal": "ターミナル",
+        "refundable": "払い戻し可能（手数料が発生する場合があります）",
+        "carryOnBag": "機内持ち込み手荷物1個",
+        "checkedBagsCount": "受託手荷物{count}個",
+        "loadingItinerary": "フライト詳細を読み込んでいます…",
+        "paymentSummary": "お支払い内容",
+        "fareLine": "運賃 · {count}名",
+        "taxesAndFees": "税金・諸費用",
+        "includedLabel": "込み",
+        "paidBadge": "支払い済み",
+        "paymentProcessedSecurely": "お支払いはStripeにより安全に処理されました。",
+        "viewBookings": "予約を見る",
+        "passengerSectionTitle": "搭乗者",
+        "contact": "連絡先"
       }
     },
     "datePicker": {
@@ -1541,6 +1567,7 @@
     "signIn": "ログイン",
     "signOut": "ログアウト",
     "myTrips": "マイトリップ",
+    "bookings": "予約",
     "account": "アカウント",
     "trips": "旅行",
     "createAccount": "アカウントを作成",

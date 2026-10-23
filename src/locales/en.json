@@ -450,6 +450,32 @@
       "needsReview": {
         "title": "We're confirming this with the airline",
         "description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed."
+      },
+      "receipt": {
+        "confirmedToDestination": "Your flight to {destination} is confirmed.",
+        "receiptSentRich": "A receipt has been sent to <b>{email}</b>.",
+        "passengersCount": "{count, plural, one {# passenger} other {# passengers}}",
+        "copyReference": "Copy",
+        "copyReferenceDone": "Copied",
+        "confirmedBadge": "Confirmed",
+        "outbound": "Outbound",
+        "return": "Return",
+        "departFrom": "Depart from",
+        "arriveAt": "Arrive at",
+        "terminal": "Terminal",
+        "refundable": "Refundable (fees may apply)",
+        "carryOnBag": "1 carry-on bag",
+        "checkedBagsCount": "{count, plural, one {# checked bag} other {# checked bags}}",
+        "loadingItinerary": "Loading your flight details…",
+        "paymentSummary": "Payment summary",
+        "fareLine": "Fare · {count, plural, one {# passenger} other {# passengers}}",
+        "taxesAndFees": "Taxes & fees",
+        "includedLabel": "Included",
+        "paidBadge": "Paid",
+        "paymentProcessedSecurely": "Payment processed securely by Stripe.",
+        "viewBookings": "View Bookings",
+        "passengerSectionTitle": "Passengers",
+        "contact": "Contact"
       }
     },
     "datePicker": {
@@ -1541,6 +1567,7 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "myTrips": "My trips",
+    "bookings": "Bookings",
     "account": "Account",
     "trips": "Trips",
     "createAccount": "Create an account",

@@ -447,7 +447,7 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
 // ─── Stripe payment form ──────────────────────────────────────────────────────
 
 function StripePaymentForm({
-    onSuccess, onError, total, currency, country, submitting, setSubmitting, palette,
+    onSuccess, onError, total, currency, country, submitting, palette,
 }: {
     onSuccess: (paymentIntentId: string) => void;
     onError:   (msg: string) => void;
@@ -455,16 +455,20 @@ function StripePaymentForm({
     currency:  string;
     country?:  string;
     submitting: boolean;
-    setSubmitting: (v: boolean) => void;
     palette:   Palette;
 }) {
     const t = useTranslations('checkout');
     const stripe = useStripe();
     const elements = useElements();
+    // Local to this click, not the page's `submitting`: that flag is only ever reset by the
+    // flight path's own confirm handler (`handleFlightPaid`'s `finally`). Sharing it left the
+    // hotel path's Pay button permanently disabled after any booking failure that brought the
+    // traveller back to the form, because nothing in the hotel path ever flipped it back off.
+    const [clicking, setClicking] = useState(false);
 
     const handlePay = useCallback(async () => {
         if (!stripe || !elements) return;
-        setSubmitting(true);
+        setClicking(true);
 
         const { error, paymentIntent } = await stripe.confirmPayment({
             elements,
@@ -474,14 +478,15 @@ function StripePaymentForm({
 
         if (error) {
             onError(error.message || 'Payment failed. Please try again.');
-            setSubmitting(false);
+            setClicking(false);
         } else if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
             onSuccess(paymentIntent.id);
+            setClicking(false);
         } else {
             onError('Payment is processing. Check your trips shortly.');
-            setSubmitting(false);
+            setClicking(false);
         }
-    }, [stripe, elements, onSuccess, onError, setSubmitting]);
+    }, [stripe, elements, onSuccess, onError]);
 
     return (
         <>

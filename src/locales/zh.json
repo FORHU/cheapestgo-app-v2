@@ -450,6 +450,32 @@
       "needsReview": {
         "title": "正在与航空公司确认预订",
         "description": "我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。"
+      },
+      "receipt": {
+        "confirmedToDestination": "您飞往{destination}的航班已确认。",
+        "receiptSentRich": "收据已发送至<b>{email}</b>。",
+        "passengersCount": "{count} 位乘客",
+        "copyReference": "复制",
+        "copyReferenceDone": "已复制",
+        "confirmedBadge": "已确认",
+        "outbound": "去程",
+        "return": "返程",
+        "departFrom": "出发地",
+        "arriveAt": "到达地",
+        "terminal": "航站楼",
+        "refundable": "可退款（可能收取费用）",
+        "carryOnBag": "1件随身行李",
+        "checkedBagsCount": "{count} 件托运行李",
+        "loadingItinerary": "正在加载航班详情…",
+        "paymentSummary": "付款摘要",
+        "fareLine": "票价 · {count} 位乘客",
+        "taxesAndFees": "税费",
+        "includedLabel": "已含",
+        "paidBadge": "已支付",
+        "paymentProcessedSecurely": "付款已通过 Stripe 安全处理。",
+        "viewBookings": "查看预订",
+        "passengerSectionTitle": "乘客",
+        "contact": "联系方式"
       }
     },
     "datePicker": {
@@ -1541,6 +1567,7 @@
     "signIn": "登录",
     "signOut": "退出登录",
     "myTrips": "我的行程",
+    "bookings": "预订",
     "account": "账户",
     "trips": "行程",
     "createAccount": "创建账户",

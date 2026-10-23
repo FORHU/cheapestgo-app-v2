@@ -298,6 +298,17 @@ describe('paying and confirming', () => {
         expect(screen.queryByText(/booked/i)).not.toBeInTheDocument();
     });
 
+    it('lets the traveller pay again after a failed booking, instead of a permanent spinner', async () => {
+        api({ confirm: () => ({ success: false, providerConfirmed: false, error: 'Room is gone' }) });
+        await toPayment();
+        proceed();
+        fireEvent.click(await screen.findByRole('button', { name: /pay usd/i }));
+
+        fireEvent.click(await screen.findByRole('button', { name: /try again/i }));
+
+        await waitFor(() => expect(screen.getByRole('button', { name: /continue to payment/i })).toBeEnabled());
+    });
+
     it('says the booking is being confirmed, not failed, when the outcome is unknown', async () => {
         api({ confirm: () => ({ success: false, needsReview: true, reference: 'CG-ABC123', error: 'unknown' }) });
         await toPayment();

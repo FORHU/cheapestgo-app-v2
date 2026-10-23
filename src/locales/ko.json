@@ -450,6 +450,32 @@
       "needsReview": {
         "title": "항공사와 예약을 확인하고 있습니다",
         "description": "담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다."
+      },
+      "receipt": {
+        "confirmedToDestination": "{destination}행 항공편이 확정되었습니다.",
+        "receiptSentRich": "영수증이 <b>{email}</b>로 전송되었습니다.",
+        "passengersCount": "{count}명",
+        "copyReference": "복사",
+        "copyReferenceDone": "복사됨",
+        "confirmedBadge": "확정",
+        "outbound": "출국편",
+        "return": "귀국편",
+        "departFrom": "출발지",
+        "arriveAt": "도착지",
+        "terminal": "터미널",
+        "refundable": "환불 가능 (수수료가 부과될 수 있음)",
+        "carryOnBag": "기내 수하물 1개",
+        "checkedBagsCount": "위탁 수하물 {count}개",
+        "loadingItinerary": "항공편 상세 정보를 불러오는 중…",
+        "paymentSummary": "결제 요약",
+        "fareLine": "운임 · 탑승객 {count}명",
+        "taxesAndFees": "세금 및 수수료",
+        "includedLabel": "포함",
+        "paidBadge": "결제 완료",
+        "paymentProcessedSecurely": "Stripe를 통해 안전하게 결제되었습니다.",
+        "viewBookings": "예약 보기",
+        "passengerSectionTitle": "탑승객",
+        "contact": "연락처"
       }
     },
     "datePicker": {
@@ -1541,6 +1567,7 @@
     "signIn": "로그인",
     "signOut": "로그아웃",
     "myTrips": "내 여행",
+    "bookings": "예약",
     "account": "계정",
     "trips": "여행",
     "createAccount": "계정 만들기",

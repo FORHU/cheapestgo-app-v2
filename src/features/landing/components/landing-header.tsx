@@ -27,12 +27,20 @@ function LandingHeaderContent() {
         <header className="relative z-[5]">
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">
                 <Link href="/" aria-label={`${brand} home`} className="flex shrink-0 items-center">
-                    <LogoWordmark height={24} />
+                    <LogoWordmark height={44} />
                 </Link>
 
                 {/* This page is dark whatever the app theme is, so both menus take
                     the `onDark` tone rather than the themed one. */}
                 <div className="hidden items-center gap-3 min-[761px]:flex">
+                    {/* Shown signed out too: /trips sends a guest to sign in and back.
+                        Drawn in the menus' `onDark` trigger tone so it sits with them. */}
+                    <Link
+                        href="/trips"
+                        className="rounded-lg px-2 py-1 text-xs font-medium text-[#94a3b8] transition-colors hover:bg-white/[0.07] hover:text-[#f8fafc]"
+                    >
+                        {tAll('nav.bookings')}
+                    </Link>
                     <LocaleSelector variant="onDark" />
                     <CurrencySelector variant="onDark" />
 
