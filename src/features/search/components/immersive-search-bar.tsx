@@ -435,14 +435,25 @@ function DestPanel({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function ImmersiveSearchBar({ trendingDestinations }: { trendingDestinations?: TrendingDest[] }) {
+export function ImmersiveSearchBar({
+    trendingDestinations,
+    defaultMode = 'stays',
+}: {
+    trendingDestinations?: TrendingDest[];
+    /**
+     * Which tab the bar opens on. The landing Journey docks this bar once per stage —
+     * stays, then flights — and each stage pins the mode it is about, so the visitor is
+     * not asked to find the tab for the thing they just scrolled to. The tab still works.
+     */
+    defaultMode?: Mode;
+}) {
     const tAll = useTranslations();
     const activeTrending = trendingDestinations?.length ? trendingDestinations : TRENDING;
     const router = useRouter();
     const { recentSearches, setDestination, setDates, setTravelers, setIsSearching, addRecentSearch, setSearchMode, setFlightSegment } = useSearchStore();
 
     // Mode
-    const [mode, setMode] = useState<Mode>('stays');
+    const [mode, setMode] = useState<Mode>(defaultMode);
     const [tripType, setTripType] = useState<TripType>('oneway');
 
     // Panel

@@ -714,14 +714,27 @@ body {
 }
 
 /*
- * The language switch's cross-fade (src/i18n/localeTransition.ts): the old page
- * dissolves into the new one. The browser's own default is a 250ms linear-ish
- * fade; a touch longer and eased reads as one page turning into the other rather
- * than a flicker. No reduced-motion rule here — a visitor who asked for less
- * motion never gets a transition started at all.
+ * The landing Journey's scroll snapping.
+ *
+ * `proximity`, not `mandatory`: the visitor is never prevented from scrolling where they
+ * like, but coming to rest near a beat settles onto it. Without this, stopping mid-blend
+ * parks the showcase between two photographs, which reads as the picture being out of
+ * focus rather than as a transition.
+ *
+ * Applied by the Journey only while it owns the screen, and removed once the visitor has
+ * scrolled past it — the search section and the footer below have nothing to snap to.
  */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+html.journey-snap {
+    scroll-snap-type: y proximity;
+}
+
+html.journey-snap .journey-beat {
+    scroll-snap-align: start;
+}
+
+/* Someone who asked for less motion is not snapped around the page. */
+@media (prefers-reduced-motion: reduce) {
+    html.journey-snap {
+        scroll-snap-type: none;
+    }
 }

@@ -11,6 +11,48 @@ The refactored frontend using a feature-based folder structure (`src/features/`,
 V2 has its own design and keeps it. The **Feature Port** carries capabilities across — search, quote, prebook, book, cancel, refund, amend, policies — and leaves V1's layout, components, and styling behind. V1's landing sections, RoomCard, checkout components and legal pages are read as *specifications of behaviour*, never copied as markup.
 _Avoid_: "UI Migration" — the port is not a UI migration. _Avoid_: judging a slice by whether it resembles V1 on screen; judge it by whether it does the same thing.
 
+## Journey
+The landing page's opening sequence: a scroll-driven descent through everything CheapestGo sells —
+stays, flights, AI planning — ending where the visitor chooses. It stands where the looping backdrop
+video used to. The visitor is not shown the product one slide at a time; they assemble a trip while
+descending, and arrive holding it.
+_Avoid_: "hero video" — a hero repeats on its own; the Journey only moves when scrolled.
+_Avoid_: "carousel" — nothing cycles, and nothing returns.
+
+## Stage
+One step of the **Journey**, owning a span of **Journey Progress**: Stays, Flights, AI, then Options.
+Each stage puts one real product surface in front of the visitor and writes one **Pass Line**. A
+stage is a place in the descent, not a section of a document.
+_Avoid_: "slide" — a slide is crossed in one step and carries nothing forward.
+
+## Journey Progress
+How far the visitor has scrolled through the **Journey**, as 0 → 1 across a scroll track several
+viewport-heights tall. Every moving part reads this one number: which **Showcase** is lit, which
+search is docked, which **Pass Line** has been written.
+_Avoid_: deriving it per component — one value is computed and passed down, or the layers drift
+apart by a frame and visibly disagree mid-scroll.
+
+## Boarding Pass
+The artefact the **Journey** builds. It docks on screen and fills as the visitor descends, one
+**Pass Line** per **Stage**, and at the end its button runs exactly the search it describes. It is
+what stops the scroll being decorative: the visitor leaves with a trip rather than an impression
+of one.
+_Avoid_: treating it as a graphic — every line on it is real search state, and the final button
+must run that state rather than a generic search.
+
+## Pass Line
+One row a **Stage** writes onto the **Boarding Pass** — a destination and nights, a route, a
+suggestion the AI made. Pre-filled so the pass is alive for someone who only scrolls, and replaced
+the moment the visitor types their own value.
+_Avoid_: showing a line whose stage has not been reached; the pass fills in step with the descent.
+
+## Showcase
+What a **Stage** puts behind its search surface — destination photography for Stays, flight motion
+for Flights. It exists to make the product legible, not to be looked at: it sits behind the thing
+the visitor came to use.
+_Avoid_: procedural geometry — the reference design's own primitives are what "not cartoonized"
+rules out.
+
 ## Locale Segment
 Every visitor-facing page lives under `app/[locale]`, so the language is part of the URL: `/ko/property/123`. English is unprefixed. The locale is never read from a cookie — a cookie that outranked the prefix would make a link someone shares render in the recipient's language rather than the sender's. `/admin` sits outside the segment: it is staff-facing and English-only.
 _Avoid_: `next/link` and `next/navigation` for `Link`, `useRouter`, `usePathname` or `redirect` — those come from `@/i18n/navigation` and carry the prefix. `useSearchParams`, `useParams` and `notFound` are not locale-aware and stay on `next/navigation`.

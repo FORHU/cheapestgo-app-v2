@@ -1,7 +1,16 @@
 # ADR 0001 — V2 Adopts V1's Full UI and Feature Set
 
 **Date:** 2026-07-01  
-**Status:** Accepted
+**Status:** Partially superseded — the landing-page clause by [ADR 0005](0005-landing-journey-reads-curated-tables-never-the-supplier.md) (2026-10-22); "pixel-perfect clone" as a principle by **Design Independence** in `CONTEXT.md`
+
+> **Read this first.** The decision below says V2 is a pixel-perfect clone of V1's UI and lists the
+> landing sections it must carry. That is no longer true and has not been for some time:
+> `CONTEXT.md` records *Design Independence* ("V2 owns its own design", `_Avoid_: "pixel-perfect
+> clone"`), and the landing page now opens with the **Journey** rather than V1's section stack.
+>
+> What survives is the **feature** half of this ADR — V2 reaches functional parity with V1, and the
+> Tailwind v4, next-intl, provider and store decisions below all still hold. What does not survive
+> is the instruction to reproduce V1's *appearance*, and specifically the landing section list.
 
 ## Context
 
