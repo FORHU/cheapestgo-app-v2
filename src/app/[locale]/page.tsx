@@ -83,8 +83,9 @@ const CANVAS: CSSProperties = {
 } as CSSProperties;
 
 export default async function HomePage() {
-    const [t, trending, actStays] = await Promise.all([
+    const [t, brand, trending, actStays] = await Promise.all([
         getTranslations('seo'),
+        getBrandName(),
         getServerTrending(),
         // Reads our own tables only. Never swap this for a search call: the page
         // revalidates on a timer, which would turn it into scheduled supplier traffic —
