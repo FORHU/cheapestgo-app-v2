@@ -712,3 +712,29 @@ body {
     padding: 8px 12px;
   }
 }
+
+/*
+ * The landing Journey's scroll snapping.
+ *
+ * `proximity`, not `mandatory`: the visitor is never prevented from scrolling where they
+ * like, but coming to rest near a beat settles onto it. Without this, stopping mid-blend
+ * parks the showcase between two photographs, which reads as the picture being out of
+ * focus rather than as a transition.
+ *
+ * Applied by the Journey only while it owns the screen, and removed once the visitor has
+ * scrolled past it — the search section and the footer below have nothing to snap to.
+ */
+html.journey-snap {
+    scroll-snap-type: y proximity;
+}
+
+html.journey-snap .journey-beat {
+    scroll-snap-align: start;
+}
+
+/* Someone who asked for less motion is not snapped around the page. */
+@media (prefers-reduced-motion: reduce) {
+    html.journey-snap {
+        scroll-snap-type: none;
+    }
+}

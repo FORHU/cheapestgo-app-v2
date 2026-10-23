@@ -110,7 +110,13 @@ export const earliestBookableDay = (): string => {
 
 export function defaultStay(): { checkIn: string; checkOut: string } {
     const now = new Date();
-    const daysUntilFriday = ((5 - now.getDay() + 7) % 7) || 7;   // at least one day ahead
+    // At least two days ahead, never tomorrow. `|| 7` alone only rescued Friday itself:
+    // on a Thursday `(5 - 4 + 7) % 7` is 1, so the Default Stay arrived tomorrow — the
+    // one range with the thinnest availability and the worst prices, and the case the
+    // test named "not today, not tomorrow". Skipping to the following Friday costs a week
+    // of lead time one day in seven, which is the cheaper mistake.
+    let daysUntilFriday = (5 - now.getDay() + 7) % 7;
+    if (daysUntilFriday < 2) daysUntilFriday += 7;
     const checkIn = new Date(now);
     checkIn.setDate(now.getDate() + daysUntilFriday);
     const checkOut = new Date(checkIn);
