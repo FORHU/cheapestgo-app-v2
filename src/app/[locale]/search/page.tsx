@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import type { MappableProperty, ApiHotel } from '@/shared/components/map/types';
+import { toMappable, applyContentPatch, isWithinKm, type ContentPatch } from '@/shared/components/map/toMappable';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
 import { HotelFilters, type HotelFiltersState } from '@/features/hotels/components/hotel-filters';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
@@ -79,31 +80,8 @@ interface SuggestDestination {
 }
 
 // ─── Adapter ─────────────────────────────────────────────────────────────────
-function toMappable(h: ApiHotel): MappableProperty | null {
-    const lat = h.lat ?? h.latitude ?? h.coordinates?.lat;
-    const lng = h.lng ?? h.longitude ?? h.coordinates?.lng;
-    if (!lat || !lng) return null;
-    return {
-        id: (h.id ?? h.hotelId) as string,
-        name: h.name as string,
-        price: typeof h.price === 'number' ? h.price : parseFloat(h.price ?? '0'),
-        currency: h.currency ?? 'USD',
-        coordinates: { lat: Number(lat), lng: Number(lng) },
-        images: h.images?.length ? h.images : h.thumbnailUrl ? [h.thumbnailUrl] : [],
-        image: h.images?.[0] ?? h.thumbnailUrl ?? (h.image || undefined),
-        rating: h.reviewScore ?? h.reviewRating ?? h.rating,
-        reviewScore: h.reviewScore ?? h.reviewRating,
-        reviewCount: h.reviewCount ?? h.reviews,
-        refundableTag: h.refundableTag,
-        starRating: h.starRating,
-        location: h.location,
-        city: h.city,
-        country: h.country,
-        boardType: h.boardType,
-        priceLoading: h.priceLoading,
-        originalPrice: h.originalPrice,
-    };
-}
+// `toMappable` moved to @/shared/components/map/toMappable so the test can call
+// the real one instead of keeping its own copy.
 
 function sortHotels(list: MappableProperty[], by: SortValue): MappableProperty[] {
     const c = [...list];
@@ -730,12 +708,7 @@ function HotelSearchContent() {
         // Drop hotels that are clearly outside the searched area (> 150 km away).
         // This prevents worldwide TGX portfolio results from appearing on a city search
         // and keeps the map correctly centred on the destination.
-        const isNearby = (h: MappableProperty) => {
-            if (!searchLat || !searchLng) return true;
-            const dlat = h.coordinates.lat - searchLat;
-            const dlng = h.coordinates.lng - searchLng;
-            return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
-        };
+        const isNearby = (h: MappableProperty) => isWithinKm(h, searchLat, searchLng, 150);
 
         const run = async () => {
             const body: Record<string, string | number> = {
@@ -805,22 +778,16 @@ function HotelSearchContent() {
                             );
                             if (!cancelled) setHotels(prev => prev.map(h => { const p = pm.get(h.id); return p ? { ...h, price: p.price ?? h.price, currency: p.currency ?? h.currency, priceLoading: false } : h; }));
                         } else if (chunk.type === 'content' && chunk.data) {
-                            // Pictures for cards already on screen. The server sends these
-                            // after the hotels — a listing with no photo reads as broken, and
-                            // waiting for images before showing anything costs more than it
-                            // buys. Patch only what is missing so a card never flickers to a
-                            // different picture than the one being looked at.
-                            const patches = chunk.data as Record<string, { images?: string[]; name?: string }>;
-                            if (!cancelled) setHotels(prev => prev.map(h => {
-                                const patch = patches[h.id];
-                                if (!patch) return h;
-                                return {
-                                    ...h,
-                                    images: h.images?.length ? h.images : (patch.images ?? h.images),
-                                    image:  h.image || patch.images?.[0] || h.image,
-                                    name:   h.name || patch.name || h.name,
-                                };
-                            }));
+                            // Name, position and pictures for cards already on screen. The
+                            // server sends these after the hotels — a listing with no photo
+                            // reads as broken, and waiting for them before showing anything
+                            // costs more than it buys. See applyContentPatch for why the
+                            // placeholders cannot be detected with `||`.
+                            const patches = chunk.data as Record<string, ContentPatch>;
+                            // Re-applied here because the patch is what finally gives these
+                            // hotels a position: isNearby waved them through unplaced, so
+                            // this is the first point at which the distance can be judged.
+                            if (!cancelled) setHotels(prev => applyContentPatch(prev, patches).filter(isNearby));
                         } else if (chunk.type === 'remove' && Array.isArray(chunk.ids)) {
                             const s = new Set(chunk.ids as string[]);
                             if (!cancelled) setHotels(prev => prev.filter(h => !s.has(h.id)));
@@ -876,22 +843,22 @@ function HotelSearchContent() {
     useEffect(() => {
         if (mapCenter) return;
         if (geocodedCoords) { setMapCenter(geocodedCoords); return; }
-        const first = hotels.find(h => h.coordinates);
-        if (first?.coordinates) setMapCenter(first.coordinates);
+        // A hotel whose position has actually arrived. Every hotel now carries a
+        // `coordinates` object from the moment it streams in, 0,0 until the
+        // `content` event places it, so testing the object alone centred the map
+        // on Null Island — and `if (mapCenter) return` above never corrects it.
+        const first = hotels.find(h => h.coordinates.lat || h.coordinates.lng);
+        if (first) setMapCenter(first.coordinates);
     }, [hotels, mapCenter, geocodedCoords]);
 
     const effectiveLat = lat ? Number(lat) : geocodedCoords?.lat ?? null;
     const effectiveLng = lng ? Number(lng) : geocodedCoords?.lng ?? null;
 
     const sorted = useMemo(() => {
-        let base = hotels;
-        if (effectiveLat && effectiveLng) {
-            base = hotels.filter(h => {
-                const dlat = h.coordinates.lat - effectiveLat;
-                const dlng = h.coordinates.lng - effectiveLng;
-                return Math.sqrt(dlat * dlat + dlng * dlng) * 111 <= 150;
-            });
-        }
+        // Same 150km rule as the ingest filter, and the same reason to share it:
+        // written out again here it dropped every hotel still waiting on its
+        // position, so the list stayed empty even once the ingest side was fixed.
+        const base = hotels.filter(h => isWithinKm(h, effectiveLat, effectiveLng, 150));
         return sortHotels(base, sortBy);
     }, [hotels, sortBy, effectiveLat, effectiveLng]);
 
