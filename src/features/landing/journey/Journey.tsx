@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { BRAND } from '@/shared/lib/palette';
 import { formatCurrency } from '@/shared/lib/format';
@@ -57,6 +58,7 @@ export function Journey({
     const trackRef = useRef<HTMLDivElement>(null);
     const { journey, trackPx, reducedMotion } = useJourneyProgress(trackRef);
     useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
+    const tAll = useTranslations();
 
     // What the search stage is searching for. Held here, above the stage, so it survives the
     // visitor scrolling away and back; changing it slides the panel across and changes the
@@ -133,7 +135,7 @@ export function Journey({
                         className="text-[11px] tracking-[0.4em] text-white/55 uppercase will-change-transform"
                         style={{ transform: `translateY(${-heroOut * 36}px)` }}
                     >
-                        Hotels · Flights · Golf
+                        {tAll('landing.journey.hero.kicker')}
                     </p>
                     {/* Edge-to-edge and uppercase rather than our usual italic-lead-word
                         treatment — the hero is the one place that reads as a statement
@@ -143,20 +145,20 @@ export function Journey({
                             className="block will-change-transform"
                             style={{ transform: `translate(${-heroOut * 64}px, ${-heroOut * 70}px)` }}
                         >
-                            One search.
+                            {tAll('landing.journey.hero.titleLine1')}
                         </span>
                         <span
                             className="block will-change-transform"
                             style={{ transform: `translate(${heroOut * 64}px, ${-heroOut * 110}px)` }}
                         >
-                            Every way to go.
+                            {tAll('landing.journey.hero.titleLine2')}
                         </span>
                     </h1>
                     <p
                         className="mt-6 max-w-md text-base text-white/70 will-change-transform"
                         style={{ transform: `translateY(${-heroOut * 150}px)` }}
                     >
-                        Skip the surprise fees. Chase the sunsets.
+                        {tAll('landing.journey.hero.subtitle')}
                     </p>
 
                     {/* Gone within the first sliver of scroll: once the visitor has taken the
@@ -166,7 +168,7 @@ export function Journey({
                         className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-1.5 text-white/60"
                         style={{ opacity: 1 - ramp(journey, 0, 0.03) }}
                     >
-                        <span className="text-[11px] tracking-[0.35em] uppercase">Scroll down to explore</span>
+                        <span className="text-[11px] tracking-[0.35em] uppercase">{tAll('landing.journey.hero.scrollCue')}</span>
                         <svg
                             className="animate-bounce"
                             width="22"
@@ -290,29 +292,35 @@ function drift(shift: number, x: number, y: number): React.CSSProperties | undef
 const DRIFT = { eyebrow: [0, 36], lead: [64, 70], rest: [-64, 110], caption: [0, 150], surface: [0, 190] } as const;
 
 function StageHeading({ stage, t, shift = 0 }: { stage: StageFace; t?: number; shift?: number }) {
-    const leadChars = stage.titleLead.replace(/ /g, '').length;
-    const totalChars = leadChars + stage.titleRest.replace(/ /g, '').length;
+    const tAll = useTranslations();
+    // A stage's wording is in the message files, keyed by its id (see `StageFace.id`).
+    const copy = (field: 'eyebrow' | 'titleLead' | 'titleRest' | 'caption') =>
+        tAll(`landing.journey.stages.${stage.id}.${field}`);
+    const lead = copy('titleLead');
+    const rest = copy('titleRest');
+    const leadChars = lead.replace(/ /g, '').length;
+    const totalChars = leadChars + rest.replace(/ /g, '').length;
     return (
         <div>
             <p
                 className="text-[11px] tracking-[0.3em] uppercase"
                 style={{ color: BRAND.accent, ...drift(shift, ...DRIFT.eyebrow) }}
             >
-                {stage.eyebrow}
+                {copy('eyebrow')}
             </p>
             {/* The hero's own treatment — bold, uppercase, tight tracking — rather than
                 the semibold mixed-case it used to carry, so every heading in the Journey
                 reads in one voice instead of the hero sounding like a different page. */}
             <h2 className="mt-4 text-4xl leading-[0.9] font-bold tracking-tight text-white uppercase sm:text-5xl">
                 <span className="inline-block" style={drift(shift, ...DRIFT.lead)}>
-                    <RevealChars text={stage.titleLead} t={t} totalChars={totalChars} />
+                    <RevealChars text={lead} t={t} totalChars={totalChars} />
                 </span>{' '}
                 <span className="inline-block" style={drift(shift, ...DRIFT.rest)}>
-                    <RevealChars text={stage.titleRest} t={t} startIndex={leadChars} totalChars={totalChars} />
+                    <RevealChars text={rest} t={t} startIndex={leadChars} totalChars={totalChars} />
                 </span>
             </h2>
             <p className="mt-3 max-w-md text-sm text-white/65" style={drift(shift, ...DRIFT.caption)}>
-                {stage.caption}
+                {copy('caption')}
             </p>
         </div>
     );
@@ -446,6 +454,7 @@ function StagePanel({
  * `hotel_deals` costs the strip its figures, never its destinations.
  */
 function ShowcaseStrip({ stays }: { stays: Record<string, FeaturedStay> }) {
+    const tAll = useTranslations();
     const setDestination = useSearchStore(s => s.setDestination);
     const chosen = useSearchStore(s => s.destination);
 
@@ -476,7 +485,7 @@ function ShowcaseStrip({ stays }: { stays: Record<string, FeaturedStay> }) {
                         <span className="text-sm font-medium text-white">{d.city}</span>
                         {stay && (
                             <span className="ml-2 text-xs text-white/55">
-                                from {formatCurrency(stay.price, stay.currency)}
+                                {tAll('landing.journey.strip.from', { price: formatCurrency(stay.price, stay.currency) })}
                             </span>
                         )}
                     </button>
@@ -491,12 +500,9 @@ function ShowcaseStrip({ stays }: { stays: Record<string, FeaturedStay> }) {
  * hands the question over rather than trying to answer it behind a backdrop.
  */
 function AskPanel() {
+    const tAll = useTranslations();
     const [value, setValue] = useState('');
-    const examples = [
-        'Five nights in Seoul under ₱40,000',
-        'Beach, direct flight, leaving Friday',
-        'Two cities in Japan, one week',
-    ];
+    const examples = [1, 2, 3].map(n => tAll(`landing.journey.ask.example${n}`));
 
     return (
         <div
@@ -507,8 +513,8 @@ function AskPanel() {
                 <input
                     value={value}
                     onChange={e => setValue(e.target.value)}
-                    placeholder="Describe the trip you want…"
-                    aria-label="Describe the trip you want"
+                    placeholder={tAll('landing.journey.ask.placeholder')}
+                    aria-label={tAll('landing.journey.ask.label')}
                     className="min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/40"
                 />
                 <Link
@@ -516,7 +522,7 @@ function AskPanel() {
                     className="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-[filter] duration-150 hover:brightness-110"
                     style={{ background: BRAND.gradient }}
                 >
-                    Ask
+                    {tAll('landing.journey.ask.submit')}
                 </Link>
             </div>
 
@@ -539,12 +545,13 @@ function AskPanel() {
 
 /** The last stage: every way in, side by side, for a visitor who skipped the rest. */
 function OptionsPanel() {
+    const tAll = useTranslations();
     // Golf has no page to go to yet, so its card has no `href` and says so rather than
     // linking somewhere that is not golf. Give it one and it becomes a link like the others.
     const options: Array<{ href?: string; label: string; note: string }> = [
-        { href: '/search', label: 'Stays', note: 'Hotels & homes' },
-        { href: '/flights/search', label: 'Flights', note: 'Every carrier we reach' },
-        { label: 'Golf', note: 'Coming soon' },
+        { href: '/search', label: tAll('landing.search.searchMode.stays'), note: tAll('landing.journey.options.staysNote') },
+        { href: '/flights/search', label: tAll('landing.search.searchMode.flights'), note: tAll('landing.journey.options.flightsNote') },
+        { label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
     ];
 
     const card = 'rounded-2xl p-4 backdrop-blur-md';
@@ -632,6 +639,7 @@ const ALTITUDE_START_FT = 38_000;
  * announcing a number that changes on every frame would be unusable.
  */
 function AltitudeReadout({ journey }: { journey: number }) {
+    const tAll = useTranslations();
     const altitude = Math.round(ALTITUDE_START_FT * (1 - journey));
     return (
         <div
@@ -640,7 +648,7 @@ function AltitudeReadout({ journey }: { journey: number }) {
             style={{ opacity: ramp(journey, 0.04, 0.1) }}
         >
             <span className="flex items-baseline gap-[0.3em] text-[10px] tracking-[0.2em] text-white/45 tabular-nums uppercase">
-                Alt <Odometer value={altitude} /> ft
+                {tAll('landing.journey.altitude.label')} <Odometer value={altitude} /> {tAll('landing.journey.altitude.unit')}
             </span>
             <div className="relative h-32 w-px bg-white/15">
                 <div

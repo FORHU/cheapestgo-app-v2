@@ -792,7 +792,7 @@ export function ImmersiveSearchBar({
 
     // ── Derived ───────────────────────────────────────────────────────────────
 
-    const originValue = pickedOrigin ? pickedOrigin.name : 'wherever you are';
+    const originValue = pickedOrigin ? pickedOrigin.name : tAll('search.prose.origin');
     // A flight's destination is never the airport it leaves from.
     const destOrigin = mode === 'flights' ? pickedOrigin?.name : null;
     const destValue   = pickedDest   ? pickedDest.name   : tAll('search.prose.anywhere');
@@ -801,10 +801,10 @@ export function ImmersiveSearchBar({
 
     const datesValue = mode === 'flights'
         ? (isOneway
-            ? (checkIn ? fmtDate(checkIn) : 'a date')
-            : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : 'your dates'))
+            ? (checkIn ? fmtDate(checkIn) : tAll('search.prose.aDate'))
+            : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : tAll('search.prose.yourDates')))
         : (flexible
-            ? (flexOption ?? 'a flexible trip')
+            ? (flexOption ?? tAll('search.prose.flexibleTrip'))
             : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : tAll('search.prose.sometime')));
 
     const totalTravelers = adults + children;
@@ -896,7 +896,7 @@ export function ImmersiveSearchBar({
                                         transition: 'color .2s,box-shadow .2s',
                                         textTransform: 'capitalize',
                                     }}
-                                >{m.charAt(0).toUpperCase() + m.slice(1)}</button>
+                                >{tAll(`landing.search.searchMode.${m}`)}</button>
                             ))}
                         </div>
 
@@ -1062,11 +1062,11 @@ export function ImmersiveSearchBar({
                                 {panelOpen === 'travelers' && (
                                     <NotePanel width="280px" extra={{ maxHeight: 'none' }}>
                                         <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '18px' }}>
-                                            {mode === 'flights' ? 'Who\'s flying?' : 'Who\'s coming?'}
+                                            {mode === 'flights' ? tAll('checkout.flight.whosFlying') : tAll('landing.search.whosComing')}
                                         </div>
                                         {[
-                                            { label: 'Adults',   sub: '18+',      val: adults,   set: setAdults,   min: 1,  max: 16 },
-                                            { label: 'Children', sub: '0–17',     val: children, set: setChildren, min: 0,  max: 8  },
+                                            { label: tAll('landing.search.adults'),   sub: '18+',      val: adults,   set: setAdults,   min: 1,  max: 16 },
+                                            { label: tAll('landing.search.children'), sub: '0–17',     val: children, set: setChildren, min: 0,  max: 8  },
                                         ].map(({ label, sub, val, set, min, max }) => (
                                             <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                                                 <div>
@@ -1112,7 +1112,7 @@ export function ImmersiveSearchBar({
                                         <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
                                         <path d="m21.854 2.147-10.94 10.939" />
                                     </svg>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.06em' }}>GO</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.06em' }}>{tAll('landing.search.go')}</span>
                                 </>
                             )}
                             {ctaState === 'searching' && (

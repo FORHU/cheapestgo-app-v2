@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Toaster } from 'sonner';
 
 type Theme = 'light' | 'dark';
@@ -9,22 +10,20 @@ interface BaseProps { children: React.ReactNode; }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-/** Length of the colour cross-fade, in step with `.theme-transition` in globals.css. */
-const FADE_MS = 160;
-
 /**
  * The class on <html> is the theme, not this module's state.
  *
  * The inline script in the root layout puts it there before the first paint, so
  * reading it back is both what survives a reload and what keeps a second click
- * correct while a `startTransition` update is still in flight.
+ * correct.
  */
 const readTheme = (): Theme =>
   document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
 export const ThemeProvider: React.FC<BaseProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>('light');
-  const fadeTimer = useRef<number | undefined>(undefined);
+  /** The theme a switch in flight is heading for, before the DOM says so. */
+  const heading = useRef<Theme | null>(null);
 
   // Adopt what the layout script already applied. This used to be a pair of
   // effects that read localStorage and then wrote the class from `theme` — and
@@ -33,76 +32,62 @@ export const ThemeProvider: React.FC<BaseProps> = ({ children }) => {
   // itself a render later.
   useEffect(() => {
     setTheme(readTheme());
-    return () => window.clearTimeout(fadeTimer.current);
   }, []);
 
   /**
-   * Holds the window open until the last colour has actually changed.
+   * Switches theme as one cross-fade of the whole page.
    *
-   * The class swap is not the only thing that repaints on a theme change: the
-   * search page paints its shell from `theme` in an inline style, and that now
-   * lands a commit after the swap. Re-arming here — after that commit — keeps
-   * the fade covering it instead of letting it snap in behind the window.
-   */
-  useEffect(() => {
-    const root = document.documentElement;
-    if (!root.classList.contains('theme-transition')) return;
-    window.clearTimeout(fadeTimer.current);
-    fadeTimer.current = window.setTimeout(() => {
-      root.classList.remove('theme-transition');
-    }, FADE_MS + 60);
-  }, [theme]);
-
-  /**
-   * Cross-fades colours on the way between themes.
+   * A view transition: the browser takes a picture of the page as it is, the swap is made
+   * underneath it, and it fades to a picture of the result. That is two pictures and one
+   * animation on the compositor, wherever the page is heavy.
    *
-   * The order here is the whole trick, and it is: paint, then React.
+   * This used to give every element on the page its own colour transition for 160ms — two
+   * thousand and more of them at once. Each had to be restyled and animated on the main
+   * thread, so the click froze the page for a tenth of a second or more before the fade began,
+   * and the colours that cannot transition (every gradient) snapped while everything else
+   * slowly faded. The React update was also deferred a frame, so the parts of the page painted
+   * from `theme` in JS changed after the rest.
    *
-   * `setTheme` on a click is a discrete update, so React flushes it
-   * synchronously before the browser gets a chance to paint — and its consumers
-   * are the search page, the map container and the header, which is easily
-   * 100ms+ of blocked main thread on a heavy route. Everything after the swap
-   * was landing behind that: the fade began late, and the timer that ends it
-   * had been counting since the click, so it was regularly cut mid-flight or
-   * missed altogether. So the swap is written to the DOM first and the React
-   * update is queued from inside `requestAnimationFrame`, which runs on the
-   * frame that paints it — the fade starts on time, and the re-render lands
-   * behind that paint instead of in front of it.
-   *
-   * Deliberately NOT `startTransition`. A transition is an update React is
-   * allowed to postpone, and on the search page — a map, its markers, the card
-   * rail and the toolbar, all reading this context — it postponed it well past
-   * the fade window: the CSS-driven half of the page changed on the click and
-   * the half painted from `theme` in JS snapped in afterwards, which is the
-   * lag this used to have. Default priority cannot be deferred that way.
-   *
-   * `.theme-transition` is only on the document for the length of the fade: a
-   * standing `transition` on every element would also animate hovers, menu
-   * opens, and anything else that happens to change a colour. Its removal is
-   * anchored to a frame rather than to the click for the same reason as above.
+   * The swap is the class on <html> (which most of the page is styled from) and the React
+   * state (which the rest is painted from), flushed together so both are in the picture it
+   * fades to. A browser with no view transitions, or a visitor who asked for less motion,
+   * gets the same swap with no fade.
    */
   const toggleTheme = useCallback(() => {
     const root = document.documentElement;
-    const next: Theme = readTheme() === 'dark' ? 'light' : 'dark';
+    // From the switch already under way, if there is one: its class is not on the page until
+    // the browser has taken its first picture, so two quick clicks would both read the old one
+    // and be one switch.
+    const next: Theme = (heading.current ?? readTheme()) === 'dark' ? 'light' : 'dark';
+    heading.current = next;
 
-    root.classList.add('theme-transition');
-    root.classList.remove('light', 'dark');
-    root.classList.add(next);
     try {
       localStorage.setItem('theme', next);
     } catch {
       // Private mode / storage disabled: the theme just does not persist.
     }
 
-    window.clearTimeout(fadeTimer.current);
-    requestAnimationFrame(() => {
-      // Runs on the frame that paints the swap, so the window covers the fade
-      // wherever the frame lands. The margin covers a slow frame at the end.
-      setTheme(next);
-      fadeTimer.current = window.setTimeout(() => {
-        root.classList.remove('theme-transition');
-      }, FADE_MS + 60);
-    });
+    const swap = () => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(next);
+      flushSync(() => setTheme(next));
+      if (heading.current === next) heading.current = null;
+    };
+
+    const start = document.startViewTransition?.bind(document);
+    const lessMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!start || lessMotion) {
+      swap();
+      return;
+    }
+
+    // `.theme-switching` only for the length of the fade: it tunes the transition's timing in
+    // globals.css, and the language switch's own view transition keeps the browser's default.
+    root.classList.add('theme-switching');
+    const transition = start(swap);
+    const done = () => root.classList.remove('theme-switching');
+    void transition.finished.then(done, done);
   }, []);
 
   const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);

@@ -43,23 +43,23 @@ export type Showcase =
     | { kind: 'still'; image: string; strength?: number };
 
 /**
- * What a stage looks like: its wording, the side its search docks on, and what is behind it.
+ * What a stage looks like: the side its search docks on, and what is behind it. Its wording
+ * is in the message files — see `id`.
  * Separate from where it sits on the track (`Stage`'s `from`/`to`) because one stretch of
  * track can wear more than one — see `Stage.faces`.
  */
 export interface StageFace {
-    id: StageId;
     /**
-     * Small caps label above the heading, written out in full ("STAGE 01 · HOTELS") rather
-     * than assembled from `index` — the last stage is "ARRIVAL" on its own, no "STAGE 04 ·"
-     * prefix, since arrival isn't a numbered step of the descent.
+     * Also the key to its wording: the eyebrow, the two-part heading and the caption are in the
+     * message files under `landing.journey.stages.<id>`, not here, so the language selector
+     * reaches them. They were English literals on this interface, which left the whole Journey
+     * in English between a translated header and footer.
+     *
+     * The eyebrow is written out in full ("STAGE 01 · HOTELS", and "ARRIVAL" on its own, since
+     * arrival isn't a numbered step of the descent) rather than assembled from an index, and the
+     * heading is two parts so the first can be set apart from the rest.
      */
-    eyebrow: string;
-    /** The heading itself. Two parts so the first can be set in the display italic. */
-    titleLead: string;
-    titleRest: string;
-    /** One line under the heading. */
-    caption: string;
+    id: StageId;
     /**
      * Which side the search docks on.
      *
@@ -117,10 +117,6 @@ export const SIDE_OFFSET = { left: 0, center: 0.5, right: 1 } as const;
 const ALL_STAGES: Stage[] = [
     {
         id: 'stays',
-        eyebrow: 'STAGE 01 · HOTELS',
-        titleLead: 'Find',
-        titleRest: 'your stay.',
-        caption: 'Hotels and homes, priced per night — every fee shown before you tap book.',
         from: 0.14,
         to: 0.44,
         side: 'left',
@@ -136,10 +132,6 @@ const ALL_STAGES: Stage[] = [
             // slides the panel to this side and fades this backdrop in over the hotels one.
             flights: {
                 id: 'flights',
-                eyebrow: 'STAGE 02 · FLIGHTS',
-                titleLead: 'Then',
-                titleRest: 'get there.',
-                caption: 'Every airline, every fare class, sorted by what you actually pay.',
                 side: 'right',
                 // An aircraft on the apron at dusk, held still: the photograph is the stage, so
                 // it runs at near full strength rather than as a tint over the ground.
@@ -152,10 +144,6 @@ const ALL_STAGES: Stage[] = [
     },
     {
         id: 'ai',
-        eyebrow: 'STAGE 03 · AI PLANNER',
-        titleLead: 'Or',
-        titleRest: 'just ask.',
-        caption: "Tell us the trip. We'll price the stays and routes that fit.",
         from: 0.44,
         to: 0.59,
         side: 'left',
@@ -172,10 +160,6 @@ const ALL_STAGES: Stage[] = [
     },
     {
         id: 'options',
-        eyebrow: 'ARRIVAL',
-        titleLead: 'Now',
-        titleRest: 'choose.',
-        caption: 'Stays, flights and golf, all in one place.',
         // Running to the very end of the track: this is where the descent stops moving, so
         // it is the one stage that stays rather than leaving. The track used to hold a final
         // empty viewport after it, and a snap stop landed there — a blank screen with only

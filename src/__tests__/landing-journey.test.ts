@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import en from '@/locales/en.json';
 import {
     JOURNEY_SCREENS,
     JOURNEY_STOPS,
@@ -430,8 +431,10 @@ describe('the search stage and its two faces', () => {
 
     it('gives each its own wording and its own backdrop, so the change is seen', () => {
         const [stays, flights] = stageFaces(search);
-        expect(flights.eyebrow).not.toBe(stays.eyebrow);
-        expect(flights.titleLead + flights.titleRest).not.toBe(stays.titleLead + stays.titleRest);
+        // The wording is in the message files, keyed by face id: two faces, two sets of words.
+        const words = (id: 'stays' | 'flights') => JSON.stringify(en.landing.journey.stages[id]);
+        expect(flights.id).not.toBe(stays.id);
+        expect(words('flights')).not.toBe(words('stays'));
         expect(JSON.stringify(flights.showcase)).not.toBe(JSON.stringify(stays.showcase));
     });
 });

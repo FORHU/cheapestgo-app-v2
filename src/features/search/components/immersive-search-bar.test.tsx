@@ -9,6 +9,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithIntl } from '@/shared/testing/renderWithIntl';
+import ko from '@/locales/ko.json';
 
 const autocompleteDestinations = vi.hoisted(() => vi.fn());
 vi.mock('@/features/search/api/destinations.api', () => ({ autocompleteDestinations }));
@@ -110,5 +111,79 @@ describe('ImmersiveSearchBar — onModeSelect', () => {
         await user.click(screen.getByRole('button', { name: 'Flights' }));
 
         expect(onModeSelect).not.toHaveBeenCalled();
+    });
+});
+
+/**
+ * The tabs, the stamp and the traveller panel are the parts of the bar that used to be English
+ * in every language — the sentence around them was already translated, so a Korean visitor got a
+ * Korean sentence between two English tabs and an English "GO".
+ */
+describe('ImmersiveSearchBar — in Korean', () => {
+    const KO = { locale: 'ko', messages: ko };
+
+    it('labels the tabs and the stamp in Korean', () => {
+        renderWithIntl(<ImmersiveSearchBar />, KO);
+
+        expect(screen.getByRole('button', { name: ko.landing.search.searchMode.stays })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: ko.landing.search.searchMode.flights })).toBeInTheDocument();
+        expect(screen.getByText(ko.landing.search.go)).toBeInTheDocument();
+
+        expect(screen.queryByRole('button', { name: 'Stays' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Flights' })).not.toBeInTheDocument();
+        expect(screen.queryByText('GO')).not.toBeInTheDocument();
+    });
+
+    it('asks who is coming, and who is flying, in Korean', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar />, KO);
+
+        await user.click(screen.getByText(ko.search.prose.ofUs.replace('{count}', '2')));
+        expect(screen.getByText(ko.landing.search.whosComing)).toBeInTheDocument();
+        expect(screen.getByText(ko.landing.search.adults)).toBeInTheDocument();
+        expect(screen.getByText(ko.landing.search.children)).toBeInTheDocument();
+        expect(screen.queryByText('Who\'s coming?')).not.toBeInTheDocument();
+        expect(screen.queryByText('Adults')).not.toBeInTheDocument();
+    });
+
+    it('words the flights sentence in Korean before anything is picked', () => {
+        // One way is the default, so the date slot asks for a single date.
+        renderWithIntl(<ImmersiveSearchBar defaultMode="flights" />, KO);
+
+        expect(screen.getByText(ko.search.prose.origin)).toBeInTheDocument();
+        expect(screen.getByText(ko.search.prose.aDate)).toBeInTheDocument();
+        expect(screen.queryByText('wherever you are')).not.toBeInTheDocument();
+        expect(screen.queryByText('a date')).not.toBeInTheDocument();
+    });
+
+    it('words a round trip with no dates yet in Korean', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar defaultMode="flights" />, KO);
+
+        await user.click(screen.getByText(ko.search.prose.aDate));
+        await user.click(screen.getByText(ko.search.roundTrip));
+
+        expect(screen.getByText(ko.search.prose.yourDates)).toBeInTheDocument();
+        expect(screen.queryByText('your dates')).not.toBeInTheDocument();
+    });
+
+    it('words flexible dates with no option chosen yet in Korean', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar />, KO);
+
+        await user.click(screen.getByText(ko.search.prose.sometime));
+        await user.click(screen.getByText(ko.search.imFlexible));
+
+        expect(screen.getByText(ko.search.prose.flexibleTrip)).toBeInTheDocument();
+        expect(screen.queryByText('a flexible trip')).not.toBeInTheDocument();
+    });
+
+    it('asks who is flying in Korean on the flights tab', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar defaultMode="flights" />, KO);
+
+        await user.click(screen.getByText(ko.search.prose.ofUs.replace('{count}', '2')));
+        expect(screen.getByText(ko.checkout.flight.whosFlying)).toBeInTheDocument();
+        expect(screen.queryByText('Who\'s flying?')).not.toBeInTheDocument();
     });
 });

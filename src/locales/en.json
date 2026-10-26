@@ -949,6 +949,64 @@
         "stays": "Stays",
         "flights": "Flights",
         "aiSearch": "AI Search"
+      },
+      "go": "GO",
+      "whosComing": "Who's coming?"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "Hotels · Flights · Golf",
+        "titleLine1": "One search.",
+        "titleLine2": "Every way to go.",
+        "subtitle": "Skip the surprise fees. Chase the sunsets.",
+        "scrollCue": "Scroll down to explore"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "STAGE 01 · HOTELS",
+          "titleLead": "Find",
+          "titleRest": "your stay.",
+          "caption": "Hotels and homes, priced per night — every fee shown before you tap book."
+        },
+        "flights": {
+          "eyebrow": "STAGE 02 · FLIGHTS",
+          "titleLead": "Then",
+          "titleRest": "get there.",
+          "caption": "Every airline, every fare class, sorted by what you actually pay."
+        },
+        "ai": {
+          "eyebrow": "STAGE 03 · AI PLANNER",
+          "titleLead": "Or",
+          "titleRest": "just ask.",
+          "caption": "Tell us the trip. We'll price the stays and routes that fit."
+        },
+        "options": {
+          "eyebrow": "ARRIVAL",
+          "titleLead": "Now",
+          "titleRest": "choose.",
+          "caption": "Stays, flights and golf, all in one place."
+        }
+      },
+      "strip": {
+        "from": "from {price}"
+      },
+      "options": {
+        "staysNote": "Hotels & homes",
+        "flightsNote": "Every carrier we reach",
+        "golf": "Golf",
+        "golfNote": "Coming soon"
+      },
+      "ask": {
+        "placeholder": "Describe the trip you want…",
+        "label": "Describe the trip you want",
+        "submit": "Ask",
+        "example1": "Five nights in Seoul under ₱40,000",
+        "example2": "Beach, direct flight, leaving Friday",
+        "example3": "Two cities in Japan, one week"
+      },
+      "altitude": {
+        "label": "Alt",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -2039,7 +2097,11 @@
       "anywhere": "somewhere amazing",
       "sometime": "sometime soon",
       "justMe": "just me",
-      "ofUs": "{count} of us"
+      "ofUs": "{count} of us",
+      "origin": "wherever you are",
+      "aDate": "a date",
+      "yourDates": "your dates",
+      "flexibleTrip": "a flexible trip"
     },
     "trendingCities": "Popular cities",
     "popularAirports": "Popular airports",

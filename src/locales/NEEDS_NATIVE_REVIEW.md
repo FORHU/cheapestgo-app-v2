@@ -272,3 +272,57 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.contactHint` | Your e-ticket is sent here, and the airline uses this number for flight changes. | 전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다. | eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。 | 电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。 |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
 | `checkout.flight.whosFlying` | Who's flying? | 누가 탑승하시나요? | ご搭乗者はどなたですか？ | 谁将乘机？ |
+
+## Landing page — the Journey
+
+The hero, the stages, the closing cards, the altitude readout and the search bar's sentence on the
+landing page. These were English literals in every language, so the language selector changed the
+header and footer around a page that stayed English; they are now in the locale files.
+
+The hero headline and the stage headings are display type, set large, so a phrase that reads well
+in a body paragraph can still feel flat there — check those for tone as well as accuracy. The
+heading is two parts (`titleLead` + `titleRest`) that drift apart as the page scrolls, so each
+half has to read on its own. `landing.search.go` is the stamp on the search button: one short word.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `landing.journey.hero.kicker` | Hotels · Flights · Golf | 호텔 · 항공편 · 골프 | ホテル · フライト · ゴルフ | 酒店 · 航班 · 高尔夫 |
+| `landing.journey.hero.titleLine1` | One search. | 한 번의 검색. | ひとつの検索。 | 一次搜索。 |
+| `landing.journey.hero.titleLine2` | Every way to go. | 모든 여정으로. | あらゆる行き方。 | 所有出行方式。 |
+| `landing.journey.hero.subtitle` | Skip the surprise fees. Chase the sunsets. | 숨은 수수료는 빼고, 노을을 쫓아 떠나세요. | 思わぬ手数料はなし。夕日を追いかけよう。 | 拒绝隐藏费用，追逐日落。 |
+| `landing.journey.hero.scrollCue` | Scroll down to explore | 아래로 스크롤하여 둘러보기 | スクロールして探索 | 向下滚动探索 |
+| `landing.journey.stages.stays.eyebrow` | STAGE 01 · HOTELS | 01단계 · 호텔 | ステージ01 · ホテル | 第 01 站 · 酒店 |
+| `landing.journey.stages.stays.titleLead` | Find | 숙소를 | 宿を | 找到 |
+| `landing.journey.stages.stays.titleRest` | your stay. | 찾아보세요. | 探そう。 | 你的住处。 |
+| `landing.journey.stages.stays.caption` | Hotels and homes, priced per night — every fee shown before you tap book. | 호텔과 숙소를 1박 요금으로 — 예약 버튼을 누르기 전에 모든 수수료를 보여드립니다. | ホテルも民泊も、1泊あたりの料金で。予約ボタンを押す前に、すべての手数料を表示します。 | 酒店与民宿，按晚报价——点击预订前，所有费用一目了然。 |
+| `landing.journey.stages.flights.eyebrow` | STAGE 02 · FLIGHTS | 02단계 · 항공편 | ステージ02 · フライト | 第 02 站 · 航班 |
+| `landing.journey.stages.flights.titleLead` | Then | 그다음엔 | そして、 | 然后 |
+| `landing.journey.stages.flights.titleRest` | get there. | 떠나세요. | 旅立とう。 | 出发吧。 |
+| `landing.journey.stages.flights.caption` | Every airline, every fare class, sorted by what you actually pay. | 모든 항공사, 모든 운임 등급을 실제 지불 금액 순으로 정렬합니다. | 全航空会社・全運賃クラスを、実際に支払う金額順に並べ替え。 | 所有航空公司、所有舱位，按您实际支付的价格排序。 |
+| `landing.journey.stages.ai.eyebrow` | STAGE 03 · AI PLANNER | 03단계 · AI 플래너 | ステージ03 · AIプランナー | 第 03 站 · AI 规划师 |
+| `landing.journey.stages.ai.titleLead` | Or | 아니면 | または、 | 或者 |
+| `landing.journey.stages.ai.titleRest` | just ask. | 그냥 물어보세요. | 聞くだけ。 | 直接问。 |
+| `landing.journey.stages.ai.caption` | Tell us the trip. We'll price the stays and routes that fit. | 여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요. | 旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。 | 告诉我们您的行程，我们会为您报出合适的住宿与路线价格。 |
+| `landing.journey.stages.options.eyebrow` | ARRIVAL | 도착 | 到着 | 抵达 |
+| `landing.journey.stages.options.titleLead` | Now | 이제 | さあ、 | 现在 |
+| `landing.journey.stages.options.titleRest` | choose. | 선택하세요. | 選ぼう。 | 做出选择。 |
+| `landing.journey.stages.options.caption` | Stays, flights and golf, all in one place. | 숙소, 항공편, 골프까지 한곳에서. | 宿泊、フライト、ゴルフをひとつの場所で。 | 住宿、航班与高尔夫，一站搞定。 |
+| `landing.journey.strip.from` | from {price} | {price}부터 | {price}〜 | {price} 起 |
+| `landing.journey.options.staysNote` | Hotels & homes | 호텔 및 숙소 | ホテル＆宿泊施設 | 酒店与民宿 |
+| `landing.journey.options.flightsNote` | Every carrier we reach | 연결 가능한 모든 항공사 | 取り扱いの全航空会社 | 覆盖所有可订航空公司 |
+| `landing.journey.options.golf` | Golf | 골프 | ゴルフ | 高尔夫 |
+| `landing.journey.options.golfNote` | Coming soon | 출시 예정 | 近日公開 | 即将推出 |
+| `landing.journey.ask.placeholder` | Describe the trip you want… | 원하는 여행을 설명해 주세요… | ご希望の旅を教えてください… | 描述您想要的旅行… |
+| `landing.journey.ask.label` | Describe the trip you want | 원하는 여행을 설명해 주세요 | ご希望の旅を教えてください | 描述您想要的旅行 |
+| `landing.journey.ask.submit` | Ask | 물어보기 | 聞く | 提问 |
+| `landing.journey.ask.example1` | Five nights in Seoul under ₱40,000 | 서울 5박, ₱40,000 이하 | ソウル5泊、₱40,000以内 | 首尔 5 晚，预算 ₱40,000 以内 |
+| `landing.journey.ask.example2` | Beach, direct flight, leaving Friday | 해변, 직항, 금요일 출발 | ビーチ、直行便、金曜出発 | 海滩、直飞、周五出发 |
+| `landing.journey.ask.example3` | Two cities in Japan, one week | 일본 두 도시, 일주일 | 日本の2都市、1週間 | 日本两座城市，一周 |
+| `landing.journey.altitude.label` | Alt | 고도 | 高度 | 高度 |
+| `landing.journey.altitude.unit` | ft | ft | ft | ft |
+| `landing.search.go` | GO | 출발 | 出発 | 出发 |
+| `landing.search.whosComing` | Who's coming? | 누가 묵으시나요? | ご宿泊者はどなたですか？ | 谁来入住？ |
+| `search.prose.origin` | wherever you are | 내가 있는 곳 | 今いる場所 | 您所在的地方 |
+| `search.prose.aDate` | a date | 원하는 날 | 好きな日 | 某一天 |
+| `search.prose.yourDates` | your dates | 원하는 일정 | ご希望の日程 | 您的出行日期 |
+| `search.prose.flexibleTrip` | a flexible trip | 유연한 여행 | 柔軟な旅 | 灵活的行程 |

@@ -443,42 +443,38 @@ html.dark body.flat-ground .app-shell {
 }
 
 /*
- * Theme cross-fade. ThemeContext adds `.theme-transition` to <html> for the
- * length of the switch and takes it off again, so this never sits on the page
- * animating ordinary hovers and menus.
+ * Theme switch: one cross-fade of the whole page.
  *
- * Only colour properties — transitioning `all` here would animate layout on
- * every element mid-switch. `!important` is needed to beat the inline styles
- * the map chrome and cards set, and any longer `duration-*` an element carries.
+ * ThemeContext switches theme inside a view transition — the browser snapshots the old page,
+ * the swap is made, and it fades between the two pictures. `.theme-switching` is on <html> only
+ * for the length of the fade, so these timings are the theme's and the language switch's own
+ * view transition keeps the browser's default.
  *
- * 160ms, matched by FADE_MS in ThemeContext: long enough to read as a fade,
- * short enough that the switch still feels immediate.
+ * This replaced a rule that gave every element on the page a colour transition for the
+ * duration. That was two thousand animations started at once on the main thread: the click
+ * froze the page for a tenth of a second before the fade began, and gradients, which cannot
+ * transition, snapped while everything else slowly faded. A picture fading to a picture has
+ * neither problem.
+ *
+ * Short enough that the switch still feels immediate. The default plus-lighter blend is left
+ * alone: it is what makes the two pictures sum to one instead of dipping through grey midway.
  */
-.theme-transition,
-.theme-transition *,
-.theme-transition *::before,
-.theme-transition *::after {
-  transition:
-    background-color 160ms ease-out,
-    border-color 160ms ease-out,
-    color 160ms ease-out,
-    fill 160ms ease-out,
-    stroke 160ms ease-out !important;
-  transition-delay: 0ms !important;
-  /* Beats a longer `duration-*` an element carries of its own: without this a
-     card on `transition-all duration-500` keeps fading long after the page
-     around it has settled. */
-  transition-duration: 160ms !important;
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
 }
 
-/* Respect a reduced-motion preference: switch instantly instead. */
-@media (prefers-reduced-motion: reduce) {
-  .theme-transition,
-  .theme-transition *,
-  .theme-transition *::before,
-  .theme-transition *::after {
-    transition: none !important;
-  }
+/*
+ * The page's own `transition-colors` stand down while it switches. The picture it fades to is
+ * live, so an element easing to its new colour inside it would be a second, slower fade under
+ * the first — the "delay" this exists to remove. Nothing animates here: it only turns the
+ * existing ones off, which costs nothing.
+ */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }
 
 /* Enable landscape orientation variant — mobile only */

@@ -949,6 +949,64 @@
         "stays": "宿泊",
         "flights": "フライト",
         "aiSearch": "AI 検索"
+      },
+      "go": "出発",
+      "whosComing": "ご宿泊者はどなたですか？"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "ホテル · フライト · ゴルフ",
+        "titleLine1": "ひとつの検索。",
+        "titleLine2": "あらゆる行き方。",
+        "subtitle": "思わぬ手数料はなし。夕日を追いかけよう。",
+        "scrollCue": "スクロールして探索"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "ステージ01 · ホテル",
+          "titleLead": "宿を",
+          "titleRest": "探そう。",
+          "caption": "ホテルも民泊も、1泊あたりの料金で。予約ボタンを押す前に、すべての手数料を表示します。"
+        },
+        "flights": {
+          "eyebrow": "ステージ02 · フライト",
+          "titleLead": "そして、",
+          "titleRest": "旅立とう。",
+          "caption": "全航空会社・全運賃クラスを、実際に支払う金額順に並べ替え。"
+        },
+        "ai": {
+          "eyebrow": "ステージ03 · AIプランナー",
+          "titleLead": "または、",
+          "titleRest": "聞くだけ。",
+          "caption": "旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。"
+        },
+        "options": {
+          "eyebrow": "到着",
+          "titleLead": "さあ、",
+          "titleRest": "選ぼう。",
+          "caption": "宿泊、フライト、ゴルフをひとつの場所で。"
+        }
+      },
+      "strip": {
+        "from": "{price}〜"
+      },
+      "options": {
+        "staysNote": "ホテル＆宿泊施設",
+        "flightsNote": "取り扱いの全航空会社",
+        "golf": "ゴルフ",
+        "golfNote": "近日公開"
+      },
+      "ask": {
+        "placeholder": "ご希望の旅を教えてください…",
+        "label": "ご希望の旅を教えてください",
+        "submit": "聞く",
+        "example1": "ソウル5泊、₱40,000以内",
+        "example2": "ビーチ、直行便、金曜出発",
+        "example3": "日本の2都市、1週間"
+      },
+      "altitude": {
+        "label": "高度",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -2039,7 +2097,11 @@
       "anywhere": "どこか素敵な場所",
       "sometime": "いつか近いうちに",
       "justMe": "ひとり",
-      "ofUs": "{count}人"
+      "ofUs": "{count}人",
+      "origin": "今いる場所",
+      "aDate": "好きな日",
+      "yourDates": "ご希望の日程",
+      "flexibleTrip": "柔軟な旅"
     },
     "trendingCities": "人気の都市",
     "popularAirports": "人気の空港",

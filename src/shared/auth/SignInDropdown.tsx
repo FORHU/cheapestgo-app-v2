@@ -9,6 +9,8 @@ import { useSearchParams } from 'next/navigation';
 import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useLogout } from '@/features/auth/hooks/use-auth';
+import { cn } from '@/shared/lib/cn';
+import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
 
 function getInitials(firstName?: string | null, lastName?: string | null, email?: string | null): string {
     const first = firstName?.[0] ?? '';
@@ -17,14 +19,73 @@ function getInitials(firstName?: string | null, lastName?: string | null, email?
     return (email?.[0] ?? '?').toUpperCase();
 }
 
+/**
+ * The brand's one gradient, blue-600 → cyan-500 (`BRAND.gradient`): the profile circle and
+ * every filled button here wear it, as they do everywhere else in the app. The circle was
+ * blue → purple, a colour the brand does not have.
+ */
+const FILL = 'bg-linear-to-r from-blue-600 to-cyan-500';
+const FILL_BUTTON = `${FILL} text-white shadow-lg shadow-blue-600/30 transition-[filter] hover:brightness-110`;
+
+/**
+ * What the panel's text, rows and hairlines are drawn in, by tone.
+ *
+ * The panel itself is the same glass as the language and currency menus
+ * (`SELECTOR_TONES`), so the three header menus read as one material. `onDark` is for a header
+ * that is dark whatever the app theme is — the landing page's — where the themed skin would
+ * draw a light panel over a dark page.
+ */
+const SKIN: Record<SelectorVariant, {
+    panel: string; title: string; muted: string; row: string; icon: string;
+    hairline: string; outlineButton: string; danger: string; avatarRing: string;
+}> = {
+    default: {
+        panel: SELECTOR_TONES.default.menu,
+        title: 'text-slate-900 dark:text-white',
+        muted: 'text-slate-600 dark:text-white/60',
+        row: 'text-slate-800 dark:text-white/85 hover:bg-white/50 dark:hover:bg-white/10',
+        icon: 'text-slate-500 dark:text-white/60',
+        hairline: 'border-slate-900/10 dark:border-white/10',
+        outlineButton: 'border border-slate-900/15 dark:border-white/20 text-slate-800 dark:text-white hover:bg-white/50 dark:hover:bg-white/10',
+        danger: 'text-red-600 dark:text-red-300 hover:bg-red-500/10',
+        avatarRing: '',
+    },
+    onDark: {
+        // Not the language menu's 18% white: that is a list of one word a row, and this panel
+        // holds a name, an address and a sign-out, so over a bright photograph the rows behind
+        // it showed through the text. The slate-900 the search bar's own dropdowns use,
+        // blurred, holds white text over anything.
+        panel: 'rounded-[20px] bg-[#0f172a]/90 backdrop-blur-[18px] backdrop-saturate-150 border border-white/10 shadow-[0_26px_55px_-18px_rgba(0,0,0,0.7)]',
+        title: 'text-white',
+        muted: 'text-white/60',
+        row: 'text-white/85 hover:bg-white/[0.08]',
+        icon: 'text-white/60',
+        hairline: 'border-white/10',
+        outlineButton: 'border border-white/25 text-white hover:bg-white/[0.08]',
+        danger: 'text-red-400 hover:bg-red-500/15',
+        avatarRing: 'ring-1 ring-white/25',
+    },
+};
+
+function Avatar({ initials, className }: { initials: string; className: string }) {
+    return (
+        <div className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold text-white', FILL, className)}>
+            {initials}
+        </div>
+    );
+}
+
 interface SignInDropdownProps {
     variant?: 'dropdown' | 'inline';
+    /** The skin of the dropdown's trigger and panel. `onDark` on a page that is dark whatever
+     *  the app theme is; the default follows the theme. */
+    tone?: SelectorVariant;
     collapsible?: boolean;
     onNavigate?: () => void;
     onToggleOpen?: (open: boolean) => void;
 }
 
-const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', collapsible = false, onNavigate, onToggleOpen }) => {
+const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', tone = 'default', collapsible = false, onNavigate, onToggleOpen }) => {
     const tAll = useTranslations();
     const { user } = useAuthStore();
     const openAuthModal = useModalStore((state) => state.openAuthModal);
@@ -36,6 +97,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
     const dropdownRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const skin = SKIN[tone];
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -82,9 +144,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
         const inlineContent = (mounted && user) ? (
             <>
                 <div className="flex items-center gap-3">
-                    <div className="size-8 shrink-0 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-[clamp(0.65rem,1.5vw,0.75rem)]">
-                        {getInitials(user.firstName, user.lastName, user.email)}
-                    </div>
+                    <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className="size-8 text-[clamp(0.65rem,1.5vw,0.75rem)]" />
                     <div className="min-w-0">
                         <p className="font-medium text-[clamp(0.8125rem,1.5vw,0.875rem)] text-slate-900 dark:text-white truncate">
                             {user.firstName} {user.lastName}
@@ -110,7 +170,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
             </>
         ) : (
             <div className="space-y-3">
-                <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-full transition-colors text-center shadow-lg shadow-blue-500/20">
+                <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className={cn('block w-full py-3 px-4 text-sm font-bold rounded-full text-center', FILL_BUTTON)}>
                     {t('signIn')}
                 </button>
                 <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className="block w-full py-3 px-4 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-sm font-semibold rounded-full hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-center">
@@ -140,29 +200,37 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
         return <div className="space-y-3">{inlineContent}</div>;
     }
 
+    const panelMotion = {
+        initial: { opacity: 0, y: -8, scale: 0.96 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: -8, scale: 0.96 },
+        transition: { duration: 0.15 },
+    } as const;
+    const panelClass = cn('absolute right-0 top-full mt-2 w-full min-w-[280px] overflow-hidden z-50', skin.panel);
+
     if (!mounted || !user) {
         return (
             <div ref={dropdownRef} className="relative">
-                <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shrink-0">
+                <button onClick={() => setIsOpen(!isOpen)} className={cn('flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full shrink-0', FILL_BUTTON)}>
                     {tAll('nav.signIn')}
                 </button>
                 <AnimatePresence>
                     {isOpen && (
-                        <motion.div initial={{ opacity: 0, y: -8, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.96 }} transition={{ duration: 0.15 }} className="absolute right-0 top-full mt-2 w-full min-w-[280px] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 overflow-hidden z-50">
-                            <div className="p-4 bg-linear-to-r from-blue-600 to-blue-700 text-white">
+                        <motion.div {...panelMotion} className={panelClass}>
+                            <div className={cn('p-4 text-white', FILL)}>
                                 <p className="font-medium text-[clamp(0.875rem,2vw,1rem)]">{t('membersSave')}</p>
-                                <p className="text-[clamp(0.8125rem,1.5vw,0.875rem)] text-blue-100 mt-1">{t('membersSaveSubtitle')}</p>
+                                <p className="text-[clamp(0.8125rem,1.5vw,0.875rem)] text-white/85 mt-1">{t('membersSaveSubtitle')}</p>
                             </div>
                             <div className="p-4 space-y-3">
-                                <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full transition-colors text-center">
+                                <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className={cn('block w-full py-3 px-4 text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full text-center', FILL_BUTTON)}>
                                     {t('signIn')}
                                 </button>
-                                <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className="block w-full py-3 px-4 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-center">
+                                <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className={cn('block w-full py-3 px-4 text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full transition-colors text-center', skin.outlineButton)}>
                                     {t('createAccount')}
                                 </Link>
                             </div>
-                            <div className="border-t border-slate-100 dark:border-white/5 p-4">
-                                <p className="text-[clamp(0.6875rem,1.25vw,0.75rem)] text-slate-500 dark:text-slate-400 text-center">{t('accountWorks')}</p>
+                            <div className={cn('border-t p-4', skin.hairline)}>
+                                <p className={cn('text-[clamp(0.6875rem,1.25vw,0.75rem)] text-center', skin.muted)}>{t('accountWorks')}</p>
                             </div>
                         </motion.div>
                     )}
@@ -173,33 +241,29 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
 
     return (
         <div ref={dropdownRef} className="relative">
-            <button onClick={() => setIsOpen(!isOpen)} aria-label={t('account')} aria-expanded={isOpen} className="flex items-center gap-2 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0">
-                <div className="size-7 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-[10px]">
-                    {getInitials(user.firstName, user.lastName, user.email)}
-                </div>
+            <button onClick={() => setIsOpen(!isOpen)} aria-label={t('account')} aria-expanded={isOpen} className={cn('flex items-center gap-2 p-1 rounded-full transition-colors shrink-0', SELECTOR_TONES[tone].trigger)}>
+                <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className={cn('size-7 text-[10px]', skin.avatarRing)} />
             </button>
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div initial={{ opacity: 0, y: -8, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.96 }} transition={{ duration: 0.15 }} className="absolute right-0 top-full mt-2 w-full min-w-[280px] bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 overflow-hidden z-50">
-                        <div className="p-4 border-b border-slate-100 dark:border-white/5">
+                    <motion.div {...panelMotion} className={panelClass}>
+                        <div className={cn('p-4 border-b', skin.hairline)}>
                             <div className="flex items-center gap-3">
-                                <div className="size-10 shrink-0 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-[clamp(0.875rem,2vw,1rem)]">
-                                    {getInitials(user.firstName, user.lastName, user.email)}
-                                </div>
+                                <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className={cn('size-10 text-[clamp(0.875rem,2vw,1rem)]', skin.avatarRing)} />
                                 <div className="min-w-0">
-                                    <p className="font-medium text-sm text-slate-900 dark:text-white truncate">{user.firstName} {user.lastName}</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                                    <p className={cn('font-medium text-sm truncate', skin.title)}>{user.firstName} {user.lastName}</p>
+                                    <p className={cn('text-xs truncate', skin.muted)}>{user.email}</p>
                                 </div>
                             </div>
                         </div>
                         <div className="py-2">
-                            <Link href="/account" className="flex items-center gap-3 px-4 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors" onClick={handleNav}>
-                                <Settings className="h-5 w-5 text-slate-400" />
+                            <Link href="/account" className={cn('flex items-center gap-3 px-4 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] transition-colors', skin.row)} onClick={handleNav}>
+                                <Settings className={cn('h-5 w-5', skin.icon)} />
                                 {t('accountSettings')}
                             </Link>
                         </div>
-                        <div className="border-t border-slate-100 dark:border-white/5 p-2">
-                            <button type="button" onClick={handleSignOut} disabled={signOut.isPending} className="w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors disabled:opacity-50">
+                        <div className={cn('border-t p-2', skin.hairline)}>
+                            <button type="button" onClick={handleSignOut} disabled={signOut.isPending} className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] rounded-lg transition-colors disabled:opacity-50', skin.danger)}>
                                 <LogOut className="h-5 w-5" />
                                 {t('signOut')}
                             </button>

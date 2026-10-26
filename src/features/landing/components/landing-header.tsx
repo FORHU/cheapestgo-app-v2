@@ -52,7 +52,7 @@ function LandingHeaderContent() {
                         Signed out, v1's gradient, blue-600 → cyan-500, like every button on this page. */}
                     {user ? (
                         <div className="ml-1">
-                            <SignInDropdown />
+                            <SignInDropdown tone="onDark" />
                         </div>
                     ) : (
                         <Link

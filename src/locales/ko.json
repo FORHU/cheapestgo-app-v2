@@ -949,6 +949,64 @@
         "stays": "숙소",
         "flights": "항공편",
         "aiSearch": "AI 검색"
+      },
+      "go": "출발",
+      "whosComing": "누가 묵으시나요?"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "호텔 · 항공편 · 골프",
+        "titleLine1": "한 번의 검색.",
+        "titleLine2": "모든 여정으로.",
+        "subtitle": "숨은 수수료는 빼고, 노을을 쫓아 떠나세요.",
+        "scrollCue": "아래로 스크롤하여 둘러보기"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "01단계 · 호텔",
+          "titleLead": "숙소를",
+          "titleRest": "찾아보세요.",
+          "caption": "호텔과 숙소를 1박 요금으로 — 예약 버튼을 누르기 전에 모든 수수료를 보여드립니다."
+        },
+        "flights": {
+          "eyebrow": "02단계 · 항공편",
+          "titleLead": "그다음엔",
+          "titleRest": "떠나세요.",
+          "caption": "모든 항공사, 모든 운임 등급을 실제 지불 금액 순으로 정렬합니다."
+        },
+        "ai": {
+          "eyebrow": "03단계 · AI 플래너",
+          "titleLead": "아니면",
+          "titleRest": "그냥 물어보세요.",
+          "caption": "여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요."
+        },
+        "options": {
+          "eyebrow": "도착",
+          "titleLead": "이제",
+          "titleRest": "선택하세요.",
+          "caption": "숙소, 항공편, 골프까지 한곳에서."
+        }
+      },
+      "strip": {
+        "from": "{price}부터"
+      },
+      "options": {
+        "staysNote": "호텔 및 숙소",
+        "flightsNote": "연결 가능한 모든 항공사",
+        "golf": "골프",
+        "golfNote": "출시 예정"
+      },
+      "ask": {
+        "placeholder": "원하는 여행을 설명해 주세요…",
+        "label": "원하는 여행을 설명해 주세요",
+        "submit": "물어보기",
+        "example1": "서울 5박, ₱40,000 이하",
+        "example2": "해변, 직항, 금요일 출발",
+        "example3": "일본 두 도시, 일주일"
+      },
+      "altitude": {
+        "label": "고도",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -2039,7 +2097,11 @@
       "anywhere": "어딘가 멋진 곳",
       "sometime": "언젠가 곧",
       "justMe": "혼자",
-      "ofUs": "{count}명"
+      "ofUs": "{count}명",
+      "origin": "내가 있는 곳",
+      "aDate": "원하는 날",
+      "yourDates": "원하는 일정",
+      "flexibleTrip": "유연한 여행"
     },
     "trendingCities": "인기 도시",
     "popularAirports": "인기 공항",

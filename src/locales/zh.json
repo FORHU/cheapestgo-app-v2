@@ -949,6 +949,64 @@
         "stays": "住宿",
         "flights": "航班",
         "aiSearch": "AI 搜索"
+      },
+      "go": "出发",
+      "whosComing": "谁来入住？"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "酒店 · 航班 · 高尔夫",
+        "titleLine1": "一次搜索。",
+        "titleLine2": "所有出行方式。",
+        "subtitle": "拒绝隐藏费用，追逐日落。",
+        "scrollCue": "向下滚动探索"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "第 01 站 · 酒店",
+          "titleLead": "找到",
+          "titleRest": "你的住处。",
+          "caption": "酒店与民宿，按晚报价——点击预订前，所有费用一目了然。"
+        },
+        "flights": {
+          "eyebrow": "第 02 站 · 航班",
+          "titleLead": "然后",
+          "titleRest": "出发吧。",
+          "caption": "所有航空公司、所有舱位，按您实际支付的价格排序。"
+        },
+        "ai": {
+          "eyebrow": "第 03 站 · AI 规划师",
+          "titleLead": "或者",
+          "titleRest": "直接问。",
+          "caption": "告诉我们您的行程，我们会为您报出合适的住宿与路线价格。"
+        },
+        "options": {
+          "eyebrow": "抵达",
+          "titleLead": "现在",
+          "titleRest": "做出选择。",
+          "caption": "住宿、航班与高尔夫，一站搞定。"
+        }
+      },
+      "strip": {
+        "from": "{price} 起"
+      },
+      "options": {
+        "staysNote": "酒店与民宿",
+        "flightsNote": "覆盖所有可订航空公司",
+        "golf": "高尔夫",
+        "golfNote": "即将推出"
+      },
+      "ask": {
+        "placeholder": "描述您想要的旅行…",
+        "label": "描述您想要的旅行",
+        "submit": "提问",
+        "example1": "首尔 5 晚，预算 ₱40,000 以内",
+        "example2": "海滩、直飞、周五出发",
+        "example3": "日本两座城市，一周"
+      },
+      "altitude": {
+        "label": "高度",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -2039,7 +2097,11 @@
       "anywhere": "某个好去处",
       "sometime": "近期某天",
       "justMe": "我一个人",
-      "ofUs": "{count} 人"
+      "ofUs": "{count} 人",
+      "origin": "您所在的地方",
+      "aDate": "某一天",
+      "yourDates": "您的出行日期",
+      "flexibleTrip": "灵活的行程"
     },
     "trendingCities": "热门城市",
     "popularAirports": "热门机场",
