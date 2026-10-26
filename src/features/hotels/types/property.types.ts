@@ -90,6 +90,13 @@ export interface HotelContent {
     lng: number | null;
     check_in_time?: string | null;
     check_out_time?: string | null;
+    /**
+     * The same two hours under the other names suppliers give them, read only when the
+     * `_time` pair is absent. Not redundant: which pair arrives depends on the supplier,
+     * and the property page falls back from one to the other.
+     */
+    check_in?: string | null;
+    check_out?: string | null;
     /** ETG-sourced extras — grouped hotel amenities + property policy sections + free-text tail. */
     amenityGroups?: AmenityGroup[];
     roomPolicySections?: DetailSection[];
@@ -116,6 +123,12 @@ export interface PropertyApiResponse {
     reviewItems?: ReviewItem[];
     rooms?: RoomOption[];
     error?: string;
+    /**
+     * Stays are off sale, so `rooms` is empty for that reason rather than because the
+     * hotel is full. The two are indistinguishable without this, and one of them should
+     * put a notice on the page.
+     */
+    maintenance?: boolean;
 }
 
 export interface PropertySearchParams {
