@@ -78,31 +78,13 @@
   @apply text-fluid-xs font-normal text-blue-600 dark:text-blue-400;
 }
 
-/* Custom Utilities for Grid Backgrounds */
-@utility bg-grid-obsidian {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-@utility bg-grid-alabaster {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-@utility bg-size-40px_40px {
-  background-size: 40px 40px;
-}
-
 /*
  * A screen that owns the viewport outright — the search page's map view. The
  * search page adds this to <body> for as long as that view is showing.
  *
- * Three things have to go, and all three of them live on the app shell in
- * layout.tsx rather than on the page, which is why this is a body class and not
- * a prop:
+ * Two things have to go, and both of them live on the app shell in layout.tsx
+ * rather than on the page, which is why this is a body class and not a prop:
  *
- *   - the page grid, which is the only thing behind a full-bleed map and shows
- *     as a strip of graph paper wherever the map does not quite reach;
  *   - the shell's `min-h-screen`, which is 100vh — larger than the 100dvh the
  *     map fills whenever the browser's URL bar is on screen, so the difference
  *     scrolls into view as bare shell;
@@ -118,7 +100,6 @@ body.map-immersive {
 }
 
 body.map-immersive .app-shell {
-  background-image: none;
   min-height: 100dvh;
 }
 
@@ -127,10 +108,10 @@ body.map-immersive .app-shell-main {
 }
 
 /*
- * A screen on a plain ground rather than v1's graph paper — the flight results
- * page. That page adds this to <body> while it is showing, for the same reason
- * `.map-immersive` is a body class: the grid and the sparkles both live on the
- * app shell in layout.tsx, out of the page's reach.
+ * A screen on its own flat ground rather than the app shell's — the flight
+ * results page. That page adds this to <body> while it is showing, for the same
+ * reason `.map-immersive` is a body class: the shell's background lives in
+ * layout.tsx, out of the page's reach.
  *
  * Light is slate-100, the hotel list view's ground. Dark is the landing canvas (`BRAND.canvas` in
  * shared/lib/palette.ts), held to the viewport so a long list of results does
@@ -142,10 +123,6 @@ body.flat-ground .app-shell {
 
 html.dark body.flat-ground .app-shell {
   background: radial-gradient(120% 80% at 50% 0%, #0f172a 0%, #0b1222 45%, #020617 100%) fixed;
-}
-
-body.flat-ground .global-sparkle {
-  display: none;
 }
 
 @utility thin-scrollbar {
@@ -714,27 +691,87 @@ body {
 }
 
 /*
- * The landing Journey's scroll snapping.
+ * The hero backdrop's wing layer — see `HeroBackdrop.tsx`.
  *
- * `proximity`, not `mandatory`: the visitor is never prevented from scrolling where they
- * like, but coming to rest near a beat settles onto it. Without this, stopping mid-blend
- * parks the showcase between two photographs, which reads as the picture being out of
- * focus rather than as a transition.
+ * Reuses the same photo twice rather than a cut-out: a precise polygon trace of the wing
+ * (manual, no pixel-picker available) kept either leaving sky inside the "wing" or slicing
+ * through solid wing material, and a hard edge would carry that error visibly. A soft,
+ * wide-feathered mask over roughly the wing's own region is forgiving of that imprecision —
+ * it reads as a light/parallax highlight, not a cutout, so where exactly its edge falls
+ * matters far less.
  *
- * Applied by the Journey only while it owns the screen, and removed once the visitor has
- * scrolled past it — the search section and the footer below have nothing to snap to.
+ * Every tunable lives here as a custom property, not buried in the keyframes, so the feel
+ * can be adjusted without touching the animation logic itself.
  */
-html.journey-snap {
-    scroll-snap-type: y proximity;
+.hero-wing-mask {
+    --hero-mask-w: 60%;
+    --hero-mask-h: 30%;
+    --hero-mask-x: 76%;
+    --hero-mask-y: 38%;
+    -webkit-mask-image: radial-gradient(
+        ellipse var(--hero-mask-w) var(--hero-mask-h) at var(--hero-mask-x) var(--hero-mask-y),
+        white 0%,
+        white 35%,
+        transparent 75%
+    );
+    mask-image: radial-gradient(
+        ellipse var(--hero-mask-w) var(--hero-mask-h) at var(--hero-mask-x) var(--hero-mask-y),
+        white 0%,
+        white 35%,
+        transparent 75%
+    );
 }
 
-html.journey-snap .journey-beat {
-    scroll-snap-align: start;
+.hero-wing-drift {
+    --hero-drift-duration: 26s;
+    --hero-drift-amplitude: 14px;
+    animation: hero-wing-drift var(--hero-drift-duration) ease-in-out infinite;
+    will-change: transform;
 }
 
-/* Someone who asked for less motion is not snapped around the page. */
-@media (prefers-reduced-motion: reduce) {
-    html.journey-snap {
-        scroll-snap-type: none;
+@keyframes hero-wing-drift {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(calc(var(--hero-drift-amplitude) * -1), calc(var(--hero-drift-amplitude) * 0.35), 0)
+            scale(1.015);
     }
 }
+
+/* A soft, periodic glint rather than a constant shine — sunlight catching the wing once in
+ * a while reads as atmosphere; a fixed shimmer reads as a loading skeleton. */
+.hero-wing-glint {
+    --hero-glint-interval: 9s;
+    --hero-glint-duration: 2.4s;
+    background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+    background-size: 220% 220%;
+    animation: hero-wing-glint var(--hero-glint-interval) ease-in-out infinite;
+}
+
+@keyframes hero-wing-glint {
+    0%,
+    82%,
+    100% {
+        opacity: 0;
+        background-position: 0% 0%;
+    }
+    88% {
+        opacity: 0.4;
+    }
+    94% {
+        opacity: 0;
+        background-position: 100% 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-wing-drift,
+    .hero-wing-glint {
+        animation: none !important;
+        transform: none !important;
+        opacity: 0 !important;
+    }
+}
+

@@ -388,7 +388,6 @@ export function InvoiceView() {
                     header, footer, nav,
                     [data-react-scan], [id*="react-scan"],
                     [class*="react-scan"], [class*="fps"],
-                    [class*="GlobalSparkle"], [class*="sparkle"],
                     [class*="pwa"], [class*="PWA"],
                     [class*="AuthModal"], [class*="Toaster"],
                     [style*="position: fixed"], [style*="position:fixed"] {

@@ -21,22 +21,11 @@ export function useJourneyProgress(trackRef: RefObject<HTMLElement | null>): {
     journey: number;
     /** Height the spacer must reserve, in CSS pixels. 0 until measured. */
     trackPx: number;
-    /**
-     * How far past the end of the track the visitor has scrolled, 0 → 1 over the next
-     * half viewport.
-     *
-     * Journey Progress clamps at 1, so without this every fixed layer stayed pinned
-     * forever: scrolling on brought the real search section up *underneath* a stage panel
-     * that would not leave, and the two rendered on top of each other. The reference does
-     * the same thing — it fades its canvas out once the ordinary sections arrive.
-     */
-    exit: number;
     /** True when the visitor asked for less motion: the Journey renders as stills. */
     reducedMotion: boolean;
 } {
     const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
     const [journey, setJourney] = useState(0);
-    const [exit, setExit] = useState(0);
     const [trackPx, setTrackPx] = useState(0);
     const frame = useRef<number | null>(null);
 
@@ -44,7 +33,6 @@ export function useJourneyProgress(trackRef: RefObject<HTMLElement | null>): {
         // Stills get no scroll listener at all — there is nothing for it to drive.
         if (reducedMotion) {
             setJourney(0);
-            setExit(0);
             setTrackPx(0);
             return;
         }
@@ -71,13 +59,6 @@ export function useJourneyProgress(trackRef: RefObject<HTMLElement | null>): {
             // Measured from the track's own top, not the document's.
             const into = window.scrollY - top;
             setJourney(height > 0 ? Math.max(0, Math.min(into / height, 1)) : 0);
-            // Begins exactly when the section below the track first enters the viewport —
-            // one viewport before the track ends — and completes as the track does. Any
-            // later and the two are on screen together: that is what put a stage panel on
-            // top of the search form. The last stage therefore ends before this begins,
-            // leaving the final viewport of the track as room to leave in.
-            const run = window.innerHeight;
-            setExit(run > 0 ? Math.max(0, Math.min((into - (height - run)) / run, 1)) : 0);
         };
 
         const onScroll = () => {
@@ -110,5 +91,5 @@ export function useJourneyProgress(trackRef: RefObject<HTMLElement | null>): {
         };
     }, [reducedMotion, trackRef]);
 
-    return { journey, exit, trackPx, reducedMotion };
+    return { journey, trackPx, reducedMotion };
 }

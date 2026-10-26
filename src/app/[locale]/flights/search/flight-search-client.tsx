@@ -92,7 +92,7 @@ const PANEL_FADE = { duration: 0.18 };
 
 /**
  * The page ground — slate-100, as the hotel list view has it, or the landing canvas in the dark — painted on the
- * app shell by `body.flat-ground` (globals.css) in place of v1's graph paper.
+ * app shell by `body.flat-ground` (globals.css) in place of the shell's own background.
  *
  * The sticky bar's strip paints the same ground so the bar floats on it rather than
  * on a band of its own. Dark is held to the viewport, as the shell's is, so the strip
@@ -172,8 +172,8 @@ export function FlightSearchClient() {
     const router = useRouter();
     const { theme, toggleTheme } = useTheme();
 
-    // v1's graph paper and sparkles live on the app shell, out of this page's
-    // reach; the body class swaps them for the plain ground. See `GROUND`.
+    // The app shell's background lives out of this page's reach; the body class
+    // swaps it for the plain ground. See `GROUND`.
     useEffect(() => {
         document.body.classList.add('flat-ground');
         return () => document.body.classList.remove('flat-ground');

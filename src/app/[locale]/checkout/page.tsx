@@ -12,12 +12,14 @@ import { useAuthStore } from '@/shared/auth/store';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { env } from '@/shared/lib/env';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
-import { formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
+import { formatStayDates } from '@/features/checkout/lib/checkout.helpers';
 import { useHotelCheckout } from '@/features/checkout/hooks/use-hotel-checkout';
 import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/hotel-checkout-machine';
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
+import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
+import { formatMoney } from '@/features/checkout/lib/format-money';
 import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
 import { DateField } from '@/features/checkout/components/date-field';
 import { AutocompleteSelectField } from '@/features/checkout/components/autocomplete-select-field';
@@ -447,12 +449,14 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
 // ─── Stripe payment form ──────────────────────────────────────────────────────
 
 function StripePaymentForm({
-    onSuccess, onError, total, currency, country, submitting, palette,
+    onSuccess, onError, total, currency, amountLabel, country, submitting, palette,
 }: {
     onSuccess: (paymentIntentId: string) => void;
     onError:   (msg: string) => void;
     total:     number;
     currency:  string;
+    /** The amount as the button should say it, when the caller has one to the cent. */
+    amountLabel?: string;
     country?:  string;
     submitting: boolean;
     palette:   Palette;
@@ -499,8 +503,8 @@ function StripePaymentForm({
                     <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
                 </div>
             </div>
-            <PrimaryBtn onClick={handlePay} loading={submitting} disabled={!stripe || !elements}>
-                {t('payNow', { amount: `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
+            <PrimaryBtn onClick={handlePay} loading={submitting || clicking} disabled={!stripe || !elements}>
+                {t('payNow', { amount: amountLabel ?? `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
             </PrimaryBtn>
         </>
     );
@@ -713,6 +717,10 @@ function CheckoutContent() {
     const offerId = searchParams.get('offerId');
     const hotelId = searchParams.get('hotelId');
     const mode: 'hotel' | 'flight' = offerId && !hotelId ? 'flight' : 'hotel';
+    // The offer, read once: its quote is what the traveller is shown before committing to
+    // anything, and the receipt draws its itinerary from it afterwards.
+    const { offer: flightOffer, loading: flightOfferLoading } = useFlightOffer(mode === 'flight' ? offerId : null);
+    const quote = flightOffer?.quote ?? null;
 
     // ── Hotel params ──
     const checkIn      = searchParams.get('checkIn')      ?? '';
@@ -766,12 +774,15 @@ function CheckoutContent() {
     const [pnr, setPnr]                     = useState<string | null>(null);
     /** Paid for, but the airline has not settled it yet: the API answered BOOKING_PROCESSING. */
     const [flightSettling, setFlightSettling] = useState<'pending' | 'needs_review' | null>(null);
+    /** What `/flights/book` says the card is held for: the figure the Pay button and the receipt
+     *  show, in place of the fare the link carried. */
+    const [held, setHeld] = useState<{ amount: number; currency: string; fare: number; serviceFee: number } | null>(null);
 
     // Hotel guest form — passenger 1 is the booking holder
     const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '', phone: '', phoneCode: '+63' });
 
     // Hotel co-guests — passenger 2..N, name only
-    const [coGuests, setCoGuests]           = useState<CoGuest[]>(() =>
+    const [coGuests, setCoGuests]           = useState<HotelGuestForm['coGuests']>(() =>
         Array.from({ length: Math.max(0, adults - 1) }, () => ({ firstName: '', lastName: '' }))
     );
     // Each child: their age is what a supplier admits and prices them by. A name is optional.
@@ -818,7 +829,7 @@ function CheckoutContent() {
         clearError(`holder.${field}`);
     }, [clearError]);
 
-    const onCoGuest = useCallback((index: number, field: keyof CoGuest, value: string) => {
+    const onCoGuest = useCallback((index: number, field: keyof HotelGuestForm['coGuests'][number], value: string) => {
         setCoGuests(gs => gs.map((g, i) => i === index ? { ...g, [field]: value } : g));
         clearError(`coGuests.${index}.${field}`);
     }, [clearError]);
@@ -900,7 +911,7 @@ function CheckoutContent() {
     // and the payment form behind this step has nothing left to pay with.
     const handleFlightPaid = useCallback(async (stripePaymentIntentId: string) => {
         setSubmitting(true); setErrorMsg(null);
-        const backToDetails = () => { setClientSecret(null); setFlightSessionId(''); setStep('form'); };
+        const backToDetails = () => { setClientSecret(null); setFlightSessionId(''); setHeld(null); setStep('form'); };
         try {
             const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
                 '/flights/confirm',
@@ -959,10 +970,18 @@ function CheckoutContent() {
             // and takes nothing. The airline is asked once the card is authorised, by
             // `/flights/confirm`. This used to jump straight to "confirmed" on its response,
             // so the step that pays never ran.
-            const res = await http.post<{ clientSecret: string; sessionId: string; paymentIntentId: string }>(
+            // The fare the traveller was shown goes with the request: `book` refuses, before any
+            // card is held, a fare that has risen since. Without it the web checkout compared
+            // against nothing and a risen fare was only refused after the card.
+            const shownFare = quote?.fare ?? totalAmount;
+            const res = await http.post<{
+                clientSecret: string; sessionId: string; paymentIntentId: string;
+                amount?: number; currency?: string; fare?: number; serviceFee?: number;
+            }>(
                 '/flights/book',
                 {
                     offerId, currency: flightCurrency,
+                    ...(Number.isFinite(shownFare) && shownFare > 0 ? { confirmedPrice: shownFare } : {}),
                     contact: { email: passengers[0].email, phone: passengers[0].phone, countryCode: contactPhoneCode },
                     // Stable per attempt, so a retry after a dropped response cannot buy a
                     // second ticket.
@@ -979,13 +998,16 @@ function CheckoutContent() {
             );
             setFlightSessionId(res.sessionId);
             setClientSecret(res.clientSecret);
+            setHeld(typeof res.amount === 'number' && res.currency
+                ? { amount: res.amount, currency: res.currency, fare: res.fare ?? res.amount, serviceFee: res.serviceFee ?? 0 }
+                : null);
             setStep('payment');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, quote, totalAmount]);
 
     // ── Price helpers ──
     //
@@ -997,6 +1019,11 @@ function CheckoutContent() {
     const nightlyPrice  = nights && roomTotal ? roomTotal / nights : roomTotal;
     const fee           = display?.serviceFee ?? 0;
     const total         = display?.chargedTotal ?? roomTotal;
+    /** What a flight costs, from the server: what the card is held for once it is, the quote
+     *  until then. Null when neither is known, and the page falls back to the link's fare. */
+    const flightPrice = held
+        ? { currency: held.currency, fare: held.fare, serviceFee: held.serviceFee, total: held.amount }
+        : quote;
 
     // ── Back handler ──
     function handleBack() {
@@ -1044,15 +1071,18 @@ function CheckoutContent() {
             return (
                 <FlightConfirmedScreen
                     palette={palette}
-                    offerId={offerId ?? ''}
+                    offer={flightOffer}
+                    loadingOffer={flightOfferLoading}
                     bookingId={bookingId}
                     pnr={pnr}
                     origin={origin}
                     destination={destination}
                     departureDate={departureDate}
                     cabin={cabin}
-                    currency={flightCurrency}
-                    total={totalAmount}
+                    currency={held?.currency ?? flightCurrency}
+                    total={held?.amount ?? totalAmount}
+                    fare={held?.fare}
+                    serviceFee={held?.serviceFee}
                     adults={adults}
                     childPassengers={children}
                     infants={infants}
@@ -1213,10 +1243,32 @@ function CheckoutContent() {
                                 {departureDate && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{fmtDate(departureDate)}</div>}
                                 {cabin && <div style={{ fontSize: 13, color: palette.soft }}>{cabin}</div>}
                                 {rule}
-                                <div style={{ ...row, fontWeight: 700, color: palette.title }}>
-                                    <span>{tAll('checkout.success.total')}</span>
-                                    <span>{flightCurrency} {totalAmount.toLocaleString()}</span>
-                                </div>
+                                {flightPrice ? (
+                                    <>
+                                        <div style={{ display: 'grid', gap: 8 }}>
+                                            <div style={row}>
+                                                <span>{tAll('checkout.flight.receipt.fareLine', { count: passengers.length })}</span>
+                                                <span>{formatMoney(flightPrice.fare, flightPrice.currency)}</span>
+                                            </div>
+                                            {flightPrice.serviceFee > 0 && (
+                                                <div style={row}>
+                                                    <span>{t('serviceFee')}</span>
+                                                    <span>{formatMoney(flightPrice.serviceFee, flightPrice.currency)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {rule}
+                                        <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                            <span>{tAll('checkout.success.total')}</span>
+                                            <span>{formatMoney(flightPrice.total, flightPrice.currency)}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                        <span>{tAll('checkout.success.total')}</span>
+                                        <span>{flightCurrency} {totalAmount.toLocaleString()}</span>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -1376,11 +1428,11 @@ function CheckoutContent() {
                                         <StripePaymentForm
                                             onSuccess={handleStripeSuccess}
                                             onError={handleStripeError}
-                                            total={totalAmount}
-                                            currency={flightCurrency}
+                                            total={held?.amount ?? totalAmount}
+                                            currency={held?.currency ?? flightCurrency}
+                                            amountLabel={held ? formatMoney(held.amount, held.currency) : undefined}
                                             country={passengers[0].country}
                                             submitting={submitting}
-                                            setSubmitting={setSubmitting}
                                             palette={palette}
                                         />
                                     </Elements>
@@ -1606,7 +1658,6 @@ function CheckoutContent() {
                                     total={total}
                                     currency={shownCurrency}
                                     submitting={hotelSubmitting}
-                                    setSubmitting={setSubmitting}
                                     palette={palette}
                                 />
                             </Elements>

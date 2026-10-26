@@ -9,7 +9,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Providers } from '@/shared/components/providers';
 import { AuthListener } from '@/shared/auth/AuthListener';
 import { ExchangeRateListener } from '@/shared/components/ExchangeRateListener';
-import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 import { brandProfile, brandPreviewEnabled } from '@/shared/lib/brand';
 import { getBrandName } from '@/shared/lib/brand.server';
 import { BrandProvider } from '@/shared/components/BrandProvider';
@@ -118,14 +117,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         <AuthListener />
                         <ExchangeRateListener />
                         {/* The two class hooks are for screens that own the whole
-                            viewport and want none of this — the page grid, the
-                            100vh floor, the nav inset. They cannot be dropped
+                            viewport and want none of this — the 100vh floor, the
+                            nav inset. They cannot be dropped
                             here with a route test, because this is a server
                             component and one of them (the search page's map view
                             against its list view) is a matter of client state.
                             See `.map-immersive` in globals.css. */}
-                        <div className="app-shell relative min-h-screen w-full bg-alabaster dark:bg-obsidian text-slate-900 dark:text-white transition-colors bg-grid-alabaster dark:bg-grid-obsidian bg-size-40px_40px">
-                            <GlobalSparkle />
+                        <div className="app-shell relative min-h-screen w-full bg-alabaster dark:bg-obsidian text-slate-900 dark:text-white transition-colors">
                             {/* Room under the page for the bottom nav — 80px of
                                 bar plus its safe-area inset, plus air. A flat
                                 pb-24 came up short on a phone with a home

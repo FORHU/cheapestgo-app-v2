@@ -8,7 +8,7 @@
  * traveller as what it is, not as the same red sentence.
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import en from '@/locales/en.json';
@@ -40,15 +40,14 @@ vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: '
 vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
 
 // Stripe: a card form whose pay button authorises — manual capture, so `requires_capture`.
+const stripeMock = vi.hoisted(() => ({ confirmPayment: vi.fn() }));
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn(async () => ({})) }));
 vi.mock('@stripe/react-stripe-js', () => ({
     Elements: ({ children }: { children: React.ReactNode }) => <div data-testid="stripe-elements">{children}</div>,
     PaymentElement: ({ options }: { options?: { defaultValues?: { billingDetails?: { address?: { country?: string } } } } }) => (
         <div data-testid="payment-element" data-country={options?.defaultValues?.billingDetails?.address?.country} />
     ),
-    useStripe: () => ({
-        confirmPayment: vi.fn(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } })),
-    }),
+    useStripe: () => ({ confirmPayment: stripeMock.confirmPayment }),
     useElements: () => ({}),
 }));
 
@@ -68,10 +67,13 @@ const FLIGHT_QUERY = {
 const httpError = (status: number, body: Record<string, unknown>) =>
     Object.assign(new Error((body.message as string) ?? 'x'), { status, code: body.error, body });
 
+/** What `book` reports the card is held for: the fare above, plus the service fee. */
+const HELD = { amount: 272.4, currency: 'USD', fare: 250, serviceFee: 22.4 };
+
 type Confirm = () => unknown;
 function api(confirm: Confirm = () => ({ bookingId: 'bk-1', pnr: 'ABC123', status: 'ticketed', source: 'lifecycle' })) {
     post.mockImplementation(async (path: string) => {
-        if (path === '/flights/book') return { clientSecret: 'cs_1', sessionId: 'sess-1', paymentIntentId: 'pi_1' };
+        if (path === '/flights/book') return { clientSecret: 'cs_1', sessionId: 'sess-1', paymentIntentId: 'pi_1', ...HELD };
         if (path === '/flights/confirm') return confirm();
         throw new Error(`unexpected POST ${path}`);
     });
@@ -93,6 +95,7 @@ const FLIGHT_OFFER = {
     refundable: true, farePolicy: { isRefundable: true, isChangeable: true, refundPenaltyAmount: null, refundPenaltyCurrency: null },
     baggage: { checkedBags: 1, cabinBag: true },
     normalizedPriceUsd: 250, bestScore: 0, physicalFlightId: 'off_1',
+    quote: { currency: 'USD', fare: 250, serviceFee: 22.4, total: 272.4 },
 };
 
 function mockOffer(offer: unknown = FLIGHT_OFFER) {
@@ -151,13 +154,14 @@ async function payForFlight() {
     renderPage();
     fillPassenger();
     fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /pay usd 250/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /pay usd 272\.40/i }));
 }
 
 const confirmCalls = () => post.mock.calls.filter((c) => c[0] === '/flights/confirm');
 
 beforeEach(() => {
     vi.clearAllMocks();
+    stripeMock.confirmPayment.mockImplementation(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } }));
     auth.user = { email: 'juan@example.com', first_name: '', last_name: '' };
     query = new URLSearchParams(FLIGHT_QUERY).toString();
     api();
@@ -167,6 +171,7 @@ beforeEach(() => {
 // ── the tests ────────────────────────────────────────────────────────────────
 
 interface BookBody {
+    confirmedPrice?: number;
     contact:    { email: string; phone: string; countryCode: string };
     passengers: Array<{ type: string; dateOfBirth: string; nationality: string }>;
 }
@@ -340,8 +345,9 @@ describe('the passenger form', () => {
         expect(bookCalls()[0].passengers.map((p) => p.dateOfBirth))
             .toEqual(['1990-01-01', '2018-05-05', '2026-03-01']);
         expect(bookCalls()[0].passengers.map((p) => p.nationality)).toEqual(['PH', 'PH', 'PH']);
-    // Three travellers' forms, six date pickers, each click a full page render.
-    }, 20_000);
+    // Three travellers' forms, six date pickers, each click a full page render: about nine
+    // seconds on its own, so twenty was not enough once the whole suite ran beside it.
+    }, 40_000);
 });
 
 describe('the payment step', () => {
@@ -351,6 +357,120 @@ describe('the payment step', () => {
         fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
         expect(await screen.findByText(/charged only once the airline confirms your ticket/i)).toBeInTheDocument();
+    });
+
+    it('asks Stripe to authorise the card once, however often Pay is pressed while it works', async () => {
+        // Authorising takes a round trip to the bank, and longer with a 3-D Secure challenge.
+        // The page's own busy flag only goes up once Stripe has answered, so until then nothing
+        // stood between a second press and a second authorisation of the same payment.
+        let authorise!: (result: unknown) => void;
+        stripeMock.confirmPayment.mockImplementation(() => new Promise((resolve) => { authorise = resolve; }));
+
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        const pay = await screen.findByRole('button', { name: /pay usd 272\.40/i });
+
+        fireEvent.click(pay);
+        fireEvent.click(pay);
+
+        expect(stripeMock.confirmPayment).toHaveBeenCalledTimes(1);
+        expect(pay).toBeDisabled();
+
+        await act(async () => { authorise({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } }); });
+        await waitFor(() => expect(confirmCalls()).toHaveLength(1));
+    });
+
+    it('lets the traveller try again when the card is declined', async () => {
+        stripeMock.confirmPayment.mockResolvedValueOnce({ error: { message: 'Your card was declined.' } });
+
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        fireEvent.click(await screen.findByRole('button', { name: /pay usd 272\.40/i }));
+
+        expect(await screen.findByText('Your card was declined.')).toBeInTheDocument();
+        const again = screen.getByRole('button', { name: /pay usd 272\.40/i });
+        expect(again).toBeEnabled();
+
+        fireEvent.click(again);
+        await waitFor(() => expect(confirmCalls()).toHaveLength(1));
+    });
+});
+
+describe('what the traveller is shown, and what the card is held for', () => {
+    it('shows the fare, the service fee and the total — the quote the server made — before any details are entered', async () => {
+        renderPage();
+
+        // Together, and re-queried: the summary is rebuilt as the page settles after the quote
+        // arrives, so an element held across that would be a detached one.
+        await waitFor(() => {
+            expect(screen.getByText('Service fee')).toBeInTheDocument();
+            expect(screen.getByText('USD 22.40')).toBeInTheDocument();
+            expect(screen.getByText('USD 272.40')).toBeInTheDocument();
+            expect(screen.getByText('USD 250.00')).toBeInTheDocument();
+        });
+    });
+
+    it('falls back to the fare in the link, with no invented fee, when no quote could be made', async () => {
+        get.mockRejectedValue(new Error('airline unreachable'));
+        renderPage();
+
+        await waitFor(() => expect(get).toHaveBeenCalled());
+        expect(screen.queryByText('Service fee')).not.toBeInTheDocument();
+        expect(screen.getByText('USD 250')).toBeInTheDocument();
+    });
+
+    it('asks the server to hold the card only if the fare is still the one that was shown', async () => {
+        // The web checkout sent no fare to compare, so a fare that rose between the search and
+        // the card was never caught here and went on to be refused after the card.
+        renderPage();
+        await screen.findByText('Service fee');
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        await waitFor(() => expect(bookCalls()).toHaveLength(1));
+        expect(bookCalls()[0].confirmedPrice).toBe(250);
+    });
+
+    it('still sends the fare it was linked with when there is no quote', async () => {
+        get.mockRejectedValue(new Error('airline unreachable'));
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        await waitFor(() => expect(bookCalls()).toHaveLength(1));
+        expect(bookCalls()[0].confirmedPrice).toBe(250);
+    });
+
+    it('writes on the Pay button what the server says the card is held for, to the cent — not the fare in the link', async () => {
+        api(() => ({ bookingId: 'bk-1', pnr: 'ABC123', status: 'ticketed' }));
+        post.mockImplementation(async (path: string) => {
+            if (path === '/flights/book') return { clientSecret: 'cs_1', sessionId: 'sess-1', paymentIntentId: 'pi_1', amount: 281.93, currency: 'USD', fare: 258, serviceFee: 23.93 };
+            throw new Error(`unexpected POST ${path}`);
+        });
+
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        expect(await screen.findByRole('button', { name: /pay usd 281\.93/i })).toBeInTheDocument();
+    });
+
+    it('tells the traveller the fare rose, with both prices, before any card is held', async () => {
+        post.mockImplementation(async (path: string) => {
+            if (path === '/flights/book') {
+                throw httpError(409, { error: 'PRICE_CHANGED', message: 'Flight price changed from 250 to 270. Please restart booking.', oldPrice: 250, newPrice: 270, currency: 'USD' });
+            }
+            throw new Error(`unexpected POST ${path}`);
+        });
+
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        expect(await screen.findByText(/price changed from 250 to 270/i)).toBeInTheDocument();
+        expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
     });
 });
 
@@ -394,8 +514,9 @@ describe('after the card', () => {
         // The passenger, and what was paid.
         expect(screen.getByText('Juan Cruz')).toBeInTheDocument();
         expect(screen.getByText('ADULT 1')).toBeInTheDocument();
-        expect(screen.getByText('USD 250.00')).toBeInTheDocument();
-        expect(screen.getByText('250')).toBeInTheDocument();
+        expect(screen.getByText('USD 250.00')).toBeInTheDocument();   // the airline's fare
+        expect(screen.getByText('USD 22.40')).toBeInTheDocument();    // our service fee
+        expect(screen.getByText('272.40')).toBeInTheDocument();       // what the card was held for
         expect(screen.getByText('bk-1')).toBeInTheDocument();
 
         // What a flight used to be told it had booked.
@@ -430,6 +551,19 @@ describe('after the card', () => {
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /view my trips/i }));
         expect(push).toHaveBeenCalledWith('/trips');
+    });
+
+    it('says a confirmation that never got an answer is still being confirmed — never that it failed', async () => {
+        // The airline can take longer to answer than a proxy waits. By then the ticket may be
+        // issued and the card captured, so the traveller must not be told to try again.
+        api(() => { throw new TypeError('Failed to fetch'); });
+
+        await payForFlight();
+
+        expect(await screen.findByText(/the airline is confirming your ticket/i)).toBeInTheDocument();
+        expect(screen.getByText(/don't pay again/i)).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.queryByText(/contact support/i)).not.toBeInTheDocument();
     });
 
     it('says a person is finishing it when it is under review — and never that the card was not charged', async () => {

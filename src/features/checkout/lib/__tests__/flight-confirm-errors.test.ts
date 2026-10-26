@@ -42,11 +42,33 @@ describe('readFlightConfirmError', () => {
         },
     );
 
-    it('reads anything else as an error, which may leave the payment where it was', () => {
+    it('reads a refusal the server made on the traveller\'s side as an error, which may leave the payment where it was', () => {
         expect(readFlightConfirmError(httpError(402, { error: 'PAYMENT_NOT_COMPLETED', message: 'Payment not completed.' })))
             .toEqual({ kind: 'error', message: 'Payment not completed.' });
-        expect(readFlightConfirmError(new TypeError('Failed to fetch')))
-            .toEqual({ kind: 'error', message: 'Failed to fetch' });
+        expect(readFlightConfirmError(httpError(403, { error: 'SESSION_MISMATCH', message: 'Not yours.' })))
+            .toEqual({ kind: 'error', message: 'Not yours.' });
+        expect(readFlightConfirmError(httpError(401, { message: 'Please sign in.' })))
+            .toEqual({ kind: 'error', message: 'Please sign in.' });
         expect(readFlightConfirmError('nonsense')).toEqual({ kind: 'error', message: '' });
+    });
+
+    // The airline can take two minutes to answer — longer than a proxy waits. By then the order
+    // may be placed and the card captured, so "it failed" is the one thing that cannot be said.
+    describe('an answer that never came', () => {
+        it('reads a dropped connection as a booking whose outcome is not known yet', () => {
+            expect(readFlightConfirmError(new TypeError('Failed to fetch')))
+                .toEqual({ kind: 'processing', needsReview: false });
+        });
+
+        it.each([500, 502, 504])('reads a bare %i — a proxy or crash, not the API\'s own answer — the same way', (status) => {
+            expect(readFlightConfirmError(httpError(status, { message: 'Gateway Timeout' })))
+                .toEqual({ kind: 'processing', needsReview: false });
+        });
+
+        it('still reads a server error that names itself by what it is', () => {
+            // 503 UPSTREAM_UNAVAILABLE is the API saying the hold was released.
+            expect(readFlightConfirmError(httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'Airline down. Not charged.' })))
+                .toEqual({ kind: 'refused', message: 'Airline down. Not charged.' });
+        });
     });
 });

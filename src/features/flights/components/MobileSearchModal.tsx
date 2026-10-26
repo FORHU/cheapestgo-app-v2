@@ -3,7 +3,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlobalSparkle } from '@/shared/components/ui/GlobalSparkle';
 
 interface MobileSearchModalProps {
     isOpen: boolean;
@@ -46,10 +45,6 @@ export function MobileSearchModal({ isOpen, onClose: _onClose, onSearch: _onSear
                     }}
                     className="bg-slate-100 dark:bg-slate-950 lg:hidden"
                 >
-                    <div className="absolute inset-0 z-0 pointer-events-none opacity-30">
-                        <GlobalSparkle />
-                    </div>
-
                     <div className="relative z-10 flex flex-col h-full w-full">
                         {children}
                     </div>

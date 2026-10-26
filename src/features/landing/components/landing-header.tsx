@@ -24,7 +24,11 @@ function LandingHeaderContent() {
     const brand = useBrandName();
 
     return (
-        <header className="relative z-[5]">
+        // Fixed, not in flow: the Journey's scroll track has to start at the very top of the
+        // page so the first wheel notch on the hero snaps to the next section, and the
+        // navbar has to stay on screen through every stage rather than scrolling away. The
+        // soft scrim keeps its white controls legible over the lighter sky/daylight stages.
+        <header className="fixed inset-x-0 top-0 z-[5] bg-linear-to-b from-[#020617]/55 to-transparent">
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">
                 <Link href="/" aria-label={`${brand} home`} className="flex shrink-0 items-center">
                     <LogoWordmark height={44} />

@@ -88,3 +88,27 @@ describe('ImmersiveSearchBar — flights pickers', () => {
         expect(screen.queryByText('Popular airports')).not.toBeInTheDocument();
     });
 });
+
+describe('ImmersiveSearchBar — onModeSelect', () => {
+    it('hands the other tab to the caller instead of switching in place', async () => {
+        const onModeSelect = vi.fn();
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar defaultMode="stays" onModeSelect={onModeSelect} />);
+
+        await user.click(screen.getByRole('button', { name: 'Flights' }));
+
+        expect(onModeSelect).toHaveBeenCalledExactlyOnceWith('flights');
+        // Still the stays form: the caller moves the visitor, this bar does not reskin itself.
+        expect(screen.queryByText('wherever you are')).not.toBeInTheDocument();
+    });
+
+    it('does nothing when the active tab is clicked', async () => {
+        const onModeSelect = vi.fn();
+        const user = userEvent.setup();
+        renderWithIntl(<ImmersiveSearchBar defaultMode="flights" onModeSelect={onModeSelect} />);
+
+        await user.click(screen.getByRole('button', { name: 'Flights' }));
+
+        expect(onModeSelect).not.toHaveBeenCalled();
+    });
+});

@@ -115,6 +115,18 @@ export interface NormalizedSegment {
     cabinClass?: string;
 }
 
+/**
+ * What the traveller will be charged for a fare, quoted by the server: the airline's price, our
+ * service fee, and the total, in the currency the card is held in. Only on the single-offer read
+ * (`GET /flights/offers/:offerId`); search results carry the airline's raw fare.
+ */
+export interface FlightQuote {
+    currency: string;
+    fare: number;
+    serviceFee: number;
+    total: number;
+}
+
 /** Normalized flight offer as returned by GET /api/v2/flights/search */
 export interface FlightOffer {
     offerId: string;
@@ -150,6 +162,7 @@ export interface FlightOffer {
         fareType?: string;
     };
     alternatives?: FlightOffer[];
+    quote?: FlightQuote;
     tripType?: 'one-way' | 'round-trip' | 'multi-city';
     traceId?: string;
     normalizedPriceUsd: number;

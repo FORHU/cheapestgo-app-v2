@@ -26,13 +26,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
-import { ImmersiveSearchBar, type TrendingDest } from '@/features/search/components/immersive-search-bar';
+import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
 import { LandingHeader } from '@/features/landing/components/landing-header';
 import { LandingFooter } from '@/features/landing/components/landing-footer';
 import { Journey } from '@/features/landing/journey/Journey';
 import { SHOWCASE_DESTINATIONS } from '@/features/landing/journey/stages';
 import { fetchActStays } from '@/features/landing/api/featured.api';
-import { defaultTripDates } from '@/features/landing/lib/links';
 
 const TRENDING_GRADIENTS = [
     'bg-gradient-to-br from-teal-500 to-emerald-700',
@@ -124,21 +123,10 @@ export default async function HomePage() {
 
             {/* The Journey stands where the looping backdrop video used to: it paints the
                 fixed world behind the page and reserves the scroll distance the journey
-                needs. The search section below is its destination, not a duplicate of
-                anything inside it. */}
-            <Journey dates={defaultTripDates()} trending={trending} showcaseStays={actStays} />
+                needs. */}
+            <Journey trending={trending} showcaseStays={actStays} />
 
-            {/* Hero — the search bar owns the whole space between header and footer,
-                sitting high in it rather than centred. Now the end of the journey: the
-                closing panel's CTA targets this `id`. */}
-            <section
-                id="search"
-                className="relative z-[1] flex flex-1 scroll-mt-24 justify-center px-4 pt-[clamp(16px,3vw,40px)] pb-[clamp(48px,8vw,96px)]"
-            >
-                <ImmersiveSearchBar trendingDestinations={trending} />
-            </section>
-
-            <div className="relative z-[1]">
+            <div className="relative z-[1] mt-auto">
                 <LandingFooter />
             </div>
         </main>

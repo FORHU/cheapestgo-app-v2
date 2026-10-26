@@ -1,23 +1,30 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
     JOURNEY_SCREENS,
+    JOURNEY_STOPS,
     SHOWCASE_DESTINATIONS,
     STAGES,
+    STAGE_DOCK,
     currentStage,
     hasWritten,
     ramp,
     stageProgress,
     groundLayers,
     HERO_GROUND,
-    journeyBeats,
     sequenceOpacity,
+    stageMotion,
+    showcaseOpacity,
+    faceOf,
+    stageFaces,
+    SIDE_OFFSET,
     type Stage,
 } from '@/features/landing/journey/stages';
+import { snapTargets } from '@/features/landing/journey/useSectionSnap';
 import { fetchActStays } from '@/features/landing/api/featured.api';
 
 /**
- * The Journey's timing spine. Every visible layer — showcase, docked search, Boarding
- * Pass — positions itself from these, so an error here moves all of them at once and in
+ * The Journey's timing spine. Every visible layer — showcase, docked search, altitude
+ * readout — positions itself from these, so an error here moves all of them at once and in
  * ways that look like a styling bug rather than a maths one.
  */
 
@@ -55,12 +62,21 @@ describe('stageProgress', () => {
 
 describe('STAGES', () => {
     it('is the product, in the order it is introduced', () => {
-        expect(STAGES.map(s => s.id)).toEqual(['stays', 'flights', 'ai', 'options']);
+        expect(STAGES.map(s => s.id)).toEqual(['stays', 'options']);
+    });
+
+    it('keeps the AI planner off the page, with no empty track left where it was', () => {
+        expect(STAGES.some(s => s.id === 'ai')).toBe(false);
+        for (let i = 1; i < STAGES.length; i++) {
+            expect(STAGES[i].from).toBe(STAGES[i - 1].to);
+        }
     });
 
     it('never overlaps — two docked searches at once would fight over the store', () => {
+        // Touching is fine (one stage's `to` is the next stage's `from`, for a direct
+        // section-to-section handoff) — only actual overlap would mount two panels at once.
         for (let i = 1; i < STAGES.length; i++) {
-            expect(STAGES[i].from).toBeGreaterThan(STAGES[i - 1].to);
+            expect(STAGES[i].from).toBeGreaterThanOrEqual(STAGES[i - 1].to);
         }
     });
 
@@ -68,48 +84,60 @@ describe('STAGES', () => {
         expect(STAGES[0].from).toBeGreaterThanOrEqual(0.1);
     });
 
-    /**
-     * The regression that put a stage panel on top of the search form.
-     *
-     * The section below the track enters the viewport one full viewport before the track
-     * ends. A stage still docked at that point is on screen at the same time as the form,
-     * and the two render over each other. The last viewport of the track is therefore
-     * reserved: no stage may run into it, and the exit fade owns it.
-     */
-    it('ends every stage before the section below enters the viewport', () => {
-        const sectionEnters = (JOURNEY_SCREENS - 1) / JOURNEY_SCREENS;
-        for (const s of STAGES) {
-            expect(s.to).toBeLessThanOrEqual(sectionEnters);
-        }
+    // The journey ends on its last stage. It used to leave the track's final viewport empty as
+    // "room to exit", and a final snap stop landed there: a near-blank screen with only the
+    // footer on it, after the stage that was meant to be the end.
+    it('runs the last stage to the end of the track, so no empty screen follows it', () => {
+        expect(STAGES[STAGES.length - 1].to).toBe(1);
     });
 
-    it('leaves the last viewport of the track as room to exit in', () => {
-        const last = STAGES[STAGES.length - 1].to;
-        const tail = 1 - last;
-        // At least most of a viewport of pure fade-out, with nothing docked.
-        expect(tail).toBeGreaterThanOrEqual(1 / JOURNEY_SCREENS * 0.9);
-    });
-
-    it('keeps every span inside the track and numbered in order', () => {
+    it('keeps every span inside the track', () => {
         expect(JOURNEY_SCREENS).toBeGreaterThan(1);
-        STAGES.forEach((s, i) => {
+        STAGES.forEach(s => {
             expect(s.from).toBeGreaterThanOrEqual(0);
             expect(s.to).toBeLessThanOrEqual(1);
             expect(s.to).toBeGreaterThan(s.from);
-            expect(s.index).toBe(i + 1);
         });
+    });
+});
+
+describe('JOURNEY_STOPS', () => {
+    it('is the top, a dock for each stage but the last, and the end — where the last stage settles', () => {
+        const docks = STAGES.slice(0, -1).map(s => s.from + (s.to - s.from) * STAGE_DOCK);
+        expect(JOURNEY_STOPS).toEqual([0, ...docks, 1]);
+        // One stop for the hero and one for each stage: nothing is left to scroll to after the last.
+        expect(JOURNEY_STOPS).toHaveLength(STAGES.length + 1);
+    });
+
+    it('parks every stage past its fade-in, never on the transparent edge', () => {
+        STAGES.forEach((stage, i) => {
+            const t = stageProgress(stage, JOURNEY_STOPS[i + 1]);
+            expect(t).not.toBeNull();
+            expect(ramp(t!, 0, 0.02)).toBe(1);
+            expect(currentStage(JOURNEY_STOPS[i + 1])?.id).toBe(stage.id);
+        });
+    });
+
+    it('is strictly increasing, so a snap in either direction always has somewhere to go', () => {
+        for (let i = 1; i < JOURNEY_STOPS.length; i++) {
+            expect(JOURNEY_STOPS[i]).toBeGreaterThan(JOURNEY_STOPS[i - 1]);
+        }
     });
 });
 
 describe('currentStage', () => {
     it('finds the stage the visitor is inside', () => {
-        expect(currentStage(STAGES[1].from + 0.01)?.id).toBe('flights');
+        expect(currentStage(STAGES[1].from + 0.01)?.id).toBe('options');
     });
 
-    it('is null in the gap between stages, and at the very top', () => {
+    it('is null before the first stage docks', () => {
         expect(currentStage(0)).toBeNull();
-        const gap = (STAGES[0].to + STAGES[1].from) / 2;
-        expect(currentStage(gap)).toBeNull();
+    });
+
+    it('hands off cleanly at a shared boundary — never both stages, never neither', () => {
+        const boundary = STAGES[0].to;
+        expect(boundary).toBe(STAGES[1].from);
+        expect(currentStage(boundary)?.id).toBe(STAGES[0].id);
     });
 });
 
@@ -120,7 +148,7 @@ describe('hasWritten', () => {
         // Appearing the instant a stage docks reads as pre-filled; landing while the
         // visitor is looking at the stage reads as the page answering them.
         expect(hasWritten(stage, stage.from)).toBe(false);
-        expect(hasWritten(stage, (stage.from + stage.to) / 2)).toBe(true);
+        expect(hasWritten(stage, stage.from + (stage.to - stage.from) * 0.5)).toBe(true);
     });
 
     it('stays written once the stage is behind you', () => {
@@ -128,10 +156,12 @@ describe('hasWritten', () => {
     });
 
     it('writes the lines in stage order, never ahead of the descent', () => {
-        const mid = (STAGES[1].from + STAGES[1].to) / 2;
-        expect(hasWritten(STAGES[0], mid)).toBe(true);   // already passed
-        expect(hasWritten(STAGES[1], mid)).toBe(true);   // being crossed
-        expect(hasWritten(STAGES[2], mid)).toBe(false);  // not reached
+        const midFirst = STAGES[0].from + (STAGES[0].to - STAGES[0].from) * 0.5;
+        const midSecond = STAGES[1].from + (STAGES[1].to - STAGES[1].from) * 0.5;
+        expect(hasWritten(STAGES[0], midFirst)).toBe(true);    // being crossed
+        expect(hasWritten(STAGES[1], midFirst)).toBe(false);   // not reached
+        expect(hasWritten(STAGES[0], midSecond)).toBe(true);   // already passed
+        expect(hasWritten(STAGES[1], midSecond)).toBe(true);   // being crossed
     });
 });
 
@@ -203,7 +233,7 @@ describe('fetchActStays', () => {
         );
 
         const out = await fetchActStays(SHOWCASE_DESTINATIONS);
-        expect(Object.keys(out).sort()).toEqual(['Bali', 'Boracay', 'Seoul']);
+        expect(Object.keys(out).sort()).toEqual(['Bali', 'Oklahoma City', 'Seoul']);
     });
 });
 
@@ -273,16 +303,13 @@ describe('groundLayers', () => {
  */
 describe('stage showcases', () => {
     const imagesOf = (s: Stage['showcase']): string[] =>
-        s.kind === 'sequence' || s.kind === 'mosaic'
-            ? s.images
-            : s.kind === 'crossing'
-              ? [s.from, s.to]
-              : [s.image];
+        s.kind === 'sequence' || s.kind === 'mosaic' ? s.images : [s.image];
 
     it('gives every stage a showcase with at least one photograph', () => {
         for (const stage of STAGES) {
-            const imgs = imagesOf(stage.showcase);
-            expect(imgs.length).toBeGreaterThan(0);
+            for (const face of stageFaces(stage)) {
+                expect(imagesOf(face.showcase).length).toBeGreaterThan(0);
+            }
         }
     });
 
@@ -293,64 +320,22 @@ describe('stage showcases', () => {
         const { existsSync } = await import('node:fs');
         const { join } = await import('node:path');
         for (const stage of STAGES) {
-            for (const src of imagesOf(stage.showcase)) {
-                expect(src.startsWith('/images/destinations/')).toBe(true);
-                expect(existsSync(join(process.cwd(), 'public', src))).toBe(true);
+            for (const face of stageFaces(stage)) {
+                for (const src of imagesOf(face.showcase)) {
+                    expect(src.startsWith('/images/destinations/')).toBe(true);
+                    expect(existsSync(join(process.cwd(), 'public', src))).toBe(true);
+                }
             }
         }
     });
 
-    it('uses a distinct treatment per stage, so they do not read as one backdrop', () => {
-        const kinds = STAGES.map(s => s.showcase.kind);
-        expect(new Set(kinds).size).toBe(STAGES.length);
+    it('gives each stage its own showcase, so they do not read as one backdrop', () => {
+        const showcases = STAGES.flatMap(s => stageFaces(s)).map(f => JSON.stringify(f.showcase));
+        expect(new Set(showcases).size).toBe(showcases.length);
     });
 });
 
-/**
- * Beats — where the descent is allowed to come to rest.
- *
- * The whole point of snapping is that stopping lands on a clean frame. A beat sitting
- * mid-blend is worse than no beat at all: it would deliberately park the visitor on the
- * double exposure the snapping exists to avoid.
- */
-describe('journeyBeats', () => {
-    const beats = journeyBeats();
-
-    it('is sorted, unique, and inside the track', () => {
-        expect(beats.length).toBeGreaterThan(STAGES.length);
-        expect([...beats].sort((a, b) => a - b)).toEqual(beats);
-        expect(new Set(beats).size).toBe(beats.length);
-        for (const b of beats) {
-            expect(b).toBeGreaterThanOrEqual(0);
-            expect(b).toBeLessThanOrEqual(1);
-        }
-    });
-
-    it('offers a beat inside every stage, so no stage can be scrolled past unseen', () => {
-        for (const stage of STAGES) {
-            expect(beats.some(b => b >= stage.from && b <= stage.to)).toBe(true);
-        }
-    });
-
-    // The property that matters: never rest between two photographs.
-    it('lands on exactly one clean image in every sequence stage', () => {
-        for (const stage of STAGES) {
-            if (stage.showcase.kind !== 'sequence') continue;
-            const count = stage.showcase.images.length;
-            const inStage = beats.filter(b => b >= stage.from && b <= stage.to);
-            expect(inStage.length).toBe(count);
-
-            for (const b of inStage) {
-                const t = (b - stage.from) / (stage.to - stage.from);
-                const visible = Array.from({ length: count }, (_, i) => sequenceOpacity(i, count, t))
-                    .filter(o => o > 0.06);
-                expect(visible).toHaveLength(1);
-                // And that one is fully arrived, not merely ahead of the others.
-                expect(visible[0]).toBeGreaterThan(0.99);
-            }
-        }
-    });
-
+describe('sequenceOpacity', () => {
     it('keeps the blend short enough that most of a stage is a single image', () => {
         const count = 4;
         let clean = 0, total = 0;
@@ -362,5 +347,97 @@ describe('journeyBeats', () => {
         }
         // Was 41% when the blend ran across nearly the whole slot.
         expect(clean / total).toBeGreaterThan(0.85);
+    });
+});
+
+describe('the last stage stays; the others leave', () => {
+    const last = STAGES[STAGES.length - 1];
+
+    it('does not move out or fade at the end of its span', () => {
+        expect(stageMotion(1, true)).toEqual({ shift: 0, opacity: 1 });
+    });
+
+    it('lets an earlier stage leave as its span ends: up, and gone', () => {
+        const m = stageMotion(1, false);
+        expect(m.opacity).toBe(0);
+        expect(m.shift).toBeLessThan(0);
+    });
+
+    it('arrives the same way whichever stage it is', () => {
+        for (const isLast of [true, false]) {
+            expect(stageMotion(0, isLast).opacity).toBe(0);
+            expect(stageMotion(0, isLast).shift).toBe(1);
+            expect(stageMotion(0.25, isLast)).toEqual({ shift: 0, opacity: 1 });
+        }
+    });
+
+    it('keeps the last backdrop up at the end of the track instead of fading it away', () => {
+        expect(showcaseOpacity(1, last.from, last.to, true)).toBe(1);
+    });
+
+    it('still fades an earlier backdrop out across the boundary', () => {
+        const first = STAGES[0];
+        expect(showcaseOpacity(first.to + 0.1, first.from, first.to, false)).toBe(0);
+        expect(showcaseOpacity((first.from + first.to) / 2, first.from, first.to, false)).toBe(1);
+    });
+});
+
+describe('snapTargets', () => {
+    it('is each stop in pixels from the top of the track', () => {
+        expect(snapTargets([0, 0.2, 0.5], 100, 5000, 99_999)).toEqual([100, 1100, 2600]);
+    });
+
+    it('never aims past the bottom of the page — the stop for the end of the track is the bottom', () => {
+        // A track whose last viewport is the footer's, not empty: the page ends before the
+        // track's own end, and a target beyond it eases toward a place it cannot reach.
+        expect(snapTargets([0, 0.4, 1], 0, 5600, 4908)).toEqual([0, 2240, 4908]);
+    });
+});
+
+/**
+ * Hotels and Flights are two faces of one stage, not two stages. Choosing the other tab used to
+ * glide the visitor to a separate section further down the track; now the panel slides across
+ * to the other side in place and the backdrop changes under it.
+ */
+describe('the search stage and its two faces', () => {
+    const search = STAGES[0];
+
+    it('is one stage with Flights as a face of it, not a stage of its own', () => {
+        expect(STAGES.some(s => s.id === 'flights')).toBe(false);
+        expect(search.id).toBe('stays');
+        expect(search.faces?.flights?.id).toBe('flights');
+    });
+
+    it('shows the hotels face by default and the flights face when asked', () => {
+        expect(faceOf(search, 'stays').id).toBe('stays');
+        expect(faceOf(search, 'flights').id).toBe('flights');
+    });
+
+    it('has nothing to switch on a stage with a single face', () => {
+        const options = STAGES[STAGES.length - 1];
+        expect(faceOf(options, 'flights')).toBe(options);
+        expect(stageFaces(options)).toEqual([options]);
+    });
+
+    it('lists the faces in the order the tabs are', () => {
+        expect(stageFaces(search).map(f => f.id)).toEqual(['stays', 'flights']);
+    });
+
+    it('docks the two on opposite sides, so changing tab moves the panel', () => {
+        expect(faceOf(search, 'stays').side).toBe('left');
+        expect(faceOf(search, 'flights').side).toBe('right');
+    });
+
+    it('gives each its own wording and its own backdrop, so the change is seen', () => {
+        const [stays, flights] = stageFaces(search);
+        expect(flights.eyebrow).not.toBe(stays.eyebrow);
+        expect(flights.titleLead + flights.titleRest).not.toBe(stays.titleLead + stays.titleRest);
+        expect(JSON.stringify(flights.showcase)).not.toBe(JSON.stringify(stays.showcase));
+    });
+});
+
+describe('SIDE_OFFSET', () => {
+    it('places a panel flush left, centred, or flush right — the animation moves between these', () => {
+        expect(SIDE_OFFSET).toEqual({ left: 0, center: 0.5, right: 1 });
     });
 });

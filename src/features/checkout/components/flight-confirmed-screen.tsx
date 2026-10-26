@@ -10,8 +10,8 @@ import {
 import { ACCENT, ACCENT_FILL, GREEN, type Palette } from '@/features/checkout/lib/palette';
 import { BRAND } from '@/shared/lib/palette';
 import { formatDuration, formatTime, groupSegmentsIntoSlices, stopsLabel } from '@/features/flights/lib/flight-utils';
-import type { NormalizedSegment } from '@/shared/types';
-import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
+import type { FlightOffer, NormalizedSegment } from '@/shared/types';
+import { formatMoney, moneyFigure } from '@/features/checkout/lib/format-money';
 
 // ─── Small pieces ───────────────────────────────────────────────────────────────
 
@@ -97,7 +97,9 @@ export interface FlightPassengerInfo {
 
 interface FlightConfirmedScreenProps {
     palette:       Palette;
-    offerId:       string;
+    /** The offer bought, read once by the page: null while it loads, or when it could not be read. */
+    offer:         FlightOffer | null;
+    loadingOffer:  boolean;
     bookingId:     string | null;
     /** The airline's own record locator — not shown in the reference design but worth keeping
      *  on screen: the booking reference above is ours, and an airport kiosk or the airline's
@@ -108,7 +110,11 @@ interface FlightConfirmedScreenProps {
     departureDate: string;
     cabin?:        string;
     currency:      string;
+    /** What the card was held for. */
     total:         number;
+    /** The airline's fare and our service fee within `total`, when the server said. */
+    fare?:         number;
+    serviceFee?:   number;
     adults:        number;
     /** Named `childPassengers`, not `children` — the latter collides with React's own prop. */
     childPassengers: number;
@@ -126,17 +132,17 @@ interface FlightConfirmedScreenProps {
 // toolbar naming the trip, the itinerary as a boarding-pass-style card (one block per slice —
 // outbound, and the return when there is one) beside a payment summary, and the travellers
 // below both. The itinerary's detail — terminals, airport names, duration, bags, fare terms —
-// comes from `useFlightOffer`, a GET the URL's own params never carried; everything else
+// comes from the offer the page read, a GET the URL's own params never carried; everything else
 // (the fare paid, who flew, where the e-ticket went) is what the booking itself already knows,
 // so it is never blocked on that fetch.
 export function FlightConfirmedScreen({
-    palette, offerId, bookingId, pnr, origin, destination, departureDate, cabin,
-    currency, total, adults, childPassengers, infants, passengers, contactEmail,
+    palette, offer, loadingOffer, bookingId, pnr, origin, destination, departureDate, cabin,
+    currency, total, fare, serviceFee, adults, childPassengers, infants, passengers, contactEmail,
     onBack, onHome, onTrips,
 }: FlightConfirmedScreenProps) {
     const tAll = useTranslations();
     const t = useTranslations('checkout');
-    const { offer, loading } = useFlightOffer(offerId);
+    const loading = loadingOffer;
     const [copied, setCopied] = useState(false);
 
     const totalPax = adults + childPassengers + infants;
@@ -333,12 +339,18 @@ export function FlightConfirmedScreen({
                             <div style={{ display: 'grid', gap: 10 }}>
                                 <div style={row}>
                                     <span style={{ color: palette.soft }}>{tAll('checkout.flight.receipt.fareLine', { count: totalPax })}</span>
-                                    <span style={{ fontWeight: 700, color: palette.title }}>{currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span style={{ fontWeight: 700, color: palette.title }}>{formatMoney(fare ?? total, currency)}</span>
                                 </div>
                                 <div style={row}>
                                     <span style={{ color: palette.soft }}>{tAll('checkout.flight.receipt.taxesAndFees')}</span>
                                     <span style={{ color: palette.muted }}>{tAll('checkout.flight.receipt.includedLabel')}</span>
                                 </div>
+                                {serviceFee !== undefined && serviceFee > 0 && (
+                                    <div style={row}>
+                                        <span style={{ color: palette.soft }}>{t('serviceFee')}</span>
+                                        <span style={{ fontWeight: 700, color: palette.title }}>{formatMoney(serviceFee, currency)}</span>
+                                    </div>
+                                )}
                             </div>
                             <div style={{ height: 1, background: palette.hairline, margin: '16px 0' }} />
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -348,7 +360,7 @@ export function FlightConfirmedScreen({
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: 11, color: palette.faint, fontWeight: 700 }}>{currency}</div>
-                                    <div style={{ fontSize: 24, fontWeight: 800, color: GREEN, lineHeight: 1.1 }}>{total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                                    <div style={{ fontSize: 24, fontWeight: 800, color: GREEN, lineHeight: 1.1 }}>{moneyFigure(total, currency)}</div>
                                 </div>
                             </div>
                             <div style={{ fontSize: 11, color: palette.faint, marginTop: 16 }}>{tAll('checkout.flight.receipt.paymentProcessedSecurely')}</div>
