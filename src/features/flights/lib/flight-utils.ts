@@ -1,6 +1,6 @@
 'use client';
 
-import type {  NormalizedSegment } from '@/shared/types';
+import type { NormalizedSegment, SegmentEnd } from '@/shared/types';
 
 export function formatPrice(amount: number, currency: string, targetCurrency?: string): string {
     const ccy = targetCurrency || currency;
@@ -60,6 +60,45 @@ export function formatBookingTime(iso?: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '--:--';
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+/**
+ * "Wed, Oct 14, 2026, 18:40" — the day pinned to UTC before formatting so the
+ * digits in the string survive, for the reason `formatTime` gives.
+ */
+export function formatDateTime(iso: string | undefined, locale: string): string {
+    if (!iso) return '';
+    const day = Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
+    if (!Number.isFinite(day)) return '';
+    const date = new Date(day).toLocaleDateString(locale, {
+        timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+    });
+    return `${date}, ${formatTime(iso)}`;
+}
+
+/**
+ * "Thu, Oct 29, 2026, 9:40 AM" — `formatDateTime`, with the clock written the way the reader's
+ * language writes it (12-hour where that is the custom, 24-hour where it is not) rather than
+ * always as 24-hour digits.
+ *
+ * Pinned to UTC for the same reason: the digits are the airport's own clock, and a zone must
+ * not be allowed to move them.
+ */
+export function formatDateTimeLocale(iso: string | undefined, locale: string): string {
+    if (!iso) return '';
+    const at = Date.parse(`${iso.slice(0, 16)}Z`);
+    if (!Number.isFinite(at)) return '';
+    const when = new Date(at);
+    const date = when.toLocaleDateString(locale, { timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const time = when.toLocaleTimeString(locale, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' });
+    return `${date}, ${time}`;
+}
+
+/** "Hamad International Airport (DOH)", or the bare code when the provider named none. */
+export function airportLabel(end: SegmentEnd | undefined, fallbackCode: string): string {
+    const code = end?.airport || fallbackCode;
+    const name = end?.airportName;
+    return name && name !== code ? `${name} (${code})` : code;
 }
 
 export function formatDuration(minutes?: number): string {

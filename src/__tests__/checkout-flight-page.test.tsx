@@ -39,6 +39,18 @@ vi.mock('@/shared/auth/store', () => ({ useAuthStore: () => auth }));
 vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', toggleTheme: vi.fn() }) }));
 vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
 
+// Exchange rates, as the browser has them: none until they land. When they have, 1 USD is 1,400 KRW.
+const rates = vi.hoisted(() => ({ live: false }));
+vi.mock('@/shared/lib/currency', async (importOriginal) => {
+    const real = await importOriginal<typeof import('@/shared/lib/currency')>();
+    return {
+        ...real,
+        ratesAreLive: () => rates.live,
+        convertForDisplay: (amount: number, from: string, to: string) =>
+            rates.live && from !== to ? { amount: amount * 1400, currency: to } : { amount, currency: from },
+    };
+});
+
 // Stripe: a card form whose pay button authorises — manual capture, so `requires_capture`.
 const stripeMock = vi.hoisted(() => ({ confirmPayment: vi.fn() }));
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn(async () => ({})) }));
@@ -100,7 +112,7 @@ const FLIGHT_OFFER = {
 
 function mockOffer(offer: unknown = FLIGHT_OFFER) {
     get.mockImplementation(async (path: string) => {
-        if (path === '/flights/offers/off_1') return offer;
+        if (path.split('?')[0] === '/flights/offers/off_1') return offer;
         throw new Error(`unexpected GET ${path}`);
     });
 }
@@ -161,6 +173,7 @@ const confirmCalls = () => post.mock.calls.filter((c) => c[0] === '/flights/conf
 
 beforeEach(() => {
     vi.clearAllMocks();
+    rates.live = false;
     stripeMock.confirmPayment.mockImplementation(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } }));
     auth.user = { email: 'juan@example.com', first_name: '', last_name: '' };
     query = new URLSearchParams(FLIGHT_QUERY).toString();
@@ -172,6 +185,8 @@ beforeEach(() => {
 
 interface BookBody {
     confirmedPrice?: number;
+    displayCurrency?: string;
+    idempotencyKey?: string;
     contact:    { email: string; phone: string; countryCode: string };
     passengers: Array<{ type: string; dateOfBirth: string; nationality: string }>;
 }
@@ -192,10 +207,10 @@ describe('the page, in the checkout\'s own design', () => {
     });
 
     it('fills the main action and the current step with the brand gradient', () => {
-        renderPage();
+        const { container } = renderPage();
         expect(screen.getByRole('button', { name: 'Continue to payment' }).getAttribute('style')).toMatch(/linear-gradient/);
-        const current = screen.getByText('Details').closest('li')?.querySelector('div > div');
-        expect(current?.getAttribute('style')).toMatch(/linear-gradient/);
+        // The step in hand is the one thumb that slides between the discs, so it carries the fill.
+        expect(container.querySelector('.cg-steps-thumb')?.getAttribute('style')).toMatch(/linear-gradient/);
     });
 
     it('rings the fields in the brand gradient, and haloes the one being typed in', () => {
@@ -207,9 +222,24 @@ describe('the page, in the checkout\'s own design', () => {
         expect(css).toMatch(/\.cg-field:focus,\.cg-phone:focus-within\{box-shadow:0 0 0 4px rgba\(59,130,246,0\.18\)\}/);
     });
 
+    it('keeps a field\'s edge and fill when the browser autofills it', () => {
+        // Chrome sets `background-image: none !important` on an autofilled input, and the ring
+        // and the white fill are both background images — so an autofilled field lost its pill.
+        // Border colour and an inset shadow are not touched by that rule, so they put it back.
+        const { container } = renderPage();
+        const css = Array.from(container.querySelectorAll('style')).map((s) => s.textContent).join('\n');
+        expect(css).toMatch(/\.cg-field:-webkit-autofill[^}]*border-color:var\(--cg-ring,[^)]*\) !important/);
+        expect(css).toMatch(/\.cg-field:-webkit-autofill[^}]*box-shadow:0 0 0 1000px #ffffff inset/);
+        // The colour it falls back to is the field's own: blue, or red once it is wrong.
+        const field = container.querySelector('input.cg-field') as HTMLElement;
+        expect(field.style.getPropertyValue('--cg-ring')).toBe('#3b82f6');
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        expect((container.querySelector('input.cg-field') as HTMLElement).style.getPropertyValue('--cg-ring')).toBe('#E4685A');
+    });
+
     it('writes the confirmation in the theme\'s ink — not white on the light theme\'s white', async () => {
         await payForFlight();
-        const heading = await screen.findByText("You're all set!");
+        const heading = await screen.findByText('You\u2019re all set');
         // The brand's slate-900.
         expect(heading).toHaveStyle({ color: 'rgb(15, 23, 42)' });
     });
@@ -227,6 +257,33 @@ describe('the passenger form', () => {
         }
         expect(screen.getByLabelText(/^country/i)).toHaveAttribute('role', 'combobox');
         expect(screen.getByLabelText(/^country/i)).toHaveAttribute('aria-autocomplete', 'list');
+    });
+
+    it('marks every field required, and says so to a screen reader where it can', () => {
+        renderPage();
+        // Each caption carries the " *", whether its text does or the page adds it.
+        for (const label of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^date of birth/i,
+            /^gender/i, /^passport number/i, /^passport expiry/i, /^country/i]) {
+            expect(screen.getByText(label, { selector: 'label' }).textContent).toMatch(/\*$/);
+        }
+        for (const field of [/^first name/i, /^last name/i, /^email/i, /^phone number/i, /^passport number/i]) {
+            expect(screen.getByLabelText(field)).toHaveAttribute('aria-required', 'true');
+        }
+    });
+
+    it('refuses to continue until every field is filled, and names each one that is empty', () => {
+        renderPage();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        // First and last name, email, phone, birth date, gender, passport number and expiry, country.
+        expect(screen.getAllByText('Required')).toHaveLength(8);
+        expect(screen.getByText('2-letter country code')).toBeInTheDocument();
+        expect(post.mock.calls.filter((c) => c[0] === '/flights/book')).toHaveLength(0);
+    });
+
+    it('shows the email and phone fields with an example too, like the names', () => {
+        renderPage();
+        expect(screen.getByLabelText(/^email/i)).toHaveAttribute('placeholder', 'eg.johndoe@gmail.com');
+        expect(screen.getByLabelText(/^phone number/i)).toHaveAttribute('placeholder', '912 345 6789');
     });
 
     it('shows the name fields with an example name, not their own labels again', () => {
@@ -350,6 +407,43 @@ describe('the passenger form', () => {
     }, 40_000);
 });
 
+describe('moving between the steps', () => {
+    const thumbStep = (container: HTMLElement) =>
+        (container.querySelector('ol') as HTMLElement).style.getPropertyValue('--step-idx');
+
+    it('marks the step in hand with one thumb that slides, not a fill that swaps', async () => {
+        const { container } = renderPage();
+        expect(thumbStep(container)).toBe('0');
+        expect(container.querySelectorAll('.cg-steps-thumb')).toHaveLength(1);
+
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        await screen.findByRole('button', { name: /pay usd 272\.40/i });
+
+        expect(thumbStep(container)).toBe('1');
+        expect(container.querySelector('li[aria-current="step"]')).toHaveTextContent('Payment');
+        // Only the numeral of the step in hand is white; the others keep the ink.
+        const numerals = Array.from(container.querySelectorAll('.cg-steps-num')) as HTMLElement[];
+        expect(numerals.map((n) => n.style.color)).toEqual([expect.not.stringMatching(/255, 255, 255/), 'rgb(255, 255, 255)', expect.not.stringMatching(/255, 255, 255/)]);
+    });
+
+    it('does not animate on arrival, slides in from the right going forward and from the left going back', async () => {
+        const { container } = renderPage();
+        expect(container.querySelector('[class*="cg-slide-"]')).toBeNull();
+
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        await screen.findByRole('button', { name: /pay usd 272\.40/i });
+        expect(container.querySelectorAll('.cg-slide-forward').length).toBeGreaterThan(0);
+        expect(container.querySelector('.cg-slide-back')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: /back to booking details/i }));
+        await screen.findByRole('button', { name: /continue to payment/i });
+        expect(container.querySelectorAll('.cg-slide-back').length).toBeGreaterThan(0);
+        expect(container.querySelector('.cg-slide-forward')).toBeNull();
+    });
+});
+
 describe('the payment step', () => {
     it('says the card is held now and charged only when the airline confirms', async () => {
         renderPage();
@@ -399,16 +493,30 @@ describe('the payment step', () => {
 });
 
 describe('what the traveller is shown, and what the card is held for', () => {
-    it('shows the fare, the service fee and the total — the quote the server made — before any details are entered', async () => {
+    it('shows one fare with the service fee folded into it, and the total — the quote the server made — before any details are entered', async () => {
         renderPage();
 
         // Together, and re-queried: the summary is rebuilt as the page settles after the quote
         // arrives, so an element held across that would be a detached one.
         await waitFor(() => {
-            expect(screen.getByText('Service fee')).toBeInTheDocument();
-            expect(screen.getByText('USD 22.40')).toBeInTheDocument();
-            expect(screen.getByText('USD 272.40')).toBeInTheDocument();
-            expect(screen.getByText('USD 250.00')).toBeInTheDocument();
+            // The fare line and the total: 250.00 + 22.40, as one figure each.
+            expect(screen.getAllByText('USD 272.40')).toHaveLength(2);
+        });
+        expect(screen.queryByText('Service fee')).not.toBeInTheDocument();
+        expect(screen.queryByText('USD 22.40')).not.toBeInTheDocument();
+        expect(screen.queryByText('USD 250.00')).not.toBeInTheDocument();
+    });
+
+    it('names each end by its full airport name and code, with the day and the clock', async () => {
+        renderPage();
+
+        // Together, and re-queried, for the reason the quote test above gives.
+        await waitFor(() => {
+            expect(screen.getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument();
+            expect(screen.getByText('Narita International Airport (NRT)')).toBeInTheDocument();
+            // Local Airport Time as the airline quoted it: the digits are not shifted to a zone.
+            expect(screen.getByText('Tue, Dec 1, 2026, 13:56')).toBeInTheDocument();
+            expect(screen.getByText('Tue, Dec 1, 2026, 19:35')).toBeInTheDocument();
         });
     });
 
@@ -425,12 +533,165 @@ describe('what the traveller is shown, and what the card is held for', () => {
         // The web checkout sent no fare to compare, so a fare that rose between the search and
         // the card was never caught here and went on to be refused after the card.
         renderPage();
-        await screen.findByText('Service fee');
+        await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
         fillPassenger();
         fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
         await waitFor(() => expect(bookCalls()).toHaveLength(1));
         expect(bookCalls()[0].confirmedPrice).toBe(250);
+    });
+
+    describe('the currency selector', () => {
+        // The selector rewrites `?currency=`; everything priced on the page has to follow it. The
+        // link's own pair — `totalAmount` 250, `currency` USD — is the airline's, and stays so.
+        const PHP_OFFER = { ...FLIGHT_OFFER, quote: { currency: 'PHP', fare: 14500, serviceFee: 1600, total: 16100 } };
+        const withCurrency = (currency: string) => new URLSearchParams({ ...FLIGHT_QUERY, currency }).toString();
+        // A fresh element each time: React skips re-rendering the very same one, and the query it
+        // reads has changed underneath it.
+        const page = () => <NextIntlClientProvider locale="en" messages={en as never}><CheckoutPage /></NextIntlClientProvider>;
+
+        /** An offer that quotes in the currency it is asked for. */
+        function mockOfferByCurrency() {
+            get.mockImplementation(async (path: string) => {
+                const [route, qs] = path.split('?');
+                if (route !== '/flights/offers/off_1') throw new Error(`unexpected GET ${path}`);
+                return new URLSearchParams(qs).get('currency') === 'PHP' ? PHP_OFFER : FLIGHT_OFFER;
+            });
+        }
+
+        it('asks for the quote in the currency the page is in', async () => {
+            query = withCurrency('PHP');
+            renderPage();
+            await waitFor(() => expect(get).toHaveBeenCalledWith('/flights/offers/off_1?currency=PHP'));
+        });
+
+        it('quotes again when another currency is picked, and shows that quote instead', async () => {
+            mockOfferByCurrency();
+            const view = render(page());
+            await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+
+            query = withCurrency('PHP');
+            view.rerender(page());
+
+            await waitFor(() => expect(screen.getAllByText('PHP 16,100.00')).toHaveLength(2));
+            expect(screen.queryByText('USD 272.40')).not.toBeInTheDocument();
+        });
+
+        it('does not rename the link\'s fare as the new currency while there is no quote in it', async () => {
+            // 250 is a USD figure. Under PHP it would be read as ₱250 — a fare of about four dollars.
+            get.mockRejectedValue(new Error('airline unreachable'));
+            const view = render(page());
+            // Re-queried: the summary is rebuilt as the page settles, so a held element goes stale.
+            await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+
+            query = withCurrency('PHP');
+            view.rerender(page());
+
+            await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+            expect(screen.queryByText('PHP 250')).not.toBeInTheDocument();
+        });
+
+        describe('while it is still being read', () => {
+            /** A GET that answers when the test says so. */
+            function deferred() {
+                let resolve!: (v: unknown) => void;
+                const promise = new Promise<unknown>((r) => { resolve = r; });
+                return { promise, resolve };
+            }
+            const bones = (root: ParentNode = document) => root.querySelectorAll('.cg-skeleton');
+
+            it('draws the itinerary and the amounts as skeleton until the offer arrives', async () => {
+                const offer = deferred();
+                get.mockImplementation(() => offer.promise);
+                renderPage();
+
+                expect(bones().length).toBeGreaterThan(0);
+                expect(screen.queryByText('Ninoy Aquino International Airport (MNL)')).not.toBeInTheDocument();
+                // The amounts are not guessed at meanwhile — not the link's 250 under the quote's name.
+                expect(screen.queryByText('USD 250')).not.toBeInTheDocument();
+
+                await act(async () => { offer.resolve(FLIGHT_OFFER); });
+
+                await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+                expect(bones()).toHaveLength(0);
+                expect(screen.getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument();
+            });
+
+            it('draws the amounts as skeleton while a new currency is quoted — and not the old currency\'s figures', async () => {
+                const php = deferred();
+                get.mockImplementation(async (path: string) => (path.includes('currency=PHP') ? php.promise : FLIGHT_OFFER));
+                const view = render(page());
+                await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+                expect(bones()).toHaveLength(0);
+
+                query = withCurrency('PHP');
+                view.rerender(page());
+
+                await waitFor(() => expect(bones().length).toBeGreaterThan(0));
+                expect(screen.queryByText('USD 272.40')).not.toBeInTheDocument();
+                // What was already read stays: only the figures wait.
+                await waitFor(() => expect(screen.getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument());
+
+                await act(async () => { php.resolve(PHP_OFFER); });
+                await waitFor(() => expect(screen.getAllByText('PHP 16,100.00')).toHaveLength(2));
+                expect(bones()).toHaveLength(0);
+            });
+
+            it('stops drawing skeleton when the offer cannot be read, and falls back to the link\'s fare', async () => {
+                get.mockRejectedValue(new Error('airline unreachable'));
+                renderPage();
+                await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+                expect(bones()).toHaveLength(0);
+            });
+
+            it('draws the receipt\'s flight details as skeleton until the offer arrives', async () => {
+                const offer = deferred();
+                get.mockImplementation(() => offer.promise);
+                await payForFlight();
+                await screen.findByText('You\u2019re all set');
+
+                expect(bones().length).toBeGreaterThan(0);
+                expect(screen.queryByText('Duffel Airways')).not.toBeInTheDocument();
+
+                await act(async () => { offer.resolve(FLIGHT_OFFER); });
+                expect(await screen.findByText('Duffel Airways')).toBeInTheDocument();
+                expect(bones()).toHaveLength(0);
+            });
+        });
+
+        it('reads the link’s fare in the currency the link names for it, when the page opens in another', async () => {
+            // From the results page: opens in the traveller's KRW, with the airline's 250 still USD.
+            get.mockRejectedValue(new Error('airline unreachable'));
+            query = new URLSearchParams({ ...FLIGHT_QUERY, currency: 'KRW', fareCurrency: 'USD' }).toString();
+            renderPage();
+            await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+            expect(screen.queryByText('KRW 250')).not.toBeInTheDocument();
+        });
+
+        it('holds the card in the currency on show, against the airline\'s own fare — not the converted one', async () => {
+            mockOfferByCurrency();
+            query = withCurrency('PHP');
+            renderPage();
+            await waitFor(() => expect(screen.getAllByText('PHP 16,100.00')).toHaveLength(2));
+            fillPassenger();
+            fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+            await waitFor(() => expect(bookCalls()).toHaveLength(1));
+            expect(bookCalls()[0].displayCurrency).toBe('PHP');
+            // `confirmedPrice` is compared with the airline's fare in the airline's currency; 14,500
+            // against 250 USD would be refused as a price rise that never happened.
+            expect(bookCalls()[0].confirmedPrice).toBe(250);
+        });
+
+        it('makes a different currency a different attempt, so a hold in the first is not handed back', async () => {
+            query = withCurrency('PHP');
+            renderPage();
+            fillPassenger();
+            fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+            await waitFor(() => expect(bookCalls()).toHaveLength(1));
+            expect(bookCalls()[0].idempotencyKey).toMatch(/PHP$/);
+        });
     });
 
     it('still sends the fare it was linked with when there is no quote', async () => {
@@ -489,20 +750,22 @@ describe('after the card', () => {
         auth.user = { email: 'account@example.com', first_name: '', last_name: '' };
         await payForFlight();
 
-        expect(await screen.findByText("You're all set!")).toBeInTheDocument();
+        expect(await screen.findByText('You\u2019re all set')).toBeInTheDocument();
         // Itinerary detail only the GET /flights/offers/:offerId fetch carries — wait for it.
         expect(await screen.findByText('Duffel Airways')).toBeInTheDocument();
 
-        // The route, by city, in the toolbar.
-        expect(screen.getByText(/Manila \(MNL\)/)).toBeInTheDocument();
-        expect(screen.getByText(/Tokyo \(NRT\)/)).toBeInTheDocument();
-        // The receipt goes to the contact's address, not the signed-in account's — named
-        // both in the hero line and again in the passenger section.
-        expect(screen.getAllByText('juan@example.com').length).toBeGreaterThanOrEqual(2);
+        // One sentence: where the flight goes, and the contact's address — not the signed-in account's.
+        expect(screen.getByText(/Your flight to Tokyo is confirmed, flight details and receipt has been sent to juan@example\.com/)).toBeInTheDocument();
+        expect(screen.queryByText(/account@example\.com/)).not.toBeInTheDocument();
 
-        // The flight itself.
-        expect(screen.getByText('13:56')).toBeInTheDocument();
-        expect(screen.getByText('19:35')).toBeInTheDocument();
+        // The flight itself: each end by its airport's full name and code, the day and the
+        // clock — in the reader's own convention, the airport's own digits.
+        expect(screen.getByText('Depart From')).toBeInTheDocument();
+        expect(screen.getByText('Arrive At')).toBeInTheDocument();
+        expect(screen.getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument();
+        expect(screen.getByText('Narita International Airport (NRT)')).toBeInTheDocument();
+        expect(screen.getByText('Tue, Dec 1, 2026, 1:56 PM')).toBeInTheDocument();
+        expect(screen.getByText('Tue, Dec 1, 2026, 7:35 PM')).toBeInTheDocument();
         expect(screen.getByText(/ZZ2200/)).toBeInTheDocument();
         expect(screen.getByText(/ABC123/)).toBeInTheDocument(); // the airline's own PNR
         expect(screen.getByText('Terminal 2')).toBeInTheDocument();
@@ -511,12 +774,14 @@ describe('after the card', () => {
         expect(screen.getByText(/1 carry-on bag/)).toBeInTheDocument();
         expect(screen.getByText(/1 checked bag/)).toBeInTheDocument();
 
-        // The passenger, and what was paid.
+        // The passenger, and what was paid: one fare, the service fee inside it.
         expect(screen.getByText('Juan Cruz')).toBeInTheDocument();
         expect(screen.getByText('ADULT 1')).toBeInTheDocument();
-        expect(screen.getByText('USD 250.00')).toBeInTheDocument();   // the airline's fare
-        expect(screen.getByText('USD 22.40')).toBeInTheDocument();    // our service fee
-        expect(screen.getByText('272.40')).toBeInTheDocument();       // what the card was held for
+        expect(screen.getByText('Payment Summary')).toBeInTheDocument();
+        expect(screen.getAllByText('USD 272.40')).toHaveLength(2);    // the fare line and what the card was held for
+        expect(screen.queryByText('USD 22.40')).not.toBeInTheDocument();
+        expect(screen.queryByText('USD 250.00')).not.toBeInTheDocument();
+        expect(screen.queryByText('Service fee')).not.toBeInTheDocument();
         expect(screen.getByText('bk-1')).toBeInTheDocument();
 
         // What a flight used to be told it had booked.
@@ -525,20 +790,43 @@ describe('after the card', () => {
         expect(screen.queryByText('USD 0')).not.toBeInTheDocument();
     });
 
-    it('goes back, not home, from the flight receipt', async () => {
+    it('keeps "Total paid" in the currency the card was charged in, and adds what it comes to in the one picked', async () => {
+        rates.live = true;                       // the store's currency is KRW
         await payForFlight();
-        await screen.findByText("You're all set!");
+        await screen.findByText('You\u2019re all set');
 
-        fireEvent.click(screen.getByRole('button', { name: /go back/i }));
-        expect(back).toHaveBeenCalledTimes(1);
+        // What was charged does not move with the selector — that is the receipt's fact.
+        expect(screen.getAllByText('USD 272.40')).toHaveLength(2);
+        // The selector's currency gets an estimate beside it: 272.40 × 1,400.
+        expect(screen.getByText('Approx. in KRW')).toBeInTheDocument();
+        expect(screen.getByText('\u2248 KRW 381,360')).toBeInTheDocument();
+    });
+
+    it('leaves the estimate out until the rates are live, rather than inventing a figure', async () => {
+        await payForFlight();
+        await screen.findByText('You\u2019re all set');
+
+        expect(screen.queryByText(/^Approx\. in/)).not.toBeInTheDocument();
     });
 
     it('labels the trips button "View Bookings" on the flight receipt', async () => {
         await payForFlight();
-        await screen.findByText("You're all set!");
+        await screen.findByText('You\u2019re all set');
 
         fireEvent.click(screen.getByRole('button', { name: 'View Bookings' }));
         expect(push).toHaveBeenCalledWith('/trips');
+    });
+
+    it('keeps the toolbar above the receipt: back to where the traveller came from, and the theme switch', async () => {
+        await payForFlight();
+        await screen.findByText('You\u2019re all set');
+
+        // Back goes to the previous page, not home — the receipt is somewhere you came to, not a dead end.
+        fireEvent.click(screen.getByRole('button', { name: 'Go back' }));
+        expect(back).toHaveBeenCalledTimes(1);
+        expect(push).not.toHaveBeenCalledWith('/');
+
+        expect(screen.getByRole('button', { name: 'Switch to dark mode' })).toBeInTheDocument();
     });
 
     it('shows a booking the airline has not settled yet as one being confirmed, with the way to their trips', async () => {

@@ -8,7 +8,10 @@ import { Plane, Luggage, BaggageClaim, Armchair, ChevronDown, ChevronUp, BadgeDo
 import type { FlightOffer, NormalizedSegment, SegmentEnd } from '@/shared/types';
 import { cn } from '@/shared/lib/cn';
 import { SaveButton } from './SaveButton';
-import { formatTime } from '../lib/flight-utils';
+import { useUserCurrency } from '@/shared/stores/search.store';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
+import { airportLabel, formatDateTime, formatTime } from '../lib/flight-utils';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -60,27 +63,6 @@ function dayOffset(from?: string, to?: string): number {
     const b = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
     if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
     return Math.max(0, Math.round((b - a) / 86_400_000));
-}
-
-/**
- * "Wed, Oct 14, 2026, 18:40" — the day pinned to UTC before formatting so the
- * digits in the string survive, for the reason `formatTime` gives.
- */
-function formatDateTime(iso: string | undefined, locale: string): string {
-    if (!iso) return '';
-    const day = Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
-    if (!Number.isFinite(day)) return '';
-    const date = new Date(day).toLocaleDateString(locale, {
-        timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-    });
-    return `${date}, ${formatTime(iso)}`;
-}
-
-/** "Hamad International Airport (DOH)", or the bare code when the provider named none. */
-function airportLabel(end: SegmentEnd | undefined, fallbackCode: string): string {
-    const code = end?.airport || fallbackCode;
-    const name = end?.airportName;
-    return name && name !== code ? `${name} (${code})` : code;
 }
 
 function cabinLabel(cabinClass?: string): string {
@@ -340,6 +322,16 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
 
+    // Every price on the card in the currency the traveller picked. Until the rates are live
+    // `convertForDisplay` hands the airline's figure back in the airline's currency, and that is
+    // what is printed — `useLiveRates` redraws the card when they land.
+    const userCurrency = useUserCurrency();
+    useLiveRates();
+    const money = (amount: number, from: string) => {
+        const shown = convertForDisplay(amount, from, userCurrency);
+        return formatPrice(shown.amount, shown.currency);
+    };
+
     const segments = offer.segments ?? [];
     const slices = groupSegmentsIntoSlices(segments);
 
@@ -394,7 +386,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
         : penalty === 0
             ? tAll('flights.card.freeCancellation')
             : penalty != null && penalty > 0
-                ? `Refundable (est. fee: ${formatPrice(penalty, fp?.refundPenaltyCurrency ?? 'USD')})`
+                ? `Refundable (est. fee: ${money(penalty, fp?.refundPenaltyCurrency ?? 'USD')})`
                 : 'Refundable (fees may apply)';
     const cabin = (primary.cabinClass || 'economy').replace('_', ' ');
     const checkedBags = offer.baggage?.checkedBags ?? 0;
@@ -492,7 +484,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                     </div>
                     <div>
                         <p className="whitespace-nowrap">
-                            <span className={cn('text-[22px] font-bold md:text-[26px]', TITLE)}>{formatPrice(pricePerPerson, currency)}</span>
+                            <span className={cn('text-[22px] font-bold md:text-[26px]', TITLE)}>{money(pricePerPerson, currency)}</span>
                             <span className={cn('text-[15px]', MUTED)}> / person</span>
                         </p>
                         <p className={cn('mt-1 text-[13px] first-letter:uppercase', MUTED)}>{tAll('flights.card.includesTaxes')}</p>
@@ -533,7 +525,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                                 {offer.brandedFare?.brandName || offer.brandedFare?.fareType || 'Standard'}
                                             </span>
                                             <span className={cn('text-[13px] font-semibold', TITLE)}>
-                                                {formatPrice(offer.price.total, offer.price.currency)}
+                                                {money(offer.price.total, offer.price.currency)}
                                             </span>
                                         </div>
                                         <p className={cn('mb-2 text-[12px] capitalize', MUTED)}>
@@ -556,7 +548,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                                     {alt.brandedFare?.brandName || alt.brandedFare?.fareType || 'Option'}
                                                 </span>
                                                 <span className={cn('text-[13px] font-semibold', TITLE)}>
-                                                    {formatPrice(alt.price?.total ?? 0, alt.price?.currency ?? 'USD')}
+                                                    {money(alt.price?.total ?? 0, alt.price?.currency ?? 'USD')}
                                                 </span>
                                             </div>
                                             <p className={cn('mb-2 text-[12px] capitalize', MUTED)}>

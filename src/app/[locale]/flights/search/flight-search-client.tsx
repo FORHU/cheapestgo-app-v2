@@ -25,6 +25,8 @@ import {
 } from '@/features/flights/lib/filter-offers';
 import type { FlightOffer } from '@/shared/types';
 import { flightCheckoutQuery } from '@/features/flights/lib/flight-checkout-query';
+import { CURRENCIES } from '@/shared/components/common/CurrencySelector';
+import { useUserCurrency } from '@/shared/stores/search.store';
 
 // ─── City name → IATA code lookup ─────────────────────────────────────────────
 const CITY_TO_IATA: Record<string, string> = {
@@ -170,6 +172,11 @@ export function FlightSearchClient() {
     const tAll = useTranslations();
     const sp = useSearchParams();
     const router = useRouter();
+    // Checkout opens in the currency the selector shows — but only one it can charge in. An
+    // account preference can name one the selector's menu does not list; the airline's own
+    // currency is the safe answer for that.
+    const userCurrency = useUserCurrency();
+    const checkoutCurrency = CURRENCIES.some(c => c.code === userCurrency) ? userCurrency : undefined;
     const { theme, toggleTheme } = useTheme();
 
     // The app shell's background lives out of this page's reach; the body class
@@ -278,9 +285,10 @@ export function FlightSearchClient() {
             chosen,
             { adults: Number(params.adults) || 1, children: Number(params.children) || 0, infants: Number(params.infants) || 0 },
             bundleHotelId,
+            checkoutCurrency,
         );
         router.push(`/flights/book?${qs.toString()}`);
-    }, [router, params.adults, params.children, params.infants, bundleHotelId]);
+    }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency]);
 
     // ─── Search effect ─────────────────────────────────────────────────────────
     useEffect(() => {

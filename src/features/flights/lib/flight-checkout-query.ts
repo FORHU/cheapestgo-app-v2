@@ -10,18 +10,26 @@ import type { FlightOffer } from '@/shared/types';
  * The travellers too, all of them. The offer holds one passenger per traveller searched for,
  * adults then children then infants, and the order must name each one — a checkout that only
  * knew the adults sent the airline too few, and the order was refused after the card.
+ *
+ * Two currencies travel: `currency` is the one the page opens in — the traveller's own, so the
+ * checkout agrees with the selector in its toolbar — and `fareCurrency` is the one `totalAmount`
+ * is written in, the airline's. Without the second, picking a currency would relabel the fare.
  */
 export function flightCheckoutQuery(
     offer: FlightOffer,
     travellers: { adults: number; children: number; infants: number },
     bundleHotelId?: string | null,
+    /** The currency the traveller is looking at; the airline's own when left out. */
+    displayCurrency?: string | null,
 ): URLSearchParams {
     const qs = new URLSearchParams();
     qs.set('offerId', offer.offerId);
     const first = offer.segments?.[0];
     const last  = offer.segments?.[offer.segments.length - 1];
     qs.set('totalAmount', String(offer.price?.total ?? 0));
-    qs.set('currency', offer.price?.currency ?? 'USD');
+    const fareCurrency = offer.price?.currency ?? 'USD';
+    qs.set('currency', displayCurrency || fareCurrency);
+    qs.set('fareCurrency', fareCurrency);
     if (first?.origin)          qs.set('origin', first.origin);
     if (last?.destination)      qs.set('destination', last.destination);
     if (first?.departure?.time) qs.set('departureDate', first.departure.time.slice(0, 10));

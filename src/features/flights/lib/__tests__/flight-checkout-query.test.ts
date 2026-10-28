@@ -15,7 +15,7 @@ describe('flightCheckoutQuery', () => {
     it('carries the trip the checkout draws while the server prices it', () => {
         const qs = flightCheckoutQuery(offer, { adults: 1, children: 0, infants: 0 });
         expect(Object.fromEntries(qs)).toEqual({
-            offerId: 'off_1', totalAmount: '250', currency: 'USD',
+            offerId: 'off_1', totalAmount: '250', currency: 'USD', fareCurrency: 'USD',
             origin: 'MNL', destination: 'NRT', departureDate: '2026-12-01', cabin: 'economy', adults: '1',
         });
     });
@@ -27,6 +27,15 @@ describe('flightCheckoutQuery', () => {
         expect(qs.get('adults')).toBe('2');
         expect(qs.get('children')).toBe('1');
         expect(qs.get('infants')).toBe('1');
+    });
+
+    it('opens checkout in the currency the traveller picked, and names the fare\'s own beside it', () => {
+        // `totalAmount` is the airline's figure and has to stay named for its own currency; the
+        // currency the page opens in is the one the selector shows.
+        const qs = flightCheckoutQuery(offer, { adults: 1, children: 0, infants: 0 }, null, 'KRW');
+        expect(qs.get('currency')).toBe('KRW');
+        expect(qs.get('fareCurrency')).toBe('USD');
+        expect(qs.get('totalAmount')).toBe('250');
     });
 
     it('carries a bundled hotel', () => {

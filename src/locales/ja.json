@@ -306,7 +306,7 @@
       "passportExpiry": "パスポート有効期限",
       "passportNumber": "パスポート番号",
       "phone": "電話番号",
-      "phoneNumber": "電話番号",
+      "phoneNumber": "電話番号 *",
       "phonePlaceholder": "番号",
       "title": "お客様情報",
       "travelingForWork": "出張ですか？",
@@ -453,6 +453,9 @@
       },
       "receipt": {
         "confirmedToDestination": "{destination}行きのフライトが確定しました。",
+        "allSet": "ご予約が完了しました",
+        "confirmedSentTo": "{destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました",
+        "approxTotal": "{currency}換算（概算）",
         "receiptSentRich": "領収書を<b>{email}</b>宛に送信しました。",
         "passengersCount": "{count}名",
         "copyReference": "コピー",

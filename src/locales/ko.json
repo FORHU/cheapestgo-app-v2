@@ -306,7 +306,7 @@
       "passportExpiry": "여권 만료일",
       "passportNumber": "여권 번호",
       "phone": "전화번호",
-      "phoneNumber": "전화번호",
+      "phoneNumber": "전화번호 *",
       "phonePlaceholder": "번호",
       "title": "내 정보",
       "travelingForWork": "출장인가요?",
@@ -453,6 +453,9 @@
       },
       "receipt": {
         "confirmedToDestination": "{destination}행 항공편이 확정되었습니다.",
+        "allSet": "예약이 완료되었습니다",
+        "confirmedSentTo": "{destination}행 항공편이 확정되었으며, 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다",
+        "approxTotal": "{currency} 환산 금액(약)",
         "receiptSentRich": "영수증이 <b>{email}</b>로 전송되었습니다.",
         "passengersCount": "{count}명",
         "copyReference": "복사",

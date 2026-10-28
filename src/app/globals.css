@@ -771,3 +771,82 @@ body {
     }
 }
 
+/*
+ * Checkout steps. The numbered disc in the progress bar is one gradient thumb that slides from
+ * step to step (`--step-idx` is the step, `--step-gap` the connector between two discs), and the
+ * content of the step in hand slides in from the side it was reached from: from the right going
+ * forward, from the left going back.
+ */
+.cg-steps-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transform: translateX(calc(var(--step-idx, 0) * (32px + var(--step-gap, 0px))));
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cg-steps-num {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    transition: color 0.3s ease 0.1s;
+}
+
+@keyframes cg-slide-forward {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes cg-slide-back {
+    from { opacity: 0; transform: translateX(-40px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.cg-slide-forward { animation: cg-slide-forward 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cg-slide-back    { animation: cg-slide-back 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+    .cg-steps-thumb,
+    .cg-steps-num {
+        transition: none;
+    }
+
+    .cg-slide-forward,
+    .cg-slide-back {
+        animation: none;
+    }
+}
+
+/*
+ * Checkout skeleton: the grey bars that stand in for the itinerary and the quote while they load.
+ * A slow pulse rather than a travelling shimmer — it is on screen for a second or two, and
+ * there is nothing in it to draw the eye away from the form.
+ */
+.cg-skeleton {
+    animation: cg-skeleton-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes cg-skeleton-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cg-skeleton {
+        animation: none;
+    }
+}
