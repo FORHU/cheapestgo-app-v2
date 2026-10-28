@@ -7,7 +7,9 @@ const isDev =
 
 const PRECACHE_URLS = [
   '/',
-  '/cheapestgo.png',
+  // addAll is atomic: one 404 rejects the whole list and nothing is cached. This was
+  // '/cheapestgo.png', which does not exist in public/ — the precache never ran.
+  '/icon-192.png',
   '/og-image.png',
 ];
 

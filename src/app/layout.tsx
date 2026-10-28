@@ -1,7 +1,5 @@
 import React from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JetBrains_Mono, Fredoka, Open_Sans, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
@@ -128,8 +126,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         <PWAServiceWorkerRegistrar />
                     </Providers>
                 </NextIntlClientProvider>
-                <Analytics />
-                <SpeedInsights />
             </body>
         </html>
     );
