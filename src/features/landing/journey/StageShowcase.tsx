@@ -11,7 +11,6 @@ import {
     showcaseOpacity,
     sequenceOpacity,
     stageFaces,
-    stageProgress,
     type SearchMode,
     type StageFace,
 } from './stages';

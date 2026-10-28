@@ -58,8 +58,6 @@ const TRENDING: TrendingDest[] = [
 
 const FLEX_CHIPS =['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
 
-/** Marks drawn on the photo — token underlines, carets, text links. v1's dark accent. */
-const ACCENT = BRAND.accent;
 /** Every button on the landing page — and anything filled behind white text, like a
  *  picked date — wears v1's blue-to-cyan gradient. */
 const FILL = BRAND.gradient;
