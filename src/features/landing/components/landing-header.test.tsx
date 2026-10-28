@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithIntl } from '@/shared/testing/renderWithIntl';
@@ -13,6 +14,7 @@ vi.mock('@/i18n/navigation', () => ({
     Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) =>
         <a href={href} {...rest}>{children}</a>,
     usePathname: () => '/',
+    useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
 // The locale and currency menus bring their own stores and router; they are not under test.
@@ -21,19 +23,28 @@ vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector
 
 import { LandingHeader } from './landing-header';
 
-describe('LandingHeader', () => {
-    beforeEach(() => useAuthStore.setState({ user: null }));
+const queryWrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+);
 
-    it('offers sign in to a guest', () => {
-        renderWithIntl(<LandingHeader />);
-        expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+describe('LandingHeader', () => {
+    beforeEach(() => useAuthStore.setState({ user: null, isAuthModalOpen: false }));
+
+    it('links to the bookings list, signed in or not', async () => {
+        renderWithIntl(<LandingHeader />, { wrapper: queryWrapper });
+        expect(await screen.findByRole('link', { name: 'Bookings' })).toHaveAttribute('href', '/trips');
+    });
+
+    it('links guests to the full-page sign-in screen', async () => {
+        renderWithIntl(<LandingHeader />, { wrapper: queryWrapper });
+        expect(await screen.findByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
     });
 
     it('becomes a round profile button once someone is signed in', async () => {
         useAuthStore.setState({
             user: { id: 'u1', email: 'billy@example.com', firstName: 'Billy', lastName: 'Busilan', role: 'user' },
         });
-        renderWithIntl(<LandingHeader />);
+        renderWithIntl(<LandingHeader />, { wrapper: queryWrapper });
 
         const profile = await screen.findByRole('button', { name: 'Account' });
         expect(profile).toHaveTextContent('BB');

@@ -1,6 +1,6 @@
 'use client';
 
-import type {  NormalizedSegment } from '@/shared/types';
+import type { NormalizedSegment, SegmentEnd } from '@/shared/types';
 
 export function formatPrice(amount: number, currency: string, targetCurrency?: string): string {
     const ccy = targetCurrency || currency;
@@ -62,6 +62,45 @@ export function formatBookingTime(iso?: string): string {
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+/**
+ * "Wed, Oct 14, 2026, 18:40" — the day pinned to UTC before formatting so the
+ * digits in the string survive, for the reason `formatTime` gives.
+ */
+export function formatDateTime(iso: string | undefined, locale: string): string {
+    if (!iso) return '';
+    const day = Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
+    if (!Number.isFinite(day)) return '';
+    const date = new Date(day).toLocaleDateString(locale, {
+        timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+    });
+    return `${date}, ${formatTime(iso)}`;
+}
+
+/**
+ * "Thu, Oct 29, 2026, 9:40 AM" — `formatDateTime`, with the clock written the way the reader's
+ * language writes it (12-hour where that is the custom, 24-hour where it is not) rather than
+ * always as 24-hour digits.
+ *
+ * Pinned to UTC for the same reason: the digits are the airport's own clock, and a zone must
+ * not be allowed to move them.
+ */
+export function formatDateTimeLocale(iso: string | undefined, locale: string): string {
+    if (!iso) return '';
+    const at = Date.parse(`${iso.slice(0, 16)}Z`);
+    if (!Number.isFinite(at)) return '';
+    const when = new Date(at);
+    const date = when.toLocaleDateString(locale, { timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    const time = when.toLocaleTimeString(locale, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' });
+    return `${date}, ${time}`;
+}
+
+/** "Hamad International Airport (DOH)", or the bare code when the provider named none. */
+export function airportLabel(end: SegmentEnd | undefined, fallbackCode: string): string {
+    const code = end?.airport || fallbackCode;
+    const name = end?.airportName;
+    return name && name !== code ? `${name} (${code})` : code;
+}
+
 export function formatDuration(minutes?: number): string {
     if (!minutes) return '';
     const h = Math.floor(minutes / 60);
@@ -95,4 +134,49 @@ export function groupSegmentsIntoSlices(segments: NormalizedSegment[]): Normaliz
         map.get(idx)!.push(seg);
     }
     return Array.from(map.values());
+}
+
+/**
+ * The same slices, ordered and keyed: `index` is the segments' `segmentIndex`, which is
+ * also the index into the offer's `sliceDurations`.
+ */
+export function groupSegmentsBySlice(segments: NormalizedSegment[]): { index: number; segments: NormalizedSegment[] }[] {
+    const map = new Map<number, NormalizedSegment[]>();
+    for (const seg of segments) {
+        const idx = seg.segmentIndex ?? 0;
+        if (!map.has(idx)) map.set(idx, []);
+        map.get(idx)!.push(seg);
+    }
+    return [...map.keys()].sort((a, b) => a - b).map((index) => ({ index, segments: map.get(index)! }));
+}
+
+/**
+ * Whole calendar days between two Local Airport Times — the "+1" on a flight that
+ * lands the day after it leaves. Dates only, so neither end's zone matters.
+ */
+export function dayOffset(from?: string, to?: string): number {
+    if (!from || !to) return 0;
+    const a = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
+    const b = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+    return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+export function cabinLabel(cabinClass?: string): string {
+    return (cabinClass || 'economy').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Minutes on the ground between two legs.
+ *
+ * Both clocks are Local Airport Time at the same airport (see `formatTime`), so
+ * their digits are compared as they stand — read as UTC, which no zone or DST
+ * rule can shift — rather than handed to a `Date` to guess a zone for.
+ */
+export function layoverMinutes(arrival?: string, departure?: string): number | null {
+    if (!arrival || !departure) return null;
+    const a = Date.parse(`${arrival.slice(0, 16)}Z`);
+    const d = Date.parse(`${departure.slice(0, 16)}Z`);
+    if (!Number.isFinite(a) || !Number.isFinite(d) || d <= a) return null;
+    return Math.round((d - a) / 60_000);
 }

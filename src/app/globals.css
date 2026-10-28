@@ -78,31 +78,13 @@
   @apply text-fluid-xs font-normal text-blue-600 dark:text-blue-400;
 }
 
-/* Custom Utilities for Grid Backgrounds */
-@utility bg-grid-obsidian {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-@utility bg-grid-alabaster {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-@utility bg-size-40px_40px {
-  background-size: 40px 40px;
-}
-
 /*
  * A screen that owns the viewport outright — the search page's map view. The
  * search page adds this to <body> for as long as that view is showing.
  *
- * Three things have to go, and all three of them live on the app shell in
- * layout.tsx rather than on the page, which is why this is a body class and not
- * a prop:
+ * Two things have to go, and both of them live on the app shell in layout.tsx
+ * rather than on the page, which is why this is a body class and not a prop:
  *
- *   - the page grid, which is the only thing behind a full-bleed map and shows
- *     as a strip of graph paper wherever the map does not quite reach;
  *   - the shell's `min-h-screen`, which is 100vh — larger than the 100dvh the
  *     map fills whenever the browser's URL bar is on screen, so the difference
  *     scrolls into view as bare shell;
@@ -118,7 +100,6 @@ body.map-immersive {
 }
 
 body.map-immersive .app-shell {
-  background-image: none;
   min-height: 100dvh;
 }
 
@@ -127,10 +108,10 @@ body.map-immersive .app-shell-main {
 }
 
 /*
- * A screen on a plain ground rather than v1's graph paper — the flight results
- * page. That page adds this to <body> while it is showing, for the same reason
- * `.map-immersive` is a body class: the grid and the sparkles both live on the
- * app shell in layout.tsx, out of the page's reach.
+ * A screen on its own flat ground rather than the app shell's — the flight
+ * results page. That page adds this to <body> while it is showing, for the same
+ * reason `.map-immersive` is a body class: the shell's background lives in
+ * layout.tsx, out of the page's reach.
  *
  * Light is slate-100, the hotel list view's ground. Dark is the landing canvas (`BRAND.canvas` in
  * shared/lib/palette.ts), held to the viewport so a long list of results does
@@ -142,10 +123,6 @@ body.flat-ground .app-shell {
 
 html.dark body.flat-ground .app-shell {
   background: radial-gradient(120% 80% at 50% 0%, #0f172a 0%, #0b1222 45%, #020617 100%) fixed;
-}
-
-body.flat-ground .global-sparkle {
-  display: none;
 }
 
 @utility thin-scrollbar {
@@ -466,42 +443,38 @@ body.flat-ground .global-sparkle {
 }
 
 /*
- * Theme cross-fade. ThemeContext adds `.theme-transition` to <html> for the
- * length of the switch and takes it off again, so this never sits on the page
- * animating ordinary hovers and menus.
+ * Theme switch: one cross-fade of the whole page.
  *
- * Only colour properties — transitioning `all` here would animate layout on
- * every element mid-switch. `!important` is needed to beat the inline styles
- * the map chrome and cards set, and any longer `duration-*` an element carries.
+ * ThemeContext switches theme inside a view transition — the browser snapshots the old page,
+ * the swap is made, and it fades between the two pictures. `.theme-switching` is on <html> only
+ * for the length of the fade, so these timings are the theme's and the language switch's own
+ * view transition keeps the browser's default.
  *
- * 160ms, matched by FADE_MS in ThemeContext: long enough to read as a fade,
- * short enough that the switch still feels immediate.
+ * This replaced a rule that gave every element on the page a colour transition for the
+ * duration. That was two thousand animations started at once on the main thread: the click
+ * froze the page for a tenth of a second before the fade began, and gradients, which cannot
+ * transition, snapped while everything else slowly faded. A picture fading to a picture has
+ * neither problem.
+ *
+ * Short enough that the switch still feels immediate. The default plus-lighter blend is left
+ * alone: it is what makes the two pictures sum to one instead of dipping through grey midway.
  */
-.theme-transition,
-.theme-transition *,
-.theme-transition *::before,
-.theme-transition *::after {
-  transition:
-    background-color 160ms ease-out,
-    border-color 160ms ease-out,
-    color 160ms ease-out,
-    fill 160ms ease-out,
-    stroke 160ms ease-out !important;
-  transition-delay: 0ms !important;
-  /* Beats a longer `duration-*` an element carries of its own: without this a
-     card on `transition-all duration-500` keeps fading long after the page
-     around it has settled. */
-  transition-duration: 160ms !important;
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
 }
 
-/* Respect a reduced-motion preference: switch instantly instead. */
-@media (prefers-reduced-motion: reduce) {
-  .theme-transition,
-  .theme-transition *,
-  .theme-transition *::before,
-  .theme-transition *::after {
-    transition: none !important;
-  }
+/*
+ * The page's own `transition-colors` stand down while it switches. The picture it fades to is
+ * live, so an element easing to its new colour inside it would be a second, slower fade under
+ * the first — the "delay" this exists to remove. Nothing animates here: it only turns the
+ * existing ones off, which costs nothing.
+ */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }
 
 /* Enable landscape orientation variant — mobile only */
@@ -714,27 +687,166 @@ body {
 }
 
 /*
- * The landing Journey's scroll snapping.
+ * The hero backdrop's wing layer — see `HeroBackdrop.tsx`.
  *
- * `proximity`, not `mandatory`: the visitor is never prevented from scrolling where they
- * like, but coming to rest near a beat settles onto it. Without this, stopping mid-blend
- * parks the showcase between two photographs, which reads as the picture being out of
- * focus rather than as a transition.
+ * Reuses the same photo twice rather than a cut-out: a precise polygon trace of the wing
+ * (manual, no pixel-picker available) kept either leaving sky inside the "wing" or slicing
+ * through solid wing material, and a hard edge would carry that error visibly. A soft,
+ * wide-feathered mask over roughly the wing's own region is forgiving of that imprecision —
+ * it reads as a light/parallax highlight, not a cutout, so where exactly its edge falls
+ * matters far less.
  *
- * Applied by the Journey only while it owns the screen, and removed once the visitor has
- * scrolled past it — the search section and the footer below have nothing to snap to.
+ * Every tunable lives here as a custom property, not buried in the keyframes, so the feel
+ * can be adjusted without touching the animation logic itself.
  */
-html.journey-snap {
-    scroll-snap-type: y proximity;
+.hero-wing-mask {
+    --hero-mask-w: 60%;
+    --hero-mask-h: 30%;
+    --hero-mask-x: 76%;
+    --hero-mask-y: 38%;
+    -webkit-mask-image: radial-gradient(
+        ellipse var(--hero-mask-w) var(--hero-mask-h) at var(--hero-mask-x) var(--hero-mask-y),
+        white 0%,
+        white 35%,
+        transparent 75%
+    );
+    mask-image: radial-gradient(
+        ellipse var(--hero-mask-w) var(--hero-mask-h) at var(--hero-mask-x) var(--hero-mask-y),
+        white 0%,
+        white 35%,
+        transparent 75%
+    );
 }
 
-html.journey-snap .journey-beat {
-    scroll-snap-align: start;
+.hero-wing-drift {
+    --hero-drift-duration: 26s;
+    --hero-drift-amplitude: 14px;
+    animation: hero-wing-drift var(--hero-drift-duration) ease-in-out infinite;
+    will-change: transform;
 }
 
-/* Someone who asked for less motion is not snapped around the page. */
+@keyframes hero-wing-drift {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(calc(var(--hero-drift-amplitude) * -1), calc(var(--hero-drift-amplitude) * 0.35), 0)
+            scale(1.015);
+    }
+}
+
+/* A soft, periodic glint rather than a constant shine — sunlight catching the wing once in
+ * a while reads as atmosphere; a fixed shimmer reads as a loading skeleton. */
+.hero-wing-glint {
+    --hero-glint-interval: 9s;
+    --hero-glint-duration: 2.4s;
+    background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+    background-size: 220% 220%;
+    animation: hero-wing-glint var(--hero-glint-interval) ease-in-out infinite;
+}
+
+@keyframes hero-wing-glint {
+    0%,
+    82%,
+    100% {
+        opacity: 0;
+        background-position: 0% 0%;
+    }
+    88% {
+        opacity: 0.4;
+    }
+    94% {
+        opacity: 0;
+        background-position: 100% 100%;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    html.journey-snap {
-        scroll-snap-type: none;
+    .hero-wing-drift,
+    .hero-wing-glint {
+        animation: none !important;
+        transform: none !important;
+        opacity: 0 !important;
+    }
+}
+
+/*
+ * Checkout steps. The numbered disc in the progress bar is one gradient thumb that slides from
+ * step to step (`--step-idx` is the step, `--step-gap` the connector between two discs), and the
+ * content of the step in hand slides in from the side it was reached from: from the right going
+ * forward, from the left going back.
+ */
+.cg-steps-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transform: translateX(calc(var(--step-idx, 0) * (32px + var(--step-gap, 0px))));
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cg-steps-num {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    transition: color 0.3s ease 0.1s;
+}
+
+@keyframes cg-slide-forward {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes cg-slide-back {
+    from { opacity: 0; transform: translateX(-40px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.cg-slide-forward { animation: cg-slide-forward 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cg-slide-back    { animation: cg-slide-back 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+    .cg-steps-thumb,
+    .cg-steps-num {
+        transition: none;
+    }
+
+    .cg-slide-forward,
+    .cg-slide-back {
+        animation: none;
+    }
+}
+
+/*
+ * Checkout skeleton: the grey bars that stand in for the itinerary and the quote while they load.
+ * A slow pulse rather than a travelling shimmer — it is on screen for a second or two, and
+ * there is nothing in it to draw the eye away from the form.
+ */
+.cg-skeleton {
+    animation: cg-skeleton-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes cg-skeleton-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cg-skeleton {
+        animation: none;
     }
 }

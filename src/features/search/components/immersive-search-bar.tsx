@@ -1,11 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
+import { excludeOrigin } from '@/features/search/lib/exclude-origin';
 import { nightsBetween } from '@/shared/lib/stay';
 import { BRAND } from '@/shared/lib/palette';
 
@@ -56,8 +57,6 @@ const TRENDING: TrendingDest[] = [
 
 const FLEX_CHIPS =['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
 
-/** Marks drawn on the photo — token underlines, carets, text links. v1's dark accent. */
-const ACCENT = BRAND.accent;
 /** Every button on the landing page — and anything filled behind white text, like a
  *  picked date — wears v1's blue-to-cyan gradient. */
 const FILL = BRAND.gradient;
@@ -186,7 +185,7 @@ function CalendarGrid({ checkIn, checkOut, onSelect, accent }: CalendarGridProps
 
 function CaretIcon() {
     return (
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />
         </svg>
     );
@@ -228,25 +227,33 @@ interface TokenProps {
     hint: boolean;
     onClick: (e: React.MouseEvent) => void;
     children: React.ReactNode;
-    /** Defaults to solid once filled, dashed while empty. */
-    underline?: 'solid' | 'dashed' | 'dotted';
 }
 
-function Token({ filled, hint, onClick, children, underline }: TokenProps) {
+/**
+ * A fill-in-the-blank in the sentence. No underline: the dashed and dotted rules read as a
+ * rendering glitch rather than a field, so the dropdown chip alone says "this opens".
+ */
+function Token({ filled, hint, onClick, children }: TokenProps) {
     return (
         <span
             onClick={onClick}
-            className="imm-token cursor-pointer font-bold pb-0.5 inline-flex items-baseline gap-0.5 transition-opacity duration-300"
+            className="imm-token cursor-pointer font-bold inline-flex items-center gap-2 transition-opacity duration-300"
             style={{
-                borderBottomWidth: '3px',
-                borderBottomStyle: underline ?? (filled ? 'solid' : 'dashed'),
-                borderBottomColor: ACCENT,
                 opacity: filled ? 1 : 0.92,
                 animation: (!filled && hint) ? 'immSbHint 1.6s ease-in-out infinite' : 'none',
             }}
         >
             {children}
-            <span style={{ color: ACCENT, display: 'inline-flex', verticalAlign: 'middle', marginLeft: '1px', opacity: 0.85 }}>
+            <span
+                aria-hidden
+                className="imm-token-caret"
+                style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: '1.45rem', height: '1.45rem', flexShrink: 0, borderRadius: '9999px',
+                    color: '#fff', background: BRAND.gradient, boxShadow: BRAND.gradientShadow,
+                    transition: 'transform .2s',
+                }}
+            >
                 <CaretIcon />
             </span>
         </span>
@@ -255,31 +262,84 @@ function Token({ filled, hint, onClick, children, underline }: TokenProps) {
 
 // ─── Sticky-note panel ────────────────────────────────────────────────────────
 
+const NOTE_GAP = 18;
+const NOTE_MAX_HEIGHT = 380;
+/** Below this much room under the token, a panel opens above it instead. */
+const NOTE_MIN_ROOM = 240;
+/** Keeps a panel opening upwards clear of the landing page's fixed navbar. */
+const NOTE_TOP_CLEARANCE = 92;
+const NOTE_EDGE = 12;
+
+/**
+ * The dropdown under a token. Sized and placed against the viewport when it opens: it used to
+ * hang a fixed 380px below the token whatever the room, so on a short screen its last rows ran
+ * off the bottom and on the right-hand stage its side ran off the edge — rows the visitor
+ * could not reach, since the page behind a docked stage does not scroll.
+ */
 function NotePanel({ children, width = 'min(360px,88vw)', extra = {} }: {
     children: React.ReactNode;
     width?: string;
     extra?: React.CSSProperties;
 }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [fit, setFit] = useState({ above: false, maxHeight: NOTE_MAX_HEIGHT, shift: 0 });
+
+    useLayoutEffect(() => {
+        const el = ref.current;
+        const anchor = el?.parentElement;
+        if (!el || !anchor) return;
+
+        const place = () => {
+            const a = anchor.getBoundingClientRect();
+            const below = window.innerHeight - a.bottom - NOTE_GAP - NOTE_EDGE;
+            const above = a.top - NOTE_GAP - NOTE_TOP_CLEARANCE;
+            // A panel that asks for no height cap (dates, travellers) still may not outgrow
+            // the screen; it just gets to be as tall as its content when there is room.
+            const cap = extra.maxHeight === 'none' ? Infinity : NOTE_MAX_HEIGHT;
+            const needs = Math.min(el.scrollHeight + 2, cap, NOTE_MIN_ROOM);
+            const flip = below < needs && above > below;
+            const room = flip ? above : below;
+
+            // Centred on the token, then pulled back inside the viewport's side edges.
+            const centre = a.left + a.width / 2;
+            const w = el.offsetWidth;
+            const left = Math.min(Math.max(centre - w / 2, NOTE_EDGE), window.innerWidth - w - NOTE_EDGE);
+
+            setFit({
+                above: flip,
+                maxHeight: Math.max(140, Math.min(cap, room)),
+                shift: Math.round(left - (centre - w / 2)),
+            });
+        };
+
+        place();
+        window.addEventListener('resize', place);
+        return () => window.removeEventListener('resize', place);
+    }, []);
+
     return (
-        <div className="imm-note" style={{
+        <div ref={ref} className="imm-note" style={{
             position: 'absolute',
-            top: 'calc(100% + 18px)',
+            top: fit.above ? 'auto' : `calc(100% + ${NOTE_GAP}px)`,
+            bottom: fit.above ? `calc(100% + ${NOTE_GAP}px)` : 'auto',
             left: '50%',
-            transform: 'translateX(-50%) rotate(-0.6deg)',
+            transform: `translateX(calc(-50% + ${fit.shift}px)) rotate(-0.6deg)`,
             width,
-            background: 'rgba(15,23,42,0.98)',
+            // Solid: at 98% the sentence behind it ghosted through the list.
+            background: '#0f172a',
             borderRadius: '20px',
             padding: '22px',
             boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)',
             border: '1px solid rgba(255,255,255,0.10)',
             zIndex: 40,
-            maxHeight: '380px',
             overflowY: 'auto',
             fontFamily: 'var(--font-sans)',
             fontSize: '15px',
             lineHeight: '1.4',
             color: '#f1f5f9',
             ...extra,
+            // After `extra`, so a panel asking for no cap is still held to the room there is.
+            maxHeight: `${fit.maxHeight}px`,
         }}>
             {/* Paper-fold tab */}
             <div style={{
@@ -436,8 +496,15 @@ function DestPanel({
 export function ImmersiveSearchBar({
     trendingDestinations,
     defaultMode = 'stays',
+    onModeSelect,
 }: {
     trendingDestinations?: TrendingDest[];
+    /**
+     * When given, picking the *other* tab calls this instead of switching in place. The
+     * landing Journey uses it to glide to the sibling stage, whose own bar opens on that
+     * mode — so the pill moves the visitor to the section rather than reskinning this one.
+     */
+    onModeSelect?: (mode: Mode) => void;
     /**
      * Which tab the bar opens on. The landing Journey docks this bar once per stage —
      * stays, then flights — and each stage pins the mode it is about, so the visitor is
@@ -535,7 +602,9 @@ export function ImmersiveSearchBar({
         const acMode = mode === 'flights' ? 'flights' : 'hotels';
         destSugT.current = setTimeout(async () => {
             try {
-                setDestSugs((await autocompleteDestinations(q, acMode)).slice(0, 6));
+                // Kept whole: the origin is dropped from it at render, and the six
+                // shown are counted after that, not before.
+                setDestSugs(await autocompleteDestinations(q, acMode));
             } catch { setDestSugs([]); }
             finally { setDestSugLoading(false); }
         }, 280);
@@ -545,6 +614,10 @@ export function ImmersiveSearchBar({
 
     const handleSetMode = useCallback((m: Mode) => (e: React.MouseEvent) => {
         e.stopPropagation();
+        if (onModeSelect) {
+            if (m !== mode) onModeSelect(m);
+            return;
+        }
         clearTimeout(advanceT.current);
         setMode(m);
         setPanelOpen(null);
@@ -552,7 +625,7 @@ export function ImmersiveSearchBar({
         setCheckOut(null);
         setFlexOption(null);
         setFlexible(false);
-    }, []);
+    }, [onModeSelect, mode]);
 
     // ── Panel toggle ─────────────────────────────────────────────────────────
 
@@ -720,17 +793,19 @@ export function ImmersiveSearchBar({
 
     // ── Derived ───────────────────────────────────────────────────────────────
 
-    const originValue = pickedOrigin ? pickedOrigin.name : 'wherever you are';
+    const originValue = pickedOrigin ? pickedOrigin.name : tAll('search.prose.origin');
+    // A flight's destination is never the airport it leaves from.
+    const destOrigin = mode === 'flights' ? pickedOrigin?.name : null;
     const destValue   = pickedDest   ? pickedDest.name   : tAll('search.prose.anywhere');
 
     const isOneway = tripType === 'oneway';
 
     const datesValue = mode === 'flights'
         ? (isOneway
-            ? (checkIn ? fmtDate(checkIn) : 'a date')
-            : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : 'your dates'))
+            ? (checkIn ? fmtDate(checkIn) : tAll('search.prose.aDate'))
+            : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : tAll('search.prose.yourDates')))
         : (flexible
-            ? (flexOption ?? 'a flexible trip')
+            ? (flexOption ?? tAll('search.prose.flexibleTrip'))
             : (checkIn ? (checkOut ? `${fmtDate(checkIn)} → ${fmtDate(checkOut)}` : `${fmtDate(checkIn)} → ?`) : tAll('search.prose.sometime')));
 
     const totalTravelers = adults + children;
@@ -772,7 +847,8 @@ export function ImmersiveSearchBar({
                 @keyframes immSbHint   { 0%,100%{opacity:.92} 50%{opacity:.45} }
                 .imm-ribbon::-webkit-scrollbar { height:4px }
                 .imm-ribbon::-webkit-scrollbar-thumb { background:rgba(255,255,255,.18);border-radius:2px }
-                .imm-token:hover  { opacity:.75 }
+                .imm-token:hover  { opacity:.85 }
+                .imm-token:hover .imm-token-caret { transform:translateY(2px) }
                 .imm-stamp:hover  { filter:brightness(0.88) }
                 .imm-dest-card:hover { opacity:.85 }
                 .imm-row:hover    { background:rgba(255,255,255,.07);border-radius:14px }
@@ -820,7 +896,7 @@ export function ImmersiveSearchBar({
                                         transition: 'color .2s,box-shadow .2s',
                                         textTransform: 'capitalize',
                                     }}
-                                >{m.charAt(0).toUpperCase() + m.slice(1)}</button>
+                                >{tAll(`landing.search.searchMode.${m}`)}</button>
                             ))}
                         </div>
 
@@ -871,13 +947,13 @@ export function ImmersiveSearchBar({
                                         <DestPanel
                                             query={destQuery}
                                             onQueryChange={setDestQuery}
-                                            suggestions={destSugs}
+                                            suggestions={excludeOrigin(destSugs, destOrigin).slice(0, 6)}
                                             sugLoading={destSugLoading}
                                             onPickSuggestion={pickDestSuggestion}
                                             {...(mode === 'flights'
                                                 // Airports, not the stays cards: a flight is booked to one.
                                                 ? {
-                                                    airports:      POPULAR_AIRPORTS,
+                                                    airports:      excludeOrigin(POPULAR_AIRPORTS, destOrigin),
                                                     noMatchLabel:  tAll('search.noAirportsMatch', { query: destQuery.trim() }),
                                                     placeholder:   tAll('search.cityAirportPlaceholder'),
                                                     trendingLabel: tAll('search.popularAirports'),
@@ -980,17 +1056,17 @@ export function ImmersiveSearchBar({
 
                             {/* Travelers token */}
                             <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
-                                <Token filled underline="dotted" onClick={openPanel('travelers')} hint={false}>
+                                <Token filled onClick={openPanel('travelers')} hint={false}>
                                     {travelersValue}
                                 </Token>
                                 {panelOpen === 'travelers' && (
                                     <NotePanel width="280px" extra={{ maxHeight: 'none' }}>
                                         <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '18px' }}>
-                                            {mode === 'flights' ? 'Who\'s flying?' : 'Who\'s coming?'}
+                                            {mode === 'flights' ? tAll('checkout.flight.whosFlying') : tAll('landing.search.whosComing')}
                                         </div>
                                         {[
-                                            { label: 'Adults',   sub: '18+',      val: adults,   set: setAdults,   min: 1,  max: 16 },
-                                            { label: 'Children', sub: '0–17',     val: children, set: setChildren, min: 0,  max: 8  },
+                                            { label: tAll('landing.search.adults'),   sub: '18+',      val: adults,   set: setAdults,   min: 1,  max: 16 },
+                                            { label: tAll('landing.search.children'), sub: '0–17',     val: children, set: setChildren, min: 0,  max: 8  },
                                         ].map(({ label, sub, val, set, min, max }) => (
                                             <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                                                 <div>
@@ -1036,7 +1112,7 @@ export function ImmersiveSearchBar({
                                         <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
                                         <path d="m21.854 2.147-10.94 10.939" />
                                     </svg>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.06em' }}>GO</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.06em' }}>{tAll('landing.search.go')}</span>
                                 </>
                             )}
                             {ctaState === 'searching' && (

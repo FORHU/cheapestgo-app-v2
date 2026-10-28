@@ -1,14 +1,18 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Luggage, BaggageClaim, Armchair, ChevronDown, ChevronUp, BadgeDollarSign } from 'lucide-react';
-import type { FlightOffer, NormalizedSegment, SegmentEnd } from '@/shared/types';
+import type { FlightOffer } from '@/shared/types';
 import { cn } from '@/shared/lib/cn';
 import { SaveButton } from './SaveButton';
-import { formatTime } from '../lib/flight-utils';
+import { useUserCurrency } from '@/shared/stores/search.store';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
+import { dayOffset, formatTime, groupSegmentsBySlice } from '../lib/flight-utils';
+import { FlightItinerary } from './flight-itinerary';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -33,73 +37,6 @@ function stopsLabel(stops: number): string {
     if (stops === 0) return 'Nonstop';
     if (stops === 1) return '1 stop';
     return `${stops} stops`;
-}
-
-/**
- * Groups flat segments into the slices a traveller flies — outbound, return, each
- * leg of a multi-city trip — keyed by `segmentIndex`, which is also the index into
- * the offer's `sliceDurations`.
- */
-function groupSegmentsIntoSlices(segments: NormalizedSegment[]): { index: number; segments: NormalizedSegment[] }[] {
-    const map = new Map<number, NormalizedSegment[]>();
-    for (const seg of segments) {
-        const idx = seg.segmentIndex ?? 0;
-        if (!map.has(idx)) map.set(idx, []);
-        map.get(idx)!.push(seg);
-    }
-    return [...map.keys()].sort((a, b) => a - b).map((index) => ({ index, segments: map.get(index)! }));
-}
-
-/**
- * Whole calendar days between two Local Airport Times — the "+1" on a flight that
- * lands the day after it leaves. Dates only, so neither end's zone matters.
- */
-function dayOffset(from?: string, to?: string): number {
-    if (!from || !to) return 0;
-    const a = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
-    const b = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
-    return Math.max(0, Math.round((b - a) / 86_400_000));
-}
-
-/**
- * "Wed, Oct 14, 2026, 18:40" — the day pinned to UTC before formatting so the
- * digits in the string survive, for the reason `formatTime` gives.
- */
-function formatDateTime(iso: string | undefined, locale: string): string {
-    if (!iso) return '';
-    const day = Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
-    if (!Number.isFinite(day)) return '';
-    const date = new Date(day).toLocaleDateString(locale, {
-        timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-    });
-    return `${date}, ${formatTime(iso)}`;
-}
-
-/** "Hamad International Airport (DOH)", or the bare code when the provider named none. */
-function airportLabel(end: SegmentEnd | undefined, fallbackCode: string): string {
-    const code = end?.airport || fallbackCode;
-    const name = end?.airportName;
-    return name && name !== code ? `${name} (${code})` : code;
-}
-
-function cabinLabel(cabinClass?: string): string {
-    return (cabinClass || 'economy').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/**
- * Minutes on the ground between two legs.
- *
- * Both clocks are Local Airport Time at the same airport (see `formatTime`), so
- * their digits are compared as they stand — read as UTC, which no zone or DST
- * rule can shift — rather than handed to a `Date` to guess a zone for.
- */
-function layoverMinutes(arrival?: string, departure?: string): number | null {
-    if (!arrival || !departure) return null;
-    const a = Date.parse(`${arrival.slice(0, 16)}Z`);
-    const d = Date.parse(`${departure.slice(0, 16)}Z`);
-    if (!Number.isFinite(a) || !Number.isFinite(d) || d <= a) return null;
-    return Math.round((d - a) / 60_000);
 }
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
@@ -197,130 +134,6 @@ function RouteLine({ stops }: { stops: number }) {
     );
 }
 
-// ─── Itinerary (expanded view) ────────────────────────────────────────────────
-// v1's flight-by-flight itinerary (`FlightItineraryTimeline`), in this card's
-// materials: each flight as two ends either side of its duration, each end
-// carrying what a traveller needs at that airport.
-
-/**
- * A list of independent facts, one to a line. The departure's hang off bullets on
- * the left; the arrival mirrors it, flush right with its dot after the words. An
- * absent fact (no aircraft quoted) is left out rather than shown as an empty line.
- */
-function FactList({ items, align }: { items: React.ReactNode[]; align: 'left' | 'right' }) {
-    const shown = items.filter((item) => item !== undefined && item !== null && item !== '');
-    if (shown.length === 0) return null;
-    const right = align === 'right';
-
-    return (
-        <ul
-            className={cn(
-                'mt-1 flex flex-col gap-0.5 text-[12px] leading-snug md:text-[13px]',
-                TEXT,
-                right
-                    ? 'list-none items-end text-right'
-                    : 'list-disc items-start ps-[18px] text-left marker:text-slate-400 dark:marker:text-slate-500',
-            )}
-        >
-            {shown.map((item, i) => (
-                <li key={i} className={right ? 'flex items-center gap-1.5' : undefined}>
-                    <span>{item}</span>
-                    {/* A list marker cannot sit on the right, so the arrival's dot is drawn. */}
-                    {right && <span aria-hidden className="size-[5px] shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />}
-                </li>
-            ))}
-        </ul>
-    );
-}
-
-/**
- * One end of a flight: the clock, the airport in full, then the date and time, the
- * terminal, the cabin and flight, the aircraft — under DEPART FROM or ARRIVE AT.
- */
-function EndColumn({
-    end, code, segment, departedAt, label, align,
-}: {
-    end: SegmentEnd | undefined;
-    code: string;
-    segment: NormalizedSegment;
-    /** For the arrival end: when this flight left, for the "+1" on an overnight landing. */
-    departedAt?: string;
-    label: string;
-    align: 'left' | 'right';
-}) {
-    const t = useTranslations('flights.itinerary');
-    const locale = useLocale();
-    const days = align === 'right' ? dayOffset(departedAt, end?.time) : 0;
-
-    // Kept italic when the airline has not named one yet, so "we don't know" still
-    // reads differently from a confirmed terminal.
-    const terminal = end?.terminal
-        ? t('terminal', { terminal: end.terminal })
-        : <em>{t('terminalUnavailable')}</em>;
-
-    return (
-        <div className={cn('flex w-[38%] shrink-0 flex-col sm:w-[34%]', align === 'left' ? 'items-start text-left' : 'items-end text-right')}>
-            <span className={cn('text-lg leading-none font-semibold tracking-[-0.01em] whitespace-nowrap md:text-2xl', TITLE)}>
-                {formatTime(end?.time)}
-                {days > 0 && <sup className={cn('ml-0.5 text-[12px] font-medium', MUTED)}>+{days}</sup>}
-            </span>
-            <span className={cn('mt-1.5 text-[12px] leading-snug md:text-[13px]', TEXT)}>{airportLabel(end, code)}</span>
-            <span className={cn('mt-3 text-[11px] tracking-[0.13em] uppercase md:text-[12px]', MUTED)}>{label}</span>
-            <FactList
-                align={align}
-                items={[
-                    formatDateTime(end?.time, locale),
-                    terminal,
-                    `${cabinLabel(segment.cabinClass)} ${segment.flightNumber ?? ''}`.trim(),
-                    segment.aircraft,
-                ]}
-            />
-        </div>
-    );
-}
-
-function LegRow({ segment }: { segment: NormalizedSegment }) {
-    const t = useTranslations('flights.itinerary');
-    const duration = formatDuration(segment.duration);
-
-    return (
-        <div className="flex items-start justify-between gap-2 md:gap-4">
-            <EndColumn end={segment.departure} code={segment.origin} segment={segment} label={t('departFrom')} align="left" />
-            <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 pt-1.5">
-                {duration && (
-                    <span className={cn('text-center text-[11px] md:text-[12px]', MUTED)}>
-                        {t('flightDuration')} <span className={TEXT}>{duration}</span>
-                    </span>
-                )}
-                <span className="w-full border-t border-dotted border-blue-500/70" />
-            </div>
-            <EndColumn
-                end={segment.arrival}
-                code={segment.destination}
-                segment={segment}
-                departedAt={segment.departure?.time}
-                label={t('arriveAt')}
-                align="right"
-            />
-        </div>
-    );
-}
-
-/** The wait between two flights — a pill, because it is what a traveller scanning a connection most needs to see. */
-function LayoverNote({ minutes, airport }: { minutes: number; airport: string }) {
-    const t = useTranslations('flights.itinerary');
-    return (
-        <div className="flex flex-col items-center gap-1.5 text-center">
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-amber-800 uppercase dark:bg-amber-500/15 dark:text-amber-300">
-                {t('layoverLabel')}
-            </span>
-            <span className={cn('text-[12px] md:text-[13px]', TEXT)}>
-                {t('layoverValue', { duration: formatDuration(minutes), airport })}
-            </span>
-        </div>
-    );
-}
-
 // ─── FlightCard ───────────────────────────────────────────────────────────────
 
 export interface FlightCardProps {
@@ -336,12 +149,21 @@ export interface FlightCardProps {
 
 export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false, checkingPrice = false }: FlightCardProps) {
     const tAll = useTranslations();
-    const tItin = useTranslations('flights.itinerary');
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
 
+    // Every price on the card in the currency the traveller picked. Until the rates are live
+    // `convertForDisplay` hands the airline's figure back in the airline's currency, and that is
+    // what is printed — `useLiveRates` redraws the card when they land.
+    const userCurrency = useUserCurrency();
+    useLiveRates();
+    const money = (amount: number, from: string) => {
+        const shown = convertForDisplay(amount, from, userCurrency);
+        return formatPrice(shown.amount, shown.currency);
+    };
+
     const segments = offer.segments ?? [];
-    const slices = groupSegmentsIntoSlices(segments);
+    const slices = groupSegmentsBySlice(segments);
 
     // Primary metrics for the collapsed card view
     // The summary row describes the outbound alone, as v1's card does. Read across every
@@ -394,7 +216,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
         : penalty === 0
             ? tAll('flights.card.freeCancellation')
             : penalty != null && penalty > 0
-                ? `Refundable (est. fee: ${formatPrice(penalty, fp?.refundPenaltyCurrency ?? 'USD')})`
+                ? `Refundable (est. fee: ${money(penalty, fp?.refundPenaltyCurrency ?? 'USD')})`
                 : 'Refundable (fees may apply)';
     const cabin = (primary.cabinClass || 'economy').replace('_', ' ');
     const checkedBags = offer.baggage?.checkedBags ?? 0;
@@ -492,7 +314,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                     </div>
                     <div>
                         <p className="whitespace-nowrap">
-                            <span className={cn('text-[22px] font-bold md:text-[26px]', TITLE)}>{formatPrice(pricePerPerson, currency)}</span>
+                            <span className={cn('text-[22px] font-bold md:text-[26px]', TITLE)}>{money(pricePerPerson, currency)}</span>
                             <span className={cn('text-[15px]', MUTED)}> / person</span>
                         </p>
                         <p className={cn('mt-1 text-[13px] first-letter:uppercase', MUTED)}>{tAll('flights.card.includesTaxes')}</p>
@@ -533,7 +355,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                                 {offer.brandedFare?.brandName || offer.brandedFare?.fareType || 'Standard'}
                                             </span>
                                             <span className={cn('text-[13px] font-semibold', TITLE)}>
-                                                {formatPrice(offer.price.total, offer.price.currency)}
+                                                {money(offer.price.total, offer.price.currency)}
                                             </span>
                                         </div>
                                         <p className={cn('mb-2 text-[12px] capitalize', MUTED)}>
@@ -556,7 +378,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                                     {alt.brandedFare?.brandName || alt.brandedFare?.fareType || 'Option'}
                                                 </span>
                                                 <span className={cn('text-[13px] font-semibold', TITLE)}>
-                                                    {formatPrice(alt.price?.total ?? 0, alt.price?.currency ?? 'USD')}
+                                                    {money(alt.price?.total ?? 0, alt.price?.currency ?? 'USD')}
                                                 </span>
                                             </div>
                                             <p className={cn('mb-2 text-[12px] capitalize', MUTED)}>
@@ -582,48 +404,9 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                             </div>
                         )}
 
-                        {/* Flight by flight, each direction under its own name and run time.
-                            Across the whole card, under the plate as well — the airport names
+                        {/* Across the whole card, under the plate as well — the airport names
                             and terminals need the width more than the plate needs the column. */}
-                        <div className="flex flex-col gap-7 px-5 pt-5 pb-6 md:px-9">
-                            {slices.map(({ index, segments: sliceSegs }, i) => {
-                                // "Outbound" only means something beside a return, so a
-                                // single leg goes unnamed — the card above already says it.
-                                const label = slices.length === 2
-                                    ? tItin(i === 0 ? 'outbound' : 'return')
-                                    : tItin('legLabel', { number: i + 1 });
-                                // The provider's own figure for this direction, never the
-                                // offer-wide total: an outbound and a return rarely match.
-                                const total = offer.sliceDurations?.[index];
-
-                                return (
-                                    <div key={index} className="flex flex-col gap-5">
-                                        {slices.length > 1 && (
-                                            <div className="flex flex-wrap items-baseline gap-x-3 text-[12px]">
-                                                <span className={cn('tracking-[0.13em] uppercase', MUTED)}>{label}</span>
-                                                {total != null && total > 0 && (
-                                                    <span className={MUTED}>
-                                                        {tItin('totalFlightDuration')} <span className={TEXT}>{formatDuration(total)}</span>
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                        {sliceSegs.map((seg, j) => {
-                                            const prev = sliceSegs[j - 1];
-                                            const lay = prev ? layoverMinutes(prev.arrival?.time, seg.departure?.time) : null;
-                                            return (
-                                                <React.Fragment key={`${index}-${j}`}>
-                                                    {lay != null && (
-                                                        <LayoverNote minutes={lay} airport={seg.departure?.airportName || seg.origin} />
-                                                    )}
-                                                    <LegRow segment={seg} />
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <FlightItinerary offer={offer} className="px-5 pt-5 pb-6 md:px-9" />
                     </motion.div>
                 )}
             </AnimatePresence>

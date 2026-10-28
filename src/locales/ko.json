@@ -46,6 +46,8 @@
     "forgotPasswordQ": "비밀번호를 잊으셨나요?",
     "createOne": "계정 만들기",
     "passwordPlaceholder": "비밀번호",
+    "showPassword": "비밀번호 표시",
+    "hidePassword": "비밀번호 숨기기",
     "createAccount": "계정 만들기",
     "lastNameShort": "성",
     "strongPassword": "안전한 비밀번호를 만드세요",
@@ -299,12 +301,12 @@
       "guestN": "게스트 {n}",
       "lastName": "성 *",
       "lastNamePlaceholder": "성",
-      "nationality": "국적 (예: PH)",
+      "country": "국가",
       "no": "아니요",
       "passportExpiry": "여권 만료일",
       "passportNumber": "여권 번호",
       "phone": "전화번호",
-      "phoneNumber": "전화번호",
+      "phoneNumber": "전화번호 *",
       "phonePlaceholder": "번호",
       "title": "내 정보",
       "travelingForWork": "출장인가요?",
@@ -327,7 +329,10 @@
       "sessionExpiredCharge": "결제 중 세션이 만료되었습니다. 카드가 청구되었습니다 — 결제 참조 번호({id})와 함께 고객지원에 문의해 주세요.",
       "refreshingSession": "가격 보장을 갱신 중입니다…",
       "quoteExpiringSoon": "가격 보장이 5분 후 만료됩니다 — 빨리 예약을 완료해 주세요.",
-      "required": "필수 입력"
+      "required": "필수 입력",
+      "emailInvalid": "올바른 이메일 주소를 입력해 주세요",
+      "ageInvalid": "0세에서 17세 사이의 나이를 입력해 주세요",
+      "specialRequestsTooLong": "특별 요청은 500자 이내로 작성해 주세요"
     },
     "priceChanged": {
       "title": "가격이 변경되었습니다",
@@ -385,7 +390,131 @@
     "whosCheckingInYou": "체크인하실 분은 누구인가요? (본인 정보)",
     "paymentDetailsTitle": "결제 정보",
     "securedPoweredBy": "<b>{brand}</b> 보안 결제",
-    "payNow": "{amount} 결제하기"
+    "payNow": "{amount} 결제하기",
+    "priceMoved": {
+      "title": "가격이 변경되었습니다",
+      "up": "이 객실의 가격이 선택하신 때보다 올랐습니다.",
+      "down": "이 객실의 가격이 선택하신 때보다 내렸습니다.",
+      "was": "이전",
+      "now": "현재",
+      "accept": "새 가격으로 계속",
+      "chooseAnother": "다른 객실 선택",
+      "refreshing": "최신 가격을 확인하는 중…"
+    },
+    "unavailable": {
+      "title": "이 객실은 더 이상 예약할 수 없습니다",
+      "description": "고민하시는 동안 다른 분이 예약했거나 호텔에서 판매를 중단했습니다. 결제는 이루어지지 않았습니다.",
+      "chooseAnother": "다른 객실 선택"
+    },
+    "notPayableOnline": {
+      "title": "이 객실은 온라인으로 결제할 수 없습니다",
+      "description": "이 요금은 호텔에서 직접 결제를 받습니다. 여기서 예약하고 결제하려면 다른 객실을 선택해 주세요.",
+      "chooseAnother": "다른 객실 선택"
+    },
+    "supplierDown": {
+      "title": "지금은 호텔에 연결할 수 없습니다",
+      "description": "예약에는 문제가 없습니다. 호텔 시스템이 응답하지 않았습니다. 잠시 후 다시 시도해 주세요.",
+      "retry": "다시 시도"
+    },
+    "settling": {
+      "title": "예약을 확인하는 중입니다",
+      "description": "호텔에서 예약을 확정하고 있습니다. 이 페이지를 닫지 마세요.",
+      "doNotPayAgain": "다시 결제하지 마세요. 이중으로 결제되지 않습니다.",
+      "checkTrips": "내 여행 보기"
+    },
+    "needsReview": {
+      "title": "호텔과 예약을 확인하고 있습니다",
+      "description": "결제 금액은 아직 청구되지 않았습니다. 예약이 확정되면 이메일로 알려 드리고, 확정되지 않으면 카드 승인을 해제해 드립니다."
+    },
+    "failed": {
+      "title": "예약을 완료하지 못했습니다",
+      "released": "결제되지 않았습니다. 카드 승인이 해제되었습니다.",
+      "unknown": "결제가 처리되었는지 확인하지 못했습니다. 다시 시도하기 전에 내 여행을 확인하거나 고객센터에 문의해 주세요.",
+      "tryAgain": "다시 시도"
+    },
+    "flight": {
+      "cardHeld": "지금은 카드 승인만 진행되며, 항공사가 항공권을 확정한 후에 결제됩니다. 확정되지 않으면 승인이 해제되며 비용이 청구되지 않습니다.",
+      "priceChanged": "항공사가 확정하기 전에 요금이 {was}에서 {now}(으)로 변경되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 새 요금으로 예약하려면 정보를 다시 제출해 주세요.",
+      "offerExpired": "항공사가 확정하기 전에 이 요금이 매진되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 다시 검색해 주세요.",
+      "adultN": "성인 {n}",
+      "infantN": "유아 {n}",
+      "nameHint": "여권에 표기된 것과 동일하게 이름을 입력해 주세요.",
+      "contactHint": "전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다.",
+      "countryPlaceholder": "국가 선택",
+      "countryNoResults": "검색된 국가가 없습니다",
+      "passportPlaceholder": "예: P1234567A",
+      "whosFlying": "누가 탑승하시나요?",
+      "settling": {
+        "description": "항공사에서 항공권을 확정하고 있습니다. 몇 분 정도 걸릴 수 있으며, 발권되는 즉시 내 여행에 표시됩니다."
+      },
+      "needsReview": {
+        "title": "항공사와 예약을 확인하고 있습니다",
+        "description": "담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다."
+      },
+      "summary": {
+        "fareDetails": "요금 세부 정보",
+        "showItineraries": "항공편 일정 보기",
+        "hideItineraries": "항공편 일정 숨기기",
+        "departing": "출발",
+        "arrivingAt": "도착지",
+        "totalPrice": "총 가격",
+        "noCarryOnBag": "기내 수하물 불포함",
+        "noCheckedBag": "위탁 수하물 불포함"
+      },
+      "receipt": {
+        "confirmedToDestination": "{destination}행 항공편이 확정되었습니다.",
+        "allSet": "예약이 완료되었습니다",
+        "confirmedSentTo": "{destination}행 항공편이 확정되었으며, 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다",
+        "approxTotal": "{currency} 환산 금액(약)",
+        "receiptSentRich": "영수증이 <b>{email}</b>로 전송되었습니다.",
+        "passengersCount": "{count}명",
+        "copyReference": "복사",
+        "copyReferenceDone": "복사됨",
+        "confirmedBadge": "확정",
+        "outbound": "출국편",
+        "return": "귀국편",
+        "departFrom": "출발지",
+        "arriveAt": "도착지",
+        "terminal": "터미널",
+        "refundable": "환불 가능 (수수료가 부과될 수 있음)",
+        "carryOnBag": "기내 수하물 1개",
+        "checkedBagsCount": "위탁 수하물 {count}개",
+        "loadingItinerary": "항공편 상세 정보를 불러오는 중…",
+        "paymentSummary": "결제 요약",
+        "fareLine": "운임 · 탑승객 {count}명",
+        "taxesAndFees": "세금 및 수수료",
+        "includedLabel": "포함",
+        "paidBadge": "결제 완료",
+        "paymentProcessedSecurely": "Stripe를 통해 안전하게 결제되었습니다.",
+        "viewBookings": "예약 보기",
+        "passengerSectionTitle": "탑승객",
+        "contact": "연락처"
+      }
+    },
+    "datePicker": {
+      "placeholder": "날짜 선택",
+      "previousMonth": "이전 달",
+      "nextMonth": "다음 달",
+      "previousYear": "이전 연도",
+      "nextYear": "다음 연도",
+      "previousYears": "이전 연도들",
+      "nextYears": "다음 연도들",
+      "chooseMonth": "연도와 월 선택",
+      "chooseYear": "연도 선택"
+    },
+    "multiRoom": {
+      "title": "한 번에 객실 하나씩",
+      "description": "여러 객실을 한 번에 예약하는 기능은 아직 지원되지 않습니다. 이 결제는 전체 인원을 위한 객실 1개 기준입니다. 객실은 각각 따로 예약해 주세요."
+    },
+    "bookingPage": {
+      "loading": "예약을 확인하는 중…",
+      "notFound": "예약을 찾을 수 없습니다",
+      "notFoundDescription": "다른 계정의 예약일 수 있습니다. 예약하신 계정으로 로그인해 주세요.",
+      "reference": "예약 번호",
+      "refresh": "상태 새로고침",
+      "viewTrips": "내 여행 보기",
+      "stillWorking": "아직 처리 중입니다. 이 페이지는 자동으로 업데이트됩니다."
+    }
   },
   "currencyPicker": {
     "label": "통화 선택"
@@ -840,6 +969,64 @@
         "stays": "숙소",
         "flights": "항공편",
         "aiSearch": "AI 검색"
+      },
+      "go": "출발",
+      "whosComing": "누가 묵으시나요?"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "호텔 · 항공편 · 골프",
+        "titleLine1": "한 번의 검색.",
+        "titleLine2": "모든 여정으로.",
+        "subtitle": "숨은 수수료는 빼고, 노을을 쫓아 떠나세요.",
+        "scrollCue": "아래로 스크롤하여 둘러보기"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "01단계 · 호텔",
+          "titleLead": "숙소를",
+          "titleRest": "찾아보세요.",
+          "caption": "호텔과 숙소를 1박 요금으로 — 예약 버튼을 누르기 전에 모든 수수료를 보여드립니다."
+        },
+        "flights": {
+          "eyebrow": "02단계 · 항공편",
+          "titleLead": "그다음엔",
+          "titleRest": "떠나세요.",
+          "caption": "모든 항공사, 모든 운임 등급을 실제 지불 금액 순으로 정렬합니다."
+        },
+        "ai": {
+          "eyebrow": "03단계 · AI 플래너",
+          "titleLead": "아니면",
+          "titleRest": "그냥 물어보세요.",
+          "caption": "여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요."
+        },
+        "options": {
+          "eyebrow": "도착",
+          "titleLead": "이제",
+          "titleRest": "선택하세요.",
+          "caption": "숙소, 항공편, 골프까지 한곳에서."
+        }
+      },
+      "strip": {
+        "from": "{price}부터"
+      },
+      "options": {
+        "staysNote": "호텔 및 숙소",
+        "flightsNote": "연결 가능한 모든 항공사",
+        "golf": "골프",
+        "golfNote": "출시 예정"
+      },
+      "ask": {
+        "placeholder": "원하는 여행을 설명해 주세요…",
+        "label": "원하는 여행을 설명해 주세요",
+        "submit": "물어보기",
+        "example1": "서울 5박, ₱40,000 이하",
+        "example2": "해변, 직항, 금요일 출발",
+        "example3": "일본 두 도시, 일주일"
+      },
+      "altitude": {
+        "label": "고도",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -1458,6 +1645,7 @@
     "signIn": "로그인",
     "signOut": "로그아웃",
     "myTrips": "내 여행",
+    "bookings": "예약",
     "account": "계정",
     "trips": "여행",
     "createAccount": "계정 만들기",
@@ -1929,7 +2117,11 @@
       "anywhere": "어딘가 멋진 곳",
       "sometime": "언젠가 곧",
       "justMe": "혼자",
-      "ofUs": "{count}명"
+      "ofUs": "{count}명",
+      "origin": "내가 있는 곳",
+      "aDate": "원하는 날",
+      "yourDates": "원하는 일정",
+      "flexibleTrip": "유연한 여행"
     },
     "trendingCities": "인기 도시",
     "popularAirports": "인기 공항",
@@ -2343,7 +2535,39 @@
     "pageSubtitle": "모든 예약을 확인하고 관리하세요.",
     "viewDetails": "상세 보기",
     "emptyHint": "떠날 준비가 되셨나요? 최저가 항공편과 호텔을 찾아보세요.",
-    "bookingDetails": "예약 상세"
+    "bookingDetails": "예약 상세",
+    "loadFailed": {
+      "title": "여행 정보를 불러오지 못했습니다",
+      "retry": "다시 시도"
+    },
+    "hotelCancel": {
+      "title": "이 예약을 취소하시겠습니까?",
+      "loading": "환불받을 금액을 확인하는 중…",
+      "loadError": "취소 조건을 확인하지 못했습니다. 다시 시도해 주세요.",
+      "paid": "결제 금액",
+      "penalty": "취소 수수료",
+      "refund": "환불 금액",
+      "freeUntil": "{date}까지 무료 취소 가능",
+      "feeRisesOn": "{date}부터 수수료가 올라갑니다",
+      "fullRefund": "전액 환불됩니다.",
+      "partialRefund": "결제 금액의 일부가 환불됩니다.",
+      "noRefund": "환불되는 금액이 없습니다. 현재 시점에서는 환불이 불가능한 요금입니다.",
+      "confirm": "예약 취소",
+      "confirmRefund": "취소하고 {amount} 환불받기",
+      "confirmNoRefund": "환불 없이 취소",
+      "keep": "예약 유지",
+      "working": "취소하는 중…",
+      "changedTitle": "금액이 변경되었습니다",
+      "changedBody": "창을 연 이후 시간이 지나 환불 금액이 달라졌습니다. 아직 취소되지 않았습니다. 다시 확인해 주세요.",
+      "alreadyCancelled": "이미 취소된 예약입니다.",
+      "notCancellable": "이 예약은 여기서 취소할 수 없습니다. 고객센터에 문의해 주세요.",
+      "refundRetry": "이미 취소된 예약이지만 환불이 처리되지 않았습니다. 지금 다시 시도합니다.",
+      "doneRefunded": "예약이 취소되었고 환불이 진행 중입니다. 명세서에 반영되기까지 영업일 기준 3~5일이 걸릴 수 있습니다.",
+      "doneNoRefund": "예약이 취소되었습니다. 환불 불가 요금이어서 환불되는 금액은 없습니다.",
+      "doneRefundFailed": "예약은 취소되었지만 환불이 처리되지 않았습니다. 고객센터에 문의해 주시면 처리해 드리겠습니다.",
+      "failed": "예약을 취소하지 못했습니다. 다시 시도하거나 고객센터에 문의해 주세요.",
+      "close": "닫기"
+    }
   },
   "support": {
     "title": "고객지원",

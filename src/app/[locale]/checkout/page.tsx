@@ -1,35 +1,43 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown, ChevronLeft, Sun, Moon, User, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown, User, Mail, Phone, type LucideIcon } from 'lucide-react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { env } from '@/shared/lib/env';
-import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
-import { buildConfirmGuests, formatStayDates, type CoGuest } from '@/features/checkout/lib/checkout.helpers';
+import { formatStayDates } from '@/features/checkout/lib/checkout.helpers';
+import { useHotelCheckout } from '@/features/checkout/hooks/use-hotel-checkout';
+import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/hotel-checkout-machine';
+import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
+import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
+import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
+import { CheckoutToolbar } from '@/features/checkout/components/checkout-toolbar';
+import { SkeletonBar } from '@/features/checkout/components/skeleton-bar';
+import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
+import { formatMoney } from '@/features/checkout/lib/format-money';
+import { airportLabel, formatDateTime, groupSegmentsIntoSlices } from '@/features/flights/lib/flight-utils';
+import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
+import { DateField } from '@/features/checkout/components/date-field';
+import { AutocompleteSelectField } from '@/features/checkout/components/autocomplete-select-field';
+import { OptionList, SelectField } from '@/features/checkout/components/select-field';
+import { getCountryOptions } from '@/features/checkout/lib/country-options';
+import {
+    BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
+} from '@/features/checkout/components/booking-state-panels';
 import { nightsBetween } from '@/shared/lib/stay';
+import { ACCENT, ACCENT_FILL, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
 import { BRAND } from '@/shared/lib/palette';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
-/** The server's figures for a hotel checkout — see api-v2 `preBook`. */
-interface HotelDisplay {
-    currency:     string;
-    subtotal:     number;
-    taxes:        number;
-    total:        number;
-    serviceFee:   number;
-    chargedTotal: number;
-    converted:    boolean;
-}
 
 function getStripe() {
     if (!stripePromise) {
@@ -49,61 +57,23 @@ interface GuestInfo {
 }
 
 interface PassengerInfo {
+    /** Adult, child or infant — in the order the offer lists its passengers. */
+    type:           'ADT' | 'CHD' | 'INF';
     firstName:      string;
     lastName:       string;
+    /** The lead traveller's only: they are the booking's contact. */
     email:          string;
+    /** National number; its dial code is `contactPhoneCode`. Lead traveller only. */
     phone:          string;
     dateOfBirth:    string;
     /** 'M' | 'F', as the API takes it; '' until chosen. */
     gender:         string;
     passportNumber: string;
     passportExpiry: string;
-    /** Issuing country, ISO 3166 alpha-2. */
-    nationality:    string;
+    /** Passport issuing country, ISO 3166 alpha-2. */
+    country:        string;
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
-const ACCENT = '#FF6B4B';
-const GREEN  = '#2FB67F';
-const DANGER = '#E4685A';
-
-/**
- * Every colour the checkout paints with, picked by theme rather than a `dark:`
- * variant — the same shape and reasoning as `propertyPalette` on the property
- * page, so the two screens read as one product: dark is pure black, light is
- * white, and the greys are the app's cream at opacity over black / ink over
- * white.
- */
-function checkoutPalette(theme: 'light' | 'dark') {
-    const dark = theme === 'dark';
-    return {
-        // Obsidian, as on the property page this flow comes from and in the design.
-        bg:            dark ? BRAND.obsidian : '#FFFFFF',
-        title:         dark ? '#FFFFFF' : '#111111',
-        text:          dark ? '#F5EFE4' : '#111111',
-        soft:          dark ? 'rgba(245,239,228,.7)'  : 'rgba(17,17,17,.65)',
-        muted:         dark ? 'rgba(245,239,228,.5)'  : 'rgba(17,17,17,.5)',
-        faint:         dark ? 'rgba(245,239,228,.4)'  : 'rgba(17,17,17,.4)',
-        hairline:      dark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.1)',
-        // The design's input fill: a violet-leaning grey, not a neutral one.
-        fieldBg:       dark ? '#2C2836' : '#EEEDF2',
-        summaryBg:     dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)',
-        summaryBorder: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)',
-        menuBg:        dark ? '#141018' : '#FFFFFF',
-        /** The one raised plate the design uses — the summary card, the payment
-         *  panel and the toolbar circles all sit on it. */
-        surface:       dark ? '#1E1E1E' : '#F4F4F5',
-        /** Rules inside the summary card, a step louder than `hairline` so they
-         *  still read against `surface` rather than against the page. */
-        cardLine:      dark ? 'rgba(255,255,255,.2)'  : 'rgba(0,0,0,.12)',
-        /** A step the traveller is not on — before or after it alike. */
-        stepIdle:      dark ? '#383A3E' : '#E4E4E7',
-        stepLine:      dark ? '#808080' : 'rgba(0,0,0,.25)',
-    };
-}
-
-type Palette = ReturnType<typeof checkoutPalette>;
 
 /**
  * The dial codes the phone control offers. A short curated list rather than
@@ -137,28 +107,21 @@ const DIAL_CODES: { code: string; dial: string; flag: string; name: string }[] =
     { code: 'NZ', dial: '+64',  flag: '🇳🇿', name: 'New Zealand' },
 ];
 
+/**
+ * The example person in every name field on the booking forms — flight passengers, the lead
+ * guest and every other guest alike, in every language. Split across the two fields, so the
+ * first-name box reads as asking for a first name and not a whole one.
+ */
+const EXAMPLE_FIRST_NAME = 'John';
+const EXAMPLE_LAST_NAME  = 'Doe';
+/** The same person's contact details, so email and phone read as examples too, like the names. */
+const EXAMPLE_EMAIL = 'eg.johndoe@gmail.com';
+const EXAMPLE_PHONE = '912 345 6789';
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 function validateEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validateGuest(g: GuestInfo): Partial<Record<keyof GuestInfo, string>> {
-    const e: Partial<Record<keyof GuestInfo, string>> = {};
-    if (!g.firstName.trim()) e.firstName = 'Required';
-    if (!g.lastName.trim())  e.lastName  = 'Required';
-    if (!g.email.trim())     e.email     = 'Required';
-    else if (!validateEmail(g.email)) e.email = 'Invalid email';
-    return e;
-}
-
-function validateCoGuests(list: CoGuest[]): Record<string, string> {
-    const e: Record<string, string> = {};
-    list.forEach((g, i) => {
-        if (!g.firstName.trim()) e[`${i}.firstName`] = 'Required';
-        if (!g.lastName.trim())  e[`${i}.lastName`]  = 'Required';
-    });
-    return e;
 }
 
 function validatePassengers(passengers: PassengerInfo[]): Record<string, string> {
@@ -166,9 +129,11 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
     passengers.forEach((p, i) => {
         if (!p.firstName.trim())      errors[`${i}.firstName`]      = 'Required';
         if (!p.lastName.trim())       errors[`${i}.lastName`]       = 'Required';
-        if (!p.email.trim())          errors[`${i}.email`]          = 'Required';
-        else if (!validateEmail(p.email)) errors[`${i}.email`]      = 'Invalid email';
-        if (!p.phone.trim())          errors[`${i}.phone`]          = 'Required';
+        if (i === 0) {
+            if (!p.email.trim())          errors[`${i}.email`]      = 'Required';
+            else if (!validateEmail(p.email)) errors[`${i}.email`]  = 'Invalid email';
+            if (!p.phone.trim())          errors[`${i}.phone`]      = 'Required';
+        }
         if (!p.dateOfBirth)           errors[`${i}.dateOfBirth`]    = 'Required';
         // Gender, because the order builder defaults a missing one to female and a ticket
         // whose gender disagrees with the passport is refused at the gate.
@@ -177,46 +142,52 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
         // Expiry and issuing country travel with the number or the airline gets none of
         // it: `duffelIdentityDocuments` returns nothing unless all three are present.
         if (!p.passportExpiry)        errors[`${i}.passportExpiry`] = 'Required';
-        if (p.nationality.trim().length !== 2) errors[`${i}.nationality`] = '2-letter country code';
+        if (p.country.trim().length !== 2) errors[`${i}.country`] = '2-letter country code';
     });
     return errors;
 }
 
 // ─── Shared UI helpers ────────────────────────────────────────────────────────
 
+/**
+ * A field's fill and edge: the brand gradient, blue-600 → cyan-500, as a ring — the
+ * search card's glow, drawn as an outline. The ring is two background layers: the field's
+ * fill painted to the padding box, the gradient to the border box, showing only through the
+ * transparent border. A field that is wrong trades the ring for a plain red edge.
+ */
+function fieldEdge(palette: Palette, hasError = false): React.CSSProperties {
+    // `--cg-ring` is the solid colour the edge becomes when the browser autofills the field and
+    // strips the gradient — see the autofill rules in `fieldCss`.
+    return hasError
+        ? { border: `1.5px solid ${DANGER}`, background: palette.fieldBg, '--cg-ring': DANGER } as React.CSSProperties
+        : { border: '1.5px solid transparent', background: `linear-gradient(${palette.fieldBg},${palette.fieldBg}) padding-box,${ACCENT_FILL} border-box`, '--cg-ring': BRAND.primary } as React.CSSProperties;
+}
+
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
         width: '100%', height: 40, padding: '0 16px', borderRadius: 999,
-        border: `1.5px solid ${hasError ? DANGER : 'transparent'}`,
-        background: palette.fieldBg, color: palette.text,
+        ...fieldEdge(palette, hasError),
+        color: palette.text,
         fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
     };
 }
 
-function Label({ children, palette, icon: Icon }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon }) {
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 }}>
-            {Icon && <Icon size={13} strokeWidth={1.75} style={{ flexShrink: 0 }} />}
-            {children}
-        </div>
-    );
+/**
+ * A field's caption. With `htmlFor` it is a real `<label>`, so the field is named by it.
+ * `required` appends the same " *" the first-name and email captions carry in their text, for a
+ * caption whose text does not.
+ */
+function Label({ children, palette, icon: Icon, htmlFor, required }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon; htmlFor?: string; required?: boolean }) {
+    const style: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 };
+    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} color={palette.icon} style={{ flexShrink: 0 }} />}{children}{required && <span aria-hidden> *</span>}</>;
+    return htmlFor
+        ? <label htmlFor={htmlFor} style={style}>{content}</label>
+        : <div style={style}>{content}</div>;
 }
 
 function ErrText({ msg }: { msg?: string }) {
     if (!msg) return null;
     return <div style={{ fontSize: 11, color: DANGER, marginTop: 5, fontWeight: 600 }}>{msg}</div>;
-}
-
-function FieldRow({ children }: { children: React.ReactNode }) {
-    return <div style={{ marginBottom: 14 }}>{children}</div>;
-}
-
-function Grid2({ children }: { children: React.ReactNode }) {
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-            {children}
-        </div>
-    );
 }
 
 function Spinner({ color = '#fff' }: { color?: string }) {
@@ -229,14 +200,14 @@ function Spinner({ color = '#fff' }: { color?: string }) {
 }
 
 /**
- * The design's primary action: an inverted pill — the page's own title colour
- * filled, the page ground for the label — so it reads white-on-black in the
- * dark theme and black-on-white in the light one.
+ * The page's primary action: a pill in the brand gradient, blue-600 → cyan-500, with
+ * white text — the same fill the landing and search pages give the thing to press next.
+ * The same in both themes.
  */
 function PrimaryBtn({
-    onClick, loading, disabled, palette, children,
+    onClick, loading, disabled, children,
 }: {
-    onClick?: () => void; loading: boolean; disabled?: boolean; palette: Palette; children: React.ReactNode;
+    onClick?: () => void; loading: boolean; disabled?: boolean; children: React.ReactNode;
 }) {
     const dead = loading || disabled;
     return (
@@ -245,14 +216,14 @@ function PrimaryBtn({
             disabled={dead}
             style={{
                 width: '100%', padding: '17px 0', borderRadius: 999, border: 'none',
-                background: palette.title, color: palette.bg,
+                background: ACCENT_FILL, color: '#fff', boxShadow: dead ? 'none' : BRAND.gradientShadow,
                 fontWeight: 700, fontSize: 15, cursor: dead ? 'default' : 'pointer',
                 opacity: dead ? 0.55 : 1, fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 transition: 'opacity .15s ease',
             }}
         >
-            {loading ? <Spinner color={palette.bg} /> : children}
+            {loading ? <Spinner /> : children}
         </button>
     );
 }
@@ -265,7 +236,7 @@ function PrimaryBtn({
  * the guest (`phoneCode` + `phone`) and only joined when the booking is sent.
  */
 function PhoneField({
-    palette, code, number, onCode, onNumber, error,
+    palette, code, number, onCode, onNumber, error, inputId, placeholder, required,
 }: {
     palette: Palette;
     code:    string;
@@ -273,9 +244,16 @@ function PhoneField({
     onCode:   (dial: string) => void;
     onNumber: (value: string) => void;
     error?:  string;
+    /** For a `<label htmlFor>` naming the number input. */
+    inputId?:     string;
+    placeholder?: string;
+    required?:    boolean;
 }) {
     const [open, setOpen] = useState(false);
     const current = DIAL_CODES.find(d => d.dial === code) ?? DIAL_CODES[0];
+    const codeRef = React.useRef<HTMLButtonElement>(null);
+    const codeId = `${inputId ?? 'phone'}-code`;
+    const close = () => { setOpen(false); codeRef.current?.focus(); };
 
     return (
         <div style={{ position: 'relative' }}>
@@ -283,13 +261,16 @@ function PhoneField({
                 className="cg-phone"
                 style={{
                     display: 'flex', alignItems: 'center', width: '100%', height: 40,
-                    borderRadius: 999, background: palette.fieldBg,
-                    border: `1.5px solid ${error ? DANGER : 'transparent'}`, boxSizing: 'border-box',
+                    borderRadius: 999, ...fieldEdge(palette, !!error), boxSizing: 'border-box',
                 }}
             >
                 <button
+                    ref={codeRef}
+                    id={codeId}
                     type="button"
-                    onClick={() => setOpen(o => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={open}
+                    onClick={() => (open ? close() : setOpen(true))}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px', height: '100%',
                         background: 'none', border: 'none', color: palette.text, fontSize: 14,
@@ -297,13 +278,16 @@ function PhoneField({
                     }}
                 >
                     <span>{current.dial}</span>
-                    <ChevronDown size={14} style={{ opacity: 0.55 }} />
+                    <ChevronDown size={14} color={palette.icon} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s ease' }} />
                 </button>
                 <div style={{ width: 1, height: 22, background: palette.hairline, flexShrink: 0 }} />
                 <input
+                    id={inputId}
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel-national"
+                    placeholder={placeholder}
+                    aria-required={required || undefined}
                     value={number}
                     onChange={e => onNumber(e.target.value)}
                     className="cg-field"
@@ -314,36 +298,25 @@ function PhoneField({
                 />
             </div>
 
+            {/* The checkout's one picker panel, as the date picker and the dropdowns use. */}
             {open && (
-                <>
-                    <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                    <div
-                        style={{
-                            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 41,
-                            width: 268, maxHeight: 244, overflowY: 'auto',
-                            background: palette.menuBg, border: `1px solid ${palette.summaryBorder}`,
-                            borderRadius: 12, padding: 6, boxShadow: '0 16px 44px rgba(0,0,0,.45)',
-                        }}
-                    >
-                        {DIAL_CODES.map((d, i) => (
-                            <button
-                                key={`${d.code}-${i}`}
-                                type="button"
-                                onClick={() => { onCode(d.dial); setOpen(false); }}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 10px',
-                                    background: d.dial === code ? palette.fieldBg : 'none', border: 'none',
-                                    borderRadius: 8, color: palette.text, fontSize: 13, cursor: 'pointer',
-                                    textAlign: 'left', fontFamily: 'inherit',
-                                }}
-                            >
-                                <span style={{ fontSize: 15 }}>{d.flag}</span>
-                                <span style={{ flex: 1 }}>{d.name}</span>
-                                <span style={{ opacity: 0.55 }}>{d.dial}</span>
-                            </button>
-                        ))}
-                    </div>
-                </>
+                <OptionList
+                    labelledBy={codeId}
+                    options={DIAL_CODES.map(d => ({
+                        value: d.code,
+                        label: `${d.name} ${d.dial}`,
+                        content: <>
+                            <span style={{ fontSize: 15 }}>{d.flag}</span>
+                            <span style={{ flex: 1 }}>{d.name}</span>
+                            <span style={{ opacity: 0.6 }}>{d.dial}</span>
+                        </>,
+                    }))}
+                    value={current.code}
+                    onPick={(c) => { onCode(DIAL_CODES.find(d => d.code === c)?.dial ?? code); close(); }}
+                    onClose={close}
+                    palette={palette}
+                    width={280}
+                />
             )}
         </div>
     );
@@ -361,87 +334,58 @@ const STEPS = [
 
 type Step = 'form' | 'payment' | 'confirmed';
 
+const STEP_ORDER: Record<Step, number> = { form: 0, payment: 1, confirmed: 2 };
+
+/**
+ * Which way the traveller just moved, for the content to slide in from: `forward` to a later
+ * step, `back` to an earlier one, nothing before the first move so the page does not animate on
+ * arrival. Held as state derived from the step rather than in a ref, so it is right on the very
+ * render the new step first draws.
+ */
+function useStepSlide(step: Step): 'forward' | 'back' | undefined {
+    const [seen, setSeen] = useState<{ step: Step; dir?: 'forward' | 'back' }>({ step });
+    if (seen.step !== step) setSeen({ step, dir: STEP_ORDER[step] > STEP_ORDER[seen.step] ? 'forward' : 'back' });
+    return seen.dir;
+}
+
 /**
  * Three numbered discs joined by hairlines. As drawn, only the step in hand is
- * marked — white disc, black numeral. Steps already done look exactly like
+ * marked — the brand gradient, white numeral. Steps already done look exactly like
  * steps still to come: the bar says where you are, not what you have finished.
+ *
+ * The marked disc is one thumb that slides to the next step rather than a fill that swaps
+ * between discs; the numerals sit above it and turn white as it reaches them. The discs are a
+ * fixed width and the connectors a shared `--step-gap`, so the thumb's travel is a sum, not a
+ * measurement.
  */
 function ProgressBar({ step, palette }: { step: Step; palette: Palette }) {
     const t = useTranslations('checkout');
-    const idx = { form: 0, payment: 1, confirmed: 2 }[step];
+    const idx = STEP_ORDER[step];
     return (
-        <ol style={{ display: 'flex', alignItems: 'flex-start', listStyle: 'none', margin: 0, padding: 0 }}>
+        <ol
+            style={{
+                '--step-gap': 'clamp(40px,6vw,90px)', '--step-idx': idx,
+                position: 'relative', display: 'flex', alignItems: 'flex-start', listStyle: 'none', margin: 0, padding: 0,
+            } as React.CSSProperties}
+        >
+            <span aria-hidden className="cg-steps-thumb" style={{ background: ACCENT_FILL }} />
             {STEPS.map((s, i) => {
                 const active = i === idx;
                 return (
                     <li key={s.key} aria-current={active ? 'step' : undefined} style={{ display: 'flex', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, minWidth: 50 }}>
-                            <div style={{
-                                width: 32, height: 32, borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 14, fontWeight: 700,
-                                background: active ? palette.title : palette.stepIdle,
-                                color:      active ? palette.bg    : palette.title,
-                            }}>
-                                {s.num}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, width: 32, flexShrink: 0 }}>
+                            <div style={{ position: 'relative', width: 32, height: 32, borderRadius: '50%', background: palette.stepIdle }}>
+                                <span className="cg-steps-num" style={{ color: active ? '#fff' : palette.title }}>{s.num}</span>
                             </div>
                             <div style={{ fontSize: 12, color: palette.text, whiteSpace: 'nowrap' }}>{t(s.labelKey)}</div>
                         </div>
                         {i < STEPS.length - 1 && (
-                            <div aria-hidden style={{ width: 'clamp(40px,6vw,90px)', height: 1, marginTop: 16, background: palette.stepLine }} />
+                            <div aria-hidden style={{ width: 'var(--step-gap)', height: 1, marginTop: 16, background: palette.stepLine }} />
                         )}
                     </li>
                 );
             })}
         </ol>
-    );
-}
-
-// ─── Toolbar ──────────────────────────────────────────────────────────────────
-
-/**
- * The row above the heading: back on the left; currency, then theme, on the
- * right — 50px discs on the raised `surface`, as on the property page's banner
- * but solid, since here they sit on the page rather than over a photograph.
- */
-function CheckoutToolbar({ palette, backLabel, onBack }: { palette: Palette; backLabel: string; onBack: () => void }) {
-    const tAll = useTranslations();
-    const { theme, toggleTheme } = useTheme();
-    const disc: React.CSSProperties = {
-        width: 50, height: 50, borderRadius: '50%', border: 'none',
-        background: palette.surface, color: palette.title,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
-    };
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(24px,3vw,36px)' }}>
-            <button type="button" onClick={onBack} aria-label={backLabel} title={backLabel} style={disc}>
-                <ChevronLeft size={24} />
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 17 }}>
-                <CurrencySelector
-                    align="right"
-                    iconOnly
-                    triggerClassName="h-[50px] w-[50px] md:h-[50px] md:w-[50px]"
-                    chrome={{
-                        surface: palette.surface,
-                        border:  'transparent',
-                        text:    palette.title,
-                        menu:    palette.menuBg,
-                        hover:   palette.fieldBg,
-                        shadow:  '0 24px 55px -18px rgba(0,0,0,.5)',
-                    }}
-                />
-                <button
-                    type="button"
-                    onClick={toggleTheme}
-                    aria-label={theme === 'dark' ? tAll('property.v2.switchToLight') : tAll('property.v2.switchToDark')}
-                    title={theme === 'dark' ? tAll('property.v2.lightMode') : tAll('property.v2.darkMode')}
-                    style={disc}
-                >
-                    {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
-                </button>
-            </div>
-        </div>
     );
 }
 
@@ -473,8 +417,10 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
             accordionItemLabelSelectedFontWeight: '400',
         },
         rules: {
-            '.Input':         { border: 'none', boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
-            '.Input:focus':   { boxShadow: `0 0 0 1.5px ${ACCENT}` },
+            // Stripe's rules take no gradient, so its inputs are ringed in the gradient's
+            // blue: the nearest the iframe can come to the fields on the details step.
+            '.Input':         { border: `1.5px solid ${palette.icon}`, boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
+            '.Input:focus':   { boxShadow: `0 0 0 4px ${BRAND.primaryWash}` },
             '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '400', marginBottom: '8px' },
             '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingTop: '0', paddingLeft: '0', paddingRight: '0' },
             '.Tab':           { border: 'none', boxShadow: 'none' },
@@ -487,23 +433,30 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
 // ─── Stripe payment form ──────────────────────────────────────────────────────
 
 function StripePaymentForm({
-    onSuccess, onError, total, currency, submitting, setSubmitting, palette,
+    onSuccess, onError, total, currency, amountLabel, country, submitting, palette,
 }: {
     onSuccess: (paymentIntentId: string) => void;
     onError:   (msg: string) => void;
     total:     number;
     currency:  string;
+    /** The amount as the button should say it, when the caller has one to the cent. */
+    amountLabel?: string;
+    country?:  string;
     submitting: boolean;
-    setSubmitting: (v: boolean) => void;
     palette:   Palette;
 }) {
     const t = useTranslations('checkout');
     const stripe = useStripe();
     const elements = useElements();
+    // Local to this click, not the page's `submitting`: that flag is only ever reset by the
+    // flight path's own confirm handler (`handleFlightPaid`'s `finally`). Sharing it left the
+    // hotel path's Pay button permanently disabled after any booking failure that brought the
+    // traveller back to the form, because nothing in the hotel path ever flipped it back off.
+    const [clicking, setClicking] = useState(false);
 
     const handlePay = useCallback(async () => {
         if (!stripe || !elements) return;
-        setSubmitting(true);
+        setClicking(true);
 
         const { error, paymentIntent } = await stripe.confirmPayment({
             elements,
@@ -513,31 +466,37 @@ function StripePaymentForm({
 
         if (error) {
             onError(error.message || 'Payment failed. Please try again.');
-            setSubmitting(false);
+            setClicking(false);
         } else if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
             onSuccess(paymentIntent.id);
+            setClicking(false);
         } else {
             onError('Payment is processing. Check your trips shortly.');
-            setSubmitting(false);
+            setClicking(false);
         }
-    }, [stripe, elements, onSuccess, onError, setSubmitting]);
+    }, [stripe, elements, onSuccess, onError]);
 
     return (
         <>
             <div style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
-                <PaymentElement options={{ layout: 'accordion' }} />
+                <PaymentElement options={{
+                    layout: 'accordion',
+                    ...(country ? { defaultValues: { billingDetails: { address: { country } } } } : {}),
+                }} />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 'clamp(20px,3vw,32px)', fontSize: 12, color: palette.muted }}>
                     <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
                 </div>
             </div>
-            <PrimaryBtn onClick={handlePay} loading={submitting} disabled={!stripe || !elements} palette={palette}>
-                {t('payNow', { amount: `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
+            <PrimaryBtn onClick={handlePay} loading={submitting || clicking} disabled={!stripe || !elements}>
+                {t('payNow', { amount: amountLabel ?? `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
             </PrimaryBtn>
         </>
     );
 }
 
-// ─── Confirmation receipt screen ──────────────────────────────────────────────
+// ─── Confirmation receipt screen (hotel) ───────────────────────────────────────
+// The flight equivalent is `FlightConfirmedScreen`, a separate component: the two no longer
+// share one layout — see its file for why.
 
 function ConfirmedScreen({
     palette, bookingId, hotelName, hotelAddress, hotelCity, hotelCountry, hotelImage,
@@ -576,7 +535,9 @@ function ConfirmedScreen({
         : '';
 
     const addressLine = [hotelAddress, hotelCity, hotelCountry].filter(Boolean).join(', ');
-    const ref = bookingId || ('CG-' + Math.random().toString(36).slice(2, 8).toUpperCase());
+    // The reference is the booking's, or there is none to show. This used to mint a random one
+    // when it had none — a receipt for a booking that does not exist.
+    const ref = bookingId;
 
     return (
         <div style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
@@ -605,16 +566,16 @@ function ConfirmedScreen({
                         <Check size={24} strokeWidth={3} />
                         <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>{t('booked')}</div>
                     </div>
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: '#fff', marginTop: 20 }}>
+                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: palette.title, marginTop: 20 }}>
                         {t('allSet')}
                     </div>
-                    <div style={{ fontSize: 13, color: 'rgba(245,239,228,.55)', marginTop: 6 }}>
+                    <div style={{ fontSize: 13, color: palette.muted, marginTop: 6 }}>
                         {t('receiptSent', { email: guestEmail })}
                     </div>
                 </div>
 
                 <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
                     <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
                 </div>
 
@@ -626,7 +587,9 @@ function ConfirmedScreen({
                     )}
 
                     <div style={{ padding: 28 }}>
-                        <div style={{ fontWeight: 800, fontSize: 20, color: palette.title, marginBottom: 4 }}>{hotelName}</div>
+                        <div style={{ fontWeight: 800, fontSize: 20, color: palette.title, marginBottom: 4 }}>
+                            {hotelName}
+                        </div>
                         {addressLine && (
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, fontSize: 12, color: palette.muted, marginBottom: 20 }}>
                                 <MapPin size={12} style={{ marginTop: 1, flexShrink: 0 }} />
@@ -638,53 +601,53 @@ function ConfirmedScreen({
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginBottom: 24 }}>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkIn)}
                                 </div>
                                 <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkIn)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Calendar size={13} color={ACCENT} />
                                     {shortDate(checkOut)}
                                 </div>
                                 <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkOut)}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Users size={13} color={ACCENT} />
                                     {guestName}
                                 </div>
-                                <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
+                                <div style={{ fontSize: 11, color: palette.muted, marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
-                                {nights && <div style={{ fontSize: 11, color: 'rgba(245,239,228,.45)', marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
+                                {nights && <div style={{ fontSize: 11, color: palette.muted, marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
                             </div>
                         </div>
 
                         <div style={{ height: 1, background: palette.hairline, margin: '0 0 20px' }} />
 
                         <div style={{ marginBottom: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'rgba(245,239,228,.4)', textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
                             {nights && nightlyPrice > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
                                     <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {(nightlyPrice * nights).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                 </div>
                             )}
                             {fee > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(245,239,228,.7)', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
                                     <span>{t('serviceFee')}</span>
                                     <span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: '#fff', paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: palette.title, paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
                                 <span>{t('totalPaid')}</span>
                                 <span style={{ color: GREEN }}>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                             </div>
@@ -702,7 +665,7 @@ function ConfirmedScreen({
                     <div style={{ display: 'flex', gap: 12 }}>
                         <button
                             onClick={onHome}
-                            style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+                            style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT_FILL, boxShadow: BRAND.gradientShadow, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
                         >
                             {t('planAnotherTrip')}
                         </button>
@@ -724,6 +687,7 @@ function ConfirmedScreen({
 function CheckoutContent() {
     const tAll = useTranslations();
     const t            = useTranslations('checkout');
+    const locale       = useLocale();
     // The footer's namespace, for the two link labels in the consent line below.
     const tRoot        = useTranslations();
     const searchParams = useSearchParams();
@@ -731,17 +695,19 @@ function CheckoutContent() {
     const { user }     = useAuthStore();
     const { theme }    = useTheme();
     const palette      = checkoutPalette(theme);
+    const countryOptions = useMemo(() => getCountryOptions(locale), [locale]);
 
     // ── Detect mode ──
     const offerId = searchParams.get('offerId');
     const hotelId = searchParams.get('hotelId');
     const mode: 'hotel' | 'flight' = offerId && !hotelId ? 'flight' : 'hotel';
-
     // ── Hotel params ──
     const checkIn      = searchParams.get('checkIn')      ?? '';
     const checkOut     = searchParams.get('checkOut')     ?? '';
     const adults       = parseInt(searchParams.get('adults') ?? '1', 10);
     const children     = parseInt(searchParams.get('children') ?? '0', 10);
+    // Flights only: hotels admit children by age, and have no infant seat to price.
+    const infants      = parseInt(searchParams.get('infants') ?? '0', 10);
     const totalPrice   = parseFloat(searchParams.get('totalPrice') ?? '0');
     const currency     = searchParams.get('currency')     ?? 'USD';
     const rateKey      = searchParams.get('rateKey')      ?? searchParams.get('offerId') ?? '';
@@ -751,14 +717,33 @@ function CheckoutContent() {
     const hotelCity    = searchParams.get('hotelCity')    ?? '';
     const hotelCountry = searchParams.get('hotelCountry') ?? '';
     const hotelImage   = searchParams.get('hotelImage')   ?? '';
+    // A total the browser did not convert, to compare the server's quote with; absent otherwise.
+    const expectedTotalParam = parseFloat(searchParams.get('expectedTotal') ?? '');
+    // The search may have asked for several rooms. Checkout books one, and says so.
+    const roomsRequested = Math.max(1, parseInt(searchParams.get('rooms') ?? '1', 10) || 1);
 
     // ── Flight params ──
     const totalAmount    = parseFloat(searchParams.get('totalAmount') ?? '0');
     const flightCurrency = searchParams.get('currency') ?? 'USD';
+    /**
+     * What `totalAmount` is written in: the airline's currency. A link from the results page names
+     * it (`fareCurrency`) because it opens in the traveller's own; an older link has only
+     * `currency`, which was the airline's. The selector later rewrites `?currency=` alone, so
+     * `flightCurrency` can move on from the figure beside it — this is what that figure is in.
+     */
+    const [linkCurrency] = useState(searchParams.get('fareCurrency') ?? flightCurrency);
     const origin         = searchParams.get('origin')         ?? '';
     const destination    = searchParams.get('destination')    ?? '';
     const departureDate  = searchParams.get('departureDate')  ?? checkIn;
+    /** Local `YYYY-MM-DD`: the date fields' limits are counted from it. */
+    const todayIso = useMemo(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }, []);
     const cabin          = searchParams.get('cabin')          ?? undefined;
+
+    // The offer, read once and quoted in the currency on show — again when the selector changes
+    // it. Its quote is what the traveller is shown before committing to anything, and the receipt
+    // draws its itinerary from it afterwards.
+    const { offer: flightOffer, loading: flightOfferLoading } = useFlightOffer(mode === 'flight' ? offerId : null, flightCurrency);
+    const quote = flightOffer?.quote ?? null;
 
     // ── Date helpers ──
     const nights = nightsBetween(checkIn, checkOut);
@@ -767,44 +752,56 @@ function CheckoutContent() {
         : '';
 
     // ── State ──
-    const [step, setStep]           = useState<Step>('form');
+    // The flight checkout's step. The hotel's comes from its state machine (`step` below).
+    const [flightStep, setStep]     = useState<Step>('form');
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg]   = useState<string | null>(null);
 
-    // Booking state
-    const [prebookId, setPrebookId]         = useState<string | null>(null);
-    /** The board the rate was quoted with. Snapshotted on the booking so the voucher can
-     *  state the meal plan that was bought rather than the property's current one. */
-    const [board, setBoard]                 = useState<string | undefined>(undefined);
-    /**
-     * What the customer is shown, as the server worked it out — room total, service fee and
-     * the total they pay, in their own currency. This page used to add a hardcoded 6% itself
-     * while the server charged 5.9%, so the figure on the Pay button was never the one
-     * billed. Null until prebook answers.
-     */
-    const [display, setDisplay] = useState<HotelDisplay | null>(null);
+    // Flight booking state. The hotel's lives in `useHotelCheckout`.
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
     /** The booking session `/flights/book` opened, which `/flights/confirm` settles. */
     const [flightSessionId, setFlightSessionId] = useState<string>('');
     const [bookingId, setBookingId]         = useState<string | null>(null);
+    /** The airline's record locator, for the receipt. */
+    const [pnr, setPnr]                     = useState<string | null>(null);
+    /** Paid for, but the airline has not settled it yet: the API answered BOOKING_PROCESSING. */
+    const [flightSettling, setFlightSettling] = useState<'pending' | 'needs_review' | null>(null);
+    /** What `/flights/book` says the card is held for: the figure the Pay button and the receipt
+     *  show, in place of the fare the link carried. */
+    const [held, setHeld] = useState<{ amount: number; currency: string; fare: number; serviceFee: number } | null>(null);
 
     // Hotel guest form — passenger 1 is the booking holder
     const [guest, setGuest]             = useState<GuestInfo>({ firstName: '', lastName: '', email: '', phone: '', phoneCode: '+63' });
-    const [guestErrors, setGuestErrors] = useState<Partial<Record<keyof GuestInfo, string>>>({});
 
     // Hotel co-guests — passenger 2..N, name only
-    const [coGuests, setCoGuests]           = useState<CoGuest[]>(() =>
+    const [coGuests, setCoGuests]           = useState<HotelGuestForm['coGuests']>(() =>
         Array.from({ length: Math.max(0, adults - 1) }, () => ({ firstName: '', lastName: '' }))
     );
-    const [coGuestErrors, setCoGuestErrors] = useState<Record<string, string>>({});
+    // Each child: their age is what a supplier admits and prices them by. A name is optional.
+    const [kids, setKids] = useState<HotelGuestForm['children']>(() =>
+        Array.from({ length: Math.max(0, children) }, () => ({ firstName: '', lastName: '', age: '' }))
+    );
+    const [specialRequests, setSpecialRequests] = useState('');
+    /** Keyed by field path (`holder.email`, `coGuests.1.lastName`); the values are message keys. */
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const fieldError = (path: string) => (fieldErrors[path] ? t(fieldErrors[path] as never) : undefined);
 
     // Flight form
-    const [passengers, setPassengers]         = useState<PassengerInfo[]>(() =>
-        Array.from({ length: Math.max(1, adults) }, () => ({
-            firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
-            gender: '', passportNumber: '', passportExpiry: '', nationality: '',
-        }))
-    );
+    // One form per traveller the fare was priced for — adults, then children, then infants,
+    // the order the offer lists them in and the order the airline matches them by.
+    const [passengers, setPassengers]         = useState<PassengerInfo[]>(() => {
+        const blank = (type: PassengerInfo['type']): PassengerInfo => ({
+            type, firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
+            gender: '', passportNumber: '', passportExpiry: '', country: '',
+        });
+        return [
+            ...Array.from({ length: Math.max(1, adults) }, () => blank('ADT')),
+            ...Array.from({ length: Math.max(0, children) }, () => blank('CHD')),
+            ...Array.from({ length: Math.max(0, infants) }, () => blank('INF')),
+        ];
+    });
+    /** The lead traveller's dial code. Without it the API reads a national number as Korean. */
+    const [contactPhoneCode, setContactPhoneCode] = useState('+63');
     const [passengerErrors, setPassengerErrors] = useState<Record<string, string>>({});
 
     // Pre-fill from logged-in user
@@ -815,169 +812,142 @@ function CheckoutContent() {
     }, [user]);
 
     // ── Guest helpers ──
-    const onGuest = useCallback((field: keyof GuestInfo, value: string) => {
-        setGuest(g => ({ ...g, [field]: value }));
-        setGuestErrors(e => { const n = { ...e }; delete n[field]; return n; });
+    const clearError = useCallback((path: string) => {
+        setFieldErrors(e => { if (!(path in e)) return e; const n = { ...e }; delete n[path]; return n; });
     }, []);
 
-    const onCoGuest = useCallback((index: number, field: keyof CoGuest, value: string) => {
+    const onGuest = useCallback((field: keyof GuestInfo, value: string) => {
+        setGuest(g => ({ ...g, [field]: value }));
+        clearError(`holder.${field}`);
+    }, [clearError]);
+
+    const onCoGuest = useCallback((index: number, field: keyof HotelGuestForm['coGuests'][number], value: string) => {
         setCoGuests(gs => gs.map((g, i) => i === index ? { ...g, [field]: value } : g));
-        setCoGuestErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
-    }, []);
+        clearError(`coGuests.${index}.${field}`);
+    }, [clearError]);
+
+    const onKid = useCallback((index: number, field: 'firstName' | 'lastName' | 'age', value: string) => {
+        setKids(ks => ks.map((k, i) => i === index ? { ...k, [field]: value } : k));
+        clearError(`children.${index}.${field}`);
+    }, [clearError]);
 
     const onPassenger = useCallback((index: number, field: keyof PassengerInfo, value: string) => {
         setPassengers(ps => ps.map((p, i) => i === index ? { ...p, [field]: value } : p));
         setPassengerErrors(e => { const n = { ...e }; delete n[`${index}.${field}`]; return n; });
     }, []);
 
-    /**
-     * Prebook as soon as the page opens, so the summary shows the server's figures before the
-     * customer types anything. A quote is a valuation, not a reservation (ADR-0021), so
-     * asking for one on arrival costs nothing at the supplier — and a room that has gone
-     * is better learned now than after the form is filled in.
-     */
-    const runPrebook = useCallback(async () => {
-        const pbRes = await http.post<{ success: boolean; data: { prebookId: string; display?: HotelDisplay; boardCode?: string } }>(
-            '/api/hotels/prebook',
-            { offerId: rateKey, roomName, adults, children, currency },
-        );
-        setPrebookId(pbRes.data.prebookId);
-        if (pbRes.data.boardCode) setBoard(pbRes.data.boardCode);
-        setDisplay(pbRes.data.display ?? null);
-        return pbRes.data;
-    }, [rateKey, roomName, adults, children, currency]);
+    // ── Hotel checkout ──
+    //
+    // The whole hotel conversation — quote on arrival, the payment, the confirm, and finding
+    // out what became of a confirm whose answer was lost — is `useHotelCheckout`. The page
+    // keeps the form and what is drawn.
+    const stay = useMemo(
+        () => ({ hotelName, roomName, hotelImage, checkIn, checkOut, adults, children, currency }),
+        [hotelName, roomName, hotelImage, checkIn, checkOut, adults, children, currency],
+    );
+    const hotel = useHotelCheckout({
+        enabled: mode === 'hotel' && !!rateKey,
+        rateKey,
+        stay,
+        placeholderTotal: totalPrice,
+        initialExpectedTotal: Number.isFinite(expectedTotalParam) && expectedTotalParam > 0 ? expectedTotalParam : undefined,
+    });
+    const hotelState: HotelCheckoutState = hotel.state;
+    const display: HotelDisplay | null = hotelState.quote?.display ?? null;
 
+    /** Which of the three steps the traveller is on. */
+    const hotelStep: Step =
+        hotelState.phase === 'awaiting_payment' || hotelState.phase === 'confirming' ? 'payment'
+        : hotelState.phase === 'confirmed' ? 'confirmed'
+        : 'form';
+    const step: Step = mode === 'hotel' ? hotelStep : flightStep;
+    /** The class that slides the step in hand into view, from the side it was reached from. */
+    const slide = useStepSlide(step);
+    const slideClass = slide ? ` cg-slide-${slide}` : '';
+
+    // A refresh, a back-button or an email link must not drop the traveller back into a checkout
+    // whose payment has been taken. Once there is a booking, its address is the page.
     useEffect(() => {
-        if (mode !== 'hotel' || !rateKey) return;
-        runPrebook().catch((err) => {
-            setErrorMsg(err instanceof Error ? err.message : 'This room is no longer available.');
-        });
-    }, [mode, rateKey, runPrebook]);
+        if (mode !== 'hotel' || !hotelState.reference) return;
+        if (!['confirmed', 'pending', 'needs_review'].includes(hotelState.phase)) return;
+        const path = window.location.pathname.replace(/\/checkout\/?$/, `/booking/${encodeURIComponent(hotelState.reference)}`);
+        if (path !== window.location.pathname) window.history.replaceState(null, '', path);
+    }, [mode, hotelState.phase, hotelState.reference]);
 
-    /**
-     * A currency picked from the toolbar mid-payment. The PaymentIntent was opened in the
-     * old currency and cannot be re-priced, so the traveller goes back a step: the re-run
-     * prebook above shows the new figures, and continuing opens a fresh intent in them.
-     */
-    const lastCurrency = React.useRef(currency);
-    useEffect(() => {
-        if (lastCurrency.current === currency) return;
-        lastCurrency.current = currency;
-        if (step === 'payment') {
-            setClientSecret(null);
-            setStep('form');
-        }
-    }, [currency, step]);
+    /** Who is staying, in the shape the validator and the payload builder share. */
+    const guestForm: HotelGuestForm = {
+        holder: {
+            firstName: guest.firstName, lastName: guest.lastName, email: guest.email,
+            phoneCode: guest.phoneCode, phone: guest.phone,
+        },
+        coGuests,
+        children: kids,
+        specialRequests,
+    };
 
-    // ── Hotel step 1: guest → payment intent ──
-    const handleHotelSubmitForm = useCallback(async () => {
-        const gErr = validateGuest(guest);
-        const cErr = validateCoGuests(coGuests);
-        if (Object.keys(gErr).length > 0 || Object.keys(cErr).length > 0) {
-            setGuestErrors(gErr);
-            setCoGuestErrors(cErr);
+    // ── Hotel step 1: details → payment ──
+    const handleHotelSubmitForm = async () => {
+        const result = validateHotelGuestForm(guestForm);
+        if (!result.ok) {
+            setFieldErrors(result.errors);
             return;
         }
-
         if (!user) {
             router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             return;
         }
+        setFieldErrors({});
+        await hotel.submitDetails(buildHotelGuestPayload(guestForm));
+    };
 
+    // ── Flight: Stripe authorised the card → ask the airline ──
+    // The card is held, not charged. `/flights/confirm` places the airline order and takes
+    // the money only once the airline has said yes; when it says no, the hold is released
+    // and the payment form behind this step has nothing left to pay with.
+    const handleFlightPaid = useCallback(async (stripePaymentIntentId: string) => {
         setSubmitting(true); setErrorMsg(null);
+        const backToDetails = () => { setClientSecret(null); setFlightSessionId(''); setHeld(null); setStep('form'); };
         try {
-            // The quote may have lapsed while the form was being filled in, or never arrived.
-            const quoted = prebookId && display ? { prebookId, display } : await runPrebook();
-            const shown = quoted.display;
-            if (!shown) {
-                setErrorMsg('We could not confirm the price in your currency just now. Please try again in a moment.');
-                return;
-            }
-
-            const payRes = await http.post<{ success: boolean; data: { clientSecret: string; paymentIntentId: string; chargedTotal?: number; serviceFee?: number; currency?: string } }>(
-                '/api/hotels/create-payment',
-                {
-                    prebookId:      quoted.prebookId,
-                    amount:         shown.total,
-                    currency:       shown.currency,
-                    // What the summary showed, fee included — nothing is billed above it.
-                    displayedTotal: shown.chargedTotal,
-                    holderEmail:    guest.email,
-                    propertyName:   hotelName,
-                    roomName,
-                    checkIn,
-                    checkOut,
-                }
+            const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
+                '/flights/confirm',
+                { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
             );
-            // The payment step shows what this intent is actually for.
-            if (typeof payRes.data.chargedTotal === 'number') {
-                setDisplay({ ...shown, chargedTotal: payRes.data.chargedTotal, serviceFee: payRes.data.serviceFee ?? shown.serviceFee });
-            }
-            setClientSecret(payRes.data.clientSecret);
-            setStep('payment');
-        } catch (err) {
-            const body = (err as { body?: { error?: string; serverPrice?: number; currency?: string } })?.body;
-            if (body?.error === 'PRICE_CHANGED' && typeof body.serverPrice === 'number') {
-                // The total moved beyond what can be absorbed. Show the new one and let the
-                // customer decide, rather than billing it or failing without a figure.
-                setDisplay(null);
-                setPrebookId(null);
-                setErrorMsg(`The price has changed to ${body.currency ?? currency} ${body.serverPrice.toLocaleString()}. Please review it before paying.`);
-                runPrebook().catch(() => {});
-            } else {
-                setErrorMsg(err instanceof Error ? err.message : 'Failed to set up payment. Please try again.');
-            }
-        } finally {
-            setSubmitting(false);
-        }
-    }, [guest, coGuests, user, router, prebookId, display, runPrebook, currency, hotelName, roomName, checkIn, checkOut]);
-
-    // ── Hotel step 2: Stripe confirms → then call /confirm ──
-    const handleStripeSuccess = useCallback(async (stripePaymentIntentId: string) => {
-        setSubmitting(true); setErrorMsg(null);
-        try {
-            // A paid flight is turned into a booking by its own endpoint — the airline
-            // order already exists, so this is the step that records the ticket against it.
-            if (mode === 'flight') {
-                const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
-                    '/flights/confirm',
-                    { paymentIntentId: stripePaymentIntentId, sessionId: flightSessionId },
-                );
-                setBookingId(flightRes.bookingId);
-                setStep('confirmed');
-                return;
-            }
-
-            const res = await http.post<{ success: boolean; data: { bookingId: string; status: string } }>(
-                '/api/hotels/confirm',
-                {
-                    paymentIntentId: stripePaymentIntentId,
-                    prebookId,
-                    holder:  { firstName: guest.firstName, lastName: guest.lastName, email: guest.email },
-                    holderPhone: `${guest.phoneCode} ${guest.phone}`.trim(),
-                    guests:  buildConfirmGuests(
-                        { firstName: guest.firstName, lastName: guest.lastName, email: guest.email },
-                        coGuests,
-                    ),
-                    propertyName: hotelName,
-                    roomName,
-                    checkIn,
-                    checkOut,
-                    adults,
-                    children,
-                    currency,
-                    quotedPrice: totalPrice,
-                    board,
-                }
-            );
-            setBookingId(res.data.bookingId);
+            setBookingId(flightRes.bookingId);
+            setPnr(flightRes.pnr ?? null);
             setStep('confirmed');
         } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'Booking confirmation failed. Contact support with your payment reference.');
+            const failure = readFlightConfirmError(err);
+            switch (failure.kind) {
+                case 'processing':
+                    setFlightSettling(failure.needsReview ? 'needs_review' : 'pending');
+                    break;
+                case 'price_changed':
+                    setErrorMsg(t('flight.priceChanged', {
+                        was: `${failure.currency} ${failure.was.toLocaleString()}`,
+                        now: `${failure.currency} ${failure.now.toLocaleString()}`,
+                    }));
+                    backToDetails();
+                    break;
+                case 'offer_expired':
+                    setErrorMsg(t('flight.offerExpired'));
+                    backToDetails();
+                    break;
+                case 'refused':
+                    setErrorMsg(failure.message || t('failed.released'));
+                    backToDetails();
+                    break;
+                default:
+                    setErrorMsg(failure.message || 'Booking confirmation failed. Contact support with your payment reference.');
+            }
         } finally {
             setSubmitting(false);
         }
-    }, [mode, flightSessionId, board, prebookId, guest, coGuests, hotelName, roomName, checkIn, checkOut, adults, children, currency, totalPrice]);
+    }, [flightSessionId, t]);
+
+    // The same Stripe form serves both; what happens after a card is authorised does not.
+    const handleStripeSuccess = mode === 'flight' ? handleFlightPaid : hotel.onCardAuthorised;
+    const handleStripeError = (msg: string) => (mode === 'flight' ? setErrorMsg(msg) : hotel.onCardError(msg));
+    const hotelSubmitting = submitting || hotel.busy;
 
     // ── Flight submit ──
     const handleFlightSubmit = useCallback(async () => {
@@ -991,35 +961,53 @@ function CheckoutContent() {
 
         setSubmitting(true); setErrorMsg(null);
         try {
-            // `/flights/book` places the airline order and opens a PaymentIntent; it does
-            // not take the money. This used to jump straight to "confirmed" on its
-            // response, so the one step that charges the traveller never ran — the same
-            // two-step the hotel path has always done, missing on the flight path.
-            const res = await http.post<{ clientSecret: string; sessionId: string; paymentIntentId: string }>(
+            // `/flights/book` opens a PaymentIntent that holds the card; it orders nothing
+            // and takes nothing. The airline is asked once the card is authorised, by
+            // `/flights/confirm`. This used to jump straight to "confirmed" on its response,
+            // so the step that pays never ran.
+            // The fare the traveller was shown goes with the request: `book` refuses, before any
+            // card is held, a fare that has risen since. Without it the web checkout compared
+            // against nothing and a risen fare was only refused after the card.
+            // In the airline's currency, which is what the server compares it with: the quote's own
+            // fare is in whatever currency is on show, and 14,500 pesos against a 250-dollar fare
+            // would be refused as a rise that never happened.
+            const shownFare = flightOffer?.price?.total ?? totalAmount;
+            const res = await http.post<{
+                clientSecret: string; sessionId: string; paymentIntentId: string;
+                amount?: number; currency?: string; fare?: number; serviceFee?: number;
+            }>(
                 '/flights/book',
                 {
-                    offerId, currency: flightCurrency,
-                    contact: { email: passengers[0].email, phone: passengers[0].phone },
+                    offerId, displayCurrency: flightCurrency,
+                    ...(Number.isFinite(shownFare) && shownFare > 0 ? { confirmedPrice: shownFare } : {}),
+                    contact: { email: passengers[0].email, phone: passengers[0].phone, countryCode: contactPhoneCode },
                     // Stable per attempt, so a retry after a dropped response cannot buy a
                     // second ticket.
-                    idempotencyKey: `flight-${offerId}-${passengers[0].email}`,
+                    // A different currency is a different hold; the same key would hand back the
+                    // first one, in the first currency.
+                    idempotencyKey: `flight-${offerId}-${passengers[0].email}-${flightCurrency}`,
                     passengers: passengers.map(p => ({
-                        firstName: p.firstName, lastName: p.lastName, email: p.email,
-                        phone: p.phone, dateOfBirth: p.dateOfBirth, gender: p.gender,
+                        firstName: p.firstName, lastName: p.lastName,
+                        // Duffel puts the booking's contact on every passenger.
+                        email: passengers[0].email, phone: passengers[0].phone,
+                        dateOfBirth: p.dateOfBirth, gender: p.gender,
                         passportNumber: p.passportNumber, passportExpiry: p.passportExpiry,
-                        nationality: p.nationality.trim().toUpperCase(), type: 'adult',
+                        nationality: p.country.trim().toUpperCase(), type: p.type,
                     })),
                 },
             );
             setFlightSessionId(res.sessionId);
             setClientSecret(res.clientSecret);
+            setHeld(typeof res.amount === 'number' && res.currency
+                ? { amount: res.amount, currency: res.currency, fare: res.fare ?? res.amount, serviceFee: res.serviceFee ?? 0 }
+                : null);
             setStep('payment');
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, user, router, offerId, flightCurrency]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount]);
 
     // ── Price helpers ──
     //
@@ -1031,10 +1019,16 @@ function CheckoutContent() {
     const nightlyPrice  = nights && roomTotal ? roomTotal / nights : roomTotal;
     const fee           = display?.serviceFee ?? 0;
     const total         = display?.chargedTotal ?? roomTotal;
+    /** What a flight costs, from the server: what the card is held for once it is, the quote
+     *  until then. Null when neither is known, and the page falls back to the link's fare. */
+    const flightPrice = held
+        ? { currency: held.currency, fare: held.fare, serviceFee: held.serviceFee, total: held.amount }
+        : quote;
 
     // ── Back handler ──
     function handleBack() {
-        if (step === 'payment') setStep('form');
+        if (mode === 'hotel' && step === 'payment') hotel.backToDetails();
+        else if (step === 'payment') setStep('form');
         else router.back();
     }
 
@@ -1042,14 +1036,9 @@ function CheckoutContent() {
         minHeight: '100vh',
         background: palette.bg,
         color: palette.text,
-    };
-
-    const formCardStyle: React.CSSProperties = {
-        background: palette.fieldBg,
-        border: `1px solid ${palette.summaryBorder}`,
-        borderRadius: 18,
-        padding: 22,
-        marginBottom: 16,
+        // The sliding step starts a little off to the side; clip, unlike hidden, leaves the
+        // sticky summary alone.
+        overflowX: 'clip',
     };
 
     const sectionLabelStyle: React.CSSProperties = {
@@ -1065,8 +1054,13 @@ function CheckoutContent() {
         <style>{`
             @keyframes spin{to{transform:rotate(360deg)}}
             .cg-field::placeholder{color:${palette.muted};opacity:1}
-            .cg-field:focus{border-color:${ACCENT} !important}
-            .cg-phone:focus-within{border-color:${ACCENT}}
+            .cg-field:focus,.cg-phone:focus-within{box-shadow:0 0 0 4px ${BRAND.primaryWash}}
+            .cg-phone .cg-field:focus{box-shadow:none}
+            /* An autofilled field used to lose its pill: the ring and the fill are background images,
+               and Chrome's autofill style sets 'background-image: none !important', which nothing
+               here can outrank. A border colour and an inset shadow it leaves alone, so those put
+               the edge and the fill back — the ring a solid colour, the gradient being the thing
+               stripped. */
             .cg-field:-webkit-autofill,
             .cg-field:-webkit-autofill:hover,
             .cg-field:-webkit-autofill:focus,
@@ -1074,17 +1068,67 @@ function CheckoutContent() {
                 -webkit-text-fill-color:${palette.text};
                 caret-color:${palette.text};
                 transition:background-color 600000s 0s, color 600000s 0s;
+                border-color:var(--cg-ring,${BRAND.primary}) !important;
+                -webkit-box-shadow:0 0 0 1000px ${palette.fieldBg} inset;
+                box-shadow:0 0 0 1000px ${palette.fieldBg} inset;
             }
-            .cg-field:autofill{-webkit-text-fill-color:${palette.text}}
+            .cg-field:-webkit-autofill:focus{
+                -webkit-box-shadow:0 0 0 1000px ${palette.fieldBg} inset, 0 0 0 4px ${BRAND.primaryWash};
+                box-shadow:0 0 0 1000px ${palette.fieldBg} inset, 0 0 0 4px ${BRAND.primaryWash};
+            }
+            .cg-field:autofill{
+                -webkit-text-fill-color:${palette.text};
+                border-color:var(--cg-ring,${BRAND.primary}) !important;
+                box-shadow:0 0 0 1000px ${palette.fieldBg} inset;
+            }
+            /* The phone number sits inside the pill that is already drawn around it; a fill of its
+               own would square off the pill's ends. */
+            .cg-phone .cg-field:-webkit-autofill,
+            .cg-phone .cg-field:-webkit-autofill:focus,
+            .cg-phone .cg-field:autofill{
+                -webkit-box-shadow:none;
+                box-shadow:none;
+            }
         `}</style>
     );
 
     // ── Confirmed ─────────────────────────────────────────────────────────────
     if (step === 'confirmed') {
+        if (mode === 'flight') {
+            return (
+                <div className={slideClass.trim() || undefined} style={{ overflowX: 'clip' }}>
+                <FlightConfirmedScreen
+                    palette={palette}
+                    offer={flightOffer}
+                    loadingOffer={flightOfferLoading}
+                    bookingId={bookingId}
+                    pnr={pnr}
+                    origin={origin}
+                    destination={destination}
+                    departureDate={departureDate}
+                    cabin={cabin}
+                    currency={held?.currency ?? flightCurrency}
+                    total={held?.amount ?? totalAmount}
+                    adults={adults}
+                    childPassengers={children}
+                    infants={infants}
+                    passengers={passengers}
+                    // The lead passenger's contact address, which need not be the signed-in
+                    // account's — the e-ticket goes where they said to send it.
+                    contactEmail={passengers[0].email}
+                    backLabel={tAll('property.v2.goBack')}
+                    onBack={() => router.back()}
+                    onHome={() => router.push('/')}
+                    onTrips={() => router.push('/trips')}
+                />
+                </div>
+            );
+        }
         return (
+            <div className={slideClass.trim() || undefined} style={{ overflowX: 'clip' }}>
             <ConfirmedScreen
                 palette={palette}
-                bookingId={bookingId}
+                bookingId={hotelState.reference ?? null}
                 hotelName={hotelName}
                 hotelAddress={hotelAddress}
                 hotelCity={hotelCity}
@@ -1104,19 +1148,53 @@ function CheckoutContent() {
                 onHome={() => router.push('/')}
                 onTrips={() => router.push('/trips')}
             />
+            </div>
+        );
+    }
+
+    // ── Booked, but not settled ──
+    if (mode === 'flight' && flightSettling) {
+        return (
+            <div style={rootStyle}>
+                {fieldCss}
+                <div style={{ maxWidth: 640, margin: '0 auto', padding: 'clamp(24px,5vw,64px) 16px' }}>
+                    <SettlingPanel
+                        kind="flight"
+                        phase={flightSettling}
+                        palette={palette}
+                        onViewTrips={() => router.push('/trips')}
+                    />
+                </div>
+            </div>
+        );
+    }
+    if (mode === 'hotel' && (hotelState.phase === 'pending' || hotelState.phase === 'needs_review')) {
+        return (
+            <div style={rootStyle}>
+                {fieldCss}
+                <div style={{ maxWidth: 640, margin: '0 auto', padding: 'clamp(24px,5vw,64px) 16px' }}>
+                    <SettlingPanel
+                        phase={hotelState.phase}
+                        reference={hotelState.reference}
+                        palette={palette}
+                        onViewTrips={() => router.push('/trips')}
+                    />
+                </div>
+            </div>
         );
     }
 
     // ── Not logged in helper ──
+    // Tinted with the checkout's accent, as its other notices are, and in the page's language.
     function AuthBanner() {
-    const tAll = useTranslations();
         if (user) return null;
         return (
-            <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: '1px solid rgba(255,193,7,.3)', background: 'rgba(255,193,7,.08)', fontSize: 13, color: 'rgba(245,239,228,.85)' }}>
-                <strong style={{ color: '#FFC107' }}>{tAll('nav.signIn')}</strong> to complete your booking.{' '}
+            <div style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${ACCENT}55`, background: `${ACCENT}14`, fontSize: 13, color: palette.soft }}>
+                <strong style={{ color: palette.title }}>{tAll('checkout.signInToComplete')}</strong>
+                <div style={{ marginTop: 2 }}>{tAll('checkout.signInBannerDesc')}</div>
                 <button
                     onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-                    style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}
+                    style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0, marginTop: 8 }}
                 >
                     {tAll('checkout.signInArrow')}
                 </button>
@@ -1126,6 +1204,12 @@ function CheckoutContent() {
 
     // ── Summary card (right column) ───────────────────────────────────────────
     function SummaryCard() {
+        const slices = flightOffer ? groupSegmentsIntoSlices(flightOffer.segments) : [];
+        // Still being read: the itinerary until the offer arrives, and the amounts until a quote
+        // in the currency on show does. A quote in another currency is not shown meanwhile — after
+        // the selector changes, it would read as the new currency not having taken.
+        const loadingItinerary = flightOfferLoading && slices.length === 0;
+        const quoting = flightOfferLoading && !held && (!flightPrice || flightPrice.currency !== flightCurrency);
         const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 14, fontSize: 13, color: palette.text };
         const rule = <div aria-hidden style={{ height: 1, background: palette.cardLine, margin: '12px 0' }} />;
         return (
@@ -1192,13 +1276,83 @@ function CheckoutContent() {
                                 <div style={{ fontWeight: 700, fontSize: 17, color: palette.title }}>
                                     {origin} → {destination}
                                 </div>
-                                {departureDate && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{fmtDate(departureDate)}</div>}
-                                {cabin && <div style={{ fontSize: 13, color: palette.soft }}>{cabin}</div>}
+                                {/* The offer's own itinerary once it is read: each end by the airport's full
+                                    name and code, with the day and the clock it leaves or lands. Until then
+                                    (or when it could not be read) the date the link carried. */}
+                                {slices.length === 0 && departureDate && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{fmtDate(departureDate)}</div>}
+                                {cabin && <div style={{ fontSize: 13, color: palette.soft, marginTop: slices.length === 0 ? 0 : 4 }}>{cabin}</div>}
+                                {slices.map((segs, idx) => {
+                                    const first = segs[0];
+                                    const last  = segs[segs.length - 1];
+                                    const end = (caption: string, e: typeof first.departure, code: string) => (
+                                        <div>
+                                            <div style={{ fontSize: 12, color: palette.muted }}>{caption}</div>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: palette.title, marginTop: 2 }}>{airportLabel(e, code)}</div>
+                                            <div style={{ fontSize: 13, color: palette.text, marginTop: 1 }}>{formatDateTime(e.time, locale)}</div>
+                                        </div>
+                                    );
+                                    return (
+                                        <div key={idx} style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+                                            {slices.length > 1 && (
+                                                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: palette.faint }}>
+                                                    {idx === 0 ? tAll('checkout.flight.receipt.outbound') : tAll('checkout.flight.receipt.return')}
+                                                </div>
+                                            )}
+                                            {end(tAll('checkout.flight.receipt.departFrom'), first.departure, first.origin)}
+                                            {end(tAll('checkout.flight.receipt.arriveAt'), last.arrival, last.destination)}
+                                        </div>
+                                    );
+                                })}
+                                {loadingItinerary && (
+                                    <div aria-busy="true" style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+                                        {[0, 1].map(i => (
+                                            <div key={i} style={{ display: 'grid', gap: 7 }}>
+                                                <SkeletonBar palette={palette} width={64} height={10} />
+                                                <SkeletonBar palette={palette} width="72%" height={14} />
+                                                <SkeletonBar palette={palette} width="54%" height={12} />
+                                            </div>
+                                        ))}
+                                        <span className="sr-only">{tAll('checkout.flight.receipt.loadingItinerary')}</span>
+                                    </div>
+                                )}
                                 {rule}
-                                <div style={{ ...row, fontWeight: 700, color: palette.title }}>
-                                    <span>{tAll('checkout.success.total')}</span>
-                                    <span>{flightCurrency} {totalAmount.toLocaleString()}</span>
-                                </div>
+                                {quoting ? (
+                                    <div aria-busy="true">
+                                        <div style={{ display: 'grid', gap: 8 }}>
+                                            <div style={row}>
+                                                <span>{tAll('checkout.flight.receipt.fareLine', { count: passengers.length })}</span>
+                                                <SkeletonBar palette={palette} width={84} height={14} />
+                                            </div>
+                                        </div>
+                                        {rule}
+                                        <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                            <span>{tAll('checkout.success.total')}</span>
+                                            <SkeletonBar palette={palette} width={96} height={16} />
+                                        </div>
+                                        <span className="sr-only">{t('confirmingFinalPrice')}</span>
+                                    </div>
+                                ) : flightPrice ? (
+                                    <>
+                                        <div style={{ display: 'grid', gap: 8 }}>
+                                            {/* One fare line: our fee is part of what the ticket costs here, not an
+                                                extra the traveller is shown being added. */}
+                                            <div style={row}>
+                                                <span>{tAll('checkout.flight.receipt.fareLine', { count: passengers.length })}</span>
+                                                <span>{formatMoney(Math.round((flightPrice.fare + flightPrice.serviceFee) * 100) / 100, flightPrice.currency)}</span>
+                                            </div>
+                                        </div>
+                                        {rule}
+                                        <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                            <span>{tAll('checkout.success.total')}</span>
+                                            <span>{formatMoney(flightPrice.total, flightPrice.currency)}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ ...row, fontWeight: 700, color: palette.title }}>
+                                        <span>{tAll('checkout.success.total')}</span>
+                                        <span>{linkCurrency} {totalAmount.toLocaleString()}</span>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -1208,110 +1362,177 @@ function CheckoutContent() {
     }
 
     // ── Flight checkout: passengers, then payment ────────────────────────────
-    // It was drawn as a single step, so the payment step `handleFlightSubmit` moves to
-    // never appeared: the airline order and Stripe intent were created, and the page
-    // stayed on the passenger form with nothing to pay with.
+    // Drawn with the same parts as the hotel checkout below — toolbar, steps, heading, labelled
+    // sections over a two-column field grid, the summary beside it — so the two read as one
+    // checkout rather than a page and its older cousin.
     if (mode === 'flight') {
+        const flightBackLabel = step === 'payment' ? t('backToBookingDetails') : tAll('property.v2.goBack');
+        const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 18 };
+        // A contact detail or a single answer takes the left column, as on the hotel form;
+        // on a phone the half is too narrow, so it takes the row.
+        const half = 'col-span-2 sm:col-span-1';
+
         return (
             <div style={rootStyle}>
                 {fieldCss}
-                <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'clamp(20px,4vw,48px)', paddingBottom: 60 }}>
-                    <button
-                        onClick={handleBack}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: palette.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0, fontFamily: 'inherit' }}
-                    >
-                        <ArrowLeft size={15} /> {tAll('checkout.back')}
-                    </button>
+                <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(20px,4vw,44px) clamp(16px,4vw,44px) 72px' }}>
+                    <CheckoutToolbar palette={palette} backLabel={flightBackLabel} onBack={handleBack} />
 
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 26, color: palette.title, margin: '18px 0 26px' }}>
-                        {t('completeYourBooking')}
-                    </div>
-
-                    {errorMsg && (
-                        <div style={{ marginBottom: 20, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                            {errorMsg}
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
+                        <div className="lg:col-start-2 lg:row-start-1 flex lg:justify-center mb-8 lg:mb-0 lg:pt-1.5">
+                            <ProgressBar step={step} palette={palette} />
                         </div>
-                    )}
 
-                    <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                        <div style={{ flex: '1 1 420px', minWidth: 280 }}>
-                            <AuthBanner />
-                            {step === 'form' && <>
-                            {passengers.map((p, i) => (
-                                <div key={i} style={formCardStyle}>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: palette.title, marginBottom: 18 }}>
-                                        Passenger {passengers.length > 1 ? i + 1 : ''}
-                                    </div>
-                                    <Grid2>
-                                        <div>
-                                            <input type="text" value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={tAll('checkout.userDetails.firstNamePlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.firstName`])} />
-                                            <ErrText msg={passengerErrors[`${i}.firstName`]} />
-                                        </div>
-                                        <div>
-                                            <input type="text" value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={tAll('checkout.userDetails.lastNamePlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.lastName`])} />
-                                            <ErrText msg={passengerErrors[`${i}.lastName`]} />
-                                        </div>
-                                    </Grid2>
-                                    <FieldRow>
-                                        <input type="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={tAll('checkout.userDetails.emailPlaceholder')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.email`])} />
-                                        <ErrText msg={passengerErrors[`${i}.email`]} />
-                                    </FieldRow>
-                                    <FieldRow>
-                                        <input type="tel" value={p.phone} onChange={e => onPassenger(i, 'phone', e.target.value)} placeholder={tAll('checkout.userDetails.phone')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.phone`])} />
-                                        <ErrText msg={passengerErrors[`${i}.phone`]} />
-                                    </FieldRow>
-                                    <Grid2>
-                                        <div>
-                                            <input type="date" value={p.dateOfBirth} onChange={e => onPassenger(i, 'dateOfBirth', e.target.value)} placeholder={tAll('checkout.userDetails.dateOfBirth')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.dateOfBirth`])} />
-                                            <ErrText msg={passengerErrors[`${i}.dateOfBirth`]} />
-                                        </div>
-                                        <div>
-                                            {/* Required by the check above and sent with the booking, but the
-                                                control was missing, so the form could never be submitted. */}
-                                            <select value={p.gender} onChange={e => onPassenger(i, 'gender', e.target.value)} aria-label={tAll('checkout.userDetails.gender')} className="cg-field" style={{ ...mkField(palette, !!passengerErrors[`${i}.gender`]), color: p.gender ? palette.text : palette.faint }}>
-                                                <option value="" disabled>{tAll('checkout.userDetails.gender')}</option>
-                                                <option value="M">{tAll('checkout.userDetails.genderMale')}</option>
-                                                <option value="F">{tAll('checkout.userDetails.genderFemale')}</option>
-                                            </select>
-                                            <ErrText msg={passengerErrors[`${i}.gender`]} />
-                                        </div>
-                                        <div>
-                                            <input type="text" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={tAll('checkout.userDetails.passportNumber')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportNumber`])} />
-                                            <ErrText msg={passengerErrors[`${i}.passportNumber`]} />
-                                        </div>
-                                        <div>
-                                            <input type="date" value={p.passportExpiry} onChange={e => onPassenger(i, 'passportExpiry', e.target.value)} placeholder={tAll('checkout.userDetails.passportExpiry')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.passportExpiry`])} />
-                                            <ErrText msg={passengerErrors[`${i}.passportExpiry`]} />
-                                        </div>
-                                    </Grid2>
-                                    <FieldRow>
-                                        <input type="text" value={p.nationality} maxLength={2} autoCapitalize="characters" onChange={e => onPassenger(i, 'nationality', e.target.value.toUpperCase())} placeholder={tAll('checkout.userDetails.nationality')} className="cg-field" style={mkField(palette, !!passengerErrors[`${i}.nationality`])} />
-                                        <ErrText msg={passengerErrors[`${i}.nationality`]} />
-                                    </FieldRow>
-                                </div>
-                            ))}
-                            <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} palette={palette}>
-                                Confirm booking — {flightCurrency} {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </PrimaryBtn>
-                            </>}
-                            {step === 'payment' && clientSecret && (
-                                <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
-                                    <StripePaymentForm
-                                        onSuccess={handleStripeSuccess}
-                                        onError={msg => setErrorMsg(msg)}
-                                        total={totalAmount}
-                                        currency={flightCurrency}
-                                        submitting={submitting}
-                                        setSubmitting={setSubmitting}
-                                        palette={palette}
-                                    />
-                                </Elements>
+                        <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
+                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                                {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
+                            </h1>
+                            {step === 'form' && (
+                                <p style={{ fontSize: 'clamp(19px,2.2vw,32px)', fontWeight: 400, lineHeight: 1.25, color: palette.text, margin: '10px 0 0' }}>
+                                    {t('flight.whosFlying')}
+                                </p>
                             )}
-                            <p style={{ fontSize: 10, color: palette.faint, textAlign: 'center', marginTop: 12 }}>
-                                {t('agreePrefix')} <Link href="/terms" style={{ color: ACCENT }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: ACCENT }}>{tRoot('footer.privacyMinimal')}</Link>.
+                        </div>
+
+                        <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
+                            {errorMsg && (
+                                <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                    {errorMsg}
+                                </div>
+                            )}
+
+                            <AuthBanner />
+
+                            {step === 'form' && <>
+                                {passengers.map((p, i) => {
+                                    const id = (field: string) => `pax-${i}-${field}`;
+                                    const err = (field: string) => passengerErrors[`${i}.${field}`];
+                                    // Numbered within its own type, as the airline lists them.
+                                    const nth = passengers.slice(0, i + 1).filter(q => q.type === p.type).length;
+                                    const heading = p.type === 'CHD' ? tAll('checkout.userDetails.childN', { n: nth })
+                                        : p.type === 'INF' ? t('flight.infantN', { n: nth })
+                                            : t('flight.adultN', { n: nth });
+                                    return (
+                                        <section key={i} style={{ marginBottom: 28 }}>
+                                            <div style={{ ...sectionLabelStyle, marginBottom: 6 }}>{heading}</div>
+                                            <p style={{ fontSize: 12, color: palette.muted, margin: '0 0 16px' }}>{t('flight.nameHint')}</p>
+                                            <div style={fieldGrid}>
+                                                <div>
+                                                    <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
+                                                    <input id={id('firstName')} type="text" aria-required="true" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!err('firstName'))} />
+                                                    <ErrText msg={err('firstName')} />
+                                                </div>
+                                                <div>
+                                                    <Label palette={palette} icon={User} htmlFor={id('lastName')}>{tAll('checkout.userDetails.lastName')}</Label>
+                                                    <input id={id('lastName')} type="text" aria-required="true" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!err('lastName'))} />
+                                                    <ErrText msg={err('lastName')} />
+                                                </div>
+
+                                                {/* Contact details once, on the lead traveller: they are the booking's
+                                                    contact, where the e-ticket goes and what the airline calls. */}
+                                                {i === 0 && <>
+                                                    <div className={`${half} sm:col-start-1`}>
+                                                        <Label palette={palette} icon={Mail} htmlFor={id('email')}>{tAll('checkout.userDetails.email')}</Label>
+                                                        <input id={id('email')} type="email" aria-required="true" autoComplete="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={EXAMPLE_EMAIL} className="cg-field" style={mkField(palette, !!err('email'))} />
+                                                        <ErrText msg={err('email')} />
+                                                    </div>
+                                                    <div className={`${half} sm:col-start-1`}>
+                                                        <Label palette={palette} icon={Phone} htmlFor={id('phone')}>{tAll('checkout.userDetails.phoneNumber')}</Label>
+                                                        <PhoneField
+                                                            palette={palette}
+                                                            inputId={id('phone')}
+                                                            required
+                                                            placeholder={EXAMPLE_PHONE}
+                                                            code={contactPhoneCode}
+                                                            number={p.phone}
+                                                            onCode={setContactPhoneCode}
+                                                            onNumber={v => onPassenger(i, 'phone', v)}
+                                                            error={err('phone')}
+                                                        />
+                                                        <ErrText msg={err('phone')} />
+                                                    </div>
+                                                    <p className="col-span-2" style={{ fontSize: 12, color: palette.muted, margin: '-8px 4px 0' }}>{t('flight.contactHint')}</p>
+                                                </>}
+
+                                                <div className={half}>
+                                                    <Label palette={palette} icon={Calendar} htmlFor={id('dateOfBirth')} required>{tAll('checkout.userDetails.dateOfBirth')}</Label>
+                                                    {/* Only the birthdays the airline accepts for this passenger's type, on the day they fly. */}
+                                                    <DateField id={id('dateOfBirth')} value={p.dateOfBirth} onChange={v => onPassenger(i, 'dateOfBirth', v)}
+                                                        {...birthDateBounds(p.type, departureDate, todayIso)} openTo="year"
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
+                                                    <ErrText msg={err('dateOfBirth')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} icon={User} htmlFor={id('gender')} required>{tAll('checkout.userDetails.gender')}</Label>
+                                                    {/* Required by the check above and sent with the booking, but the
+                                                        control was missing, so the form could never be submitted. */}
+                                                    <SelectField id={id('gender')} value={p.gender} onChange={v => onPassenger(i, 'gender', v)}
+                                                        placeholder={tAll('checkout.userDetails.gender')}
+                                                        options={[
+                                                            { value: 'M', label: tAll('checkout.userDetails.genderMale') },
+                                                            { value: 'F', label: tAll('checkout.userDetails.genderFemale') },
+                                                        ]}
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('gender'))} />
+                                                    <ErrText msg={err('gender')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} htmlFor={id('passportNumber')} required>{tAll('checkout.userDetails.passportNumber')}</Label>
+                                                    <input id={id('passportNumber')} type="text" aria-required="true" autoComplete="off" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={t('flight.passportPlaceholder')} className="cg-field" style={mkField(palette, !!err('passportNumber'))} />
+                                                    <ErrText msg={err('passportNumber')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} icon={Calendar} htmlFor={id('passportExpiry')} required>{tAll('checkout.userDetails.passportExpiry')}</Label>
+                                                    <DateField id={id('passportExpiry')} value={p.passportExpiry} onChange={v => onPassenger(i, 'passportExpiry', v)}
+                                                        {...passportExpiryBounds(departureDate, todayIso)} openTo="day"
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
+                                                    <ErrText msg={err('passportExpiry')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} htmlFor={id('country')} required>{tAll('checkout.userDetails.country')}</Label>
+                                                    <AutocompleteSelectField id={id('country')} value={p.country} onChange={v => onPassenger(i, 'country', v)}
+                                                        placeholder={t('flight.countryPlaceholder')} noResults={t('flight.countryNoResults')} options={countryOptions}
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('country'))} />
+                                                    <ErrText msg={err('country')} />
+                                                </div>
+                                            </div>
+                                        </section>
+                                    );
+                                })}
+
+                                <div style={{ marginTop: 40 }}>
+                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting}>
+                                        {t('continueToPayment')}
+                                    </PrimaryBtn>
+                                </div>
+                            </>}
+
+                            {step === 'payment' && clientSecret && (
+                                <>
+                                    <p style={{ fontSize: 13, lineHeight: 1.5, color: palette.soft, margin: '0 0 18px' }}>{t('flight.cardHeld')}</p>
+                                    <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                                        <StripePaymentForm
+                                            onSuccess={handleStripeSuccess}
+                                            onError={handleStripeError}
+                                            total={held?.amount ?? totalAmount}
+                                            currency={held?.currency ?? flightCurrency}
+                                            amountLabel={held ? formatMoney(held.amount, held.currency) : undefined}
+                                            country={passengers[0].country}
+                                            submitting={submitting}
+                                            palette={palette}
+                                        />
+                                    </Elements>
+                                </>
+                            )}
+
+                            <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                                {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                             </p>
                         </div>
-                        <SummaryCard />
+
+                        {/* Right: summary, under the steps */}
+                        <aside className="lg:col-start-2 lg:row-start-2 mt-10 lg:mt-0" style={{ paddingTop: step === 'form' ? 50 : 80 }}>
+                            <SummaryCard />
+                        </aside>
                     </div>
                 </div>
             </div>
@@ -1336,7 +1557,7 @@ function CheckoutContent() {
                         <ProgressBar step={step} palette={palette} />
                     </div>
 
-                    <div className="lg:col-start-1 lg:row-start-1">
+                    <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
                         {/* One line from `lg` up, as drawn — it may run past the form column into
                             the gutter, which the steps never reach. Sized so it always fits there. */}
                         <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
@@ -1349,17 +1570,70 @@ function CheckoutContent() {
                         )}
                     </div>
 
-                    <div className="lg:col-start-1 lg:row-start-2 min-w-0" style={{ marginTop: step === 'form' ? 30 : 26 }}>
+                    <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
                         {errorMsg && (
                             <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
                                 {errorMsg}
                             </div>
                         )}
 
+                        {roomsRequested > 1 && <MultiRoomNotice palette={palette} />}
+
+                        {hotelState.phase === 'price_changed' && (
+                            <PriceMovedPanel
+                                change={hotelState.quote?.priceChange}
+                                refreshing={hotel.busy}
+                                palette={palette}
+                                onAccept={hotel.acceptPrice}
+                                onChooseAnother={() => router.back()}
+                            />
+                        )}
+                        {hotelState.phase === 'unavailable' && (
+                            <RoomUnavailablePanel
+                                kind={hotelState.failure?.kind === 'not_payable_online' ? 'not_payable_online' : 'unavailable'}
+                                palette={palette}
+                                onChooseAnother={() => router.back()}
+                            />
+                        )}
+                        {hotelState.phase === 'supplier_down' && (
+                            <SupplierDownPanel palette={palette} busy={hotel.busy} onRetry={() => void hotel.refreshQuote()} />
+                        )}
+                        {hotelState.phase === 'failed' && hotelState.failure?.kind === 'duplicate' && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                <div>{t('duplicateBookingTitle', { hotel: hotelName })}</div>
+                                <div style={{ marginTop: 4, color: palette.soft }}>{t('duplicateBookingDesc')}</div>
+                                {hotelState.failure.existingBookingId && (
+                                    <Link href={`/trips/${hotelState.failure.existingBookingId}`} style={{ color: ACCENT, fontWeight: 700 }}>
+                                        {t('viewExistingBooking')}
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+                        {hotelState.phase === 'failed' && hotelState.failure?.kind !== 'duplicate' && (
+                            <BookingFailedPanel
+                                released={hotelState.outcome?.kind === 'failed' ? hotelState.outcome.released : false}
+                                message={hotelState.outcome?.kind === 'failed' ? hotelState.outcome.message : (hotelState.failure?.message ?? '')}
+                                palette={palette}
+                                onTryAgain={hotel.restart}
+                            />
+                        )}
+                        {/* A refusal the traveller can act on in place: the form stays, with the reason. */}
+                        {hotelState.phase === 'quoted' && hotelState.failure && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                {hotelState.failure.message}
+                            </div>
+                        )}
+                        {/* A declined card is retried on the same payment. */}
+                        {hotelState.phase === 'awaiting_payment' && hotelState.message && (
+                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
+                                {hotelState.message}
+                            </div>
+                        )}
+
                         <AuthBanner />
 
                         {/* Step 1: guest details */}
-                        {step === 'form' && (
+                        {step === 'form' && hotelState.phase !== 'unavailable' && hotelState.phase !== 'failed' && (
                             <>
                                 {/* Guest 1 — the booking holder */}
                                 <section style={{ marginBottom: 28 }}>
@@ -1367,13 +1641,13 @@ function CheckoutContent() {
                                     <div style={fieldGrid}>
                                         <div>
                                             <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder="John" className="cg-field" style={mkField(palette, !!guestErrors.firstName)} />
-                                            <ErrText msg={guestErrors.firstName} />
+                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!fieldError('holder.firstName'))} />
+                                            <ErrText msg={fieldError('holder.firstName')} />
                                         </div>
                                         <div>
                                             <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder="Doe" className="cg-field" style={mkField(palette, !!guestErrors.lastName)} />
-                                            <ErrText msg={guestErrors.lastName} />
+                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!fieldError('holder.lastName'))} />
+                                            <ErrText msg={fieldError('holder.lastName')} />
                                         </div>
                                         {/* Email and phone keep to the left column, as drawn — a
                                             name splits in two, a contact detail does not. On a
@@ -1381,20 +1655,21 @@ function CheckoutContent() {
                                             take the full row. */}
                                         <div className="col-span-2 sm:col-span-1 sm:col-start-1">
                                             <Label palette={palette} icon={Mail}>{t('userDetails.emailPlaceholder')}</Label>
-                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder="eg.johndoe@gmail.com" className="cg-field" style={mkField(palette, !!guestErrors.email)} />
-                                            <ErrText msg={guestErrors.email} />
+                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={EXAMPLE_EMAIL} className="cg-field" style={mkField(palette, !!fieldError('holder.email'))} />
+                                            <ErrText msg={fieldError('holder.email')} />
                                         </div>
                                         <div className="col-span-2 sm:col-span-1 sm:col-start-1">
                                             <Label palette={palette} icon={Phone}>{t('userDetails.phoneNumber')}</Label>
                                             <PhoneField
                                                 palette={palette}
+                                                placeholder={EXAMPLE_PHONE}
                                                 code={guest.phoneCode}
                                                 number={guest.phone}
                                                 onCode={v => onGuest('phoneCode', v)}
                                                 onNumber={v => onGuest('phone', v)}
-                                                error={guestErrors.phone}
+                                                error={fieldError('holder.phone')}
                                             />
-                                            <ErrText msg={guestErrors.phone} />
+                                            <ErrText msg={fieldError('holder.phone')} />
                                         </div>
                                     </div>
                                 </section>
@@ -1406,20 +1681,54 @@ function CheckoutContent() {
                                         <div style={fieldGrid}>
                                             <div>
                                                 <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder="Mike" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.firstName`])} />
-                                                <ErrText msg={coGuestErrors[`${i}.firstName`]} />
+                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.firstName`))} />
+                                                <ErrText msg={fieldError(`coGuests.${i}.firstName`)} />
                                             </div>
                                             <div>
                                                 <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder="Hunt" className="cg-field" style={mkField(palette, !!coGuestErrors[`${i}.lastName`])} />
-                                                <ErrText msg={coGuestErrors[`${i}.lastName`]} />
+                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.lastName`))} />
+                                                <ErrText msg={fieldError(`coGuests.${i}.lastName`)} />
                                             </div>
                                         </div>
                                     </section>
                                 ))}
 
+                                {/* Children — an age is what a supplier admits and prices them by */}
+                                {kids.map((k, i) => (
+                                    <section key={`kid-${i}`} style={{ marginBottom: 28 }}>
+                                        <div style={sectionLabelStyle}>{t('userDetails.childN', { n: i + 1 })}</div>
+                                        <div style={fieldGrid}>
+                                            <div>
+                                                <Label palette={palette}>{t('userDetails.age')}</Label>
+                                                <input
+                                                    type="number" inputMode="numeric" min={0} max={17} step={1}
+                                                    value={k.age} onChange={e => onKid(i, 'age', e.target.value)}
+                                                    placeholder={t('userDetails.agePlaceholder')}
+                                                    className="cg-field"
+                                                    style={mkField(palette, !!fieldError(`children.${i}.age`))}
+                                                />
+                                                <ErrText msg={fieldError(`children.${i}.age`)} />
+                                            </div>
+                                        </div>
+                                    </section>
+                                ))}
+
+                                {/* Special requests: passed to the property, not guaranteed by it */}
+                                <section style={{ marginBottom: 28 }}>
+                                    <div style={sectionLabelStyle}>{t('specialRequests.title')}</div>
+                                    <textarea
+                                        value={specialRequests}
+                                        onChange={e => { setSpecialRequests(e.target.value); clearError('specialRequests'); }}
+                                        placeholder={t('specialRequests.placeholder')}
+                                        rows={3}
+                                        className="cg-field"
+                                        style={{ ...mkField(palette, !!fieldError('specialRequests')), height: 'auto', padding: '12px 16px', borderRadius: 20, resize: 'vertical' }}
+                                    />
+                                    <ErrText msg={fieldError('specialRequests')} />
+                                </section>
+
                                 <div style={{ marginTop: 40 }}>
-                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={submitting} palette={palette}>
+                                    <PrimaryBtn onClick={handleHotelSubmitForm} loading={hotelSubmitting} disabled={!hotel.canSubmit}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
                                 </div>
@@ -1427,15 +1736,14 @@ function CheckoutContent() {
                         )}
 
                         {/* Step 2: Stripe payment */}
-                        {step === 'payment' && clientSecret && (
-                            <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                        {step === 'payment' && hotelState.clientSecret && (
+                            <Elements stripe={getStripe()} options={{ clientSecret: hotelState.clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                 <StripePaymentForm
                                     onSuccess={handleStripeSuccess}
-                                    onError={msg => setErrorMsg(msg)}
+                                    onError={handleStripeError}
                                     total={total}
                                     currency={shownCurrency}
-                                    submitting={submitting}
-                                    setSubmitting={setSubmitting}
+                                    submitting={hotelSubmitting}
                                     palette={palette}
                                 />
                             </Elements>

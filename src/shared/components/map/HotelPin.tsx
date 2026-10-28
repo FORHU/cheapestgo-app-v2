@@ -20,6 +20,21 @@ interface HotelPinProps {
 const THUMB = 28;
 
 /**
+ * ETG's CDN names the size in the path (`/t/1024x768/…`), and the catalog stores every
+ * picture at 1024x768 — right for a card, about 220 KB too much for a 28px disc. The busiest
+ * Seoul viewport drew 29 pins and fetched 6.3 MB of pin photos on load and 6.6 MB more on a
+ * two-level zoom, all of it on the path to pins looking finished.
+ *
+ * 120x120 covers the thumbnail at 3x density. Any other host is returned as it came.
+ */
+const ETG_SIZED_PATH = /^(https:\/\/cdn\.worldota\.net\/t\/)[^/]+\//;
+const PIN_PHOTO_SIZE = '120x120';
+
+export function pinPhotoUrl(image: string): string {
+    return image.replace(ETG_SIZED_PATH, `$1${PIN_PHOTO_SIZE}/`);
+}
+
+/**
  * A hotel's map pin: a pill carrying a round thumbnail and the nightly price,
  * on a pointer that aims at the coordinate.
  *
@@ -79,10 +94,20 @@ export function HotelPin({ image, priceLabel, active = false, selected = false }
                 >
                     {image && (
                         <img
-                            src={image}
+                            src={pinPhotoUrl(image)}
                             alt=""
                             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            onError={(e) => {
+                                // The small size missing is no reason to lose the photo: retry
+                                // once at the size the catalog stored, then give up to the gradient.
+                                const img = e.target as HTMLImageElement;
+                                if (!img.dataset.fullSize && pinPhotoUrl(image) !== image) {
+                                    img.dataset.fullSize = '1';
+                                    img.src = image;
+                                    return;
+                                }
+                                img.style.display = 'none';
+                            }}
                         />
                     )}
                 </span>

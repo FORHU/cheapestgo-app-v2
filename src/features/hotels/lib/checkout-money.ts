@@ -27,6 +27,32 @@ import { convertForDisplay } from '@/shared/lib/currency';
  * refusing to charge at all if those figures never arrive. So the browser's arithmetic here
  * never reaches a payment.
  */
+/**
+ * The room total the server's quote may be compared with, or `undefined` when nothing honest
+ * can be.
+ *
+ * `checkoutMoney` above is a placeholder: per-night times nights, converted with whichever
+ * rates this browser has. Compared with api-v2's own figure, two rate sources differing by a
+ * cent would announce a price change to someone about to pay. So an expected total is only
+ * offered when no conversion took place — the charge currency *is* the supplier's — and then
+ * it is the supplier's own stay total, not a rounded nightly rate multiplied back up.
+ */
+export function checkoutExpectedTotal(
+    rate: { price: number; currency?: string | null; stayTotal?: number },
+    chargeCurrency: string,
+    nights = 1,
+): string | undefined {
+    const supplierCurrency = (rate.currency || 'USD').toUpperCase();
+    if (supplierCurrency !== chargeCurrency.toUpperCase()) return undefined;
+
+    const total = typeof rate.stayTotal === 'number' && rate.stayTotal > 0
+        ? rate.stayTotal
+        : rate.price * Math.max(1, nights);
+    if (!Number.isFinite(total) || total <= 0) return undefined;
+
+    return String(Math.round(total * 100) / 100);
+}
+
 export function checkoutMoney(
     rate: { price: number; currency?: string | null },
     chargeCurrency: string,

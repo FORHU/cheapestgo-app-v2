@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { Send, Sparkles, Loader2, Plus, Globe, PanelLeftClose, PanelLeft, Home, MessageSquare } from 'lucide-react';
@@ -74,6 +74,7 @@ function groupByDate(convos: Conversation[]) {
 
 export function AiChatClient() {
     const tAll = useTranslations();
+    const brand = useBrandName();
     const searchParams = useSearchParams();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -210,7 +211,7 @@ export function AiChatClient() {
                         <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shadow-blue-600/30">
                             <Sparkles size={13} className="text-white" />
                         </div>
-                        <span className="font-bold text-sm text-slate-900 dark:text-white">{BRAND_NAME} AI</span>
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">{brand} AI</span>
                     </div>
 
                     {/* New chat */}

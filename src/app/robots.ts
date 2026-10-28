@@ -15,6 +15,7 @@ const PRIVATE_PATHS = [
     '/account',
     '/trips',
     '/checkout',
+    '/booking',
     '/flights/book',
 ];
 

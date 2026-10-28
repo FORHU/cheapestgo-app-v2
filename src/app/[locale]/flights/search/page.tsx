@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { getBrandName } from '@/shared/lib/brand.server';
 import { Suspense } from 'react';
 import { FlightSearchClient } from './flight-search-client';
 
@@ -16,14 +16,15 @@ export async function generateMetadata({
     const destination = (sp.destination as string) ?? '';
 
     const t = await getTranslations('flights.meta');
+    const brand = await getBrandName();
 
     const title = origin && destination
         ? t('titleRoute', { origin, destination })
         : t('title');
 
     const description = origin && destination
-        ? t('descriptionRoute', { origin, destination, brand: BRAND_NAME })
-        : t('description', { brand: BRAND_NAME });
+        ? t('descriptionRoute', { origin, destination, brand })
+        : t('description', { brand });
 
     return {
         title,

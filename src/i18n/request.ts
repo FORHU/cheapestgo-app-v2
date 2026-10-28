@@ -1,6 +1,7 @@
 import { getRequestConfig } from 'next-intl/server';
 import { routing, isLocale } from './routing';
 import { applyBrand } from './applyBrand';
+import { getBrandName } from '@/shared/lib/brand.server';
 
 /**
  * Merge a locale's messages over English so a missing key falls back to the
@@ -41,10 +42,14 @@ export default getRequestConfig(async ({ requestLocale }) => {
         locale = fromSegment && isLocale(fromSegment) ? fromSegment : routing.defaultLocale;
     }
 
+    // The brand being shown on this request, which is the build's own unless the brand preview
+    // is on. The copy has to follow the header, so it is resolved here rather than read from env.
+    const brand = await getBrandName();
+
     const enMessages = (await import('../locales/en.json')).default;
 
     if (locale === routing.defaultLocale) {
-        return { locale, messages: applyBrand(enMessages) };
+        return { locale, messages: applyBrand(enMessages, brand) };
     }
 
     const localeMessages = (await import(`../locales/${locale}.json`)).default;
@@ -53,6 +58,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
     // string and get branded too rather than falling back to the wrong name.
     return {
         locale,
-        messages: applyBrand(deepMerge(enMessages, localeMessages)),
+        messages: applyBrand(deepMerge(enMessages, localeMessages), brand),
     };
 });

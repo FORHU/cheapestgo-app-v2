@@ -7,7 +7,7 @@ import { useAuthStore } from '@/shared/stores/auth.store';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { LogoWordmark } from './logo-wordmark';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
 
 /**
@@ -21,17 +21,30 @@ import SignInDropdown from '@/shared/auth/SignInDropdown';
 function LandingHeaderContent() {
     const user = useAuthStore((s) => s.user);
     const tAll = useTranslations();
+    const brand = useBrandName();
 
     return (
-        <header className="relative z-[5]">
+        // Fixed, not in flow: the Journey's scroll track has to start at the very top of the
+        // page so the first wheel notch on the hero snaps to the next section, and the
+        // navbar has to stay on screen through every stage rather than scrolling away. The
+        // soft scrim keeps its white controls legible over the lighter sky/daylight stages.
+        <header className="fixed inset-x-0 top-0 z-[5] bg-linear-to-b from-[#020617]/55 to-transparent">
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">
-                <Link href="/" aria-label={`${BRAND_NAME} home`} className="flex shrink-0 items-center">
-                    <LogoWordmark height={24} />
+                <Link href="/" aria-label={`${brand} home`} className="flex shrink-0 items-center">
+                    <LogoWordmark height={44} />
                 </Link>
 
                 {/* This page is dark whatever the app theme is, so both menus take
                     the `onDark` tone rather than the themed one. */}
                 <div className="hidden items-center gap-3 min-[761px]:flex">
+                    {/* Shown signed out too: /trips sends a guest to sign in and back.
+                        Drawn in the menus' `onDark` trigger tone so it sits with them. */}
+                    <Link
+                        href="/trips"
+                        className="rounded-lg px-2 py-1 text-xs font-medium text-[#94a3b8] transition-colors hover:bg-white/[0.07] hover:text-[#f8fafc]"
+                    >
+                        {tAll('nav.bookings')}
+                    </Link>
                     <LocaleSelector variant="onDark" />
                     <CurrencySelector variant="onDark" />
 
@@ -39,7 +52,7 @@ function LandingHeaderContent() {
                         Signed out, v1's gradient, blue-600 → cyan-500, like every button on this page. */}
                     {user ? (
                         <div className="ml-1">
-                            <SignInDropdown />
+                            <SignInDropdown tone="onDark" />
                         </div>
                     ) : (
                         <Link

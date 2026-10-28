@@ -6,10 +6,16 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
     label?: string;
     icon?: LucideIcon;
     error?: string;
+    /**
+     * Something that lives inside the right edge of the field — a show/hide toggle, a clear
+     * button. Anchored to the input box itself, so it stays centred whatever the label above
+     * or the error below does to the wrapper's height. The input needs matching right padding.
+     */
+    trailing?: React.ReactNode;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-    ({ className, type, label, icon: Icon, error, ...props }, ref) => (
+    ({ className, type, label, icon: Icon, error, trailing, ...props }, ref) => (
         <div className="w-full space-y-1.5">
             {label && (
                 <label
@@ -36,6 +42,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                     ref={ref}
                     {...props}
                 />
+                {trailing && (
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center">
+                        {trailing}
+                    </div>
+                )}
             </div>
             {error && (
                 <p className="text-[10px] font-bold text-rose-500 ml-1">{error}</p>

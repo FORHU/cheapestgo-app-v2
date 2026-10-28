@@ -33,7 +33,13 @@ function returnPath(): string {
     }
 }
 
-export function useLogin() {
+export function useLogin({
+    redirectAfterLogin = true,
+    onSuccess,
+}: {
+    redirectAfterLogin?: boolean;
+    onSuccess?: () => void;
+} = {}) {
     const { setUser } = useAuthStore();
     const setSessionUser = useSessionStore((s) => s.setUser);
     const router = useRouter();
@@ -44,7 +50,8 @@ export function useLogin() {
             setUser(user);
             setSessionUser(toSessionUser(user));
             toast.success('Welcome back!');
-            router.push(returnPath());
+            if (redirectAfterLogin) router.push(returnPath());
+            onSuccess?.();
         },
         onError: (err: Error) => {
             toast.error(err.message || 'Invalid email or password.');
@@ -73,16 +80,17 @@ export function useRegister() {
 
 export function useLogout() {
     const { setUser } = useAuthStore();
-    const setSessionUser = useSessionStore((s) => s.setUser);
     const router = useRouter();
 
     return useMutation({
-        mutationFn: authApi.logout,
+        mutationFn: () => useSessionStore.getState().logout(),
         onSuccess: () => {
             setUser(null);
-            setSessionUser(null);
             toast.success('Signed out.');
             router.push('/');
+        },
+        onError: (err: Error) => {
+            toast.error(err.message || 'Failed to sign out. Please try again.');
         },
     });
 }

@@ -1,6 +1,8 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
-import { brandWordmark } from '@/shared/lib/brand';
+import { useBrandWordmark } from '@/shared/components/BrandProvider';
 
 /**
  * The shell every auth screen sits in.
@@ -27,7 +29,7 @@ export function AuthLayout({
     children: ReactNode;
     pitch:    string;
 }) {
-    const wordmark = brandWordmark(process.env.NEXT_PUBLIC_BRAND_NAME);
+    const wordmark = useBrandWordmark();
 
     return (
         <div className="min-h-screen lg:grid lg:grid-cols-[1fr_1.1fr] bg-alabaster dark:bg-obsidian">

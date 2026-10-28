@@ -7,6 +7,7 @@ import { ArrowLeftRight, PlaneTakeoff } from 'lucide-react';
 import { sortPalette } from '@/features/search/components/search-chrome';
 import { autocompleteDestinations, type DestinationSuggestion } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
+import { excludeOrigin } from '@/features/search/lib/exclude-origin';
 
 type Side = 'origin' | 'destination';
 
@@ -52,7 +53,8 @@ export function RouteEditor({
     const inputs = { origin: useRef<HTMLInputElement>(null), destination: useRef<HTMLInputElement>(null) };
 
     const typed = query.trim().length >= 2;
-    const suggestions = side ? (typed ? results : POPULAR_AIRPORTS) : [];
+    const offered = typed ? results : POPULAR_AIRPORTS;
+    const suggestions = side === 'destination' ? excludeOrigin(offered, origin) : side ? offered : [];
 
     // Debounced, and stale answers dropped: a slow reply for "ma" must not land
     // over the one for "man".
