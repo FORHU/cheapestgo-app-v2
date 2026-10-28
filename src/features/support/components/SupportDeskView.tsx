@@ -41,7 +41,10 @@ export function SupportDeskView() {
     const me      = useAuthStore(s => s.user);
     const isAdmin = (me as { role?: string } | null)?.role === 'admin';
 
-    const [filter, setFilter]       = useState<InboxFilter>('unassigned');
+    // Where each role's work is: an Admin hands out unassigned chats, an Agent works the
+    // ones given to them. Opening an Agent on "unassigned" shows them a queue that is not
+    // theirs to pick up and hides the one that is.
+    const [filter, setFilter]       = useState<InboxFilter>(isAdmin ? 'unassigned' : 'mine');
     const [rows, setRows]           = useState<InboxRow[]>([]);
     const [selectedId, setSelected] = useState<string | null>(null);
     const [open, setOpen]           = useState<AgentConversation | null>(null);

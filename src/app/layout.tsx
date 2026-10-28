@@ -70,12 +70,9 @@ export const metadata: Metadata = {
         description: DESCRIPTION,
         url: SITE_URL,
         siteName: BRAND,
-        images: [{
-            url: `${SITE_URL}/Web_Logo_Light.png`,
-            width: 1200,
-            height: 630,
-            alt: `${BRAND} - Ultimate Travel Booking Platform`,
-        }],
+        // No `images` here on purpose — `app/opengraph-image.tsx` supplies it. An explicit
+        // entry overrides that file, and the one that used to sit here pointed at
+        // Web_Logo_Light.png while claiming 1200×630, which the file is not: it is 875×368.
         locale: 'en_US',
         type: 'website',
     },
@@ -83,7 +80,6 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: TAGLINE,
         description: DESCRIPTION,
-        images: [`${SITE_URL}/Web_Logo_Light.png`],
     },
 };
 

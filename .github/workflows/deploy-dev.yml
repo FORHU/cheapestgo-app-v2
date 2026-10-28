@@ -21,6 +21,15 @@ name: Deploy Dev
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        # Which deployment this run targets. Everything that differs between them —
+        # instance, ports, container names, SSM path — is read from that GitHub
+        # environment's variables rather than hardcoded here, so one workflow serves both
+        # and neither can be changed by editing the other's values.
+        description: "Target environment"
+        type: choice
+        options: [dev, production]
+        default: dev
       ref:
         # No default: this project deploys from `staging`, not the default branch,
         # and a hardcoded value fetches a branch that may not exist, failing in
@@ -32,32 +41,39 @@ on:
   #   branches: [dev]
 
 concurrency:
-  group: forhu-dev-cheapestgo
+  # Per environment: a dev deploy and a production deploy touch different hosts and
+  # must not queue behind or cancel one another.
+  group: forhu-cheapestgo-app-${{ inputs.environment || 'dev' }}
   cancel-in-progress: false
 
+# Only what is the same wherever this deploys. Anything that differs by environment is
+# resolved in the "Resolve target" step below, from that environment's variables.
+#
+# No SHARED_ENV: app-v2 is a frontend. It talks to api-v2 over HTTP and touches no
+# database, Redis or RabbitMQ, so handing it the project credentials file would spread a
+# Postgres URL for no reason.
 env:
   AWS_REGION: ap-southeast-1
   ACCOUNT_ID: "617163942417"
-  INSTANCE_ID: i-0f95a93145ea25e7a
   ECR_REPOSITORY: cheapestgo-v2-app
-  CONTAINER: cheapestgo-v2-app
-  NETWORK: forhu-dev
-  HOST_PORT: "4040"
   APP_PORT: "3002"
-  ENV_PARAM: /forhu-dev/cheapestgo-v2-app/env
-  # No SHARED_ENV: app-v2 is a frontend. It talks to api-v2 over HTTP and
-  # touches no database, Redis or RabbitMQ, so handing it the project
-  # credentials file would spread a Postgres URL for no reason.
-  MERGED_ENV: /opt/forhu-dev/cheapestgo-v2-app.env
 
 jobs:
   deploy:
-    name: Build and deploy (cheapestgo dev)
-    # Native arm64: the host is Graviton. An image built on ubuntu-latest is
-    # amd64, pulls cleanly, then dies with "exec format error". Do not
-    # cross-build under QEMU — Node and Prisma builds take hours and look hung.
-    runs-on: ubuntu-24.04-arm
-    environment: staging
+    name: Build and deploy (cheapestgo ${{ inputs.environment || 'dev' }})
+    # The runner's architecture must match the target host's. An image built for the
+    # wrong one pulls cleanly and then dies with "exec format error", and cross-building
+    # under QEMU is not the answer — Node builds take hours and look hung.
+    #
+    # dev (forhu-dev-app) is a t4g.large: Graviton, arm64.
+    # production (forhu-prod-cheapestGo) is a t3.micro: Intel, x86_64.
+    #
+    # Keep this in step with `platform` in the Resolve target step below. If production
+    # ever moves to Graviton, both change together.
+    runs-on: ${{ inputs.environment == 'production' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    # "dev" is the context, not the environment's name — dev secrets and variables live on
+    # the `staging` environment. Production maps to its own.
+    environment: ${{ inputs.environment == 'production' && 'production' || 'staging' }}
 
     permissions:
       id-token: write
@@ -72,15 +88,76 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_DEV_DEPLOY_ROLE_ARN || 'arn:aws:iam::617163942417:role/forhu-deploy' }}
+          # Production sets AWS_DEPLOY_ROLE_ARN on its own environment. forhu-deploy, the dev
+          # role, can only SendCommand to the dev host and only PutParameter under
+          # /forhu-dev/* — against production it fails on the instance ARN, after the build.
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN || vars.AWS_DEV_DEPLOY_ROLE_ARN || 'arn:aws:iam::617163942417:role/forhu-deploy' }}
           aws-region: ${{ env.AWS_REGION }}
+
+      # Everything that differs between dev and production, in one place.
+      #
+      # Dev keeps working values as defaults so nothing has to be configured to deploy it.
+      # Production has none: a missing production variable aborts rather than falling back,
+      # because the fallback would deploy production code onto the dev instance and report
+      # success doing it.
+      - name: Resolve target
+        id: cfg
+        env:
+          TARGET:            ${{ inputs.environment || 'dev' }}
+          V_INSTANCE_ID:     ${{ vars.INSTANCE_ID }}
+          V_NETWORK:         ${{ vars.DOCKER_NETWORK }}
+          V_CONTAINER:       ${{ vars.CONTAINER_NAME }}
+          V_STAFF_CONTAINER: ${{ vars.STAFF_CONTAINER_NAME }}
+          V_HOST_PORT:       ${{ vars.HOST_PORT }}
+          V_STAFF_HOST_PORT: ${{ vars.STAFF_HOST_PORT }}
+          V_ENV_PARAM:       ${{ vars.ENV_PARAM }}
+          V_MERGED_ENV:      ${{ vars.MERGED_ENV }}
+        run: |
+          set -euo pipefail
+
+          if [ "$TARGET" = "production" ]; then
+            missing=""
+            for v in V_INSTANCE_ID V_NETWORK V_CONTAINER V_STAFF_CONTAINER \
+                     V_HOST_PORT V_STAFF_HOST_PORT V_ENV_PARAM V_MERGED_ENV; do
+              [ -n "${!v:-}" ] || missing="$missing ${v#V_}"
+            done
+            if [ -n "$missing" ]; then
+              echo "::error::production environment is missing:$missing"
+              echo "Set them as variables on the 'production' environment, then re-run." >&2
+              exit 1
+            fi
+          fi
+
+          out() { printf '%s=%s\n' "$1" "$2" >> "$GITHUB_OUTPUT"; }
+
+          # The tag prefix keeps a dev image from ever being mistaken for, or overwriting,
+          # a production one in the same ECR repository.
+          [ "$TARGET" = "production" ] && out tag_prefix prod || out tag_prefix dev
+
+          # The dev host is Graviton; the production box is x86_64 (t3 family). One
+          # image cannot serve both: the wrong arch pulls cleanly and then dies with
+          # "exec format error", which reads as a crash loop rather than a build fault.
+          [ "$TARGET" = "production" ] && out platform linux/amd64 || out platform linux/arm64
+
+          out instance_id     "${V_INSTANCE_ID:-i-0f95a93145ea25e7a}"
+          out network         "${V_NETWORK:-forhu-dev}"
+          out container       "${V_CONTAINER:-cheapestgo-v2-app}"
+          # The staff host runs the same image as a second container, so a storefront
+          # deploy or crash-loop does not take the support desk down with it (ADR-0006).
+          # 4043 is the next free port in this project's dev block — see
+          # /etc/caddy/sites/00-PORTS.md: 4040 web, 4041 api, 4042 the AirangGo brand.
+          out staff_container "${V_STAFF_CONTAINER:-cheapestgo-v2-staff}"
+          out host_port       "${V_HOST_PORT:-4040}"
+          out staff_host_port "${V_STAFF_HOST_PORT:-4043}"
+          out env_param       "${V_ENV_PARAM:-/forhu-dev/cheapestgo-v2-app/env}"
+          out merged_env      "${V_MERGED_ENV:-/opt/forhu-dev/cheapestgo-v2-app.env}"
+
+          echo "Target: $TARGET"
 
       - name: Resolve image tag
         id: tag
         run: |
-          # dev- prefix so a dev image can never be mistaken for, or overwrite,
-          # a production tag in the same ECR repository.
-          echo "tag=dev-$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tag=${{ steps.cfg.outputs.tag_prefix }}-$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "registry=${{ env.ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> "$GITHUB_OUTPUT"
 
       - name: Login to Amazon ECR
@@ -97,7 +174,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/arm64
+          platforms: ${{ steps.cfg.outputs.platform }}
           provenance: false
           # Every variable this app reads is NEXT_PUBLIC_*, which `next build`
           # inlines into the client bundle, so they must be build args. Set at
@@ -105,14 +182,15 @@ jobs:
           # of http://localhost:4000/api/v2 and every call fails from the
           # tester's machine with nothing in any server log.
           build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.DEV_NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_SITE_URL=${{ vars.DEV_NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || vars.DEV_NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || vars.DEV_NEXT_PUBLIC_SITE_URL }}
             NEXT_PUBLIC_BRAND_NAME=${{ vars.NEXT_PUBLIC_BRAND_NAME }}
             NEXT_PUBLIC_LOCALE=${{ vars.NEXT_PUBLIC_LOCALE }}
             NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
             NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
+            NEXT_PUBLIC_STAFF_HOST=${{ vars.NEXT_PUBLIC_STAFF_HOST || vars.DEV_NEXT_PUBLIC_STAFF_HOST }}
           tags: ${{ steps.tag.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
 
       # This project's own secrets only. Anything unset is omitted rather than
@@ -132,7 +210,7 @@ jobs:
           printf 'NODE_ENV=production\n' > env.tmp
 
           aws ssm put-parameter \
-            --name "${{ env.ENV_PARAM }}" \
+            --name "${{ steps.cfg.outputs.env_param }}" \
             --type SecureString --overwrite \
             --value "file://env.tmp" \
             --region "${{ env.AWS_REGION }}" > /dev/null
@@ -149,15 +227,19 @@ jobs:
 
           COMMANDS=(
             "set -euo pipefail"
-            ": > ${{ env.MERGED_ENV }}"
-            "aws ssm get-parameter --name ${{ env.ENV_PARAM }} --with-decryption --region ${{ env.AWS_REGION }} --query Parameter.Value --output text >> ${{ env.MERGED_ENV }}"
-            "chmod 600 ${{ env.MERGED_ENV }}"
+            ": > ${{ steps.cfg.outputs.merged_env }}"
+            "aws ssm get-parameter --name ${{ steps.cfg.outputs.env_param }} --with-decryption --region ${{ env.AWS_REGION }} --query Parameter.Value --output text >> ${{ steps.cfg.outputs.merged_env }}"
+            "chmod 600 ${{ steps.cfg.outputs.merged_env }}"
             "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${REGISTRY}"
             "docker container prune -f || true"
             "docker image prune -af || true"
-            "docker pull --platform linux/arm64 ${IMAGE}"
-            "docker rm -f ${{ env.CONTAINER }} 2>/dev/null || true"
-            "docker run -d --name ${{ env.CONTAINER }} --restart unless-stopped --platform linux/arm64 --network ${{ env.NETWORK }} --env-file ${{ env.MERGED_ENV }} -p 127.0.0.1:${{ env.HOST_PORT }}:${{ env.APP_PORT }} ${IMAGE}"
+            "docker pull --platform ${{ steps.cfg.outputs.platform }} ${IMAGE}"
+            "docker rm -f ${{ steps.cfg.outputs.container }} 2>/dev/null || true"
+            "docker run -d --name ${{ steps.cfg.outputs.container }} --restart unless-stopped --platform ${{ steps.cfg.outputs.platform }} --network ${{ steps.cfg.outputs.network }} --env-file ${{ steps.cfg.outputs.merged_env }} -p 127.0.0.1:${{ steps.cfg.outputs.host_port }}:${{ env.APP_PORT }} ${IMAGE}"
+            "docker rm -f ${{ steps.cfg.outputs.staff_container }} 2>/dev/null || true"
+            # Same image, same env — the only difference is which hostname Caddy sends it.
+            # Separate so the support desk survives a storefront restart.
+            "docker run -d --name ${{ steps.cfg.outputs.staff_container }} --restart unless-stopped --platform ${{ steps.cfg.outputs.platform }} --network ${{ steps.cfg.outputs.network }} --env-file ${{ steps.cfg.outputs.merged_env }} -p 127.0.0.1:${{ steps.cfg.outputs.staff_host_port }}:${{ env.APP_PORT }} ${IMAGE}"
           )
 
           # jq builds the JSON, so a quote inside any command cannot break it.
@@ -165,9 +247,9 @@ jobs:
 
           CMD_ID=$(aws ssm send-command \
             --region "${{ env.AWS_REGION }}" \
-            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --instance-ids "${{ steps.cfg.outputs.instance_id }}" \
             --document-name AWS-RunShellScript \
-            --comment "deploy ${{ env.CONTAINER }} ${TAG}" \
+            --comment "deploy ${{ steps.cfg.outputs.container }} ${TAG}" \
             --timeout-seconds 900 \
             --parameters "${PARAMS}" \
             --query Command.CommandId --output text)
@@ -183,7 +265,7 @@ jobs:
             STATUS=$(aws ssm get-command-invocation \
               --region "${{ env.AWS_REGION }}" \
               --command-id "${{ steps.send.outputs.command_id }}" \
-              --instance-id "${{ env.INSTANCE_ID }}" \
+              --instance-id "${{ steps.cfg.outputs.instance_id }}" \
               --query Status --output text 2>/dev/null || echo Pending)
             echo "status: $STATUS"
             case "$STATUS" in Success|Failed|Cancelled|TimedOut) break ;; esac
@@ -193,7 +275,7 @@ jobs:
           aws ssm get-command-invocation \
             --region "${{ env.AWS_REGION }}" \
             --command-id "${{ steps.send.outputs.command_id }}" \
-            --instance-id "${{ env.INSTANCE_ID }}" \
+            --instance-id "${{ steps.cfg.outputs.instance_id }}" \
             --query '[StandardOutputContent,StandardErrorContent]' --output text
 
           [ "$STATUS" = "Success" ] || { echo "::error::deploy $STATUS"; exit 1; }
