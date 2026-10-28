@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
-import { http } from '@/shared/lib/http';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
 import { nightsBetween } from '@/shared/lib/stay';
@@ -482,7 +481,6 @@ export function ImmersiveSearchBar({
 
     // UX
     const [ctaState, setCtaState] = useState<CtaState>('idle');
-    const [resultsCount, setResultsCount] = useState<number | null>(null);
     const [shake, setShake] = useState(false);
     const [hint, setHint] = useState(true);
 
@@ -655,13 +653,18 @@ export function ImmersiveSearchBar({
         setPanelOpen(null);
 
         void (async () => {
-            const countPromise = http
-                .get<{ count: number }>(`/hotels/count?city=${encodeURIComponent(pickedDest.name)}`)
-                .then(d => d.count)
-                .catch(() => null);
-            const delayPromise = new Promise<void>(resolve => { ctaT1.current = setTimeout(resolve, 1200); });
-            const [count]      = await Promise.all([countPromise, delayPromise]);
-            setResultsCount(count ?? null);
+            // Nothing is fetched before navigating.
+            //
+            // This used to await `/hotels/count` to show "N stays found" in the button for
+            // the 800ms before the page changed. Three things wrong with that: the call is
+            // a full scan of `hotel_content` and took 22–30s against production, so the
+            // button sat spinning for half a minute; the traveller is given a number that
+            // is then thrown away; and it is not even the same number — the count is every
+            // hotel we hold content for (Seoul: 2,175) while the results page reports stays
+            // with availability for the chosen dates (299).
+            //
+            // The results page already counts what it found, which is the honest figure.
+            await new Promise<void>(resolve => { ctaT1.current = setTimeout(resolve, 600); });
             setCtaState('done');
             setIsSearching(true);
 
@@ -732,7 +735,6 @@ export function ImmersiveSearchBar({
 
     const totalTravelers = adults + children;
     const travelersValue = totalTravelers === 1 ? tAll('search.prose.justMe') : tAll('search.prose.ofUs', { count: totalTravelers });
-    const resultsLabel   = mode === 'stays' ? 'stays' : 'flights';
 
     const datesHeading = mode === 'flights'
         ? (isOneway ? tAll('search.whenFlying') : tAll('search.pickDates'))
@@ -1051,12 +1053,9 @@ export function ImmersiveSearchBar({
                         </button>
                     </div>
 
-                    {/* Results badge */}
-                    {ctaState === 'done' && resultsCount && (
-                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(15,23,42,0.98)', color: '#f1f5f9', padding: '10px 18px', borderRadius: '16px', fontWeight: 700, fontSize: '13px', boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                            {resultsCount.toLocaleString()} {resultsLabel} found
-                        </div>
-                    )}
+                    {/* No results badge here. It reported a catalog count that disagreed with
+                        the results page and cost a 22–30s blocking call to produce — see the
+                        GO handler. The count belongs where the search happens. */}
                 </div>
             </div>
         </>
