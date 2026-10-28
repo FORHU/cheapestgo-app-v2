@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { MessageCircle, X, Send, Loader2, Paperclip, FileText } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/components/ui/button';
 import { useSupportChat } from '@/features/support/lib/useSupportChat';
 import { readerView } from '@/features/support/lib/translationView';
 import { formatReopen } from '@/features/support/lib/reopenTime';
@@ -49,14 +50,11 @@ export function SupportWidget() {
                 />
             )}
 
-            <button
+            <Button
                 type="button"
                 onClick={panelOpen ? close : open}
                 aria-label={panelOpen ? t('close') : t('open')}
-                className="relative grid h-14 w-14 place-items-center rounded-full bg-slate-900 text-white
-                           shadow-lg transition hover:bg-slate-700 focus-visible:outline focus-visible:outline-2
-                           focus-visible:outline-offset-2 focus-visible:outline-slate-900
-                           dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="relative h-14 w-14 rounded-full shadow-lg"
             >
                 {panelOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
                 {!panelOpen && unread > 0 && (
@@ -65,7 +63,7 @@ export function SupportWidget() {
                         {unread > 9 ? '9+' : unread}
                     </span>
                 )}
-            </button>
+            </Button>
         </div>
     );
 }
@@ -141,10 +139,10 @@ function SupportPanel({
             aria-label={t('title')}
             className="flex h-[32rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl
                        border border-slate-200 bg-white shadow-2xl
-                       dark:border-slate-700 dark:bg-slate-900"
+                       dark:border-white/10 dark:bg-slate-900"
         >
             <header className="flex items-start justify-between gap-2 border-b border-slate-200 px-4 py-3
-                               dark:border-slate-700">
+                               dark:border-white/10">
                 <div>
                     <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
                     {reference && (
@@ -154,7 +152,8 @@ function SupportPanel({
                     )}
                 </div>
                 <button type="button" onClick={onClose} aria-label={t('close')}
-                    className="rounded p-1 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200">
+                    className="rounded-lg p-1 text-slate-400 outline-none transition-all hover:text-slate-700
+                               focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:hover:text-slate-200">
                     <X className="h-4 w-4" />
                 </button>
             </header>
@@ -189,11 +188,12 @@ function SupportPanel({
                     {staged.map(file => (
                         <li key={file.id}
                             className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs
-                                       text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                       text-slate-900 dark:bg-white/10 dark:text-white">
                             <FileText className="h-3 w-3 shrink-0" />
                             <span className="max-w-[10rem] truncate">{file.fileName}</span>
                             <button type="button" onClick={() => onUnstage(file.id)} aria-label={t('removeFile')}
-                                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                                className="rounded text-slate-400 outline-none transition-all hover:text-slate-700
+                                           focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:text-slate-300 dark:hover:text-white">
                                 <X className="h-3 w-3" />
                             </button>
                         </li>
@@ -202,7 +202,7 @@ function SupportPanel({
             )}
 
             <form
-                className="flex items-end gap-2 border-t border-slate-200 p-3 dark:border-slate-700"
+                className="flex items-end gap-2 border-t border-slate-200 p-3 dark:border-white/10"
                 onSubmit={e => { e.preventDefault(); onSend(draft); setDraft(''); }}
             >
                 <textarea
@@ -221,12 +221,14 @@ function SupportPanel({
                     placeholder={t('placeholder')}
                     aria-label={t('placeholder')}
                     className="max-h-24 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm
-                               text-slate-900 outline-none focus:border-slate-400
-                               dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                               text-slate-900 outline-none transition-all focus:border-blue-400
+                               focus-visible:ring-2 focus-visible:ring-blue-500/20
+                               dark:border-white/10 dark:bg-white/5 dark:text-white"
                 />
                 {canAttach && (
                     <label className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg
-                                      text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800">
+                                      text-slate-500 outline-none transition-all hover:bg-slate-100
+                                      focus-within:ring-2 focus-within:ring-blue-500/20 dark:hover:bg-white/10">
                         {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                         <span className="sr-only">{t('attach')}</span>
                         <input
@@ -242,16 +244,14 @@ function SupportPanel({
                         />
                     </label>
                 )}
-                <button
+                <Button
                     type="submit"
                     disabled={sending || draft.trim().length === 0}
                     aria-label={t('send')}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-900 text-white
-                               transition hover:bg-slate-700 disabled:opacity-40
-                               dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                    className="h-9 w-9 shrink-0 rounded-lg"
                 >
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </button>
+                </Button>
             </form>
         </section>
     );
@@ -283,8 +283,9 @@ function QuickQuestions({ onPick }: { onPick: (id: SuggestionId) => void }) {
                             type="button"
                             onClick={() => onPick(id)}
                             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-left text-sm
-                                       text-slate-700 transition hover:border-slate-400 hover:bg-slate-50
-                                       dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                       text-slate-700 outline-none transition-all hover:border-slate-400 hover:bg-slate-50
+                                       focus-visible:ring-2 focus-visible:ring-blue-500/20 active:scale-[0.98]
+                                       dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                         >
                             {t(`quick.${id}`)}
                         </button>
@@ -309,19 +310,17 @@ function AutomatedAnswer({ id, onSolved, onPerson }: {
     const help = useTranslations('help.sections');
 
     return (
-        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/60">
+        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-white/10 dark:bg-white/5">
             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">{t('automated')}</p>
             <h3 className="mb-1 font-medium text-slate-900 dark:text-white">{help(`${id}.title`)}</h3>
             <p className="whitespace-pre-wrap text-slate-700 dark:text-slate-300">{help(`${id}.body`)}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" onClick={onSolved}
-                    className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white dark:bg-white dark:text-slate-900">
+                <Button type="button" size="sm" onClick={onSolved}>
                     {t('thatAnsweredIt')}
-                </button>
-                <button type="button" onClick={onPerson}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 dark:border-slate-600 dark:text-slate-200">
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={onPerson}>
                     {t('talkToAPerson')}
-                </button>
+                </Button>
             </div>
         </article>
     );

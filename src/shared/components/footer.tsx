@@ -6,19 +6,20 @@ import { usePathname } from '@/i18n/navigation';
 import { Link } from '@/i18n/navigation';
 import { PlaneTakeoff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 
 const StandardFooter = () => {
     const t = useTranslations('footer');
+    const brand = useBrandName();
     return (
         <footer className="w-full border-t border-slate-200 dark:border-white/5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md landscape-compact-py">
             <div className="max-w-[1400px] mx-auto px-5 py-3 lg:py-10 landscape:py-2 flex flex-col lg:flex-row justify-between items-start gap-5 lg:gap-8">
                 <div className="flex flex-col gap-2 lg:gap-4 w-full lg:w-auto">
                     <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-slate-100 dark:bg-white/5 rounded-lg lg:bg-transparent lg:p-0">
-                            <PlaneTakeoff className="w-4 h-4 lg:w-6 lg:h-6 text-blue-500 lg:text-slate-400" />
+                            <PlaneTakeoff className="w-7 h-7 lg:w-9 lg:h-9 text-blue-500 lg:text-slate-400" />
                         </div>
-                        <span className="text-slate-900 dark:text-white font-bold text-[15px] lg:text-xl tracking-tight">{BRAND_NAME}</span>
+                        <span className="text-slate-900 dark:text-white font-bold text-2xl lg:text-4xl tracking-tight">{brand}</span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 text-[10px] lg:text-sm max-w-xs leading-relaxed opacity-80 lg:opacity-100">
                         {t('tagline')} <br className="hidden lg:block" />{t('taglinePrecision')}

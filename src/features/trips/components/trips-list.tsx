@@ -8,6 +8,7 @@ import { Luggage, ArrowRight, Hotel, Plane } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
 import { BookingCard } from './booking-card';
+import { fetchBookings } from '../lib/bookings-api';
 import type { AnyBooking } from '@/shared/types';
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -69,18 +70,25 @@ export function TripsList() {
     const [bookings, setBookings] = useState<AnyBooking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabValue>('all');
+    /** A load that failed is not an empty list, and must not be drawn as one. */
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [attempt, setAttempt] = useState(0);
+    const tAll = useTranslations();
 
     useEffect(() => {
         setIsLoading(true);
-        http.get<AnyBooking[]>('/api/bookings')
+        setLoadFailed(false);
+        fetchBookings(http)
             .then(setBookings)
             .catch((err: Error & { status?: number }) => {
                 if (err.status === 401) {
                     router.push('/login?next=/trips');
+                } else {
+                    setLoadFailed(true);
                 }
             })
             .finally(() => setIsLoading(false));
-    }, [router]);
+    }, [router, attempt]);
 
     const filtered = bookings.filter(b => {
         if (activeTab === 'hotels') return b.type === 'hotel';
@@ -118,6 +126,17 @@ export function TripsList() {
                     <SkeletonCard />
                     <SkeletonCard />
                     <SkeletonCard />
+                </div>
+            ) : loadFailed ? (
+                <div role="alert" className="text-center py-16">
+                    <p className="text-slate-600 dark:text-slate-300 mb-4">{tAll('trips.loadFailed.title')}</p>
+                    <button
+                        type="button"
+                        onClick={() => setAttempt(a => a + 1)}
+                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
+                    >
+                        {tAll('trips.loadFailed.retry')}
+                    </button>
                 </div>
             ) : filtered.length === 0 ? (
                 <EmptyState tab={activeTab} />

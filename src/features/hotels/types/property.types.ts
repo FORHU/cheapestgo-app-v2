@@ -1,6 +1,9 @@
 export interface RateRow {
     offerId: string;
+    /** Per night. */
     price: number;
+    /** The whole stay, in `currency`, as the supplier quoted it (api-v2 emits both). */
+    stayTotal?: number;
     currency: string;
     boardCode?: string;
     boardName?: string;

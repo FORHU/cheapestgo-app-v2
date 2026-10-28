@@ -19,7 +19,7 @@
  */
 import { useTranslations } from 'next-intl';
 import { Plane, Hotel, Receipt as ReceiptIcon, ExternalLink } from 'lucide-react';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 import { formatCurrency } from '@/shared/lib/format';
 import { nightsBetween } from '@/shared/lib/stay';
 import type { FlightBooking, HotelBooking } from '@/shared/types';
@@ -46,6 +46,7 @@ function Shell({ title, icon, reference, status, children }: {
     status: { label: string; tone: 'green' | 'amber' | 'slate' };
     children: React.ReactNode;
 }) {
+    const brand = useBrandName();
     const tone = {
         green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
         amber: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
@@ -56,7 +57,7 @@ function Shell({ title, icon, reference, status, children }: {
         <div className={CARD}>
             <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">{BRAND_NAME}</h1>
+                    <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">{brand}</h1>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">{icon}{title}</p>
                 </div>
                 <div className="text-right">

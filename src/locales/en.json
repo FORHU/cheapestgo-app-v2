@@ -46,6 +46,8 @@
     "forgotPasswordQ": "Forgot password?",
     "createOne": "Create one",
     "passwordPlaceholder": "Your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "createAccount": "Create account",
     "lastNameShort": "Last",
     "strongPassword": "Create a strong password",
@@ -299,12 +301,12 @@
       "guestN": "GUEST {n}",
       "lastName": "Last Name *",
       "lastNamePlaceholder": "Last name",
-      "nationality": "Nationality (e.g. PH)",
+      "country": "Country",
       "no": "No",
       "passportExpiry": "Passport expiry",
       "passportNumber": "Passport number",
       "phone": "Phone",
-      "phoneNumber": "Phone number",
+      "phoneNumber": "Phone number *",
       "phonePlaceholder": "Number",
       "title": "Your details",
       "travelingForWork": "Traveling for work?",
@@ -327,7 +329,10 @@
       "sessionExpiredCharge": "Your session expired during payment. Your card was charged — please contact support with payment reference: {id}",
       "refreshingSession": "Refreshing your price hold…",
       "quoteExpiringSoon": "Your price hold expires in 5 minutes — please complete your booking soon.",
-      "required": "Required"
+      "required": "Required",
+      "emailInvalid": "Enter a valid email address",
+      "ageInvalid": "Enter an age from 0 to 17",
+      "specialRequestsTooLong": "Please keep special requests under 500 characters"
     },
     "priceChanged": {
       "title": "Price has changed",
@@ -385,7 +390,131 @@
     "whosCheckingInYou": "Who’s checking in? (Your Details)",
     "paymentDetailsTitle": "Payment Details",
     "securedPoweredBy": "Secured and Powered by <b>{brand}</b>",
-    "payNow": "Pay {amount}"
+    "payNow": "Pay {amount}",
+    "priceMoved": {
+      "title": "The price has changed",
+      "up": "This room now costs more than when you chose it.",
+      "down": "Good news — this room now costs less than when you chose it.",
+      "was": "Was",
+      "now": "Now",
+      "accept": "Continue at the new price",
+      "chooseAnother": "Choose another room",
+      "refreshing": "Checking the latest price…"
+    },
+    "unavailable": {
+      "title": "This room is no longer available",
+      "description": "Someone else booked it, or the hotel closed it, while you were deciding. You have not been charged.",
+      "chooseAnother": "Choose another room"
+    },
+    "notPayableOnline": {
+      "title": "This room can't be paid for online",
+      "description": "The hotel collects payment for this rate itself. Choose a different room to book and pay here.",
+      "chooseAnother": "Choose another room"
+    },
+    "supplierDown": {
+      "title": "We couldn't reach the hotel just now",
+      "description": "Nothing is wrong with your booking — the hotel's system didn't answer. Please try again in a moment.",
+      "retry": "Try again"
+    },
+    "settling": {
+      "title": "Confirming your booking",
+      "description": "The hotel is confirming your reservation. Please keep this page open.",
+      "doNotPayAgain": "Please don't pay again — you won't be charged twice.",
+      "checkTrips": "View my trips"
+    },
+    "needsReview": {
+      "title": "We're confirming this with the hotel",
+      "description": "Your payment hasn't been taken yet. We'll email you as soon as it's confirmed, or release the hold on your card if it isn't."
+    },
+    "failed": {
+      "title": "We couldn't complete your booking",
+      "released": "You have not been charged — the hold on your card has been released.",
+      "unknown": "We couldn't confirm whether your payment was taken. Check your trips or contact support before trying again.",
+      "tryAgain": "Try again"
+    },
+    "flight": {
+      "cardHeld": "Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing.",
+      "priceChanged": "The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare.",
+      "offerExpired": "This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again.",
+      "adultN": "ADULT {n}",
+      "infantN": "INFANT {n}",
+      "nameHint": "Enter names exactly as they appear on the passport.",
+      "contactHint": "Your e-ticket is sent here, and the airline uses this number for flight changes.",
+      "countryPlaceholder": "Select country",
+      "countryNoResults": "No countries found",
+      "passportPlaceholder": "e.g. P1234567A",
+      "whosFlying": "Who's flying?",
+      "settling": {
+        "description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued."
+      },
+      "needsReview": {
+        "title": "We're confirming this with the airline",
+        "description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed."
+      },
+      "summary": {
+        "fareDetails": "Fare details",
+        "showItineraries": "Show flight itineraries",
+        "hideItineraries": "Hide flight itineraries",
+        "departing": "Departing",
+        "arrivingAt": "Arriving at",
+        "totalPrice": "total price",
+        "noCarryOnBag": "No carry-on bag",
+        "noCheckedBag": "No checked bag"
+      },
+      "receipt": {
+        "confirmedToDestination": "Your flight to {destination} is confirmed.",
+        "allSet": "You’re all set",
+        "confirmedSentTo": "Your flight to {destination} is confirmed, flight details and receipt has been sent to {email}",
+        "approxTotal": "Approx. in {currency}",
+        "receiptSentRich": "A receipt has been sent to <b>{email}</b>.",
+        "passengersCount": "{count, plural, one {# passenger} other {# passengers}}",
+        "copyReference": "Copy",
+        "copyReferenceDone": "Copied",
+        "confirmedBadge": "Confirmed",
+        "outbound": "Outbound",
+        "return": "Return",
+        "departFrom": "Depart From",
+        "arriveAt": "Arrive At",
+        "terminal": "Terminal",
+        "refundable": "Refundable (fees may apply)",
+        "carryOnBag": "1 carry-on bag",
+        "checkedBagsCount": "{count, plural, one {# checked bag} other {# checked bags}}",
+        "loadingItinerary": "Loading your flight details…",
+        "paymentSummary": "Payment Summary",
+        "fareLine": "Fare · {count, plural, one {# passenger} other {# passengers}}",
+        "taxesAndFees": "Taxes & fees",
+        "includedLabel": "Included",
+        "paidBadge": "Paid",
+        "paymentProcessedSecurely": "Payment processed securely by Stripe.",
+        "viewBookings": "View Bookings",
+        "passengerSectionTitle": "Passengers",
+        "contact": "Contact"
+      }
+    },
+    "datePicker": {
+      "placeholder": "Select date",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "previousYear": "Previous year",
+      "nextYear": "Next year",
+      "previousYears": "Earlier years",
+      "nextYears": "Later years",
+      "chooseMonth": "Choose year and month",
+      "chooseYear": "Choose year"
+    },
+    "multiRoom": {
+      "title": "One room at a time",
+      "description": "Booking several rooms at once isn't available yet — this checkout is for a single room for your whole party. Please book rooms separately for now."
+    },
+    "bookingPage": {
+      "loading": "Checking your booking…",
+      "notFound": "We couldn't find that booking",
+      "notFoundDescription": "It may belong to a different account. Sign in with the account you booked with.",
+      "reference": "Booking reference",
+      "refresh": "Refresh status",
+      "viewTrips": "View my trips",
+      "stillWorking": "Still working on it — this page updates by itself."
+    }
   },
   "currencyPicker": {
     "label": "Select currency"
@@ -840,6 +969,64 @@
         "stays": "Stays",
         "flights": "Flights",
         "aiSearch": "AI Search"
+      },
+      "go": "GO",
+      "whosComing": "Who's coming?"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "Hotels · Flights · Golf",
+        "titleLine1": "One search.",
+        "titleLine2": "Every way to go.",
+        "subtitle": "Skip the surprise fees. Chase the sunsets.",
+        "scrollCue": "Scroll down to explore"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "STAGE 01 · HOTELS",
+          "titleLead": "Find",
+          "titleRest": "your stay.",
+          "caption": "Hotels and homes, priced per night — every fee shown before you tap book."
+        },
+        "flights": {
+          "eyebrow": "STAGE 02 · FLIGHTS",
+          "titleLead": "Then",
+          "titleRest": "get there.",
+          "caption": "Every airline, every fare class, sorted by what you actually pay."
+        },
+        "ai": {
+          "eyebrow": "STAGE 03 · AI PLANNER",
+          "titleLead": "Or",
+          "titleRest": "just ask.",
+          "caption": "Tell us the trip. We'll price the stays and routes that fit."
+        },
+        "options": {
+          "eyebrow": "ARRIVAL",
+          "titleLead": "Now",
+          "titleRest": "choose.",
+          "caption": "Stays, flights and golf, all in one place."
+        }
+      },
+      "strip": {
+        "from": "from {price}"
+      },
+      "options": {
+        "staysNote": "Hotels & homes",
+        "flightsNote": "Every carrier we reach",
+        "golf": "Golf",
+        "golfNote": "Coming soon"
+      },
+      "ask": {
+        "placeholder": "Describe the trip you want…",
+        "label": "Describe the trip you want",
+        "submit": "Ask",
+        "example1": "Five nights in Seoul under ₱40,000",
+        "example2": "Beach, direct flight, leaving Friday",
+        "example3": "Two cities in Japan, one week"
+      },
+      "altitude": {
+        "label": "Alt",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -1458,6 +1645,7 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "myTrips": "My trips",
+    "bookings": "Bookings",
     "account": "Account",
     "trips": "Trips",
     "createAccount": "Create an account",
@@ -1929,7 +2117,11 @@
       "anywhere": "somewhere amazing",
       "sometime": "sometime soon",
       "justMe": "just me",
-      "ofUs": "{count} of us"
+      "ofUs": "{count} of us",
+      "origin": "wherever you are",
+      "aDate": "a date",
+      "yourDates": "your dates",
+      "flexibleTrip": "a flexible trip"
     },
     "trendingCities": "Popular cities",
     "popularAirports": "Popular airports",
@@ -2343,7 +2535,39 @@
     "pageSubtitle": "View and manage all your bookings.",
     "viewDetails": "View Details",
     "emptyHint": "Ready to explore? Find flights and hotels at the best prices.",
-    "bookingDetails": "Booking Details"
+    "bookingDetails": "Booking Details",
+    "loadFailed": {
+      "title": "We couldn't load your trips",
+      "retry": "Try again"
+    },
+    "hotelCancel": {
+      "title": "Cancel this booking?",
+      "loading": "Checking what you'd get back…",
+      "loadError": "We couldn't check the cancellation terms. Please try again.",
+      "paid": "You paid",
+      "penalty": "Cancellation fee",
+      "refund": "You'll get back",
+      "freeUntil": "Free to cancel until {date}",
+      "feeRisesOn": "The fee goes up on {date}",
+      "fullRefund": "You'll be refunded in full.",
+      "partialRefund": "You'll get part of your payment back.",
+      "noRefund": "You won't get anything back — this rate isn't refundable at this point.",
+      "confirm": "Cancel booking",
+      "confirmRefund": "Cancel and get {amount} back",
+      "confirmNoRefund": "Cancel anyway — no refund",
+      "keep": "Keep my booking",
+      "working": "Cancelling…",
+      "changedTitle": "The amount has changed",
+      "changedBody": "Time has passed since you opened this, and what you'd get back is different. Nothing has been cancelled. Please look again.",
+      "alreadyCancelled": "This booking has already been cancelled.",
+      "notCancellable": "This booking can't be cancelled here. Please contact support.",
+      "refundRetry": "This booking is already cancelled, but the refund didn't go through. We'll try it again now.",
+      "doneRefunded": "Your booking is cancelled and your refund is on its way. It can take 3–5 business days to appear on your statement.",
+      "doneNoRefund": "Your booking is cancelled. Nothing was refunded, as the rate was non-refundable.",
+      "doneRefundFailed": "Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out.",
+      "failed": "We couldn't cancel this booking. Please try again, or contact support.",
+      "close": "Close"
+    }
   },
   "support": {
     "title": "Support",

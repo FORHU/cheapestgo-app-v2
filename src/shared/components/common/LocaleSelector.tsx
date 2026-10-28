@@ -10,6 +10,7 @@ import { SELECTOR_TONES, type SelectorChrome, type SelectorVariant } from '@/sha
 import { FlagIcon, type FlagCode } from '@/shared/components/common/FlagIcon';
 import { usePathname, useRouter } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
+import { switchLocale } from '@/i18n/localeTransition';
 
 /**
  * Menu order and labels follow the design: flag on the left, the two-letter
@@ -71,9 +72,14 @@ export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }
         setOpen(false);
         if (next === locale) return;
         // Re-render the page the visitor is on under the new prefix, so the
-        // language is in the address bar and survives being shared. `replace`
+        // language is in the address bar and survives being shared. In place, not
+        // a reload: the translations live in the locale layout, which this
+        // navigation renders again (see app/[locale]/layout.tsx). The query goes
+        // with the path, so a search is not lost by changing language. `replace`
         // rather than `push`: switching language is not a place in history.
-        router.replace(pathname, { locale: next });
+        //
+        // `switchLocale` wraps it in a cross-fade where the browser supports one.
+        switchLocale(next, () => router.replace(pathname + window.location.search, { locale: next }));
     };
 
     if (!mounted) return null;

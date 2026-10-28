@@ -1,11 +1,12 @@
-import { brandWordmark } from '@/shared/lib/brand';
+'use client';
+
+import { useBrandWordmark } from '@/shared/components/BrandProvider';
 import { BRAND } from '@/shared/lib/palette';
 
-const { head, tail } = brandWordmark(process.env.NEXT_PUBLIC_BRAND_NAME);
 // The viewBox was cut for "cheapestGo" — 131 units for 10 glyphs at this size. A
 // shorter brand keeps the same per-glyph width rather than leaving dead space to
 // the right of the name, which is inside the header's link target.
-const VIEW_WIDTH = Math.round((head.length + tail.length) * 13.1);
+const GLYPH_WIDTH = 13.1;
 
 /**
  * The wordmark, drawn as live text rather than a static asset.
@@ -16,6 +17,10 @@ const VIEW_WIDTH = Math.round((head.length + tail.length) * 13.1);
  * system sans.
  */
 export function LogoWordmark({ height = 24, className }: { height?: number; className?: string }) {
+    // The brand being shown, not the one the build was made for — the two differ on a
+    // deployment with the brand preview on, and the width has to follow the name drawn.
+    const { head, tail } = useBrandWordmark();
+    const VIEW_WIDTH = Math.round((head.length + tail.length) * GLYPH_WIDTH);
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"

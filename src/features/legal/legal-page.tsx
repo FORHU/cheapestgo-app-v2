@@ -2,6 +2,7 @@ import React from 'react';
 import { getTranslations } from 'next-intl/server';
 import { Header } from '@/shared/components/header';
 import { Footer } from '@/shared/components/footer';
+import { FlatGround } from '@/shared/components/common/FlatGround';
 import { legalSections, type LegalDocument } from './legal-sections';
 
 /**
@@ -21,6 +22,7 @@ export async function LegalPage({ doc, titleKey }: { doc: LegalDocument; titleKe
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+            <FlatGround />
             <Header />
 
             <main className="flex-1">

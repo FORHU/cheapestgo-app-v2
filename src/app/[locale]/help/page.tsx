@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { hreflangAlternates } from '@/shared/lib/seo';
 import { QUICK_QUESTIONS } from '@/features/support/lib/suggestions';
+import { Header } from '@/shared/components/header';
+import { Footer } from '@/shared/components/footer';
+import { FlatGround } from '@/shared/components/common/FlatGround';
 
 /**
  * The Help Centre.
@@ -28,26 +31,33 @@ export default async function HelpPage() {
     const about = await getTranslations('help.sections');
 
     return (
-        <main className="mx-auto max-w-3xl px-4 py-12">
-            <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">{t('pageTitle')}</h1>
-            <p className="mt-2 text-slate-600 dark:text-slate-300">{t('pageSubtitle')}</p>
+        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+            <FlatGround />
+            <Header />
 
-            {/* One order, shared with the widget: the questions people ask most, most-asked first. */}
-            <div className="mt-10 space-y-8">
-                {QUICK_QUESTIONS.map(id => (
-                    <article key={id} id={id} className="scroll-mt-24">
-                        <h2 className="text-lg font-medium text-slate-900 dark:text-white">{about(`${id}.title`)}</h2>
-                        <p className="mt-2 whitespace-pre-wrap leading-relaxed text-slate-700 dark:text-slate-300">
-                            {about(`${id}.body`)}
-                        </p>
-                    </article>
-                ))}
-            </div>
+            <main className="flex-1 mx-auto max-w-3xl px-4 py-12 w-full">
+                <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">{t('pageTitle')}</h1>
+                <p className="mt-2 text-slate-600 dark:text-slate-300">{t('pageSubtitle')}</p>
 
-            <section className="mt-12 rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
-                <h2 className="text-base font-medium text-slate-900 dark:text-white">{t('chatCta')}</h2>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('chatNote')}</p>
-            </section>
-        </main>
+                {/* One order, shared with the widget: the questions people ask most, most-asked first. */}
+                <div className="mt-10 space-y-8">
+                    {QUICK_QUESTIONS.map(id => (
+                        <article key={id} id={id} className="scroll-mt-24">
+                            <h2 className="text-lg font-medium text-slate-900 dark:text-white">{about(`${id}.title`)}</h2>
+                            <p className="mt-2 whitespace-pre-wrap leading-relaxed text-slate-700 dark:text-slate-300">
+                                {about(`${id}.body`)}
+                            </p>
+                        </article>
+                    ))}
+                </div>
+
+                <section className="mt-12 rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                    <h2 className="text-base font-medium text-slate-900 dark:text-white">{t('chatCta')}</h2>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('chatNote')}</p>
+                </section>
+            </main>
+
+            <Footer />
+        </div>
     );
 }

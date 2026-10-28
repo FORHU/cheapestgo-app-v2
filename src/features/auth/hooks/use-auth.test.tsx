@@ -10,12 +10,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const authApi = vi.hoisted(() => ({ login: vi.fn(), register: vi.fn(), logout: vi.fn() }));
+const http = vi.hoisted(() => ({ post: vi.fn() }));
 const push = vi.hoisted(() => vi.fn());
 vi.mock('../api/auth.api', () => ({ authApi }));
+vi.mock('@/shared/lib/http', () => ({ http }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('sonner', () => ({ toast }));
 
 import { useLogin, useRegister, useLogout } from './use-auth';
+import { useAuthStore as useLegacyStore } from '@/shared/auth/store';
 import { useAuthStore as useSessionStore } from '@/shared/stores/auth.store';
 
 // What api-v2 actually sends: the `users` row, snake_case, minus the hash.
@@ -31,6 +35,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('auth hooks keep the header store in step', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        useLegacyStore.setState({ user: null });
         useSessionStore.setState({ user: null });
     });
 
@@ -45,6 +50,20 @@ describe('auth hooks keep the header store in step', () => {
         }));
     });
 
+    it('modal sign-in keeps the current page and closes on success', async () => {
+        const onSuccess = vi.fn();
+        authApi.login.mockResolvedValue({ user: apiUser });
+        const { result } = renderHook(
+            () => useLogin({ redirectAfterLogin: false, onSuccess }),
+            { wrapper },
+        );
+
+        result.current.mutate({ email: 'billy@example.com', password: 'secret123' });
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+        expect(push).not.toHaveBeenCalled();
+    });
+
     it('signing up reaches it', async () => {
         authApi.register.mockResolvedValue({ user: apiUser });
         const { result } = renderHook(() => useRegister(), { wrapper });
@@ -55,15 +74,39 @@ describe('auth hooks keep the header store in step', () => {
     });
 
     it('signing out clears it', async () => {
+        useLegacyStore.setState({
+            user: { id: 'u1', email: 'billy@example.com', role: 'user' },
+        });
         useSessionStore.setState({
             user: { id: 'u1', email: 'billy@example.com', firstName: 'Billy', lastName: 'Busilan', role: 'user' },
         });
-        authApi.logout.mockResolvedValue({ success: true });
+        http.post.mockResolvedValue({ success: true });
         const { result } = renderHook(() => useLogout(), { wrapper });
 
         result.current.mutate();
 
         await waitFor(() => expect(useSessionStore.getState().user).toBeNull());
+        expect(useLegacyStore.getState().user).toBeNull();
+        expect(http.post).toHaveBeenCalledWith('/auth/logout', {});
+        expect(push).toHaveBeenCalledWith('/');
+    });
+
+    it('keeps the account signed in and reports a failed sign-out', async () => {
+        useLegacyStore.setState({
+            user: { id: 'u1', email: 'billy@example.com', role: 'user' },
+        });
+        useSessionStore.setState({
+            user: { id: 'u1', email: 'billy@example.com', firstName: 'Billy', lastName: 'Busilan', role: 'user' },
+        });
+        http.post.mockRejectedValue(new Error('Network unavailable'));
+        const { result } = renderHook(() => useLogout(), { wrapper });
+
+        result.current.mutate();
+
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Network unavailable'));
+        expect(useSessionStore.getState().user).not.toBeNull();
+        expect(useLegacyStore.getState().user).not.toBeNull();
+        expect(push).not.toHaveBeenCalled();
     });
 });
 

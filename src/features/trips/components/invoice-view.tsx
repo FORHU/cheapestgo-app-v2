@@ -3,11 +3,12 @@
 import { useTranslations } from 'next-intl';
 import { Suspense, useEffect, useState } from 'react';
 import { Download, Loader2, Printer } from 'lucide-react';
-import { BRAND_NAME } from '@/shared/lib/brand';
+import { useBrandName } from '@/shared/components/BrandProvider';
 import { useParams, useSearchParams } from 'next/navigation';
 import { env } from '@/shared/lib/env';
 import { useAuthStore } from '@/shared/auth/store';
 import { http } from '@/shared/lib/http';
+import { fetchBooking } from '@/features/trips/lib/bookings-api';
 import { formatCurrency } from '@/shared/lib/format';
 import type { HotelBooking, FlightBooking } from '@/shared/types';
 import { nightsBetween } from '@/shared/lib/stay';
@@ -39,6 +40,7 @@ function fmtDate(dateStr: string): string {
  */
 function ReceiptActions() {
     const tAll = useTranslations();
+    const brand = useBrandName();
     const params       = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const bookingId    = params?.id ?? '';
@@ -61,7 +63,7 @@ function ReceiptActions() {
             const url = URL.createObjectURL(await res.blob());
             const a   = document.createElement('a');
             a.href     = url;
-            a.download = `${BRAND_NAME}-Receipt-INV-${bookingId.slice(0, 8).toUpperCase()}.pdf`;
+            a.download = `${brand}-Receipt-INV-${bookingId.slice(0, 8).toUpperCase()}.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -115,6 +117,7 @@ interface InvoiceReceiptProps {
 
 function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps) {
     const tAll = useTranslations();
+    const brand = useBrandName();
     const invoiceNumber = `INV-${booking.id.slice(0, 8).toUpperCase()}`;
     const issuedDate = new Date(booking.created_at).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
@@ -132,7 +135,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
             {/* Header */}
             <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">{BRAND_NAME}</h1>
+                    <h1 className="text-2xl font-extrabold text-indigo-600 tracking-tight">{brand}</h1>
                     <p className="text-xs text-slate-400 mt-0.5">{tAll('invoice.yourTravelPartner')}</p>
                 </div>
                 <div className="text-right">
@@ -286,7 +289,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
             {/* Footer */}
             <div className="px-8 pb-8">
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-xl px-5 py-4 text-xs text-slate-400 text-center">
-                    Thank you for booking with {BRAND_NAME}. For support, contact{' '}
+                    Thank you for booking with {brand}. For support, contact{' '}
                     <span className="text-indigo-500">crm@myfarebox.com</span>
                 </div>
             </div>
@@ -315,8 +318,9 @@ function InvoicePageContent() {
         if (isLoading) return;
 
         setIsFetching(true);
-        http.get<{ booking: AnyBooking }>(`/bookings/${id}?type=${type}`)
-            .then(({ booking: b }) => {
+        // `type` is a hint from the link, not a filter: a flight opened without it must still be found.
+        fetchBooking(http, id)
+            .then((b) => {
                 setBooking(b);
                 setFetchError('');
             })
@@ -384,7 +388,6 @@ export function InvoiceView() {
                     header, footer, nav,
                     [data-react-scan], [id*="react-scan"],
                     [class*="react-scan"], [class*="fps"],
-                    [class*="GlobalSparkle"], [class*="sparkle"],
                     [class*="pwa"], [class*="PWA"],
                     [class*="AuthModal"], [class*="Toaster"],
                     [style*="position: fixed"], [style*="position:fixed"] {

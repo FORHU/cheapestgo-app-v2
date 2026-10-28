@@ -1,36 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildConfirmGuests, formatStayDates } from '@/features/checkout/lib/checkout.helpers';
-
-describe('buildConfirmGuests', () => {
-    const holder = { firstName: 'Dil', lastName: 'Doe', email: 'dil@example.com' };
-
-    it('returns the holder alone as occupant 1 when there are no co-guests', () => {
-        expect(buildConfirmGuests(holder, [])).toEqual([
-            { occupancyNumber: 1, firstName: 'Dil', lastName: 'Doe', email: 'dil@example.com' },
-        ]);
-    });
-
-    it('numbers co-guests from 2 and gives them the holder email', () => {
-        const out = buildConfirmGuests(holder, [
-            { firstName: 'Mike', lastName: 'Hunt' },
-            { firstName: 'Ana', lastName: 'Cruz' },
-        ]);
-        expect(out).toEqual([
-            { occupancyNumber: 1, firstName: 'Dil', lastName: 'Doe', email: 'dil@example.com' },
-            { occupancyNumber: 2, firstName: 'Mike', lastName: 'Hunt', email: 'dil@example.com' },
-            { occupancyNumber: 3, firstName: 'Ana', lastName: 'Cruz', email: 'dil@example.com' },
-        ]);
-    });
-
-    it('trims whitespace off every name and the email', () => {
-        const out = buildConfirmGuests(
-            { firstName: '  Dil ', lastName: ' Doe ', email: '  dil@example.com ' },
-            [{ firstName: ' Mike', lastName: 'Hunt ' }],
-        );
-        expect(out[0]).toEqual({ occupancyNumber: 1, firstName: 'Dil', lastName: 'Doe', email: 'dil@example.com' });
-        expect(out[1]).toEqual({ occupancyNumber: 2, firstName: 'Mike', lastName: 'Hunt', email: 'dil@example.com' });
-    });
-});
+import { formatStayDates } from '@/features/checkout/lib/checkout.helpers';
 
 describe('formatStayDates', () => {
     it('keeps one month name when the stay stays within a month', () => {

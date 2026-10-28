@@ -25,6 +25,17 @@ export default defineConfig({
             NEXT_PUBLIC_SITE_URL:               'http://localhost:3000',
             NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_stub',
         },
+        /**
+         * next-intl ships ESM that imports `next/navigation` with no extension, which Node's
+         * resolver refuses — so `@/i18n/navigation` (createNavigation) cannot be imported in a
+         * test unless Vitest processes the package itself. The setting next-intl documents:
+         * https://next-intl.dev/docs/environments/testing
+         */
+        server: {
+            deps: {
+                inline: ['next-intl'],
+            },
+        },
     },
     resolve: {
         alias: {

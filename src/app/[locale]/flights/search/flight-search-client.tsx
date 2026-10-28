@@ -24,6 +24,9 @@ import {
     DEFAULT_FLIGHT_FILTERS, activeFilterCount as countActiveFilters, applyFlightFilters, type FlightFilterState,
 } from '@/features/flights/lib/filter-offers';
 import type { FlightOffer } from '@/shared/types';
+import { flightCheckoutQuery } from '@/features/flights/lib/flight-checkout-query';
+import { CURRENCIES } from '@/shared/components/common/CurrencySelector';
+import { useUserCurrency } from '@/shared/stores/search.store';
 
 // ─── City name → IATA code lookup ─────────────────────────────────────────────
 const CITY_TO_IATA: Record<string, string> = {
@@ -91,7 +94,7 @@ const PANEL_FADE = { duration: 0.18 };
 
 /**
  * The page ground — slate-100, as the hotel list view has it, or the landing canvas in the dark — painted on the
- * app shell by `body.flat-ground` (globals.css) in place of v1's graph paper.
+ * app shell by `body.flat-ground` (globals.css) in place of the shell's own background.
  *
  * The sticky bar's strip paints the same ground so the bar floats on it rather than
  * on a band of its own. Dark is held to the viewport, as the shell's is, so the strip
@@ -169,10 +172,15 @@ export function FlightSearchClient() {
     const tAll = useTranslations();
     const sp = useSearchParams();
     const router = useRouter();
+    // Checkout opens in the currency the selector shows — but only one it can charge in. An
+    // account preference can name one the selector's menu does not list; the airline's own
+    // currency is the safe answer for that.
+    const userCurrency = useUserCurrency();
+    const checkoutCurrency = CURRENCIES.some(c => c.code === userCurrency) ? userCurrency : undefined;
     const { theme, toggleTheme } = useTheme();
 
-    // v1's graph paper and sparkles live on the app shell, out of this page's
-    // reach; the body class swaps them for the plain ground. See `GROUND`.
+    // The app shell's background lives out of this page's reach; the body class
+    // swaps it for the plain ground. See `GROUND`.
     useEffect(() => {
         document.body.classList.add('flat-ground');
         return () => document.body.classList.remove('flat-ground');
@@ -273,25 +281,14 @@ export function FlightSearchClient() {
             children: params.children,
             infants: params.infants,
         }));
-        const qs = new URLSearchParams();
-        qs.set('offerId', chosen.offerId);
-        // Checkout reads the trip from the URL, never from sessionStorage, so with the
-        // offer id alone it drew an empty route and a USD 0 total. The server still
-        // prices the booking from the offer; these are what the page shows meanwhile.
-        const first = chosen.segments?.[0];
-        const last  = chosen.segments?.[chosen.segments.length - 1];
-        qs.set('totalAmount', String(chosen.price?.total ?? 0));
-        qs.set('currency', chosen.price?.currency ?? 'USD');
-        if (first?.origin)                    qs.set('origin', first.origin);
-        if (last?.destination)                qs.set('destination', last.destination);
-        if (first?.departure?.time)           qs.set('departureDate', first.departure.time.slice(0, 10));
-        if (first?.cabinClass)                qs.set('cabin', first.cabinClass);
-        qs.set('adults', String(params.adults));
-        if (bundleHotelId) {
-            qs.set('bundleHotelId', bundleHotelId);
-        }
+        const qs = flightCheckoutQuery(
+            chosen,
+            { adults: Number(params.adults) || 1, children: Number(params.children) || 0, infants: Number(params.infants) || 0 },
+            bundleHotelId,
+            checkoutCurrency,
+        );
         router.push(`/flights/book?${qs.toString()}`);
-    }, [router, params.adults, params.children, params.infants, bundleHotelId]);
+    }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency]);
 
     // ─── Search effect ─────────────────────────────────────────────────────────
     useEffect(() => {

@@ -46,6 +46,8 @@
     "forgotPasswordQ": "パスワードをお忘れですか？",
     "createOne": "アカウントを作成",
     "passwordPlaceholder": "パスワード",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを非表示",
     "createAccount": "アカウントを作成",
     "lastNameShort": "姓",
     "strongPassword": "強力なパスワードを作成してください",
@@ -299,12 +301,12 @@
       "guestN": "ゲスト {n}",
       "lastName": "姓 *",
       "lastNamePlaceholder": "姓",
-      "nationality": "国籍（例：PH）",
+      "country": "国",
       "no": "いいえ",
       "passportExpiry": "パスポート有効期限",
       "passportNumber": "パスポート番号",
       "phone": "電話番号",
-      "phoneNumber": "電話番号",
+      "phoneNumber": "電話番号 *",
       "phonePlaceholder": "番号",
       "title": "お客様情報",
       "travelingForWork": "出張ですか？",
@@ -327,7 +329,10 @@
       "sessionExpiredCharge": "支払い中にセッションの有効期限が切れました。カードは請求されています — サポートまでお問い合わせください（支払い参照番号：{id}）",
       "refreshingSession": "料金を更新中です…",
       "quoteExpiringSoon": "料金の保証は5分後に終了します — 早めにご予約を完了してください。",
-      "required": "必須"
+      "required": "必須",
+      "emailInvalid": "有効なメールアドレスを入力してください",
+      "ageInvalid": "0〜17歳の年齢を入力してください",
+      "specialRequestsTooLong": "特別なご要望は500文字以内でご入力ください"
     },
     "priceChanged": {
       "title": "料金が変更されました",
@@ -385,7 +390,131 @@
     "whosCheckingInYou": "ご宿泊者はどなたですか？（お客様情報）",
     "paymentDetailsTitle": "お支払い情報",
     "securedPoweredBy": "<b>{brand}</b>による安全な決済",
-    "payNow": "{amount}を支払う"
+    "payNow": "{amount}を支払う",
+    "priceMoved": {
+      "title": "料金が変更されました",
+      "up": "このお部屋の料金は、選択時より高くなっています。",
+      "down": "このお部屋の料金は、選択時より安くなりました。",
+      "was": "変更前",
+      "now": "変更後",
+      "accept": "新しい料金で続ける",
+      "chooseAnother": "別のお部屋を選ぶ",
+      "refreshing": "最新の料金を確認しています…"
+    },
+    "unavailable": {
+      "title": "このお部屋はご利用いただけなくなりました",
+      "description": "検討中に他のお客様が予約したか、ホテルが販売を終了しました。お支払いは発生していません。",
+      "chooseAnother": "別のお部屋を選ぶ"
+    },
+    "notPayableOnline": {
+      "title": "このお部屋はオンラインでお支払いできません",
+      "description": "このプランはホテルが直接お支払いを受け付けます。こちらで予約・お支払いするには、別のお部屋をお選びください。",
+      "chooseAnother": "別のお部屋を選ぶ"
+    },
+    "supplierDown": {
+      "title": "ただいまホテルに接続できません",
+      "description": "ご予約に問題はありません。ホテルのシステムから応答がありませんでした。しばらくしてからもう一度お試しください。",
+      "retry": "もう一度試す"
+    },
+    "settling": {
+      "title": "ご予約を確認しています",
+      "description": "ホテルが予約を確定しています。このページを閉じないでください。",
+      "doNotPayAgain": "再度お支払いいただく必要はありません。二重に請求されることはありません。",
+      "checkTrips": "マイトリップを見る"
+    },
+    "needsReview": {
+      "title": "ホテルに予約を確認しています",
+      "description": "お支払いはまだ請求されていません。予約が確定次第メールでお知らせします。確定しない場合は、カードの与信を解除します。"
+    },
+    "failed": {
+      "title": "ご予約を完了できませんでした",
+      "released": "お支払いは行われていません。カードの与信は解除されました。",
+      "unknown": "お支払いが処理されたかどうかを確認できませんでした。もう一度お試しになる前に、マイトリップをご確認いただくか、サポートまでお問い合わせください。",
+      "tryAgain": "もう一度試す"
+    },
+    "flight": {
+      "cardHeld": "現在はカードの与信のみを行い、航空会社が航空券を確定した時点で請求されます。確定できなかった場合は与信が解除され、料金は発生しません。",
+      "priceChanged": "航空会社が確定する前に運賃が{was}から{now}に変更されました。料金は請求されておらず、カードの与信は解除されています。新しい運賃で予約するには、もう一度お客様情報を送信してください。",
+      "offerExpired": "航空会社が確定する前にこの運賃は売り切れました。料金は請求されておらず、カードの与信は解除されています。もう一度検索してください。",
+      "adultN": "大人 {n}",
+      "infantN": "幼児 {n}",
+      "nameHint": "お名前はパスポートの記載どおりに入力してください。",
+      "contactHint": "eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。",
+      "countryPlaceholder": "国を選択",
+      "countryNoResults": "該当する国がありません",
+      "passportPlaceholder": "例：P1234567A",
+      "whosFlying": "ご搭乗者はどなたですか？",
+      "settling": {
+        "description": "航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。"
+      },
+      "needsReview": {
+        "title": "航空会社に予約を確認しています",
+        "description": "担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。"
+      },
+      "summary": {
+        "fareDetails": "運賃の詳細",
+        "showItineraries": "フライト日程を表示",
+        "hideItineraries": "フライト日程を非表示",
+        "departing": "出発",
+        "arrivingAt": "到着地",
+        "totalPrice": "合計金額",
+        "noCarryOnBag": "機内持ち込み手荷物なし",
+        "noCheckedBag": "預け入れ手荷物なし"
+      },
+      "receipt": {
+        "confirmedToDestination": "{destination}行きのフライトが確定しました。",
+        "allSet": "ご予約が完了しました",
+        "confirmedSentTo": "{destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました",
+        "approxTotal": "{currency}換算（概算）",
+        "receiptSentRich": "領収書を<b>{email}</b>宛に送信しました。",
+        "passengersCount": "{count}名",
+        "copyReference": "コピー",
+        "copyReferenceDone": "コピーしました",
+        "confirmedBadge": "確定",
+        "outbound": "往路",
+        "return": "復路",
+        "departFrom": "出発地",
+        "arriveAt": "到着地",
+        "terminal": "ターミナル",
+        "refundable": "払い戻し可能（手数料が発生する場合があります）",
+        "carryOnBag": "機内持ち込み手荷物1個",
+        "checkedBagsCount": "受託手荷物{count}個",
+        "loadingItinerary": "フライト詳細を読み込んでいます…",
+        "paymentSummary": "お支払い内容",
+        "fareLine": "運賃 · {count}名",
+        "taxesAndFees": "税金・諸費用",
+        "includedLabel": "込み",
+        "paidBadge": "支払い済み",
+        "paymentProcessedSecurely": "お支払いはStripeにより安全に処理されました。",
+        "viewBookings": "予約を見る",
+        "passengerSectionTitle": "搭乗者",
+        "contact": "連絡先"
+      }
+    },
+    "datePicker": {
+      "placeholder": "日付を選択",
+      "previousMonth": "前の月",
+      "nextMonth": "次の月",
+      "previousYear": "前の年",
+      "nextYear": "次の年",
+      "previousYears": "前の年代",
+      "nextYears": "次の年代",
+      "chooseMonth": "年と月を選択",
+      "chooseYear": "年を選択"
+    },
+    "multiRoom": {
+      "title": "一度に1部屋ずつ",
+      "description": "複数のお部屋を一度に予約する機能はまだご利用いただけません。このお支払いは、ご利用人数全員で1部屋分です。お部屋は別々にご予約ください。"
+    },
+    "bookingPage": {
+      "loading": "ご予約を確認しています…",
+      "notFound": "ご予約が見つかりません",
+      "notFoundDescription": "別のアカウントのご予約かもしれません。ご予約時のアカウントでログインしてください。",
+      "reference": "予約番号",
+      "refresh": "状況を更新",
+      "viewTrips": "マイトリップを見る",
+      "stillWorking": "処理中です。このページは自動的に更新されます。"
+    }
   },
   "currencyPicker": {
     "label": "通貨を選択"
@@ -840,6 +969,64 @@
         "stays": "宿泊",
         "flights": "フライト",
         "aiSearch": "AI 検索"
+      },
+      "go": "出発",
+      "whosComing": "ご宿泊者はどなたですか？"
+    },
+    "journey": {
+      "hero": {
+        "kicker": "ホテル · フライト · ゴルフ",
+        "titleLine1": "ひとつの検索。",
+        "titleLine2": "あらゆる行き方。",
+        "subtitle": "思わぬ手数料はなし。夕日を追いかけよう。",
+        "scrollCue": "スクロールして探索"
+      },
+      "stages": {
+        "stays": {
+          "eyebrow": "ステージ01 · ホテル",
+          "titleLead": "宿を",
+          "titleRest": "探そう。",
+          "caption": "ホテルも民泊も、1泊あたりの料金で。予約ボタンを押す前に、すべての手数料を表示します。"
+        },
+        "flights": {
+          "eyebrow": "ステージ02 · フライト",
+          "titleLead": "そして、",
+          "titleRest": "旅立とう。",
+          "caption": "全航空会社・全運賃クラスを、実際に支払う金額順に並べ替え。"
+        },
+        "ai": {
+          "eyebrow": "ステージ03 · AIプランナー",
+          "titleLead": "または、",
+          "titleRest": "聞くだけ。",
+          "caption": "旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。"
+        },
+        "options": {
+          "eyebrow": "到着",
+          "titleLead": "さあ、",
+          "titleRest": "選ぼう。",
+          "caption": "宿泊、フライト、ゴルフをひとつの場所で。"
+        }
+      },
+      "strip": {
+        "from": "{price}〜"
+      },
+      "options": {
+        "staysNote": "ホテル＆宿泊施設",
+        "flightsNote": "取り扱いの全航空会社",
+        "golf": "ゴルフ",
+        "golfNote": "近日公開"
+      },
+      "ask": {
+        "placeholder": "ご希望の旅を教えてください…",
+        "label": "ご希望の旅を教えてください",
+        "submit": "聞く",
+        "example1": "ソウル5泊、₱40,000以内",
+        "example2": "ビーチ、直行便、金曜出発",
+        "example3": "日本の2都市、1週間"
+      },
+      "altitude": {
+        "label": "高度",
+        "unit": "ft"
       }
     },
     "recentlyViewed": {
@@ -1458,6 +1645,7 @@
     "signIn": "ログイン",
     "signOut": "ログアウト",
     "myTrips": "マイトリップ",
+    "bookings": "予約",
     "account": "アカウント",
     "trips": "旅行",
     "createAccount": "アカウントを作成",
@@ -1929,7 +2117,11 @@
       "anywhere": "どこか素敵な場所",
       "sometime": "いつか近いうちに",
       "justMe": "ひとり",
-      "ofUs": "{count}人"
+      "ofUs": "{count}人",
+      "origin": "今いる場所",
+      "aDate": "好きな日",
+      "yourDates": "ご希望の日程",
+      "flexibleTrip": "柔軟な旅"
     },
     "trendingCities": "人気の都市",
     "popularAirports": "人気の空港",
@@ -2343,7 +2535,39 @@
     "pageSubtitle": "すべてのご予約を確認・管理できます。",
     "viewDetails": "詳細を見る",
     "emptyHint": "旅の準備はできましたか？ 最安値の航空券とホテルを探しましょう。",
-    "bookingDetails": "予約の詳細"
+    "bookingDetails": "予約の詳細",
+    "loadFailed": {
+      "title": "旅行情報を読み込めませんでした",
+      "retry": "もう一度試す"
+    },
+    "hotelCancel": {
+      "title": "このご予約をキャンセルしますか？",
+      "loading": "返金額を確認しています…",
+      "loadError": "キャンセル条件を確認できませんでした。もう一度お試しください。",
+      "paid": "お支払い金額",
+      "penalty": "キャンセル料",
+      "refund": "返金額",
+      "freeUntil": "{date}まで無料でキャンセルできます",
+      "feeRisesOn": "{date}からキャンセル料が上がります",
+      "fullRefund": "全額返金されます。",
+      "partialRefund": "お支払い金額の一部が返金されます。",
+      "noRefund": "返金はありません。現時点では返金不可の料金です。",
+      "confirm": "予約をキャンセル",
+      "confirmRefund": "キャンセルして{amount}の返金を受ける",
+      "confirmNoRefund": "返金なしでキャンセル",
+      "keep": "予約を維持する",
+      "working": "キャンセルしています…",
+      "changedTitle": "金額が変更されました",
+      "changedBody": "画面を開いてから時間が経ち、返金額が変わりました。まだキャンセルされていません。もう一度ご確認ください。",
+      "alreadyCancelled": "このご予約はすでにキャンセル済みです。",
+      "notCancellable": "このご予約はここではキャンセルできません。サポートまでお問い合わせください。",
+      "refundRetry": "このご予約はキャンセル済みですが、返金が完了していません。今から再度処理します。",
+      "doneRefunded": "ご予約をキャンセルし、返金手続きを行いました。明細への反映には3〜5営業日かかる場合があります。",
+      "doneNoRefund": "ご予約をキャンセルしました。返金不可の料金のため、返金はありません。",
+      "doneRefundFailed": "ご予約はキャンセルされましたが、返金が完了しませんでした。サポートまでご連絡ください。対応いたします。",
+      "failed": "ご予約をキャンセルできませんでした。もう一度お試しいただくか、サポートまでお問い合わせください。",
+      "close": "閉じる"
+    }
   },
   "support": {
     "title": "サポート",

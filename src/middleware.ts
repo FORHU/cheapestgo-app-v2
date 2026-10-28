@@ -1,6 +1,13 @@
 import createMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
 import { routing } from '@/i18n/routing';
+import {
+    BRAND_PREVIEW_COOKIE,
+    BRAND_PREVIEW_PARAM,
+    BRAND_PREVIEW_RESET,
+    brandPreviewEnabled,
+    parsePreviewBrand,
+} from '@/shared/lib/brand';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -26,7 +33,54 @@ const SESSION_COOKIES = ['__Host-access_token', 'access_token'] as const;
  */
 const STAFF_HOST = process.env.NEXT_PUBLIC_STAFF_HOST?.trim().toLowerCase() || undefined;
 
+const BRAND_PREVIEW_MAX_AGE = 60 * 60 * 24 * 30;
+
+/**
+ * `?brand_preview=airanggo` on a deployment with the brand preview on: remember the pick in a
+ * cookie, then send the visitor to the same page without the parameter so the address they share
+ * is the page, not the switch.
+ *
+ * Returns null — and does nothing — when the preview is off. That is the whole production story:
+ * a link carrying the parameter is an ordinary link there.
+ */
+function brandPreviewResponse(request: NextRequest): NextResponse | null {
+    if (!brandPreviewEnabled()) return null;
+
+    const asked = request.nextUrl.searchParams.get(BRAND_PREVIEW_PARAM);
+    if (asked === null) return null;
+
+    const clean = request.nextUrl.clone();
+    clean.searchParams.delete(BRAND_PREVIEW_PARAM);
+    const response = NextResponse.redirect(clean);
+
+    if (asked.trim().toLowerCase() === BRAND_PREVIEW_RESET) {
+        response.cookies.delete(BRAND_PREVIEW_COOKIE);
+        return response;
+    }
+
+    // Only a brand the preview offers is stored. Anything else is dropped from the address and
+    // otherwise ignored: the cookie's value ends up in page copy.
+    const brand = parsePreviewBrand(asked);
+    if (brand) {
+        response.cookies.set({
+            name:     BRAND_PREVIEW_COOKIE,
+            value:    brand,
+            path:     '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure:   clean.protocol === 'https:',
+            maxAge:   BRAND_PREVIEW_MAX_AGE,
+        });
+    }
+    return response;
+}
+
 export default function middleware(request: NextRequest) {
+    // Before the admin check on purpose: the switch is the same for staff, and a signed-out
+    // visitor to /admin is sent on to the login page by the next request, as before.
+    const preview = brandPreviewResponse(request);
+    if (preview) return preview;
+
     const { pathname } = request.nextUrl;
     // The requested hostname, port stripped — `host` carries one in development.
     const host = request.headers.get('host')?.split(':')[0]?.toLowerCase() ?? '';
