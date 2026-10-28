@@ -21,62 +21,30 @@ import { PropertyDescription } from '@/features/hotels/components/property-descr
 import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
+import { StaysMaintenanceNotice } from '@/features/hotels/components/stays-maintenance-notice';
 import { useUserCurrency } from '@/stores/searchStore';
 import { checkoutMoney, checkoutExpectedTotal } from '@/features/hotels/lib/checkout-money';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
 import { formatCurrency } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
-import type { RoomOption, AmenityGroup, DetailSection } from '@/features/hotels/types/property.types';
+import type { PropertyApiResponse as SharedPropertyApiResponse } from '@/features/hotels/types/property.types';
 import { resolveStayDates } from '@/shared/lib/stay';
 import { BRAND, brandTheme } from '@/shared/lib/palette';
 import { BRAND_STROKE, BrandStrokeDefs } from '@/shared/components/BrandStroke';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface HotelContent {
-    hotel_id: string;
-    name: string | null;
-    address: string | null;
-    city: string | null;
-    country: string | null;
-    star_rating: number | null;
-    description: string | null;
-    images: string[];
-    amenities: string[] | null;
-    lat: number | null;
-    lng: number | null;
-    /**
-     * Front-desk hours, under both of the names suppliers give them.
-     *
-     * Optional because it is not certain every supplier sends either — the
-     * description panel draws the IN / OUT pair only once one arrives, rather
-     * than printing a plausible 3:00 PM nobody has confirmed.
-     */
-    check_in_time?: string | null;
-    check_out_time?: string | null;
-    check_in?: string | null;
-    check_out?: string | null;
-    /** ETG-sourced extras for the room-detail modal + description panel. */
-    amenityGroups?: AmenityGroup[];
-    roomPolicySections?: DetailSection[];
-    additionalInfo?: string;
-}
-
-interface PropertyApiResponse {
-    content?: HotelContent;
-    reviews?: { rating: number | string | null; reviews_count: number } | null;
-    reviewItems?: Array<{
-        reviewer_name: string | null;
-        score: number | string | null;
-        pros: string | null;
-        cons: string | null;
-        headline: string | null;
-        country: string | null;
-    }>;
-    rooms?: RoomOption[];
-    error?: string;
-}
+/**
+ * The property endpoint's envelope and content, both from the shared types.
+ *
+ * This file used to hand-copy both, and the copies had drifted: adding `maintenance`
+ * compiled against the shared envelope and then failed here, because this file was
+ * reading its own. The shared `HotelContent` now carries the `check_in`/`check_out`
+ * fallback pair this page needs, and `amenities` is normalised at the one place below
+ * that reads it.
+ */
+type PropertyApiResponse = SharedPropertyApiResponse;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -269,6 +237,8 @@ function PropertyContent() {
 
     const content      = data?.content;
     const rooms        = data?.rooms ?? [];
+    /** Stays are off sale — the rooms are absent for our reason, not the hotel's. */
+    const maintenance  = data?.maintenance === true;
     const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
     const reviewScore  = Number(data?.reviews?.rating ?? 0);
     const selectedRoom = selectedOffer?.room ?? null;
@@ -299,7 +269,10 @@ function PropertyContent() {
     const heroLoaded = !!heroShown && loadedHeroSrc === heroShown;
     // Whole list, not the first five: the description panel draws the row the
     // design shows and keeps the rest behind its own "See all amenities".
-    const amenities    = content?.amenities ?? [];
+    // `hotel_content.amenities` is a JSON column, so the row is not guaranteed to hold an
+    // array. api-v2 guards it the same way (`Array.isArray(row.amenities) ? … : []`) and
+    // this matches that rather than guessing at how a bare string would be delimited.
+    const amenities    = Array.isArray(content?.amenities) ? content.amenities : [];
 
     const coordinates  = (content?.lat && content?.lng) ? { lat: content.lat, lng: content.lng } : undefined;
 
@@ -641,6 +614,14 @@ function PropertyContent() {
                     cards rather than a different one per room. The amenity list
                     is the hotel's for the same reason, and is read only by rates
                     that carry none of their own. */}
+                {/* In place of the room cards, not above them: during maintenance there are
+                    no rates to pick, and an empty rate list beneath a notice reads as a hotel
+                    with nothing left rather than a supplier we have stopped calling. */}
+                {maintenance ? (
+                    <section id="rooms-section" className="min-w-0">
+                        <StaysMaintenanceNotice compact />
+                    </section>
+                ) : (
                 <RoomSelection
                     id="rooms-section"
                     className="min-w-0"
@@ -659,6 +640,7 @@ function PropertyContent() {
                         prev => prev?.rate.offerId === offer.rate.offerId ? null : offer,
                     )}
                 />
+                )}
 
                 {/* ── Nearby places ────────────────────────────────────────── */}
                 {coordinates && (

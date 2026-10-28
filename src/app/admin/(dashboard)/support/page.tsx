@@ -1,10 +1,13 @@
 import { SupportDeskView } from '@/features/support/components/SupportDeskView';
 
 /**
- * The Support Desk.
+ * The inbox as an Admin reaches it, inside the back office.
  *
- * Reachable by a Support Agent as well as an admin: an Agent answers chats and can do nothing
- * else in /admin, so the API decides per action rather than shutting them out at the door.
+ * Admins only. This used to claim a Support Agent could reach it too — the API does decide
+ * per action, but the `(dashboard)` layout around this page has always required `admin` and
+ * redirected everyone else, so an Agent sent here was bounced to the storefront and never
+ * saw an inbox at all. An Agent's door is `/admin/desk`, which renders the same view under a
+ * gate that admits them.
  */
 export default function SupportDeskPage() {
     return (

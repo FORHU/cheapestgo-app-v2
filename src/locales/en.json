@@ -752,6 +752,13 @@
     "fromPrice": "From {price}",
     "perNight": "/night",
     "pricesMayVary": "prices may vary",
+    "maintenance": {
+      "title": "Hotel bookings are paused",
+      "description": "Our accommodation supplier isn't returning availability right now. Nothing on your end caused this, and we're working to bring stays back.",
+      "note": "Flights are unaffected",
+      "flightsCta": "Search flights",
+      "homeCta": "Back to home"
+    },
     "bookNow": "Book Now",
     "guestFavorite": "Guest Favorite",
     "headerDefault": "Top Hotel Deals",

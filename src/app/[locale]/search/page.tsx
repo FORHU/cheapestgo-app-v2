@@ -10,6 +10,7 @@ import Image from 'next/image';
 import type { MappableProperty, ApiHotel } from '@/shared/components/map/types';
 import { toMappable, applyContentPatch, isWithinKm, type ContentPatch } from '@/shared/components/map/toMappable';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
+import { StaysMaintenanceNotice } from '@/features/hotels/components/stays-maintenance-notice';
 import { HotelFilters, type HotelFiltersState } from '@/features/hotels/components/hotel-filters';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
 import { env } from '@/shared/lib/env';
@@ -593,6 +594,12 @@ function HotelSearchContent() {
      * Distinct from `status === 'error'`, which means we have nothing at all to show.
      */
     const [pricesUnavailable, setPricesUnavailable] = useState(false);
+    /**
+     * Stays are off sale. Distinct from an empty result and from `pricesUnavailable`:
+     * those are facts about a destination, this is a fact about us, and only this one
+     * should replace the page rather than annotate it.
+     */
+    const [maintenance, setMaintenance]         = useState(false);
     const [viewMode, setViewMode]               = useState<ViewMode>('map');
     const [sortBy, setSortBy]                   = useState<SortValue>('recommended');
     const [selectedId, setSelectedId]           = useState<string | null>(null);
@@ -759,6 +766,13 @@ function HotelSearchContent() {
                     const json = t.startsWith('data: ') ? t.slice(6) : t;
                     try {
                         const chunk = JSON.parse(json);
+                        // Sent instead of a stream when stays are off sale. Handled before the
+                        // list is read: it carries no hotels, and treating it as an empty
+                        // answer would render "nothing found" for a city that is fine.
+                        if (chunk.type === 'maintenance') {
+                            if (!cancelled) { setMaintenance(true); setStatus('done'); }
+                            return;
+                        }
                         const list: ApiHotel[] = Array.isArray(chunk.data) ? chunk.data : Array.isArray(chunk.hotels) ? chunk.hotels : [];
                         if ((chunk.type === 'instant' || chunk.type === 'hotels') && list.length > 0) {
                             accumulated += list.length;
@@ -1298,6 +1312,20 @@ function HotelSearchContent() {
     // that exit-then-enter rather than overlapping them — list is normal
     // document flow and map is a fixed `100dvh` shell, and cross-fading them
     // concurrently would fight over the viewport rather than hand off cleanly.
+    // Stays are off sale: the notice replaces both views rather than sitting above an empty
+    // one. A map with no pins or a list with no cards still reads as "we looked and found
+    // nothing here", which is the one thing this is not.
+    if (maintenance) {
+        return (
+            <div
+                className={theme === 'dark' ? 'dark flex flex-col min-h-screen' : 'flex flex-col min-h-screen'}
+                style={{ background: LIST_BG[theme], color: brandTheme(theme).text }}
+            >
+                <StaysMaintenanceNotice />
+            </div>
+        );
+    }
+
     return (
         <AnimatePresence mode="wait">
         {viewMode === 'list' ? (

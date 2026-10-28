@@ -752,6 +752,13 @@
     "fromPrice": "{price} 起",
     "perNight": "/晚",
     "pricesMayVary": "价格可能会有所变动",
+    "maintenance": {
+      "title": "酒店预订暂时暂停",
+      "description": "住宿供应商目前未返回可订房态。这与您的操作无关，我们正在尽快恢复酒店服务。",
+      "note": "机票不受影响",
+      "flightsCta": "搜索机票",
+      "homeCta": "返回首页"
+    },
     "bookNow": "立即预订",
     "headerDefault": "热门酒店特惠",
     "guestFavorite": "房客最爱",

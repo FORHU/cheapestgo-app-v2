@@ -57,6 +57,15 @@ rules out.
 Every visitor-facing page lives under `app/[locale]`, so the language is part of the URL: `/ko/property/123`. English is unprefixed. The locale is never read from a cookie — a cookie that outranked the prefix would make a link someone shares render in the recipient's language rather than the sender's. `/admin` sits outside the segment: it is staff-facing and English-only.
 _Avoid_: `next/link` and `next/navigation` for `Link`, `useRouter`, `usePathname` or `redirect` — those come from `@/i18n/navigation` and carry the prefix. `useSearchParams`, `useParams` and `notFound` are not locale-aware and stay on `next/navigation`.
 
+## Support Agent
+A member of staff who answers customer tickets. Distinct from an **Admin**: both are staff and both work inside `/admin`, but a Support Agent reaches only the support desk, and the `support_agent` role is read from the database rather than from the session token — the token's role predates the role existing. Distinct again from a **Customer**, who may hold a session on the same platform and none of this authority.
+_Avoid_: treating "staff" as one population when deciding what a screen may do — the roles differ and are checked separately. _Avoid_: reading authority from the token's `role` for support work; it can be stale.
+
+## Staff Host
+The single hostname staff work from, carrying every `/admin` screen for both **Admins** and **Support Agents**. Its own origin, and therefore its own session: a **Customer** session on the storefront host confers nothing here, and signing in happens separately.
+This is a deliberate reversal. The staff door at `/support/login` is explicitly *not* a security boundary — it changes where you land, not what you may do, and the roles decide identically at both doors. The Staff Host **is** a boundary, and that is the point: it is the thing a network rule can be put in front of, which a path on the public storefront can never be.
+_Avoid_: calling it the admin host — Support Agents live there too, and the name sets the wrong expectation about who signs in. _Avoid_: relying on it for authority. It controls who can *reach* a screen; the roles still decide what the screen may do.
+
 ## Stay Total
 What the supplier quotes: the price of the **whole stay**, however many nights that is. The only
 figure a supplier states and the only one a booking is made against.

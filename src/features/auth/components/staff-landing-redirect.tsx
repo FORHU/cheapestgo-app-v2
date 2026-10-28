@@ -3,13 +3,9 @@
 import { useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { useAuthStore } from '@/shared/auth/store';
+import { landingFor } from '@/shared/auth/roles';
 
-/** Where signing in puts staff. Null for a customer — they were already going somewhere. */
-export function landingFor(role: string | null | undefined): string | null {
-    if (role === 'admin') return '/admin/overview';
-    if (role === 'support_agent') return '/admin/support';
-    return null;
-}
+export { landingFor };
 
 /**
  * Skip the form for someone already signed in as staff.
