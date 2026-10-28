@@ -1,6 +1,7 @@
 export const revalidate = 300;
 
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import type { CSSProperties } from 'react';
 import { brandProfile } from '@/shared/lib/brand';
 import { getBrandName } from '@/shared/lib/brand.server';
@@ -26,46 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 import Script from 'next/script';
 import { getTranslations } from 'next-intl/server';
-import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
 import { LandingHeader } from '@/features/landing/components/landing-header';
 import { LandingFooter } from '@/features/landing/components/landing-footer';
 import { Journey } from '@/features/landing/journey/Journey';
-import { SHOWCASE_DESTINATIONS } from '@/features/landing/journey/stages';
-import { fetchActStays } from '@/features/landing/api/featured.api';
-
-const TRENDING_GRADIENTS = [
-    'bg-gradient-to-br from-teal-500 to-emerald-700',
-    'bg-gradient-to-br from-blue-400 to-sky-700',
-    'bg-gradient-to-br from-pink-400 to-rose-700',
-    'bg-gradient-to-br from-amber-400 to-orange-700',
-];
-
-async function getServerTrending(): Promise<TrendingDest[]> {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiBase) return [];
-    try {
-        const res = await fetch(`${apiBase}/hotels/trending`, {
-            signal: AbortSignal.timeout(5000),
-            next:   { revalidate: 300 },
-        });
-        if (!res.ok) return [];
-        const json = await res.json() as { success: boolean; data: Array<{ city: string; countryCode: string; countryName: string; imageUrl: string }> };
-        if (!json.success) return [];
-        return json.data.map((d, i) => ({
-            id:          d.city.toLowerCase(),
-            name:        d.city,
-            country:     d.countryName,
-            tag:         'Trending',
-            bgClass:     TRENDING_GRADIENTS[i % TRENDING_GRADIENTS.length]!,
-            lat:         null,
-            lng:         null,
-            countryCode: d.countryCode,
-            imageUrl:    d.imageUrl || null,
-        }));
-    } catch {
-        return [];
-    }
-}
+import { JourneySection } from '@/features/landing/journey/journey-section';
 
 /**
  * The landing page runs on its own dark canvas and its own type stack, so it
@@ -82,14 +47,11 @@ const CANVAS: CSSProperties = {
 } as CSSProperties;
 
 export default async function HomePage() {
-    const [t, brand, trending, actStays] = await Promise.all([
+    // Nothing here touches the network. The two calls the Journey needs live in
+    // `JourneySection`, below, so neither this page nor the build waits on the API.
+    const [t, brand] = await Promise.all([
         getTranslations('seo'),
         getBrandName(),
-        getServerTrending(),
-        // Reads our own tables only. Never swap this for a search call: the page
-        // revalidates on a timer, which would turn it into scheduled supplier traffic —
-        // the pre-warming OTV's contract forbids. See docs/adr/0005.
-        fetchActStays(SHOWCASE_DESTINATIONS),
     ]);
 
     // The organisation the page declares is the brand being shown, at its own address. A literal
@@ -124,7 +86,9 @@ export default async function HomePage() {
             {/* The Journey stands where the looping backdrop video used to: it paints the
                 fixed world behind the page and reserves the scroll distance the journey
                 needs. */}
-            <Journey trending={trending} showcaseStays={actStays} />
+            <Suspense fallback={<Journey showcaseStays={{}} />}>
+                <JourneySection />
+            </Suspense>
 
             <div className="relative z-[1] mt-auto">
                 <LandingFooter />
