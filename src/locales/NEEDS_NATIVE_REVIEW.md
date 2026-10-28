@@ -275,6 +275,14 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.receipt.approxTotal` | Approx. in {currency} | {currency} 환산 금액(약) | {currency}換算（概算） | 约合 {currency} |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
 | `checkout.flight.whosFlying` | Who's flying? | 누가 탑승하시나요? | ご搭乗者はどなたですか？ | 谁将乘机？ |
+| `checkout.flight.summary.fareDetails` | Fare details | 요금 세부 정보 | 運賃の詳細 | 票价详情 |
+| `checkout.flight.summary.showItineraries` | Show flight itineraries | 항공편 일정 보기 | フライト日程を表示 | 显示航班行程 |
+| `checkout.flight.summary.hideItineraries` | Hide flight itineraries | 항공편 일정 숨기기 | フライト日程を非表示 | 隐藏航班行程 |
+| `checkout.flight.summary.departing` | Departing | 출발 | 出発 | 出发 |
+| `checkout.flight.summary.arrivingAt` | Arriving at | 도착지 | 到着地 | 抵达 |
+| `checkout.flight.summary.totalPrice` | total price | 총 가격 | 合計金額 | 总价 |
+| `checkout.flight.summary.noCarryOnBag` | No carry-on bag | 기내 수하물 불포함 | 機内持ち込み手荷物なし | 不含手提行李 |
+| `checkout.flight.summary.noCheckedBag` | No checked bag | 위탁 수하물 불포함 | 預け入れ手荷物なし | 不含托运行李 |
 
 ## Landing page — the Journey
 

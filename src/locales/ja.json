@@ -451,6 +451,16 @@
         "title": "航空会社に予約を確認しています",
         "description": "担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。"
       },
+      "summary": {
+        "fareDetails": "運賃の詳細",
+        "showItineraries": "フライト日程を表示",
+        "hideItineraries": "フライト日程を非表示",
+        "departing": "出発",
+        "arrivingAt": "到着地",
+        "totalPrice": "合計金額",
+        "noCarryOnBag": "機内持ち込み手荷物なし",
+        "noCheckedBag": "預け入れ手荷物なし"
+      },
       "receipt": {
         "confirmedToDestination": "{destination}行きのフライトが確定しました。",
         "allSet": "ご予約が完了しました",

@@ -451,6 +451,16 @@
         "title": "We're confirming this with the airline",
         "description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed."
       },
+      "summary": {
+        "fareDetails": "Fare details",
+        "showItineraries": "Show flight itineraries",
+        "hideItineraries": "Hide flight itineraries",
+        "departing": "Departing",
+        "arrivingAt": "Arriving at",
+        "totalPrice": "total price",
+        "noCarryOnBag": "No carry-on bag",
+        "noCheckedBag": "No checked bag"
+      },
       "receipt": {
         "confirmedToDestination": "Your flight to {destination} is confirmed.",
         "allSet": "You’re all set",

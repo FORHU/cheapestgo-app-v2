@@ -135,3 +135,48 @@ export function groupSegmentsIntoSlices(segments: NormalizedSegment[]): Normaliz
     }
     return Array.from(map.values());
 }
+
+/**
+ * The same slices, ordered and keyed: `index` is the segments' `segmentIndex`, which is
+ * also the index into the offer's `sliceDurations`.
+ */
+export function groupSegmentsBySlice(segments: NormalizedSegment[]): { index: number; segments: NormalizedSegment[] }[] {
+    const map = new Map<number, NormalizedSegment[]>();
+    for (const seg of segments) {
+        const idx = seg.segmentIndex ?? 0;
+        if (!map.has(idx)) map.set(idx, []);
+        map.get(idx)!.push(seg);
+    }
+    return [...map.keys()].sort((a, b) => a - b).map((index) => ({ index, segments: map.get(index)! }));
+}
+
+/**
+ * Whole calendar days between two Local Airport Times — the "+1" on a flight that
+ * lands the day after it leaves. Dates only, so neither end's zone matters.
+ */
+export function dayOffset(from?: string, to?: string): number {
+    if (!from || !to) return 0;
+    const a = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
+    const b = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+    return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+export function cabinLabel(cabinClass?: string): string {
+    return (cabinClass || 'economy').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Minutes on the ground between two legs.
+ *
+ * Both clocks are Local Airport Time at the same airport (see `formatTime`), so
+ * their digits are compared as they stand — read as UTC, which no zone or DST
+ * rule can shift — rather than handed to a `Date` to guess a zone for.
+ */
+export function layoverMinutes(arrival?: string, departure?: string): number | null {
+    if (!arrival || !departure) return null;
+    const a = Date.parse(`${arrival.slice(0, 16)}Z`);
+    const d = Date.parse(`${departure.slice(0, 16)}Z`);
+    if (!Number.isFinite(a) || !Number.isFinite(d) || d <= a) return null;
+    return Math.round((d - a) / 60_000);
+}

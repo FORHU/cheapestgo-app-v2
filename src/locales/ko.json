@@ -451,6 +451,16 @@
         "title": "항공사와 예약을 확인하고 있습니다",
         "description": "담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다."
       },
+      "summary": {
+        "fareDetails": "요금 세부 정보",
+        "showItineraries": "항공편 일정 보기",
+        "hideItineraries": "항공편 일정 숨기기",
+        "departing": "출발",
+        "arrivingAt": "도착지",
+        "totalPrice": "총 가격",
+        "noCarryOnBag": "기내 수하물 불포함",
+        "noCheckedBag": "위탁 수하물 불포함"
+      },
       "receipt": {
         "confirmedToDestination": "{destination}행 항공편이 확정되었습니다.",
         "allSet": "예약이 완료되었습니다",

@@ -451,6 +451,16 @@
         "title": "正在与航空公司确认预订",
         "description": "我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。"
       },
+      "summary": {
+        "fareDetails": "票价详情",
+        "showItineraries": "显示航班行程",
+        "hideItineraries": "隐藏航班行程",
+        "departing": "出发",
+        "arrivingAt": "抵达",
+        "totalPrice": "总价",
+        "noCarryOnBag": "不含手提行李",
+        "noCheckedBag": "不含托运行李"
+      },
       "receipt": {
         "confirmedToDestination": "您飞往{destination}的航班已确认。",
         "allSet": "预订完成",
