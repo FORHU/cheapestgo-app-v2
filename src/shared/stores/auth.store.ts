@@ -4,6 +4,7 @@ import { clearBookingInProgress } from '@/shared/lib/bookingInProgress';
 import type { User, AuthStep } from "@/types/auth";
 import { loginSchema, registerSchema, emailSchema, profileSchema, updatePasswordSchema, type RegisterInput, type ProfileInput } from "@/lib/schemas/auth";
 import { http } from "@/shared/lib/http";
+import { env } from '@/shared/lib/env';
 
 /** A user as api-v2 sends it: the `users` row, snake_case, without the password hash. */
 export interface ApiUser {
@@ -152,7 +153,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         socialLogin: async (provider) => {
             if (provider === 'google') {
-                window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+                window.location.href = `${env.NEXT_PUBLIC_API_URL}/auth/google`;
                 return;
             }
             throw new Error(`OAuth provider "${provider}" is not configured yet.`);

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import { HOTEL_TOKENS } from '@/features/hotels/types/property.types';
+import { env } from '@/shared/lib/env';
 
 const STAR_LABELS = ['Terrible', 'Poor', 'Okay', 'Good', 'Excellent'];
 
@@ -22,7 +23,7 @@ export function ReviewForm({ hotelId }: ReviewFormProps) {
     async function handleSubmit() {
         setStatus('loading');
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hotels/property/${hotelId}/reviews`, {
+            const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/hotels/property/${hotelId}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ stars, body }),

@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { env } from '@/shared/lib/env';
+
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="20" height="20">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -12,10 +15,25 @@ const GoogleIcon = () => (
 interface Props { label: string; }
 
 export function SocialLoginButtons({ label }: Props) {
+    /*
+     * Where the Google flow begins decides where it ends: api-v2 reads the Host header of
+     * this request to know which origin to hand the session back to, and allowlists it
+     * (`lib/auth/returnOrigin.ts`). On the staff host that has to be the staff host, or the
+     * session is set on the storefront and the staff host is no further forward.
+     *
+     * `env.NEXT_PUBLIC_API_URL` answers that per host, which means it differs between the
+     * server render and the browser. Rendering the difference straight into `href` would be a
+     * hydration mismatch, so the first paint keeps the build-time value — what the server
+     * sent — and the effect corrects it on mount. On every host but the staff one the two are
+     * identical and nothing changes.
+     */
+    const [href, setHref] = useState(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`);
+    useEffect(() => { setHref(`${env.NEXT_PUBLIC_API_URL}/auth/google`); }, []);
+
     return (
         <div className="space-y-3">
             <a
-                href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
+                href={href}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-slate-50 dark:hover:bg-white/10 transition-colors font-medium text-slate-700 dark:text-white"
             >
                 <GoogleIcon />
