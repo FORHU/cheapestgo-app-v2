@@ -45,9 +45,24 @@ export default function AdminOverviewPage() {
     const [bookingsLoading, setBookingsLoading] = useState(true);
 
     useEffect(() => {
-        // Try to load stats — endpoint may not exist in api-v2 yet
+        // Try to load stats — endpoint may not exist in api-v2 yet, and may answer 200 with
+        // a shape this page cannot render. Both are the same failure to a reader, so both
+        // take the placeholder branch below.
+        //
+        // The shape check is not belt-and-braces: `.catch` sees rejections only, so when
+        // api-v2 answered `{bookingCount, revenue, userCount}` against the five fields named
+        // above, every one of them was undefined, `stats.totalBookings.toLocaleString()`
+        // threw, and the whole route hit its error boundary — a blank "Something went wrong"
+        // while the network tab showed nothing but 200s. The placeholder this component
+        // already carries was written for exactly that case and never got to run.
         http.get<AdminStats>('/api/admin/stats')
-            .then(setStats)
+            .then((s) => {
+                const numeric = [s?.totalBookings, s?.totalRevenue, s?.activeUsers, s?.hotelDeals];
+                if (numeric.some(v => typeof v !== 'number')) {
+                    throw new Error('unexpected /api/admin/stats shape');
+                }
+                setStats(s);
+            })
             .catch(() => setStatsError(true));
 
         // Load recent bookings

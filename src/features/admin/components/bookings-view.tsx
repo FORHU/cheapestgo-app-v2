@@ -7,7 +7,7 @@ import { BookingsTable } from '@/features/admin/components/bookings-table';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
-import type { Booking, PaginatedResponse } from '@/shared/types';
+import type { Booking } from '@/shared/types';
 
 const PAGE_SIZE = 20;
 
@@ -32,8 +32,15 @@ export function BookingsView() {
             });
             if (q) params.set('q', q);
 
-            const res = await http.get<PaginatedResponse<Booking>>(`/api/bookings?${params}`);
-            setBookings(res.data ?? []);
+            // `/api/bookings` is the customer endpoint: it is scoped to the caller's own
+            // `user_id`, so the back office was listing the signed-in admin's personal
+            // bookings and nobody else's. `/api/admin/bookings` is the one this table was
+            // built for — it merges hotels and flights and normalises them to the shape
+            // `BookingsTable` reads (see its test, which names that contract).
+            const res = await http.get<{ bookings: Booking[]; total: number }>(
+                `/api/admin/bookings?${params}`,
+            );
+            setBookings(res.bookings ?? []);
             setTotal(res.total ?? 0);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to load bookings.');
