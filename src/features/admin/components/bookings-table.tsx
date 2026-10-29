@@ -89,12 +89,12 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <div className="max-h-[70vh] overflow-auto">
+            <table className="w-full text-[13px]">
                 <thead>
                     <tr className="border-b border-slate-100">
                         <SortableHeader label="Booking ID" sortKey="id"          current={sortKey} dir={sortDir} onSort={handleSort} />
-                        <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
+                        <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
                             User
                         </th>
                         <SortableHeader label="Type"       sortKey="type"        current={sortKey} dir={sortDir} onSort={handleSort} />
@@ -107,20 +107,20 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
                     {sorted.map((booking) => (
                         <tr
                             key={booking.id}
-                            className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                            className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                         >
-                            <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                            <td className="px-3 py-1.5 font-mono text-xs text-slate-500">
                                 {booking.reference ?? booking.id?.slice(0, 8).toUpperCase() ?? '—'}
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-600 max-w-[160px] truncate">
+                            <td className="px-3 py-1.5 text-xs text-slate-600 max-w-[160px] truncate">
                                 {userEmailMap[booking.userId] ?? (booking.userId ? booking.userId.slice(0, 8) + '…' : '—')}
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-1.5">
                                 <Badge variant="secondary" size="sm" className="capitalize">
                                     {booking.type}
                                 </Badge>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-1.5">
                                 <Badge
                                     variant={STATUS_VARIANT[booking.status]}
                                     size="sm"
@@ -129,14 +129,14 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
                                     {booking.status}
                                 </Badge>
                             </td>
-                            <td className="px-4 py-3 font-semibold text-slate-900 tabular-nums">
+                            <td className="px-3 py-1.5 font-semibold text-slate-900 tabular-nums">
                                 {booking.currency}&nbsp;
                                 {(booking.totalAmount ?? 0).toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                 })}
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
+                            <td className="px-3 py-1.5 text-xs text-slate-400 whitespace-nowrap">
                                 {new Date(booking.createdAt).toLocaleDateString('en-US', {
                                     year:  'numeric',
                                     month: 'short',

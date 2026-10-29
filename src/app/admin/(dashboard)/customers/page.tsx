@@ -129,15 +129,15 @@ export default function AdminCustomersPage() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Customers</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Booking history and account management</p>
+                <h1 className="text-base font-semibold text-slate-900">Customers</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Booking history and account management</p>
             </div>
 
             {/* Stats */}
             {!loading && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                     <StatsCard label="Total Customers"  value={customers.length.toLocaleString()} />
                     <StatsCard label="Total Revenue"    value={fmtCurrency(totalSpend)} />
                     <StatsCard label="Avg. Bookings"    value={avgBookings} />
@@ -147,7 +147,7 @@ export default function AdminCustomersPage() {
 
             {/* Toast */}
             {toast && (
-                <div className={cn('flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border',
+                <div className={cn('flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold border',
                     toast.ok ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
                 )}>
                     {toast.msg}
@@ -170,7 +170,7 @@ export default function AdminCustomersPage() {
                         </button>
                     )}
                 </div>
-                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
+                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5">
                     {(['all', 'active', 'banned'] as const).map(s => (
                         <button key={s} onClick={() => setStatus(s)}
                             className={cn('px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all',
@@ -183,7 +183,7 @@ export default function AdminCustomersPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {error ? (
                     <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                 ) : loading ? (
@@ -200,25 +200,25 @@ export default function AdminCustomersPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                    <div className="max-h-[70vh] overflow-auto">
+                        <table className="w-full text-[13px]">
+                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Customer</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Tier</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Spend</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Bookings</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Last Trip</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Customer</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tier</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Spend</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bookings</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Last Trip</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {filtered.map(c => {
                                     const tier = getSpendTier(c.totalBookings);
                                     return (
                                         <tr key={c.id} className="hover:bg-slate-50">
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-black shrink-0">
                                                         {c.name.charAt(0).toUpperCase()}
@@ -229,31 +229,31 @@ export default function AdminCustomersPage() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5">
                                                 <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold', tier.cls)}>
                                                     {tier.label}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 font-bold text-slate-900 tabular-nums">
+                                            <td className="px-3 py-1.5 font-bold text-slate-900 tabular-nums">
                                                 {fmtCurrency(c.totalSpend)}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700 font-semibold tabular-nums">
+                                            <td className="px-3 py-1.5 text-slate-700 font-semibold tabular-nums">
                                                 {c.totalBookings}
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5">
                                                 <div className="flex items-center gap-1 text-[10px] text-slate-400">
                                                     <Clock size={10} />
                                                     {fmtDate(c.lastBooking)}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5">
                                                 {c.status === 'banned' ? (
                                                     <Badge variant="destructive" size="sm">Banned</Badge>
                                                 ) : (
                                                     <Badge variant="success" size="sm">Active</Badge>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button
                                                         onClick={() => { setSelected(c); setDetail(true); }}
@@ -305,7 +305,7 @@ export default function AdminCustomersPage() {
                         <div className="p-6 space-y-5">
                             <DialogHeader>
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg font-black shadow-lg shadow-blue-600/20">
+                                    <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center text-lg font-black shadow-lg shadow-blue-600/20">
                                         {selected.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
@@ -324,7 +324,7 @@ export default function AdminCustomersPage() {
                                     { label: 'Joined',         value: fmtDate(selected.joined) },
                                     { label: 'Last Trip',      value: fmtDate(selected.lastBooking) },
                                 ].map(({ label, value }) => (
-                                    <div key={label} className="p-3 rounded-xl bg-slate-50 space-y-0.5">
+                                    <div key={label} className="p-2.5 rounded-lg bg-slate-50 space-y-0.5">
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
                                         <p className="text-sm font-bold text-slate-900">{value}</p>
                                     </div>
@@ -344,8 +344,8 @@ export default function AdminCustomersPage() {
             {/* ── Ban Confirmation Dialog ── */}
             <Dialog open={banOpen} onOpenChange={v => { setBan(v); if (!v) setSelected(null); }}>
                 <DialogContent showCloseButton={false}>
-                    <div className="p-6 space-y-4">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                    <div className="px-5 py-4 space-y-3">
+                        <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
                             <ShieldBan size={20} />
                         </div>
                         <DialogHeader>
@@ -373,8 +373,8 @@ export default function AdminCustomersPage() {
             {/* ── Delete Confirmation Dialog ── */}
             <Dialog open={deleteOpen} onOpenChange={v => { setDelete(v); if (!v) setSelected(null); }}>
                 <DialogContent showCloseButton={false}>
-                    <div className="p-6 space-y-4">
-                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                    <div className="px-5 py-4 space-y-3">
+                        <div className="w-9 h-9 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
                             <AlertTriangle size={20} />
                         </div>
                         <DialogHeader>

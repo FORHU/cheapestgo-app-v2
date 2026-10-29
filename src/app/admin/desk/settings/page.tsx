@@ -108,7 +108,7 @@ export default function DeskSettingsPage() {
                 <input
                     value={hours.timezone}
                     onChange={e => setHours({ ...hours, timezone: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="Asia/Manila"
                 />
                 <span className="mt-1 block text-xs text-slate-400">
@@ -123,7 +123,7 @@ export default function DeskSettingsPage() {
                     return (
                         <div
                             key={key}
-                            className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                            className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
                         >
                             <span className="w-24 shrink-0 text-sm font-semibold text-slate-900">{label}</span>
                             <button
@@ -172,7 +172,7 @@ export default function DeskSettingsPage() {
                     type="button"
                     onClick={save}
                     disabled={saving}
-                    className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                 >
                     {saving ? 'Saving…' : 'Save hours'}
                 </button>

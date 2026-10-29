@@ -49,9 +49,9 @@ function orderStatusBadge(status: DuffelOrder['status']) {
 
 function SkeletonCards() {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5 space-y-3">
+                <div key={i} className="bg-white rounded-lg border border-slate-200/80 p-5 space-y-3">
                     <Skeleton className="h-3 w-24" />
                     <Skeleton className="h-8 w-32" />
                 </div>
@@ -71,11 +71,11 @@ export default function AdminDuffelPage() {
     }, []);
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="px-5 py-4 space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">Duffel</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Balance and flight order monitoring</p>
+                    <h1 className="text-base font-semibold text-slate-900">Duffel</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Balance and flight order monitoring</p>
                 </div>
                 <a
                     href="https://app.duffel.com"
@@ -88,7 +88,7 @@ export default function AdminDuffelPage() {
             </div>
 
             {error && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
                     <AlertTriangle size={15} className="shrink-0" />
                     {error}
                 </div>
@@ -100,14 +100,14 @@ export default function AdminDuffelPage() {
                 <>
                     {/* Status banner */}
                     {data.status !== 'healthy' && data.errorMessage && (
-                        <div className="flex items-center gap-2 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
                             <AlertTriangle size={15} className="shrink-0" />
                             {data.errorMessage}
                         </div>
                     )}
 
                     {/* Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                         <StatsCard label="Total Orders"  value={data.stats.totalOrders.toLocaleString()} />
                         <StatsCard label="Confirmed"     value={data.stats.confirmed.toLocaleString()} />
                         <StatsCard label="Cancelled"     value={data.stats.cancelled.toLocaleString()} />
@@ -120,7 +120,7 @@ export default function AdminDuffelPage() {
 
                     {/* Balance panels */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
+                        <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-3">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
                                     <TrendingUp size={14} className="text-emerald-600" />
@@ -140,7 +140,7 @@ export default function AdminDuffelPage() {
                             ))}
                         </div>
 
-                        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
+                        <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-3">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                                     <Clock size={14} className="text-amber-600" />
@@ -164,32 +164,32 @@ export default function AdminDuffelPage() {
                     {/* Recent orders */}
                     <section>
                         <h2 className="text-sm font-bold text-slate-900 mb-4">Recent Orders</h2>
-                        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                             {data.recentOrders.length === 0 ? (
                                 <div className="p-12 text-center">
                                     <Plane size={36} className="mx-auto text-slate-200 mb-3" strokeWidth={1} />
                                     <p className="text-sm font-bold text-slate-900">No orders yet</p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="border-b border-slate-100 bg-slate-50/50">
+                                <div className="max-h-[70vh] overflow-auto">
+                                    <table className="w-full text-[13px]">
+                                        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                             <tr>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Ref</th>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Passenger</th>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Route</th>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                                                <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Ref</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Passenger</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Route</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                                                <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Amount</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-50">
+                                        <tbody className="divide-y divide-slate-100">
                                             {data.recentOrders.map(order => (
                                                 <tr key={order.id} className="hover:bg-slate-50">
-                                                    <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">{order.bookingReference}</td>
-                                                    <td className="px-4 py-3 font-bold text-slate-800">{order.passengerName}</td>
-                                                    <td className="px-4 py-3 text-xs font-bold">{order.origin} → {order.destination}</td>
-                                                    <td className="px-4 py-3">{orderStatusBadge(order.status)}</td>
-                                                    <td className="px-4 py-3 text-right font-bold text-slate-900">{fmt(order.totalAmount, order.currency)}</td>
+                                                    <td className="px-3 py-1.5 font-mono text-xs text-blue-600 font-bold">{order.bookingReference}</td>
+                                                    <td className="px-3 py-1.5 font-bold text-slate-800">{order.passengerName}</td>
+                                                    <td className="px-3 py-1.5 text-xs font-bold">{order.origin} → {order.destination}</td>
+                                                    <td className="px-3 py-1.5">{orderStatusBadge(order.status)}</td>
+                                                    <td className="px-3 py-1.5 text-right font-bold text-slate-900">{fmt(order.totalAmount, order.currency)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

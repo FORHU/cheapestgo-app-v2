@@ -67,7 +67,7 @@ function SendForm() {
     }
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <div className="bg-white rounded-lg border border-slate-200 px-5 py-4 space-y-3">
             <div className="flex items-center gap-2">
                 <Send size={16} className="text-blue-600" />
                 <h2 className="text-sm font-bold text-slate-900">Send Notification</h2>
@@ -82,7 +82,7 @@ function SendForm() {
 
             <form onSubmit={handleSend} className="space-y-3">
                 {/* Target selector */}
-                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1 w-fit">
+                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 w-fit">
                     {(['all', 'user'] as const).map(t => (
                         <button
                             key={t}
@@ -116,7 +116,7 @@ function SendForm() {
                     onChange={e => setBody(e.target.value)}
                     rows={3}
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-white text-sm px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all"
+                    className="w-full rounded-lg border border-slate-200 bg-white text-sm px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all"
                 />
 
                 <Button type="submit" isLoading={sending} className="w-full" size="sm">
@@ -156,10 +156,10 @@ export default function AdminCommunicationPage() {
     useEffect(() => { load(page); }, [page, load]);
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Communication</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Send notifications and view email logs</p>
+                <h1 className="text-base font-semibold text-slate-900">Communication</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Send notifications and view email logs</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -177,7 +177,7 @@ export default function AdminCommunicationPage() {
                         </Button>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                         {error ? (
                             <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                         ) : loading ? (
@@ -190,23 +190,23 @@ export default function AdminCommunicationPage() {
                                 <p className="text-sm font-bold text-slate-900">No email logs yet</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="border-b border-slate-100">
+                            <div className="max-h-[70vh] overflow-auto">
+                                <table className="w-full text-[13px]">
+                                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                         <tr>
-                                            <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-                                            <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Recipient</th>
-                                            <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Type</th>
-                                            <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                                            <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Date</th>
+                                            <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Recipient</th>
+                                            <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Type</th>
+                                            <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50">
+                                    <tbody className="divide-y divide-slate-100">
                                         {logs.map(log => (
                                             <tr key={log.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{fmtDate(log.created_at)}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-700 max-w-[180px] truncate" title={log.recipient}>{log.recipient}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-600 capitalize">{log.email_type.replace(/_/g, ' ')}</td>
-                                                <td className="px-4 py-3">{statusBadge(log.status)}</td>
+                                                <td className="px-3 py-1.5 text-xs text-slate-500 whitespace-nowrap">{fmtDate(log.created_at)}</td>
+                                                <td className="px-3 py-1.5 text-xs text-slate-700 max-w-[180px] truncate" title={log.recipient}>{log.recipient}</td>
+                                                <td className="px-3 py-1.5 text-xs text-slate-600 capitalize">{log.email_type.replace(/_/g, ' ')}</td>
+                                                <td className="px-3 py-1.5">{statusBadge(log.status)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

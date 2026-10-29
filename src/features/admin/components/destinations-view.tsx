@@ -115,11 +115,11 @@ export function DestinationsView() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">Destinations</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">{total > 0 ? `${total.toLocaleString()} total` : 'Manage popular destinations'}</p>
+                    <h1 className="text-base font-semibold text-slate-900">Destinations</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">{total > 0 ? `${total.toLocaleString()} total` : 'Manage popular destinations'}</p>
                 </div>
                 <Button size="sm" onClick={() => { setShowForm(v => !v); setEditingId(null); setForm(EMPTY); }}>
                     <Plus size={14} /> Add Destination
@@ -133,7 +133,7 @@ export function DestinationsView() {
             </form>
 
             {showForm && (
-                <div className="bg-white rounded-xl border border-slate-200/80 p-5 space-y-4">
+                <div className="bg-white rounded-lg border border-slate-200/80 p-5 space-y-4">
                     <h3 className="text-sm font-bold text-slate-900">New Destination</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input label="City *" placeholder="Tokyo" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
@@ -148,7 +148,7 @@ export function DestinationsView() {
                 </div>
             )}
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {error ? (
                     <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                 ) : loading ? (
@@ -159,21 +159,21 @@ export function DestinationsView() {
                         <p className="text-sm font-bold text-slate-900">No destinations found</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                    <div className="max-h-[70vh] overflow-auto">
+                        <table className="w-full text-[13px]">
+                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">City</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Country</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Price</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">City</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Country</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Avg Price</th>
+                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {destinations.map(dest => (
                                     <>
                                         <tr key={dest.id} className="hover:bg-slate-50">
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5">
                                                 <div className="flex items-center gap-3">
                                                     {dest.image_url ? (
                                                         <img src={dest.image_url} alt={dest.city} className="w-8 h-8 rounded-lg object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -183,15 +183,15 @@ export function DestinationsView() {
                                                     <span className="font-bold text-slate-900">{dest.city}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-600">{dest.country}</td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-3 py-1.5 text-slate-600">{dest.country}</td>
+                                            <td className="px-3 py-1.5">
                                                 {dest.average_price ? (
                                                     <span className="text-emerald-600 font-bold">${dest.average_price}</span>
                                                 ) : (
                                                     <span className="text-slate-400 italic text-xs">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-right">
+                                            <td className="px-3 py-1.5 text-right">
                                                 <div className="flex items-center gap-1 justify-end">
                                                     <Button variant="ghost" size="sm" onClick={() => startEdit(dest)} className="h-8 px-2 text-blue-600 hover:bg-blue-50"><Pencil size={14} /></Button>
                                                     <Button variant="ghost" size="sm" disabled={deletingId === dest.id} onClick={() => handleDelete(dest.id)} className="h-8 px-2 text-rose-500 hover:bg-rose-50"><Trash2 size={14} /></Button>

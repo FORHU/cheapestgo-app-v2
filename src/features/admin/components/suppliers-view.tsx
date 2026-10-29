@@ -44,7 +44,7 @@ function SkeletonCards() {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5 space-y-3">
+                <div key={i} className="bg-white rounded-lg border border-slate-200/80 p-5 space-y-3">
                     <Skeleton className="h-4 w-28" />
                     <Skeleton className="h-3 w-20" />
                     <Skeleton className="h-6 w-16" />
@@ -88,11 +88,11 @@ export function SuppliersView() {
     const anyDegraded  = suppliers.some(s => s.status === 'degraded');
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="px-5 py-4 space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">Suppliers</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Integration health status for Duffel, TravelgateX, and ONDA</p>
+                    <h1 className="text-base font-semibold text-slate-900">Suppliers</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Integration health status for Duffel, TravelgateX, and ONDA</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleRefresh} isLoading={refreshing}>
                     <RefreshCw size={13} />
@@ -100,7 +100,7 @@ export function SuppliersView() {
             </div>
 
             {!loading && (
-                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-bold ${
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-sm font-bold ${
                     allHealthy ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                     : anyDown  ? 'bg-rose-50 border-rose-200 text-rose-700'
                     : anyDegraded ? 'bg-amber-50 border-amber-200 text-amber-700'
@@ -119,10 +119,10 @@ export function SuppliersView() {
             {!loading && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {suppliers.map(supplier => (
-                        <div key={supplier.name} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+                        <div key={supplier.name} className="bg-white rounded-lg border border-slate-200 px-5 py-4 space-y-3">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${supplier.type === 'flight' ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${supplier.type === 'flight' ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                                         {supplier.type === 'flight' ? <Plane size={18} /> : <Hotel size={18} />}
                                     </div>
                                     <div>
@@ -163,7 +163,7 @@ export function SuppliersView() {
 
             <section>
                 <h2 className="text-sm font-bold text-slate-900 mb-4">Integration Notes</h2>
-                <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-100">
+                <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
                     {[
                         { name: 'Duffel', note: 'Flight booking via Duffel Orders API. Monitor balance at /admin/duffel.' },
                         { name: 'TravelgateX', note: 'Hotel booking via Hotel-X GraphQL (OTV/RateHawk). Monitor at /admin/travelgatex.' },

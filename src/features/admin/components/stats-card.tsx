@@ -23,19 +23,22 @@ export function StatsCard({ label, value, trend, prefix, suffix, className }: St
         trend < 0  ? 'text-rose-600' :
                      'text-slate-500';
 
+    // Dense by design: these sit four-across above a table that is the actual subject of the
+    // page, so the number is readable at a glance without the card claiming a fifth of the
+    // screen. The old 20px padding and 24px figure pushed every table below the fold.
     return (
         <div className={cn(
-            'bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm',
+            'bg-white rounded-lg border border-slate-200 px-3.5 py-2.5',
             className
         )}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
-                {prefix && <span className="text-base font-semibold text-slate-500 mr-0.5">{prefix}</span>}
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+            <p className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums leading-tight">
+                {prefix && <span className="text-xs font-medium text-slate-500 mr-0.5">{prefix}</span>}
                 {value}
-                {suffix && <span className="text-base font-semibold text-slate-500 ml-0.5">{suffix}</span>}
+                {suffix && <span className="text-xs font-medium text-slate-500 ml-0.5">{suffix}</span>}
             </p>
             {trend !== undefined && (
-                <div className={cn('flex items-center gap-1 mt-2 text-xs font-semibold', trendColor)}>
+                <div className={cn('flex items-center gap-1 mt-0.5 text-[11px] font-medium', trendColor)}>
                     {trendIcon}
                     <span>{Math.abs(trend)}% vs last month</span>
                 </div>

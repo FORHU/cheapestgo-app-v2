@@ -61,7 +61,7 @@ function OTVBadge({ status }: { status: TGXData['otvStatus'] }) {
 
 function ConfigRow({ label, value, mono = false }: { label: string; value: string | null; mono?: boolean }) {
     return (
-        <div className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+        <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
             <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{label}</span>
             {value ? (
                 <span className={`text-sm font-bold text-slate-900 ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
@@ -102,7 +102,7 @@ function SkeletonCards() {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5 space-y-3">
+                <div key={i} className="bg-white rounded-lg border border-slate-200/80 p-5 space-y-3">
                     <Skeleton className="h-3 w-24" />
                     <Skeleton className="h-8 w-20" />
                 </div>
@@ -141,11 +141,11 @@ export default function AdminTravelgateXPage() {
     const cur = data?.revenueCurrency ?? 'USD';
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="px-5 py-4 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">TravelgateX</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Hotel-X GraphQL · OTV / WorldOTA (RateHawk)</p>
+                    <h1 className="text-base font-semibold text-slate-900">TravelgateX</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Hotel-X GraphQL · OTV / WorldOTA (RateHawk)</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {data && <OTVBadge status={data.otvStatus} />}
@@ -163,7 +163,7 @@ export default function AdminTravelgateXPage() {
             </div>
 
             {error && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
                     <AlertTriangle size={15} className="shrink-0" /> {error}
                 </div>
             )}
@@ -174,7 +174,7 @@ export default function AdminTravelgateXPage() {
                 <>
                     {/* Warnings */}
                     {data.otvStatus === 'no_rates' && (
-                        <div className="flex items-start gap-3 px-4 py-4 rounded-xl bg-amber-50 border border-amber-200">
+                        <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200">
                             <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-sm font-bold text-amber-800">OTV returning no rates</p>
@@ -187,7 +187,7 @@ export default function AdminTravelgateXPage() {
                     )}
 
                     {data.status === 'error' && data.errorMessage && (
-                        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200">
                             <XCircle size={15} className="text-rose-500 shrink-0" />
                             <p className="text-xs font-bold text-rose-700">{data.errorMessage}</p>
                         </div>
@@ -203,7 +203,7 @@ export default function AdminTravelgateXPage() {
 
                     {/* Config + Connection status */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-1">
+                        <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-1">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center"><Key size={14} className="text-blue-600" /></div>
                                 <div>
@@ -218,7 +218,7 @@ export default function AdminTravelgateXPage() {
                             <ConfigRow label="Context"     value={data.contextCode} mono />
                         </div>
 
-                        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+                        <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center"><Globe size={14} className="text-purple-600" /></div>
                                 <div>
@@ -238,7 +238,7 @@ export default function AdminTravelgateXPage() {
 
                     {/* Tabs */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 w-fit">
+                        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 w-fit">
                             {(['bookings', 'logs'] as const).map(t => (
                                 <button key={t} onClick={() => setTab(t)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${tab === t ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-blue-600'}`}>
@@ -248,7 +248,7 @@ export default function AdminTravelgateXPage() {
                         </div>
 
                         {tab === 'bookings' && (
-                            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                                 {data.recentBookings.length === 0 ? (
                                     <div className="p-12 text-center">
                                         <Hotel size={36} className="mx-auto text-slate-200 mb-3" strokeWidth={1} />
@@ -256,29 +256,29 @@ export default function AdminTravelgateXPage() {
                                         <p className="text-xs text-slate-400 mt-1">OTV bookings will appear here</p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                                    <div className="max-h-[70vh] overflow-auto">
+                                        <table className="w-full text-[13px]">
+                                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                                 <tr>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Reference</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Guest</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Hotel</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Check-in</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Reference</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Guest</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Hotel</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Check-in</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Amount</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50">
+                                            <tbody className="divide-y divide-slate-100">
                                                 {data.recentBookings.map(b => (
                                                     <tr key={b.id} className="hover:bg-slate-50">
-                                                        <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">{b.reference}</td>
-                                                        <td className="px-4 py-3 font-bold text-slate-900">{b.guestName}</td>
-                                                        <td className="px-4 py-3 text-xs text-slate-600">{b.hotelName || '—'}</td>
-                                                        <td className="px-4 py-3 text-xs text-slate-500">{b.checkIn ? new Date(b.checkIn).toLocaleDateString() : '—'}</td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-1.5 font-mono text-xs text-blue-600 font-bold">{b.reference}</td>
+                                                        <td className="px-3 py-1.5 font-bold text-slate-900">{b.guestName}</td>
+                                                        <td className="px-3 py-1.5 text-xs text-slate-600">{b.hotelName || '—'}</td>
+                                                        <td className="px-3 py-1.5 text-xs text-slate-500">{b.checkIn ? new Date(b.checkIn).toLocaleDateString() : '—'}</td>
+                                                        <td className="px-3 py-1.5">
                                                             <Badge variant={bookingStatusVariant(b.status)} size="sm">{b.status}</Badge>
                                                         </td>
-                                                        <td className="px-4 py-3 text-right font-bold text-slate-900">
+                                                        <td className="px-3 py-1.5 text-right font-bold text-slate-900">
                                                             {b.amount ? fmt(b.amount, b.currency) : '—'}
                                                         </td>
                                                     </tr>
@@ -291,48 +291,48 @@ export default function AdminTravelgateXPage() {
                         )}
 
                         {tab === 'logs' && (
-                            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                                 {data.recentApiLogs.length === 0 ? (
                                     <div className="p-12 text-center">
                                         <Activity size={36} className="mx-auto text-slate-200 mb-3" strokeWidth={1} />
                                         <p className="text-sm font-bold text-slate-900">No API logs</p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                                    <div className="max-h-[70vh] overflow-auto">
+                                        <table className="w-full text-[13px]">
+                                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                                 <tr>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Endpoint</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Duration</th>
-                                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Error</th>
-                                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Endpoint</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Duration</th>
+                                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Error</th>
+                                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Date</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50">
+                                            <tbody className="divide-y divide-slate-100">
                                                 {data.recentApiLogs.map(log => (
                                                     <tr key={log.id} className="hover:bg-slate-50">
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-1.5">
                                                             <span className="font-mono text-xs text-slate-600 truncate block max-w-[200px]">
                                                                 {log.endpoint.replace(/^https?:\/\//, '')}
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-1.5">
                                                             <Badge variant={httpStatusVariant(log.responseStatus)} size="sm">
                                                                 {log.responseStatus ?? '—'}
                                                             </Badge>
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-1.5">
                                                             <span className={`text-xs font-bold ${log.durationMs > 5000 ? 'text-rose-500' : log.durationMs > 2000 ? 'text-amber-500' : 'text-emerald-600'}`}>
                                                                 {log.durationMs ? `${log.durationMs.toLocaleString()}ms` : '—'}
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-3">
+                                                        <td className="px-3 py-1.5">
                                                             <span className="text-xs text-rose-500 truncate block max-w-[180px]">
                                                                 {log.errorMessage || <span className="text-slate-300">—</span>}
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-3 text-right text-xs text-slate-400">
+                                                        <td className="px-3 py-1.5 text-right text-xs text-slate-400">
                                                             {new Date(log.createdAt).toLocaleDateString()}
                                                         </td>
                                                     </tr>
