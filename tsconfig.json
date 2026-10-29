@@ -32,9 +32,10 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-airanggo/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-airanggo/types/**/*.ts"
+    ".next-diag/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

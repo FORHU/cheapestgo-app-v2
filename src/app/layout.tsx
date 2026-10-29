@@ -1,7 +1,5 @@
 import React from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JetBrains_Mono, Fredoka, Open_Sans, Plus_Jakarta_Sans } from 'next/font/google';
 import { getLocale } from 'next-intl/server';
 import './globals.css';
@@ -48,7 +46,7 @@ export const viewport: Viewport = {
 // whichever brand the visitor picked, and the tab title has to be that one.
 export async function generateMetadata(): Promise<Metadata> {
     const brand = await getBrandName();
-    const { favicon, logo } = brandProfile(brand);
+    const { favicon } = brandProfile(brand);
     const tagline = `${brand} | Discover and Book Your Next Global Journey`;
     const description = `Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world with ${brand} — your modern travel OS.`;
 
@@ -73,12 +71,9 @@ export async function generateMetadata(): Promise<Metadata> {
             description,
             url: SITE_URL,
             siteName: brand,
-            images: [{
-                url: `${SITE_URL}${logo}`,
-                width: 1200,
-                height: 630,
-                alt: `${brand} - Ultimate Travel Booking Platform`,
-            }],
+            // No `images` here on purpose — `app/opengraph-image.tsx` supplies it. An explicit
+            // entry overrides that file, and the one that used to sit here pointed at
+            // the brand logo while claiming 1200×630, which that file is not: it is 875×368.
             locale: 'en_US',
             type: 'website',
         },
@@ -86,7 +81,7 @@ export async function generateMetadata(): Promise<Metadata> {
             card: 'summary_large_image',
             title: tagline,
             description,
-            images: [`${SITE_URL}${logo}`],
+            // Twitter falls back to og:image, which opengraph-image.tsx serves.
         },
     };
 }
@@ -138,8 +133,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         {brandPreviewEnabled() && <BrandPreviewSwitcher current={brand} />}
                     </Providers>
                 </BrandProvider>
-                <Analytics />
-                <SpeedInsights />
             </body>
         </html>
     );

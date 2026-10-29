@@ -15,6 +15,12 @@ interface AppSettings {
     default_currency?:      string;
     timezone?:              string;
     cache_duration?:        number;
+    /** Hotel search and booking off sale. Flights are a different supplier and unaffected. */
+    stays_maintenance?:     boolean | string;
+    /** Last verdict from the supplier canary in `/cron/supplier-health`. */
+    stays_health_status?:     string;
+    stays_health_detail?:     string;
+    stays_health_checked_at?: string;
     [key: string]:          unknown;
 }
 
@@ -48,6 +54,33 @@ export default function AdminSettingsPage() {
     const [currency, setCurrency]             = useState('USD');
     const [timezone, setTimezone]             = useState('Asia/Manila');
     const [cacheDuration, setCacheDuration]   = useState(60);
+    const [staysMaintenance, setStaysMaintenance] = useState(false);
+    const [health, setHealth] = useState<{ status?: string; detail?: string | null; checkedAt?: string | null }>({});
+    const [checkingHealth, setCheckingHealth] = useState(false);
+
+    /**
+     * Run the supplier canary now.
+     *
+     * It writes its own verdict and may flip the switch above, so the toggle is re-read from
+     * the response rather than left showing a value the probe has already changed.
+     */
+    async function runHealthCheck() {
+        setCheckingHealth(true);
+        setToast(null);
+        try {
+            const r = await http.get<{ status: string; detail: string; checkedAt?: string; maintenance?: boolean }>(
+                '/admin/supplier-health',
+            );
+            setHealth({ status: r.status, detail: r.detail, checkedAt: r.checkedAt ?? new Date().toISOString() });
+            if (typeof r.maintenance === 'boolean') setStaysMaintenance(r.maintenance);
+            setToast({ ok: r.status === 'healthy', msg: `Supplier ${r.status} — ${r.detail}` });
+        } catch (err: unknown) {
+            setToast({ ok: false, msg: err instanceof Error ? err.message : 'Health check failed.' });
+        } finally {
+            setCheckingHealth(false);
+            setTimeout(() => setToast(null), 6000);
+        }
+    }
 
     useEffect(() => {
         http.get<AppSettings>('/admin/settings')
@@ -60,6 +93,12 @@ export default function AdminSettingsPage() {
                 setCurrency(s.default_currency ?? 'USD');
                 setTimezone(s.timezone ?? 'Asia/Manila');
                 setCacheDuration(s.cache_duration ?? 60);
+                setStaysMaintenance(s.stays_maintenance === true || s.stays_maintenance === 'true');
+                setHealth({
+                    status:    s.stays_health_status as string | undefined,
+                    detail:    s.stays_health_detail as string | undefined,
+                    checkedAt: s.stays_health_checked_at as string | undefined,
+                });
             })
             .catch(err => setError(err instanceof Error ? err.message : 'Failed to load settings.'))
             .finally(() => setLoading(false));
@@ -74,6 +113,7 @@ export default function AdminSettingsPage() {
                 admin_email:            adminEmail,
                 platform_description:   description,
                 public_registration:    publicReg,
+                stays_maintenance:      staysMaintenance,
                 default_currency:       currency,
                 timezone,
                 cache_duration:         cacheDuration,
@@ -177,6 +217,61 @@ export default function AdminSettingsPage() {
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${publicReg ? 'right-1' : 'left-1'}`} />
                                     </button>
                                 </div>
+
+                                {/* Supplier health — the canary search, not the gateway ping.
+                                    `/admin/tgx-health` answers "is TravelgateX reachable", which
+                                    stayed green throughout the 2026-10-26 outage. This answers
+                                    "did a city that is never empty return rooms". */}
+                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-slate-900">
+                                                Hotel Supplier Health
+                                                <span className={`ml-2 align-middle text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                                                    health.status === 'healthy' ? 'bg-emerald-100 text-emerald-700'
+                                                    : health.status === 'down'  ? 'bg-rose-100 text-rose-700'
+                                                    : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                    {health.status ?? 'never checked'}
+                                                </span>
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-0.5 break-words">
+                                                {health.detail || 'Searches a city that is never empty; switches maintenance on by itself'}
+                                            </p>
+                                            {health.checkedAt && (
+                                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                                    Last checked {new Date(health.checkedAt).toLocaleString()}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={runHealthCheck}
+                                            disabled={checkingHealth}
+                                            className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            {checkingHealth ? 'Checking…' : 'Check now'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-900">Stays Maintenance Mode</p>
+                                        <p className="text-xs text-slate-500">Hotel search and booking off — flights unaffected</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setStaysMaintenance(v => !v)}
+                                        className={`w-12 h-6 rounded-full relative transition-colors ${staysMaintenance ? 'bg-amber-500' : 'bg-slate-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${staysMaintenance ? 'right-1' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                {staysMaintenance && (
+                                    <p className="text-xs font-semibold text-amber-700 -mt-1">
+                                        Visitors see a notice instead of hotel results, and no search reaches the supplier.
+                                        Remember to save — this toggle is part of the form.
+                                    </p>
+                                )}
                             </>
                         )}
 

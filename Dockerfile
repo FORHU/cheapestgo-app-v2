@@ -30,6 +30,10 @@ ARG NEXT_PUBLIC_MAPBOX_TOKEN
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+# The staff hostname (ADR-0006). Read by middleware, which Next inlines at build time like
+# any other NEXT_PUBLIC_* value — so it is a build arg, not a runtime env var. Empty means
+# not configured, and the back office stays on the storefront.
+ARG NEXT_PUBLIC_STAFF_HOST
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build

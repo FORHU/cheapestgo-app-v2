@@ -2,11 +2,17 @@ import { create } from 'zustand';
 import { http } from '@/shared/lib/http';
 import { claimRecentSearches, stashRecentSearches } from '@/shared/lib/recentSearchHandoff';
 import { clearBookingInProgress } from '@/shared/lib/bookingInProgress';
+import type { Role } from '@/shared/auth/roles';
 
 interface User {
     id:         string;
     email:      string;
-    role:       'user' | 'admin';
+    /**
+     * `support_agent` is a real role the database and api-v2 both carry, and it was missing
+     * here — which is how an Agent came to be typed as impossible in the front end while
+     * existing everywhere else. See `shared/auth/roles.ts` for what each one may reach.
+     */
+    role:       Role;
     first_name?: string;
     last_name?:  string;
     avatar_url?: string;

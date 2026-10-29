@@ -752,6 +752,13 @@
     "fromPrice": "{price}〜",
     "perNight": "/泊",
     "pricesMayVary": "価格は変動する場合があります",
+    "maintenance": {
+      "title": "ホテルのご予約を一時停止しています",
+      "description": "宿泊施設の仕入先から在庫情報が提供されていません。お客様側の問題ではなく、早期の復旧に努めております。",
+      "note": "航空券は通常どおりご利用いただけます",
+      "flightsCta": "航空券を検索",
+      "homeCta": "ホームに戻る"
+    },
     "guestFavorite": "ゲストのお気に入り",
     "bookNow": "今すぐ予約",
     "headerDefault": "人気のホテルセール",
