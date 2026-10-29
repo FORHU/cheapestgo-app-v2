@@ -8,9 +8,14 @@ import { categoryToBg, type NearbyGem } from '@/features/hotels/hooks/useNearbyG
 import { DistanceUnitToggle } from '@/shared/components/common/DistanceUnitToggle';
 import { RADIUS_OPTIONS, formatDistance, haversineMeters, type DistanceUnit } from '@/shared/lib/distance';
 import { BRAND } from '@/shared/lib/palette';
+import { cn } from '@/shared/lib/cn';
 import type { LatLng, NearbyPalette } from './types';
 
-interface PlaceStripProps {
+/**
+ * Everything the nearby strip works from. It is drawn as two pieces — `PlaceFilters` under the
+ * map and `PlaceCards` over the map's bottom edge — and each takes the slice it needs.
+ */
+export interface PlaceStripProps {
     gems: NearbyGem[];
     loading: boolean;
     error: boolean;
@@ -29,16 +34,32 @@ interface PlaceStripProps {
     palette: NearbyPalette;
 }
 
+type PlaceFiltersProps = Pick<
+    PlaceStripProps,
+    'gems' | 'error' | 'onRetry' | 'category' | 'onCategoryChange' | 'radius' | 'onRadiusChange' | 'unit' | 'onUnitChange' | 'palette'
+>;
+
+type PlaceCardsProps = Pick<
+    PlaceStripProps,
+    'gems' | 'loading' | 'error' | 'onRetry' | 'unit' | 'hotel' | 'activeId' | 'onSelect' | 'onDetails' | 'palette'
+> & { className?: string };
+
 const SKELETONS = 8;
 
-export function PlaceStrip({
-    gems, loading, error, onRetry, category, onCategoryChange, radius, onRadiusChange,
-    unit, onUnitChange, hotel, activeId, onSelect, onDetails, palette,
-}: PlaceStripProps) {
+function pillStyle(palette: NearbyPalette): React.CSSProperties {
+    return {
+        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999,
+        border: `1px solid ${palette.cardBorder}`, background: palette.cardBg, color: palette.title,
+        fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    };
+}
+
+/** The category dropdown, the radius steps and the unit toggle — and a note when the lookup came back incomplete. */
+export function PlaceFilters({
+    gems, error, onRetry, category, onCategoryChange, radius, onRadiusChange, unit, onUnitChange, palette,
+}: PlaceFiltersProps) {
     const t = useTranslations('property.nearby');
-    const tAll = useTranslations();
     const locale = useLocale();
-    const scrollRef = useRef<HTMLDivElement>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -75,41 +96,7 @@ export function PlaceStrip({
 
     const selected = POI_FILTERS.find((f) => f.id === category) ?? POI_FILTERS[0];
     const SelectedIcon = selected.icon;
-    const scroll = (direction: -1 | 1) => scrollRef.current?.scrollBy({ left: direction * 300, behavior: 'smooth' });
-
-    const pill: React.CSSProperties = {
-        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999,
-        border: `1px solid ${palette.cardBorder}`, background: palette.cardBg, color: palette.title,
-        fontSize: 13, fontWeight: 700, cursor: 'pointer',
-    };
-
-    let body: React.ReactNode;
-    if (gems.length > 0) {
-        body = gems.map((g) => (
-            <PlaceCard
-                key={g.id}
-                gem={g}
-                distance={formatDistance(haversineMeters(hotel, g.coordinates), unit, locale)}
-                active={g.id === activeId}
-                onSelect={onSelect}
-                onDetails={onDetails}
-                detailsLabel={t('details')}
-            />
-        ));
-    } else if (loading) {
-        body = Array.from({ length: SKELETONS }, (_, i) => (
-            <div key={i} data-testid="place-skeleton" className="shrink-0 animate-pulse rounded-2xl" style={{ width: 192, height: 128, background: palette.iconBg }} />
-        ));
-    } else if (error) {
-        body = (
-            <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 12, color: palette.muted, fontSize: 15, padding: '16px 0' }}>
-                <span>{t('loadFailed')}</span>
-                <button type="button" onClick={onRetry} style={pill}>{t('retry')}</button>
-            </div>
-        );
-    } else {
-        body = <p style={{ color: palette.muted, fontSize: 15, padding: '16px 0' }}>{tAll('hotels.nearby.none')}</p>;
-    }
+    const pill = pillStyle(palette);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -212,29 +199,86 @@ export function PlaceStrip({
                     <button type="button" onClick={onRetry} style={pill}>{t('retry')}</button>
                 </div>
             )}
-
-            <div style={{ position: 'relative' }}>
-                {gems.length > 3 && (
-                    <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="hidden lg:flex" style={arrowStyle('left', palette)}>
-                        <ChevronLeft size={16} aria-hidden />
-                    </button>
-                )}
-                <div ref={scrollRef} className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollBehavior: 'smooth', padding: '8px 6px' }}>
-                    {body}
-                </div>
-                {gems.length > 3 && (
-                    <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="hidden lg:flex" style={arrowStyle('right', palette)}>
-                        <ChevronRight size={16} aria-hidden />
-                    </button>
-                )}
-            </div>
         </div>
     );
 }
 
+/**
+ * The places themselves, as a row of photo cards that scrolls sideways.
+ *
+ * Drawn over the map's bottom edge, so whatever stands in for the cards — the loading
+ * placeholders, the failure with its retry, the empty note — sits on a plate of its own: bare
+ * text over a street map is not legible.
+ *
+ * The row itself takes no pointer events outside its cards, so the map still pans when dragged
+ * from the gaps between them.
+ */
+export function PlaceCards({
+    gems, loading, error, onRetry, unit, hotel, activeId, onSelect, onDetails, palette, className,
+}: PlaceCardsProps) {
+    const t = useTranslations('property.nearby');
+    const tAll = useTranslations();
+    const locale = useLocale();
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const scroll = (direction: -1 | 1) => scrollRef.current?.scrollBy({ left: direction * 300, behavior: 'smooth' });
+    const notice: React.CSSProperties = {
+        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14,
+        background: palette.bg, color: palette.muted, fontSize: 15,
+        boxShadow: '0 8px 24px rgba(0,0,0,.25)', pointerEvents: 'auto',
+    };
+
+    let body: React.ReactNode;
+    if (gems.length > 0) {
+        body = gems.map((g) => (
+            <PlaceCard
+                key={g.id}
+                gem={g}
+                distance={formatDistance(haversineMeters(hotel, g.coordinates), unit, locale)}
+                active={g.id === activeId}
+                onSelect={onSelect}
+                onDetails={onDetails}
+                detailsLabel={t('details')}
+                ratingLabel={g.rating !== null && g.rating > 0 ? t('ratingOutOf5', { rating: g.rating.toFixed(1) }) : undefined}
+            />
+        ));
+    } else if (loading) {
+        body = Array.from({ length: SKELETONS }, (_, i) => (
+            <div key={i} data-testid="place-skeleton" className="shrink-0 animate-pulse" style={{ width: 192, height: 128, background: palette.iconBg }} />
+        ));
+    } else if (error) {
+        body = (
+            <div role="alert" style={notice}>
+                <span>{t('loadFailed')}</span>
+                <button type="button" onClick={onRetry} style={pillStyle(palette)}>{t('retry')}</button>
+            </div>
+        );
+    } else {
+        body = <p style={notice}>{tAll('hotels.nearby.none')}</p>;
+    }
+
+    return (
+        <div className={cn('pointer-events-none relative', className)}>
+            {gems.length > 3 && (
+                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left', palette)}>
+                    <ChevronLeft size={16} aria-hidden />
+                </button>
+            )}
+            <div ref={scrollRef} className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollBehavior: 'smooth', padding: '8px 12px' }}>
+                {body}
+            </div>
+            {gems.length > 3 && (
+                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right', palette)}>
+                    <ChevronRight size={16} aria-hidden />
+                </button>
+            )}
+        </div>
+    );
+}
+
+/** Inside the row's ends rather than hanging past them — the map clips anything past its edge. */
 function arrowStyle(side: 'left' | 'right', palette: NearbyPalette): React.CSSProperties {
     return {
-        ...(side === 'left' ? { left: -12 } : { right: -12 }),
+        ...(side === 'left' ? { left: 6 } : { right: 6 }),
         position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
         width: 30, height: 30, borderRadius: '50%', alignItems: 'center', justifyContent: 'center',
         background: palette.bg, color: palette.title, border: `1px solid ${palette.cardBorder}`,
@@ -249,20 +293,26 @@ interface PlaceCardProps {
     onSelect: (gem: NearbyGem) => void;
     onDetails: (gem: NearbyGem) => void;
     detailsLabel: string;
+    /** "4.6 out of 5 stars" — absent when the place has no rating. */
+    ratingLabel?: string;
 }
 
 /**
  * A photo card. The whole card selects the place; "Details" sits above it as a separate button, so
  * the two are siblings rather than a button inside a button.
+ *
+ * Square, like the room cards and the map it sits on. The rating is the place popup's own mark —
+ * an amber star and the score — set in line with the distance, not a white pill of its own over the
+ * photo.
  */
-function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }: PlaceCardProps) {
+function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel, ratingLabel }: PlaceCardProps) {
     const Icon = gem.icon;
     const rating = gem.rating !== null && gem.rating > 0 ? gem.rating.toFixed(1) : null;
     const name = gem.translatedName ?? gem.name;
 
     return (
         <div
-            className={`relative shrink-0 overflow-hidden rounded-2xl bg-linear-to-br has-[button[data-select]:focus-visible]:outline-2 has-[button[data-select]:focus-visible]:outline-offset-2 ${categoryToBg(gem.category)}`}
+            className={`pointer-events-auto relative shrink-0 overflow-hidden bg-linear-to-br shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)] has-[button[data-select]:focus-visible]:outline-2 has-[button[data-select]:focus-visible]:outline-offset-2 ${categoryToBg(gem.category)}`}
             style={{ width: 192, height: 128, ...(active ? { outline: `3px solid ${BRAND.primary}`, outlineOffset: 2 } : {}), outlineColor: BRAND.primary }}
         >
             {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the api-v2 proxy with an SVG fallback; next/image would need remotePatterns for that host */}
@@ -288,13 +338,6 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }:
                 style={{ background: 'transparent', border: 'none' }}
             />
 
-            {rating && (
-                <div className="pointer-events-none absolute top-2 left-2 flex items-center gap-1 rounded-full bg-white/95 px-1.5 py-0.5 text-[11px] font-extrabold text-slate-800">
-                    <Star size={10} className="fill-amber-400 text-amber-400" aria-hidden />
-                    {rating}
-                </div>
-            )}
-
             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2.5">
                 <div className="truncate text-[10px] font-bold uppercase tracking-widest text-white/70">
                     {gem.displayCategory ?? gem.category.replace(/_/g, ' ')}
@@ -302,7 +345,18 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel }:
                 <div className="line-clamp-2 text-[13px] font-extrabold leading-tight text-white" aria-hidden>
                     {name}
                 </div>
-                <div className="text-[11px] font-semibold text-white/75">{distance}</div>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-white/75">
+                    {rating && (
+                        <>
+                            <span role="img" aria-label={ratingLabel} className="inline-flex items-center gap-0.5 font-bold text-white">
+                                <Star size={11} className="fill-amber-400 text-amber-400" aria-hidden />
+                                <span aria-hidden>{rating}</span>
+                            </span>
+                            <span aria-hidden>·</span>
+                        </>
+                    )}
+                    <span>{distance}</span>
+                </div>
             </div>
 
             <button

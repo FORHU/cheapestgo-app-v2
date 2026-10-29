@@ -2,10 +2,15 @@ import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import type { PoiCategory } from '@/shared/config/map-discovery';
 import type { DistanceUnit } from '@/shared/lib/distance';
-import { PlaceStrip } from '@/features/hotels/components/nearby/PlaceStrip';
+import { PlaceCards, PlaceFilters, type PlaceStripProps } from '@/features/hotels/components/nearby/PlaceStrip';
 import { HOTEL, PALETTE, gem, renderWithIntl } from './nearby-fixtures';
 
-function props(overrides: Partial<React.ComponentProps<typeof PlaceStrip>> = {}) {
+/** The strip as the explorer lays it out: the filters, then the cards (which the page draws over the map). */
+function PlaceStrip(p: PlaceStripProps) {
+    return <><PlaceFilters {...p} /><PlaceCards {...p} /></>;
+}
+
+function props(overrides: Partial<PlaceStripProps> = {}): PlaceStripProps {
     return {
         gems: [gem()],
         loading: false,
@@ -34,6 +39,18 @@ describe('PlaceStrip', () => {
         renderWithIntl(<PlaceStrip {...props()} />);
         expect(screen.getByText('Cafe Onion')).toBeInTheDocument();
         expect(screen.getByText('360 m')).toBeInTheDocument();
+    });
+
+    it('marks the rating as a star and score in line with the distance, read out of 5', () => {
+        renderWithIntl(<PlaceStrip {...props()} />);
+        const rating = screen.getByRole('img', { name: '4.6 out of 5 stars' });
+        expect(rating).toHaveTextContent('4.6');
+        expect(rating.parentElement).toHaveTextContent('360 m');
+    });
+
+    it('leaves the rating off a place that has none', () => {
+        renderWithIntl(<PlaceStrip {...props({ gems: [gem({ rating: null })] })} />);
+        expect(screen.queryByRole('img', { name: /out of 5 stars/ })).not.toBeInTheDocument();
     });
 
     it('shows distances and radius steps in miles', () => {

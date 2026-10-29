@@ -795,10 +795,9 @@
       "noMatch": "その料金に合う客室はありません。別の条件をお試しください。",
       "nonRefundable": "返金不可",
       "pages": "客室ページ",
-      "paymentTerms": "お支払い条件",
       "prevPage": "前のページ",
       "refundable": "返金可能",
-      "viewMore": "もっと見る"
+      "roomDetails": "客室の詳細"
     }
   },
   "invoice": {
@@ -964,6 +963,8 @@
         "aiSearch": "AI 検索"
       },
       "go": "出発",
+      "searchingStays": "ホテルを検索中…",
+      "searchingFlights": "フライトを検索中…",
       "whosComing": "ご宿泊者はどなたですか？"
     },
     "journey": {
@@ -976,19 +977,16 @@
       },
       "stages": {
         "stays": {
-          "eyebrow": "ステージ01 · ホテル",
           "titleLead": "宿を",
           "titleRest": "探そう。",
           "caption": "ホテルも民泊も、1泊あたりの料金で。予約ボタンを押す前に、すべての手数料を表示します。"
         },
         "flights": {
-          "eyebrow": "ステージ02 · フライト",
           "titleLead": "そして、",
           "titleRest": "旅立とう。",
           "caption": "全航空会社・全運賃クラスを、実際に支払う金額順に並べ替え。"
         },
         "ai": {
-          "eyebrow": "ステージ03 · AIプランナー",
           "titleLead": "または、",
           "titleRest": "聞くだけ。",
           "caption": "旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。"

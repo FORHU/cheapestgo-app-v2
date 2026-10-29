@@ -115,9 +115,11 @@ describe('RoomSelection', () => {
         expect(screen.getByText('Free cancellation')).toBeInTheDocument();
     });
 
-    it('says nothing about cancellation on a non-refundable rate', () => {
+    it('promises no free cancellation on a non-refundable rate, whatever deadline came with it', () => {
         render(<RoomSelection {...base} rooms={[room({ rates: [rate({ cancellationDeadline: '2026-08-28T12:00:00Z' })] })]} />);
         expect(screen.queryByText(/Free cancellation/)).not.toBeInTheDocument();
+        // The line says what the rate is instead — the <p>, not the filter chip of the same name.
+        expect(screen.getAllByText('Non-refundable').filter(el => el.tagName === 'P')).toHaveLength(1);
     });
 
     it('says so when a filter matches nothing', async () => {
@@ -174,7 +176,7 @@ describe('RoomSelection', () => {
 
         // The card face carries the structural rows only, so the fallback has
         // to be read where the amenities actually land: the room-detail modal.
-        await user.click(screen.getByRole('button', { name: 'View more' }));
+        await user.click(screen.getByRole('button', { name: 'Room details' }));
         expect(screen.getByText('Free Wi-Fi')).toBeInTheDocument();
         expect(screen.getByText('Air conditioning')).toBeInTheDocument();
         // A pool and a car park are the building's, not the room's.
@@ -192,12 +194,12 @@ describe('RoomSelection', () => {
             />,
         );
 
-        await user.click(screen.getByRole('button', { name: 'View more' }));
+        await user.click(screen.getByRole('button', { name: 'Room details' }));
         expect(screen.getByText('Rainfall shower')).toBeInTheDocument();
         expect(screen.queryByText('Free Wi-Fi')).not.toBeInTheDocument();
     });
 
-    it('keeps the amenities off the card face, behind View more', async () => {
+    it('keeps the amenities off the row, behind Room details', async () => {
         const user = userEvent.setup();
         render(
             <RoomSelection
@@ -215,7 +217,7 @@ describe('RoomSelection', () => {
         expect(screen.getAllByRole('listitem').map(li => li.textContent)).toEqual(['1 double bed']);
         expect(screen.queryByText('Private bathroom')).not.toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'View more' }));
+        await user.click(screen.getByRole('button', { name: 'Room details' }));
         expect(screen.getByText('Private bathroom')).toBeInTheDocument();
         expect(screen.getByText('City view')).toBeInTheDocument();
     });
@@ -225,7 +227,7 @@ describe('RoomSelection', () => {
         const user = userEvent.setup();
         render(<RoomSelection {...base} rooms={[room({ id: 'r7' })]} onSelect={onSelect} />);
 
-        await user.click(screen.getByRole('button', { name: 'Select Room' }));
+        await user.click(screen.getByRole('button', { name: 'Select' }));
         // Once, not twice: the button sits inside a card that is itself a
         // selection target, and its click must not bubble into it.
         expect(onSelect).toHaveBeenCalledTimes(1);
@@ -238,7 +240,7 @@ describe('RoomSelection', () => {
         expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('draws one card for a room sold several ways, headlined at its cheapest', () => {
+    it('draws a whole card for each rate of a room sold several ways, cheapest first', () => {
         render(
             <RoomSelection
                 {...base}
@@ -250,22 +252,37 @@ describe('RoomSelection', () => {
                 })]}
             />,
         );
-        // One room, one card. Drawn per rate it was the same name and the same
-        // photograph twice down the page, which reads as a duplicate listing.
-        expect(shownRooms()).toEqual(['Comfort Leisure Room']);
-        // The headline is the lowest it can be booked at; the dearer rate is
-        // offered inside the card rather than as a second room.
-        expect(screen.getAllByText('$169').length).toBeGreaterThan(0);
-        expect(screen.getAllByText(/\$200/).length).toBeGreaterThan(0);
-        // The card's pill names the board of whichever rate is showing — the
-        // cheapest, on arrival.
+        // One card per rate, each naming its room in full.
+        expect(shownRooms()).toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
+        // Cheapest first, each headed by its own board.
+        expect(screen.getByText('$169')).toBeInTheDocument();
+        expect(screen.getByText('$200')).toBeInTheDocument();
         expect(screen.getByText('Room Only')).toBeInTheDocument();
+        expect(screen.getByText('Breakfast Included', { selector: 'li' })).toBeInTheDocument();
+        const prices = screen.getAllByText(/^\$\d+$/).map(el => el.textContent);
+        expect(prices).toEqual(['$169', '$200']);
     });
 
-    it('re-prices the card when another of the room rates is chosen', async () => {
+    it('keeps a room’s cards together, cheapest room first, rather than interleaving by price', () => {
         render(
             <RoomSelection
                 {...base}
+                rooms={[
+                    room({ id: 'a', name: 'Twin', rates: [rate({ offerId: 'a1', price: 100 }), rate({ offerId: 'a2', price: 300 })] }),
+                    room({ id: 'b', name: 'Double', rates: [rate({ offerId: 'b1', price: 200 })] }),
+                ]}
+            />,
+        );
+        expect(shownRooms()).toEqual(['Twin', 'Twin', 'Double']);
+        expect(screen.getAllByText(/^\$\d+$/).map(el => el.textContent)).toEqual(['$100', '$300', '$200']);
+    });
+
+    it('selects the rate whose own card was pressed', async () => {
+        const onSelect = vi.fn();
+        render(
+            <RoomSelection
+                {...base}
+                onSelect={onSelect}
                 rooms={[room({
                     rates: [
                         rate({ offerId: 'a', price: 169, boardCode: 'RO' }),
@@ -274,18 +291,14 @@ describe('RoomSelection', () => {
                 })]}
             />,
         );
-        // Room Only is the cheaper rate, so it is what the card arrives showing.
-        expect(screen.getByText('Room Only')).toBeInTheDocument();
 
-        // The dearer rate's own chip inside the card.
-        await userEvent.click(screen.getByRole('button', { name: /\$200/ }));
+        await userEvent.click(screen.getAllByRole('button', { name: 'Select' })[1]);
 
-        // The room's pill now names that rate's board instead.
-        expect(screen.getByText('Breakfast')).toBeInTheDocument();
-        expect(screen.queryByText('Room Only')).not.toBeInTheDocument();
+        expect(onSelect).toHaveBeenCalledTimes(1);
+        expect(onSelect.mock.calls[0][0].rate.offerId).toBe('b');
     });
 
-    it('offers one Select per room, not one per rate', () => {
+    it('offers a Select per rate, and lights only the picked one', () => {
         render(
             <RoomSelection
                 {...base}
@@ -293,9 +306,11 @@ describe('RoomSelection', () => {
                 selectedOfferId="a"
             />,
         );
-        // Two rates, one room, one action — picking the terms happens inside the card.
-        expect(screen.getAllByRole('button', { name: /^(Selected|Select Room)$/ })).toHaveLength(1);
-        expect(screen.getAllByRole('button', { name: 'Selected' })).toHaveLength(1);
+        // Two rates, two cards — each with its own action.
+        expect(shownRooms()).toHaveLength(2);
+        expect(screen.getAllByRole('button', { name: /^(Selected|Select)$/ })).toHaveLength(2);
+        expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('prints the nightly rate it was given, and does not divide it again', () => {

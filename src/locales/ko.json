@@ -795,10 +795,9 @@
       "noMatch": "해당 요금에 맞는 객실이 없습니다. 다른 필터를 사용해 보세요.",
       "nonRefundable": "환불 불가",
       "pages": "객실 페이지",
-      "paymentTerms": "결제 조건",
       "prevPage": "이전 페이지",
       "refundable": "환불 가능",
-      "viewMore": "더 보기"
+      "roomDetails": "객실 상세 정보"
     }
   },
   "invoice": {
@@ -964,6 +963,8 @@
         "aiSearch": "AI 검색"
       },
       "go": "출발",
+      "searchingStays": "호텔 검색 중…",
+      "searchingFlights": "항공편 검색 중…",
       "whosComing": "누가 묵으시나요?"
     },
     "journey": {
@@ -976,19 +977,16 @@
       },
       "stages": {
         "stays": {
-          "eyebrow": "01단계 · 호텔",
           "titleLead": "숙소를",
           "titleRest": "찾아보세요.",
           "caption": "호텔과 숙소를 1박 요금으로 — 예약 버튼을 누르기 전에 모든 수수료를 보여드립니다."
         },
         "flights": {
-          "eyebrow": "02단계 · 항공편",
           "titleLead": "그다음엔",
           "titleRest": "떠나세요.",
           "caption": "모든 항공사, 모든 운임 등급을 실제 지불 금액 순으로 정렬합니다."
         },
         "ai": {
-          "eyebrow": "03단계 · AI 플래너",
           "titleLead": "아니면",
           "titleRest": "그냥 물어보세요.",
           "caption": "여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요."

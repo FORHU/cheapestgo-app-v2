@@ -41,6 +41,11 @@ export interface AmenityGroup { groupName: string; amenities: string[]; nonFree:
 
 export interface RoomContent {
     matchedRoomName?: string;
+    /**
+     * The matched ETG room group's photographs — where api-v2 sends a room's pictures today.
+     * Read alongside `RoomOption.roomPhotos`, the name v1 and older api-v2 builds use.
+     */
+    gallery?: string[];
     keyFacts: DetailItem[];
     bedLine?: string;
     bedsExtraSummary?: string;
@@ -67,6 +72,9 @@ export interface RoomOption {
      * while the card read a third name again — `content.gallery`, which nothing ever
      * filled — so every room on every property page fell back to the hotel's exterior
      * shot even where the API had sent eight pictures of the room.
+     *
+     * Current api-v2 sends them as `content.gallery` instead and leaves this unset, so the
+     * room list reads both — see `roomPhotosOf` in `room-selection.tsx`.
      */
     roomPhotos?: string[];
     cancellationDeadline?: string;

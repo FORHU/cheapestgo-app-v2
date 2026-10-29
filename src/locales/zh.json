@@ -795,10 +795,9 @@
       "noMatch": "没有符合该价格的房型，请尝试其他筛选条件。",
       "nonRefundable": "不可退款",
       "pages": "房型分页",
-      "paymentTerms": "付款条款",
       "prevPage": "上一页",
       "refundable": "可退款",
-      "viewMore": "查看更多"
+      "roomDetails": "房型详情"
     }
   },
   "invoice": {
@@ -964,6 +963,8 @@
         "aiSearch": "AI 搜索"
       },
       "go": "出发",
+      "searchingStays": "正在搜索酒店…",
+      "searchingFlights": "正在搜索航班…",
       "whosComing": "谁来入住？"
     },
     "journey": {
@@ -976,19 +977,16 @@
       },
       "stages": {
         "stays": {
-          "eyebrow": "第 01 站 · 酒店",
           "titleLead": "找到",
           "titleRest": "你的住处。",
           "caption": "酒店与民宿，按晚报价——点击预订前，所有费用一目了然。"
         },
         "flights": {
-          "eyebrow": "第 02 站 · 航班",
           "titleLead": "然后",
           "titleRest": "出发吧。",
           "caption": "所有航空公司、所有舱位，按您实际支付的价格排序。"
         },
         "ai": {
-          "eyebrow": "第 03 站 · AI 规划师",
           "titleLead": "或者",
           "titleRest": "直接问。",
           "caption": "告诉我们您的行程，我们会为您报出合适的住宿与路线价格。"

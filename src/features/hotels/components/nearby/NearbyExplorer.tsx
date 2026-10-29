@@ -14,8 +14,9 @@ import type { PoiCategory } from '@/shared/config/map-discovery';
 import { useNearbyGems, type NearbyGem } from '@/features/hotels/hooks/useNearbyGems';
 import { useDistanceUnit } from '@/shared/hooks/useDistanceUnit';
 import { nearestRadius } from '@/shared/lib/distance';
+import { cn } from '@/shared/lib/cn';
 import { NearbyMap } from './NearbyMap';
-import { PlaceStrip } from './PlaceStrip';
+import { PlaceCards, PlaceFilters } from './PlaceStrip';
 import { PlaceDetailsModal } from './PlaceDetailsModal';
 import type { LatLng, NearbyPalette } from './types';
 
@@ -23,11 +24,17 @@ interface NearbyExplorerProps {
     coordinates: LatLng;
     hotelName: string;
     palette: NearbyPalette;
+    /**
+     * Merged over the default stack of map-then-strip. The property page passes
+     * `contents`, so the map and the strip land in its own grid rows instead —
+     * the map in the row it shares with the room list.
+     */
+    className?: string;
+    /** Merged over the map frame's default fixed height. */
+    mapClassName?: string;
 }
 
-const MAP_HEIGHT = 420;
-
-export function NearbyExplorer({ coordinates, hotelName, palette }: NearbyExplorerProps) {
+export function NearbyExplorer({ coordinates, hotelName, palette, className, mapClassName }: NearbyExplorerProps) {
     const t = useTranslations('property.nearby');
     const mapRef = useRef<MapRef>(null);
     const [unit, setUnit] = useDistanceUnit();
@@ -68,21 +75,38 @@ export function NearbyExplorer({ coordinates, hotelName, palette }: NearbyExplor
     const closeDetails = useCallback(() => setDetailsId(null), []);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <NearbyMap
-                mapRef={mapRef}
-                hotel={coordinates}
-                hotelLabel={hotelName || t('hotel')}
-                places={gems}
-                activeId={active?.id ?? null}
-                onSelect={select}
-                mapStyle={palette.mapStyle}
-                route={null}
-                height={MAP_HEIGHT}
-            />
-            <PlaceStrip
+        <div className={cn('flex flex-col gap-3.5', className)}>
+            <div className={cn('h-[420px]', mapClassName)}>
+                <NearbyMap
+                    mapRef={mapRef}
+                    hotel={coordinates}
+                    hotelLabel={hotelName || t('hotel')}
+                    places={gems}
+                    activeId={active?.id ?? null}
+                    onSelect={select}
+                    mapStyle={palette.mapStyle}
+                    route={null}
+                    height="100%"
+                >
+                    {/* The places ride the map's bottom edge, lifted clear of the
+                        Mapbox logo and attribution, which have to stay visible. */}
+                    <PlaceCards
+                        className="absolute inset-x-0 bottom-8 z-10"
+                        gems={gems}
+                        loading={loading}
+                        error={error}
+                        onRetry={retry}
+                        unit={unit}
+                        hotel={coordinates}
+                        activeId={active?.id ?? null}
+                        onSelect={select}
+                        onDetails={showDetails}
+                        palette={palette}
+                    />
+                </NearbyMap>
+            </div>
+            <PlaceFilters
                 gems={gems}
-                loading={loading}
                 error={error}
                 onRetry={retry}
                 category={category}
@@ -91,10 +115,6 @@ export function NearbyExplorer({ coordinates, hotelName, palette }: NearbyExplor
                 onRadiusChange={setRadius}
                 unit={unit}
                 onUnitChange={setUnit}
-                hotel={coordinates}
-                activeId={active?.id ?? null}
-                onSelect={select}
-                onDetails={showDetails}
                 palette={palette}
             />
             <PlaceDetailsModal gem={detailsGem} hotel={coordinates} unit={unit} palette={palette} onClose={closeDetails} />

@@ -4,16 +4,17 @@
  * picked for a flight used to become a bare name ("Kyoto") no flight search can resolve.
  */
 
-import React from 'react';
+import React, { Suspense, useState } from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithIntl } from '@/shared/testing/renderWithIntl';
+import { renderWithIntl, withIntl } from '@/shared/testing/renderWithIntl';
 import ko from '@/locales/ko.json';
 
 const autocompleteDestinations = vi.hoisted(() => vi.fn());
+const push = vi.hoisted(() => vi.fn());
 vi.mock('@/features/search/api/destinations.api', () => ({ autocompleteDestinations }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
 
 import { ImmersiveSearchBar } from './immersive-search-bar';
 
@@ -111,6 +112,89 @@ describe('ImmersiveSearchBar — onModeSelect', () => {
         await user.click(screen.getByRole('button', { name: 'Flights' }));
 
         expect(onModeSelect).not.toHaveBeenCalled();
+    });
+});
+
+describe('ImmersiveSearchBar — a destination picked outside the bar', () => {
+    it('fills the sentence and reports it back', () => {
+        const onDestinationChange = vi.fn();
+        const { rerender } = renderWithIntl(<ImmersiveSearchBar onDestinationChange={onDestinationChange} />);
+        expect(onDestinationChange).toHaveBeenLastCalledWith(null);
+
+        rerender(withIntl(<ImmersiveSearchBar destinationPick={{ name: 'Tokyo' }} onDestinationChange={onDestinationChange} />));
+
+        expect(screen.getByText('Tokyo')).toBeInTheDocument();
+        expect(screen.queryByText('somewhere amazing')).not.toBeInTheDocument();
+        expect(onDestinationChange).toHaveBeenLastCalledWith('Tokyo');
+    });
+});
+
+/**
+ * GO used to show a spinner for a fixed 1.2s, then a green tick, then push — and the wait for the
+ * results page itself showed nothing at all. The button now stays loading until the page arrives.
+ */
+describe('ImmersiveSearchBar — searching', () => {
+    /** Never resolves, as a results page still on its way does not. */
+    const pending = new Promise<never>(() => {});
+    function ResultsPage(): never {
+        throw pending;
+    }
+
+    /** The bar beside a stand-in for the router: a push mounts a page that has not arrived yet. */
+    function Harness(props: React.ComponentProps<typeof ImmersiveSearchBar>) {
+        const [href, setHref] = useState<string | null>(null);
+        push.mockImplementation(setHref);
+        return (
+            <>
+                <ImmersiveSearchBar {...props} />
+                <Suspense fallback={null}>{href && <ResultsPage />}</Suspense>
+            </>
+        );
+    }
+
+    beforeEach(() => {
+        push.mockReset();
+        autocompleteDestinations.mockReset();
+        autocompleteDestinations.mockResolvedValue([]);
+    });
+
+    it('stays loading from GO until the hotel results arrive', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<Harness destinationPick={{ name: 'Tokyo' }} />);
+
+        await user.click(screen.getByRole('button', { name: 'GO' }));
+
+        const button = screen.getByRole('button', { name: 'Searching hotels…' });
+        expect(button).toHaveAttribute('aria-busy', 'true');
+        expect(push).toHaveBeenCalledExactlyOnceWith(expect.stringMatching(/^\/search\?destination=Tokyo&/));
+
+        // A second press while it loads does not start a second search.
+        await user.click(button);
+        expect(push).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('GO')).not.toBeInTheDocument();
+    });
+
+    it('says it is searching flights on the flights tab', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<Harness defaultMode="flights" />);
+        await user.click(screen.getByText('wherever you are'));
+        await user.click(screen.getByText('MNL'));
+        await user.click(screen.getByText('ICN'));
+
+        await user.click(screen.getByRole('button', { name: 'GO' }));
+
+        expect(screen.getByRole('button', { name: 'Searching flights…' })).toHaveAttribute('aria-busy', 'true');
+        expect(push).toHaveBeenCalledExactlyOnceWith(expect.stringMatching(/^\/flights\/search\?origin=Manila/));
+    });
+
+    it('does not search, or load, without a destination', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<Harness />);
+
+        await user.click(screen.getByRole('button', { name: 'GO' }));
+
+        expect(push).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'GO' })).toHaveAttribute('aria-busy', 'false');
     });
 });
 
