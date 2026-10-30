@@ -22,7 +22,11 @@ import { FlightSearchTopBar } from '@/features/flights/components/flight-search-
 import { PriceAlertButton } from '@/features/flights/components/PriceAlertButton';
 import {
     DEFAULT_FLIGHT_FILTERS, activeFilterCount as countActiveFilters, applyFlightFilters, type FlightFilterState,
+    type PriceConverter,
 } from '@/features/flights/lib/filter-offers';
+import { formatPrice } from '@/features/flights/lib/flight-utils';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
 import type { FlightOffer } from '@/shared/types';
 import { flightCheckoutQuery } from '@/features/flights/lib/flight-checkout-query';
 import { CURRENCIES } from '@/shared/components/common/CurrencySelector';
@@ -226,9 +230,29 @@ export function FlightSearchClient() {
     // Memoised so the empty-state array keeps its identity across renders —
     // otherwise it invalidates the `filteredOffers` memo below on every render.
     const rawOffers = useMemo(() => (state.status === 'success' ? state.offers : []), [state]);
+
+    /**
+     * Fares as the cards print them: in the currency picked in the top bar, once the rates
+     * are live — `FlightCard`'s own conversion. The filter panel ranges, matches and sorts
+     * in it too, so a figure typed into the price field means what the cards beside it say.
+     */
+    const ratesLive = useLiveRates();
+    const shownPrice = useCallback<PriceConverter>(
+        (amount, from) => (ratesLive ? convertForDisplay(amount, from, userCurrency).amount : amount),
+        [ratesLive, userCurrency],
+    );
+    const fareCurrency = (allOffers[0] ?? rawOffers[0])?.price?.currency ?? 'USD';
+    const shownCurrency = convertForDisplay(1, fareCurrency, userCurrency).currency;
+
+    // A range typed in one currency means nothing in another: when the cards change currency
+    // — the selector, or the rates landing — the price filter starts over in the new one.
+    useEffect(() => {
+        setFilters((prev) => (prev.priceRange ? { ...prev, priceRange: null } : prev));
+    }, [shownCurrency]);
+
     const filteredOffers = useMemo(
-        () => applyFlightFilters(allOffers.length > 0 ? allOffers : rawOffers, filters),
-        [allOffers, rawOffers, filters],
+        () => applyFlightFilters(allOffers.length > 0 ? allOffers : rawOffers, filters, shownPrice),
+        [allOffers, rawOffers, filters, shownPrice],
     );
     const activeFilterCount = countActiveFilters(filters);
 
@@ -256,9 +280,10 @@ export function FlightSearchClient() {
             );
 
             if (check.priceChanged && typeof check.newPrice === 'number') {
-                const currency = offer.price?.currency ?? '';
+                // In the currency the card showed it in, so the new figure reads against the old.
+                const shown = convertForDisplay(check.newPrice, offer.price?.currency ?? 'USD', userCurrency);
                 const ok = window.confirm(
-                    `The price for this flight has changed to ${currency} ${check.newPrice.toLocaleString()}.`
+                    `The price for this flight has changed to ${formatPrice(shown.amount, shown.currency)}.`
                     + '\n\nContinue at the new price?',
                 );
                 if (!ok) return;
@@ -288,7 +313,7 @@ export function FlightSearchClient() {
             checkoutCurrency,
         );
         router.push(`/flights/book?${qs.toString()}`);
-    }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency]);
+    }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency, userCurrency]);
 
     // ─── Search effect ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -413,6 +438,8 @@ export function FlightSearchClient() {
         onChange: handleFilterChange,
         onReset: resetFilters,
         allOffers: allOffers.length > 0 ? allOffers : rawOffers,
+        convert: shownPrice,
+        priceCurrency: shownCurrency,
     };
 
     // The hotel results page's drawer, so filters open the same way on both: the

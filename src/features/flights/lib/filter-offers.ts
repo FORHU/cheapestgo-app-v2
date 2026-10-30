@@ -23,7 +23,10 @@ export interface FlightFilterState {
     stops: 0 | 1 | 2 | null;
     refundableOnly: boolean;
     selectedProviders: string[];
-    /** Per-person price, inclusive, in the offers' own currency. null leaves it unbounded. */
+    /**
+     * Per-person price, inclusive, in the currency the page shows — what its `PriceConverter`
+     * returns, or the offers' own currency when it gives none. null leaves it unbounded.
+     */
     priceRange: [number, number] | null;
     /** Minutes past midnight, inclusive, in Local Airport Time. */
     departureWindow: [number, number] | null;
@@ -58,6 +61,19 @@ export function offerAirline(offer: FlightOffer): string {
  */
 export function offerPricePerPerson(offer: FlightOffer): number {
     return offer.price?.pricePerAdult || offer.price?.total || 0;
+}
+
+/**
+ * An amount in the currency it came in, as the page prints it — the results page passes its
+ * card conversion, so the panel's range, its matching and the cheapest-first order are all in
+ * the currency the cards are. Without one, prices are compared as they came.
+ */
+export type PriceConverter = (amount: number, currency: string) => number;
+
+const AS_QUOTED: PriceConverter = (amount) => amount;
+
+function pricePerPersonShown(offer: FlightOffer, convert: PriceConverter): number {
+    return convert(offerPricePerPerson(offer), offer.price?.currency ?? 'USD');
 }
 
 /**
@@ -152,12 +168,12 @@ export interface FilterBounds {
  * unfiltered results — a filter that lets a traveller ask for something no result can
  * satisfy wastes the only part of the panel that has to feel exact.
  */
-export function filterBounds(offers: FlightOffer[]): FilterBounds {
+export function filterBounds(offers: FlightOffer[], convert: PriceConverter = AS_QUOTED): FilterBounds {
     if (offers.length === 0) {
         return { price: [0, 0], duration: [0, 0], airlines: [], arrivalAirports: [] };
     }
 
-    const prices = offers.map(offerPricePerPerson);
+    const prices = offers.map((offer) => pricePerPersonShown(offer, convert));
     const durations = offers.map(offerDurationMinutes);
     const airlines = new Set<string>();
     const arrivalAirports = new Set<string>();
@@ -199,7 +215,11 @@ function withinWindow(minute: number | null, window: [number, number] | null): b
 }
 
 /** Every offer that matches, in the order the chosen sort puts them. Never sorts in place. */
-export function applyFlightFilters(offers: FlightOffer[], filters: FlightFilterState): FlightOffer[] {
+export function applyFlightFilters(
+    offers: FlightOffer[],
+    filters: FlightFilterState,
+    convert: PriceConverter = AS_QUOTED,
+): FlightOffer[] {
     const matched = offers.filter((offer) => {
         if (!offerMatchesStops(offer, filters.stops)) return false;
         if (filters.refundableOnly && !offerIsRefundable(offer)) return false;
@@ -209,7 +229,7 @@ export function applyFlightFilters(offers: FlightOffer[], filters: FlightFilterS
             && !filters.selectedArrivalAirports.includes(offerArrivalAirport(offer))) return false;
 
         if (filters.priceRange) {
-            const price = offerPricePerPerson(offer);
+            const price = pricePerPersonShown(offer, convert);
             if (price < filters.priceRange[0] || price > filters.priceRange[1]) return false;
         }
         if (filters.maxDurationMinutes !== null && offerDurationMinutes(offer) > filters.maxDurationMinutes) {
@@ -223,7 +243,8 @@ export function applyFlightFilters(offers: FlightOffer[], filters: FlightFilterS
 
     const sorted = [...matched];
     if (filters.sortBy === 'price') {
-        sorted.sort((a, b) => (a.price?.total ?? 0) - (b.price?.total ?? 0));
+        const total = (o: FlightOffer) => convert(o.price?.total ?? 0, o.price?.currency ?? 'USD');
+        sorted.sort((a, b) => total(a) - total(b));
     } else if (filters.sortBy === 'duration') {
         // Rank on the direction the row actually shows, not on a sum of both.
         sorted.sort((a, b) => offerDurationMinutes(a) - offerDurationMinutes(b));

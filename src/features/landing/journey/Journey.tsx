@@ -4,7 +4,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { BRAND } from '@/shared/lib/palette';
-import { formatCurrency } from '@/shared/lib/format';
+import { useMoney } from '@/features/landing/lib/money';
 import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
 import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
 import type { FeaturedStay } from '@/features/landing/api/featured.api';
@@ -496,6 +496,8 @@ function ShowcaseStrip({
     onPick: (city: string) => void;
 }) {
     const tAll = useTranslations();
+    // In the currency picked in the header, as every other price on the landing page is.
+    const money = useMoney();
 
     return (
         <div className="flex flex-wrap gap-2">
@@ -519,7 +521,7 @@ function ShowcaseStrip({
                         <span className="text-sm font-medium text-white">{d.city}</span>
                         {stay && (
                             <span className="ml-2 text-xs text-white/55">
-                                {tAll('landing.journey.strip.from', { price: formatCurrency(stay.price, stay.currency) })}
+                                {tAll('landing.journey.strip.from', { price: money(stay.price, stay.currency) })}
                             </span>
                         )}
                     </button>

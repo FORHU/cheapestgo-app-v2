@@ -2400,7 +2400,7 @@
       "specialRequests": "特別リクエスト",
       "title": "予約を変更"
     },
-    "myTrips": "マイトリップ",
+    "myTrips": "マイ予約",
     "noSegmentDetails": "区間の詳細はありません。",
     "sections": {
       "cancellationPolicy": "キャンセルポリシー",
@@ -2516,7 +2516,7 @@
       "loadError": "請求書を読み込めません"
     },
     "v2": {
-      "backToMyTrips": "マイトリップに戻る",
+      "backToMyTrips": "マイ予約に戻る",
       "downloadETicket": "Eチケットをダウンロード",
       "refundNotice": "払い戻しの可否は航空会社の運賃規則に従います。"
     },

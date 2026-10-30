@@ -342,10 +342,22 @@ export interface FlightBooking {
     flight_segments?: Array<{
         origin: string;
         destination: string;
+        /**
+         * Each end's own airport clock, as stored — not an instant: api-v2 parses the offer's
+         * offset-less Local Airport Time where it runs. Print them as the trips screens do
+         * (`formatBookingTime`) and never subtract a departure from an arrival in another zone.
+         */
         departure: string;
         arrival?: string;
         airline?: string;
         flight_number?: string;
+        // These already arrive — `listForUser` sends the whole row — and the itinerary is the
+        // first thing to need them by name.
+        /** The direction the leg flies in: 0 outbound, 1 the return — an offer's `segmentIndex`. */
+        segment_index?: number;
+        cabin_class?: string;
+        origin_terminal?: string | null;
+        destination_terminal?: string | null;
     }>;
     passengers?: Array<{
         first_name: string;

@@ -2400,7 +2400,7 @@
       "specialRequests": "요청 사항",
       "title": "예약 변경"
     },
-    "myTrips": "내 여행",
+    "myTrips": "내 예약",
     "noSegmentDetails": "구간 정보가 없습니다.",
     "sections": {
       "cancellationPolicy": "취소 정책",
@@ -2516,7 +2516,7 @@
       "loadError": "청구서를 불러올 수 없습니다"
     },
     "v2": {
-      "backToMyTrips": "내 여행으로 돌아가기",
+      "backToMyTrips": "내 예약으로 돌아가기",
       "downloadETicket": "전자항공권 다운로드",
       "refundNotice": "환불 가능 여부는 항공사 운임 규정에 따릅니다."
     },

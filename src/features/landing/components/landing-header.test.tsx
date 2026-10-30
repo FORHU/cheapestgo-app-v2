@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithIntl } from '@/shared/testing/renderWithIntl';
 import { useAuthStore } from '@/shared/stores/auth.store';
@@ -20,6 +20,8 @@ vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams()
 // The locale and currency menus bring their own stores and router; they are not under test.
 vi.mock('@/shared/components/common/LocaleSelector', () => ({ LocaleSelector: () => null }));
 vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
+const toggleTheme = vi.fn();
+vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', toggleTheme }) }));
 
 import { LandingHeader } from './landing-header';
 
@@ -49,5 +51,19 @@ describe('LandingHeader', () => {
         const profile = await screen.findByRole('button', { name: 'Account' });
         expect(profile).toHaveTextContent('BB');
         expect(screen.queryByText('Sign in')).not.toBeInTheDocument();
+    });
+
+    it('has no theme to switch on the landing page, which is dark whatever the theme', async () => {
+        renderWithIntl(<LandingHeader />, { wrapper: queryWrapper });
+        await screen.findByRole('link', { name: 'Bookings' });
+        expect(screen.queryByRole('button', { name: /switch to/i })).not.toBeInTheDocument();
+    });
+
+    it('carries the theme switch on a themed page, where it stands in for the app header', async () => {
+        renderWithIntl(<LandingHeader tone="default" />, { wrapper: queryWrapper });
+
+        expect(await screen.findByRole('link', { name: 'Bookings' })).toHaveAttribute('href', '/trips');
+        fireEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
+        expect(toggleTheme).toHaveBeenCalledTimes(1);
     });
 });

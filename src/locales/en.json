@@ -2400,7 +2400,7 @@
       "specialRequests": "Special Requests",
       "title": "Modify Booking"
     },
-    "myTrips": "My Trips",
+    "myTrips": "My Bookings",
     "noSegmentDetails": "No segment details available.",
     "sections": {
       "cancellationPolicy": "Cancellation Policy",
@@ -2516,7 +2516,7 @@
       "loadError": "Unable to load invoice"
     },
     "v2": {
-      "backToMyTrips": "Back to My Trips",
+      "backToMyTrips": "Back to My Bookings",
       "downloadETicket": "Download E-Ticket",
       "refundNotice": "Refund eligibility is subject to airline fare rules."
     },

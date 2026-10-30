@@ -75,7 +75,8 @@ reads oddly there costs more than one on a marketing page. Review these first.
 
 | Key | English | 한국어 | 日本語 | 中文 |
 |-----|---------|--------|--------|------|
-| `trips.v2.backToMyTrips` | Back to My Trips | 내 여행으로 돌아가기 | マイトリップに戻る | 返回我的行程 |
+| `trips.myTrips` | My Bookings | 내 예약 | マイ予約 | 我的预订 |
+| `trips.v2.backToMyTrips` | Back to My Bookings | 내 예약으로 돌아가기 | マイ予約に戻る | 返回我的预订 |
 | `trips.v2.downloadETicket` | Download E-Ticket | 전자항공권 다운로드 | Eチケットをダウンロード | 下载电子客票 |
 | `trips.v2.refundNotice` | Refund eligibility is subject to airline fare rules. | 환불 가능 여부는 항공사 운임 규정에 따릅니다. | 払い戻しの可否は航空会社の運賃規則に従います。 | 是否可退款取决于航空公司的票价规则。 |
 

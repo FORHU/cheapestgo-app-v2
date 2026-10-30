@@ -15,8 +15,17 @@ const GLYPH_WIDTH = 13.1;
  * resolve against Open Sans while they live in the document's font scope. An
  * external SVG renders in an isolated context and would fall back to the
  * system sans.
+ *
+ * `tone` is the landing header's: `onDark` draws the head near-white for the landing
+ * page, which is dark whatever the theme; `default` follows the theme, for a page
+ * that is light in light mode. The head's fill is then a class rather than the
+ * attribute, so a `dark:` variant can reach it.
  */
-export function LogoWordmark({ height = 24, className }: { height?: number; className?: string }) {
+export function LogoWordmark({ height = 24, className, tone = 'onDark' }: {
+    height?: number;
+    className?: string;
+    tone?: 'default' | 'onDark';
+}) {
     // The brand being shown, not the one the build was made for — the two differ on a
     // deployment with the brand preview on, and the width has to follow the name drawn.
     const { head, tail } = useBrandWordmark();
@@ -33,9 +42,19 @@ export function LogoWordmark({ height = 24, className }: { height?: number; clas
             className={className}
         >
             <text x="0" y="30" fontFamily="var(--font-open-sans), 'Open Sans', sans-serif" fontSize="22">
-                <tspan fontWeight="400" fill="#f1f5f9" letterSpacing="-0.3">{head.toLowerCase()}</tspan>
-                {/* The tail in v1's blue, as on v1's dark logo (`public/logo-dark.svg`). */}
-                <tspan fontWeight="700" fill={BRAND.accent} letterSpacing="-0.5">{tail}</tspan>
+                {tone === 'onDark' ? (
+                    <>
+                        <tspan fontWeight="400" fill="#f1f5f9" letterSpacing="-0.3">{head.toLowerCase()}</tspan>
+                        {/* The tail in v1's blue, as on v1's dark logo (`public/logo-dark.svg`). */}
+                        <tspan fontWeight="700" fill={BRAND.accent} letterSpacing="-0.5">{tail}</tspan>
+                    </>
+                ) : (
+                    <>
+                        <tspan fontWeight="400" className="fill-slate-900 dark:fill-[#f1f5f9]" letterSpacing="-0.3">{head.toLowerCase()}</tspan>
+                        {/* On a light ground, the light theme's accent — blue-400 is drawn for a dark one. */}
+                        <tspan fontWeight="700" className="fill-alabaster-accent dark:fill-[#60a5fa]" letterSpacing="-0.5">{tail}</tspan>
+                    </>
+                )}
             </text>
         </svg>
     );

@@ -7,10 +7,21 @@ import { Heart, Plane, Hotel as HotelIcon, Trash2, ExternalLink, ArrowRight } fr
 import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency } from '@/shared/lib/format';
+import { convertForDisplay } from '@/shared/lib/currency';
+import { useLiveRates } from '@/shared/lib/use-live-rates';
+import { useUserCurrency } from '@/shared/stores/search.store';
 import type { SavedTrip } from '@/shared/types';
 
 export function SavedTripsSection() {
     const tAll = useTranslations();
+    // A saved price is the one the results card showed, in the supplier's currency — shown here
+    // by the cards' rule: in the currency picked once the rates are live, its own until then.
+    const userCurrency = useUserCurrency();
+    useLiveRates();
+    const shownPrice = (amount: number, currency: string) => {
+        const shown = convertForDisplay(amount, currency, userCurrency);
+        return formatCurrency(shown.amount, shown.currency);
+    };
     const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
     const [loading, setLoading] = useState(true);
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -103,7 +114,7 @@ export function SavedTripsSection() {
                             {trip.price != null && (
                                 <div className="text-right shrink-0">
                                     <p className="text-sm font-bold text-slate-900 dark:text-white">
-                                        {formatCurrency(trip.price, trip.currency)}
+                                        {shownPrice(trip.price, trip.currency)}
                                     </p>
                                     <p className="text-[10px] text-slate-400">{tAll('trips.wishlist.perPerson')}</p>
                                 </div>

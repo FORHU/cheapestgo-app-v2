@@ -1,13 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useBrandName } from '@/shared/components/BrandProvider';
 import { Link } from '@/i18n/navigation';
-import { Plane, ChevronRight, Calendar, Download, Ticket } from 'lucide-react';
+import { Plane, Download, Ticket, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatDate } from '@/shared/lib/format';
 import { useTranslations } from 'next-intl';
 import { formatBookingTime as formatTime } from '@/features/flights/lib/flight-utils';
+import { AirlineBadge, RouteLine } from '@/features/flights/components/flight-card';
+import { FlightItinerary } from '@/features/flights/components/flight-itinerary';
+import { BOOKING_CLOCK, bookingItinerary, outboundSegments } from '@/features/trips/lib/booking-itinerary';
+import {
+    ACTION, BookingCardShell, BookingSpan, BookingStatusBadge, CHIP, MUTED, SOFT, TEXT, TITLE, usePaidEstimate,
+} from '@/features/trips/components/booking-card-parts';
 import type { FlightBooking } from '@/shared/types';
 import { toast } from 'sonner';
 
@@ -26,40 +32,60 @@ const FLIGHT_STATUS_MAP: Record<string, { label: string; color: string }> = {
     cancelled_provider_missing:{ label: 'Cancelled',           color: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-400' },
 };
 
-function StatusBadge({ status }: { status: string }) {
-    const cfg = FLIGHT_STATUS_MAP[status] ?? { label: status, color: 'bg-slate-100 text-slate-600' };
-    return (
-        <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide', cfg.color)}>
-            {cfg.label}
-        </span>
-    );
-}
-
 interface FlightBookingCardProps {
     booking: FlightBooking;
+    index?: number;
+    /**
+     * The card at the head of the booking's own page: no link to the page it is on, and
+     * the itinerary already open — on that page it is the itinerary section.
+     */
+    detail?: boolean;
 }
 
-export function FlightBookingCard({ booking }: FlightBookingCardProps) {
+/**
+ * A booked flight, drawn as the flight results card it was chosen from: the airline's
+ * disc on the plate, departure and arrival either side of the route line, the price
+ * column — here the amount paid, the status, and what can be done with the booking —
+ * and the same flight-by-flight itinerary, opened under the card.
+ *
+ * The summary describes the outbound alone, as the results card's does.
+ */
+export function FlightBookingCard({ booking, index = 0, detail = false }: FlightBookingCardProps) {
     const tAll = useTranslations();
     const tTrips = useTranslations('trips');
     const brand = useBrandName();
-    const segments = booking.flight_segments ?? [];
-    const first = segments[0];
-    const last = segments[segments.length - 1];
+    const [showItinerary, setShowItinerary] = useState(detail);
+
+    const outbound = outboundSegments(booking);
+    const first = outbound[0];
+    const last = outbound[outbound.length - 1];
     const origin = first?.origin ?? '—';
     const destination = last?.destination ?? '—';
-    const airline = first?.airline ?? null;
-    const departDate = first?.departure ? formatDate(new Date(first.departure), { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-    const tripTypeLabel = booking.trip_type === 'round-trip' ? 'Round-trip' : booking.trip_type === 'multi-city' ? 'Multi-city' : 'One-way';
+    const airline = first?.airline || null;
+    const departDate = first?.departure.time ? formatDate(new Date(first.departure.time), { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const tripTypeLabel = booking.trip_type === 'round-trip'
+        ? tAll('trips.flightBookingCard.tripTypes.roundTrip')
+        : booking.trip_type === 'multi-city'
+            ? tAll('trips.flightBookingCard.tripTypes.multiCity')
+            : tAll('trips.flightBookingCard.tripTypes.oneWay');
+    const flightNumber = first?.flightNumber ?? '';
+    const status = FLIGHT_STATUS_MAP[booking.status] ?? { label: booking.status, color: 'bg-slate-100 text-slate-600' };
+    const paid = booking.charged_price ?? booking.total_price;
+    const estimate = usePaidEstimate(paid, booking.currency);
 
-    // formatBookingTime, not the flights one: these come out of a timestamptz column as real
-    // instants, where an offer's times are Local Airport Time digits that must not meet a Date.
+    // formatBookingTime, not the flights one: these come out of a timestamptz column, where an
+    // offer's times are Local Airport Time digits that must not meet a Date. No duration either:
+    // each end is its own airport's clock, so the gap between them is not the time in the air.
+    const stops = outbound.length - 1;
+    const stopsText = stops <= 0
+        ? tAll('trips.flightBookingCard.nonstop')
+        : tAll(stops === 1 ? 'trips.flightBookingCard.stop' : 'trips.flightBookingCard.stops', { count: stops });
 
     const handleDownloadTicket = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         toast.success('Downloading E-Ticket...');
-        
+
         // Trigger download of mock e-ticket text
         const text = `${brand.toUpperCase()} FLIGHT E-TICKET\n\nPNR: ${booking.pnr || 'N/A'}\nRoute: ${origin} -> ${destination}\nDate: ${departDate}\nStatus: ${booking.status}\n\nThank you for booking with ${brand}!`;
         const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -71,98 +97,90 @@ export function FlightBookingCard({ booking }: FlightBookingCardProps) {
         URL.revokeObjectURL(url);
     };
 
+    const fact = 'inline-flex items-center gap-1.5 whitespace-nowrap';
+
     return (
-        <div className="bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 group">
-            <div className="flex flex-col sm:flex-row min-h-[120px]">
-                {/* Left Side: Logo & Icon Container */}
-                <div className="relative w-full sm:w-32 bg-slate-50 dark:bg-slate-900/50 flex sm:flex-col items-center justify-center p-4 border-b sm:border-b-0 sm:border-r border-slate-100 dark:border-white/5 gap-3 shrink-0">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                        {airline ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={`https://images.kiwi.com/airlines/64/${airline}.png`}
-                                alt={airline}
-                                className="w-8 h-8 object-contain"
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    (e.currentTarget.nextSibling as HTMLElement | null)?.style.removeProperty('display');
-                                }}
-                            />
-                        ) : null}
-                        <Plane size={22} className={cn("shrink-0", airline ? "hidden" : "")} />
-                    </div>
-                    <div className="text-center hidden sm:block">
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                            {tAll('trips.flightBookingCard.flight')}
+        <BookingCardShell
+            index={index}
+            plate={
+                <div className="flex h-20 items-center justify-center px-6 md:absolute md:inset-0 md:h-auto">
+                    {airline ? (
+                        <AirlineBadge code={airline} name={airline} />
+                    ) : (
+                        <span className="flex size-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5 md:size-[120px] md:shadow-md">
+                            <Plane className="size-6 text-slate-400 md:size-10" aria-hidden />
                         </span>
-                    </div>
-                </div>
-
-                {/* Right Side: Booking Details Content */}
-                <div className="flex-1 p-5 flex flex-col gap-2 min-w-0">
-                    {/* Header: Cities & Status */}
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate leading-snug flex items-center gap-2">
-                                {origin} <span className="text-blue-500">→</span> {destination}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                <span className="flex items-center gap-1">
-                                    <Calendar size={12} className="text-slate-400" />
-                                    {departDate}
-                                </span>
-                                {first?.departure && (
-                                    <span className="text-slate-400">
-                                        ({formatTime(first.departure)})
-                                    </span>
-                                )}
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    {tripTypeLabel}
-                                </span>
-                            </div>
-                        </div>
-                        <StatusBadge status={booking.status} />
-                    </div>
-
-                    {/* Meta info: PNR Locator */}
-                    {booking.pnr && (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                            <Ticket size={12} className="text-slate-400" />
-                            <span>{tAll('trips.pnr')} <strong className="text-slate-700 dark:text-slate-300 font-semibold tracking-wider">{booking.pnr}</strong></span>
-                        </div>
                     )}
-
-                    {/* Footer: Price & Details Link */}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-white/5">
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-lg font-black text-slate-900 dark:text-white">
-                                {formatCurrency(booking.charged_price ?? booking.total_price, booking.currency)}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            {booking.status === 'ticketed' && (
-                                <button
-                                    onClick={handleDownloadTicket}
-                                    className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-xl"
-                                    title={tTrips('v2.downloadETicket')}
-                                >
-                                    <Download size={13} />
-                                    <span>{tAll('trips.eTicket')}</span>
-                                </button>
-                            )}
-
-                            <Link
-                                href={`/trips/${booking.id}`}
-                                className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                            >
-                                <span>{tAll('trips.flightBookingCard.details')}</span>
-                                <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                            </Link>
-                        </div>
-                    </div>
                 </div>
+            }
+            status={<BookingStatusBadge label={status.label} color={status.color} />}
+            price={formatCurrency(paid, booking.currency)}
+            priceLabel={tAll('trips.flightBookingCard.totalPaid')}
+            estimate={estimate}
+            actions={
+                <>
+                    {!detail && (
+                        <Link
+                            href={`/trips/${booking.id}`}
+                            aria-label={`${tAll('trips.viewDetails')}: ${origin} → ${destination}`}
+                            className={cn(ACTION, CHIP)}
+                        >
+                            {tAll('trips.viewDetails')}
+                        </Link>
+                    )}
+                    {booking.status === 'ticketed' && (
+                        <button
+                            type="button"
+                            onClick={handleDownloadTicket}
+                            title={tTrips('v2.downloadETicket')}
+                            className={cn(ACTION, SOFT, TEXT)}
+                        >
+                            <Download size={15} aria-hidden />
+                            {tAll('trips.eTicket')}
+                        </button>
+                    )}
+                </>
+            }
+            expansion={showItinerary && (
+                <FlightItinerary offer={bookingItinerary(booking)} clock={BOOKING_CLOCK} className="px-5 pt-5 pb-6 md:px-9" />
+            )}
+        >
+            <h3 className={cn('text-[20px] leading-tight font-bold', TITLE)}>
+                {origin} <span className="text-blue-500">→</span> {destination}
+            </h3>
+            <p className={cn('mt-1 text-[13px]', MUTED)}>
+                {[departDate, flightNumber].filter(Boolean).join(' · ')}
+            </p>
+
+            <BookingSpan
+                from={{ value: formatTime(first?.departure.time), label: origin }}
+                to={{ value: formatTime(last?.arrival.time), label: destination }}
+                above={stopsText}
+                line={<RouteLine stops={stops} />}
+            />
+
+            <div className={cn('mt-[18px] flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[14px]', MUTED)}>
+                <span className={fact}><ArrowRight size={15} aria-hidden />{tripTypeLabel}</span>
+                {booking.pnr && (
+                    <span className={fact}>
+                        <Ticket size={15} aria-hidden />
+                        {tAll('trips.pnr')}
+                        <span className={cn('font-mono font-semibold tracking-wider', TEXT)}>{booking.pnr}</span>
+                    </span>
+                )}
             </div>
-        </div>
+
+            <button
+                type="button"
+                onClick={() => setShowItinerary((v) => !v)}
+                aria-expanded={showItinerary}
+                className={cn('mt-3 inline-flex items-center gap-1 self-start text-[14px] transition-opacity hover:opacity-70', TEXT)}
+            >
+                {showItinerary
+                    ? tAll('trips.flightBookingCard.hideFlightItinerary')
+                    : tAll('trips.flightBookingCard.flightItinerary')}
+                {showItinerary ? <ChevronUp size={15} aria-hidden /> : <ChevronDown size={15} aria-hidden />}
+            </button>
+        </BookingCardShell>
     );
 }

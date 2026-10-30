@@ -3,6 +3,8 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithIntl } from '@/shared/testing/renderWithIntl';
 import { formatCurrency } from '@/shared/lib/format';
+import { convertCurrency, getCurrencySymbol } from '@/shared/lib/currency';
+import { useSearchStore } from '@/shared/stores/search.store';
 import en from '@/locales/en.json';
 import ko from '@/locales/ko.json';
 import ja from '@/locales/ja.json';
@@ -109,11 +111,23 @@ describe('Journey stages', () => {
 
     it('says "from" in the visitor\'s language on the stay strip', () => {
         progress.journey = STAYS_DOCKED;
+        act(() => useSearchStore.setState({ userCurrency: 'USD' }));
         renderWithIntl(<Journey showcaseStays={showcaseStays} />, KO);
 
         const price = formatCurrency(stay.price, stay.currency);
         expect(screen.getByText(J_KO.strip.from.replace('{price}', price))).toBeInTheDocument();
         expect(screen.queryByText(`from ${price}`)).not.toBeInTheDocument();
+    });
+
+    it('prices the stay strip in the currency picked in the header, as every other price on the page is', () => {
+        progress.journey = STAYS_DOCKED;
+        act(() => useSearchStore.setState({ userCurrency: 'KRW' }));
+        renderWithIntl(<Journey showcaseStays={showcaseStays} />);
+
+        // `useMoney`'s figure, from the same conversion the landing cards use.
+        const won = `${getCurrencySymbol('KRW')}${Math.round(convertCurrency(stay.price, 'USD', 'KRW')).toLocaleString('en-US')}`;
+        expect(screen.getByText(J_EN.strip.from.replace('{price}', won))).toBeInTheDocument();
+        expect(screen.queryByText(J_EN.strip.from.replace('{price}', '$120'))).not.toBeInTheDocument();
     });
 
     it('hands a picked city to the stay search, and lights the one the search holds', () => {

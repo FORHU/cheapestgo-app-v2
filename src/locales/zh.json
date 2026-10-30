@@ -2400,7 +2400,7 @@
       "specialRequests": "特殊要求",
       "title": "修改预订"
     },
-    "myTrips": "我的行程",
+    "myTrips": "我的预订",
     "noSegmentDetails": "暂无航段详情。",
     "sections": {
       "cancellationPolicy": "取消政策",
@@ -2516,7 +2516,7 @@
       "loadError": "无法加载账单"
     },
     "v2": {
-      "backToMyTrips": "返回我的行程",
+      "backToMyTrips": "返回我的预订",
       "downloadETicket": "下载电子客票",
       "refundNotice": "是否可退款取决于航空公司的票价规则。"
     },
