@@ -50,14 +50,14 @@ export type Showcase =
  */
 export interface StageFace {
     /**
-     * Also the key to its wording: the eyebrow, the two-part heading and the caption are in the
-     * message files under `landing.journey.stages.<id>`, not here, so the language selector
-     * reaches them. They were English literals on this interface, which left the whole Journey
-     * in English between a translated header and footer.
+     * Also the key to its wording: the two-part heading, the caption and an optional eyebrow are
+     * in the message files under `landing.journey.stages.<id>`, not here, so the language
+     * selector reaches them. They were English literals on this interface, which left the whole
+     * Journey in English between a translated header and footer.
      *
-     * The eyebrow is written out in full ("STAGE 01 · HOTELS", and "ARRIVAL" on its own, since
-     * arrival isn't a numbered step of the descent) rather than assembled from an index, and the
-     * heading is two parts so the first can be set apart from the rest.
+     * Only the closing stage keeps an eyebrow ("ARRIVAL"); the search stage's numbered
+     * "STAGE 01 · HOTELS" labels were dropped. The heading is two parts so the first can be set
+     * apart from the rest.
      */
     id: StageId;
     /**

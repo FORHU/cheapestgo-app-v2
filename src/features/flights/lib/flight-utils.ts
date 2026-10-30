@@ -62,6 +62,15 @@ export function formatBookingTime(iso?: string): string {
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+/** "Thu, Nov 26, 2026, 7:21 PM" — a BOOKING's date and time, read the way `formatBookingTime` reads it. */
+export function formatBookingDateTime(iso: string | undefined, locale: string): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const date = d.toLocaleDateString(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    return `${date}, ${formatBookingTime(iso)}`;
+}
+
 /**
  * "Wed, Oct 14, 2026, 18:40" — the day pinned to UTC before formatting so the
  * digits in the string survive, for the reason `formatTime` gives.

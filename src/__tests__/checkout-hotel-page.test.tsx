@@ -7,7 +7,7 @@
  * read, a confirmed screen that invents a reference.
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import en from '@/locales/en.json';
@@ -196,38 +196,11 @@ describe('a room that has gone', () => {
     });
 
     it('treats an outage differently: nothing is wrong, try again', async () => {
-        // The panel is no longer immediate. The supplier's silence is usually shorter than the
-        // time spent on this form, so the quote is re-asked quietly first; only once those
-        // attempts are spent is the traveller told, and given the way to try again themselves.
-        vi.useFakeTimers({ shouldAdvanceTime: true });
-        try {
-            api({ prebook: () => { throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'down' }); } });
-            renderPage();
+        api({ prebook: () => { throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'down' }); } });
+        renderPage();
 
-            await act(async () => { await vi.advanceTimersByTimeAsync(120_000); });
-
-            expect(await screen.findByText(/nothing is wrong with your booking/i)).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
-        } finally {
-            vi.useRealTimers();
-        }
-    });
-
-    it('leaves the details form usable while it is still re-asking', async () => {
-        // The point of the quiet re-attempt: somebody mid-way through typing their name should
-        // not have a red panel appear over a problem that clears itself in seconds.
-        vi.useFakeTimers({ shouldAdvanceTime: true });
-        try {
-            api({ prebook: () => { throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'down' }); } });
-            renderPage();
-
-            await act(async () => { await vi.advanceTimersByTimeAsync(3_000); });
-
-            expect(screen.queryByText(/nothing is wrong with your booking/i)).not.toBeInTheDocument();
-            expect(screen.getAllByPlaceholderText('John').length).toBeGreaterThan(0);
-        } finally {
-            vi.useRealTimers();
-        }
+        expect(await screen.findByText(/nothing is wrong with your booking/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
     });
 });
 

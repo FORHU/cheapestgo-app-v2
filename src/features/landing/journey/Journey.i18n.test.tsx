@@ -1,8 +1,10 @@
 import React from 'react';
-import { screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithIntl } from '@/shared/testing/renderWithIntl';
 import { formatCurrency } from '@/shared/lib/format';
+import { convertCurrency, getCurrencySymbol } from '@/shared/lib/currency';
+import { useSearchStore } from '@/shared/stores/search.store';
 import en from '@/locales/en.json';
 import ko from '@/locales/ko.json';
 import ja from '@/locales/ja.json';
@@ -23,8 +25,12 @@ vi.mock('./useJourneyProgress', () => ({
 vi.mock('./useSectionSnap', () => ({ useSectionSnap: () => undefined }));
 vi.mock('./StageShowcase', () => ({ StageShowcase: () => null }));
 vi.mock('./HeroBackdrop', () => ({ HeroBackdrop: () => null }));
-// The search bars are covered by their own tests; here they only need to exist.
-vi.mock('@/features/search/components/immersive-search-bar', () => ({ ImmersiveSearchBar: () => null }));
+// The search bars are covered by their own tests; here they only need to exist, and to show
+// what the page hands them.
+const bar = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
+vi.mock('@/features/search/components/immersive-search-bar', () => ({
+    ImmersiveSearchBar: (props: Record<string, unknown>) => { bar.props = props; return null; },
+}));
 vi.mock('@/i18n/navigation', () => ({
     Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) =>
         <a href={href} {...rest}>{children}</a>,
@@ -77,34 +83,69 @@ describe('Journey hero', () => {
 });
 
 describe('Journey stages', () => {
-    it('writes the hotels stage in Korean — eyebrow, heading and caption', () => {
+    it('writes the hotels stage in Korean — heading and caption', () => {
         progress.journey = STAYS_DOCKED;
         renderWithIntl(<Journey showcaseStays={{}} />, KO);
 
         const s = J_KO.stages.stays;
-        expect(screen.getByText(s.eyebrow)).toBeInTheDocument();
         expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(`${s.titleLead} ${s.titleRest}`);
         expect(screen.getByText(s.caption)).toBeInTheDocument();
 
-        expect(screen.queryByText(J_EN.stages.stays.eyebrow)).not.toBeInTheDocument();
         expect(screen.queryByText(J_EN.stages.stays.caption)).not.toBeInTheDocument();
     });
 
-    it('keeps the English heading as it was', () => {
+    it('keeps the English heading, with no numbered stage label above it', () => {
         progress.journey = STAYS_DOCKED;
         renderWithIntl(<Journey showcaseStays={{}} />);
 
-        expect(screen.getByText('STAGE 01 · HOTELS')).toBeInTheDocument();
         expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Find your stay.');
+        expect(screen.queryByText(/STAGE \d/)).not.toBeInTheDocument();
+    });
+
+    it('keeps the closing stage\'s eyebrow', () => {
+        progress.journey = OPTIONS_DOCKED;
+        renderWithIntl(<Journey showcaseStays={{}} />, KO);
+
+        expect(screen.getByText(J_KO.stages.options.eyebrow)).toBeInTheDocument();
     });
 
     it('says "from" in the visitor\'s language on the stay strip', () => {
         progress.journey = STAYS_DOCKED;
+        act(() => useSearchStore.setState({ userCurrency: 'USD' }));
         renderWithIntl(<Journey showcaseStays={showcaseStays} />, KO);
 
         const price = formatCurrency(stay.price, stay.currency);
         expect(screen.getByText(J_KO.strip.from.replace('{price}', price))).toBeInTheDocument();
         expect(screen.queryByText(`from ${price}`)).not.toBeInTheDocument();
+    });
+
+    it('prices the stay strip in the currency picked in the header, as every other price on the page is', () => {
+        progress.journey = STAYS_DOCKED;
+        act(() => useSearchStore.setState({ userCurrency: 'KRW' }));
+        renderWithIntl(<Journey showcaseStays={showcaseStays} />);
+
+        // `useMoney`'s figure, from the same conversion the landing cards use.
+        const won = `${getCurrencySymbol('KRW')}${Math.round(convertCurrency(stay.price, 'USD', 'KRW')).toLocaleString('en-US')}`;
+        expect(screen.getByText(J_EN.strip.from.replace('{price}', won))).toBeInTheDocument();
+        expect(screen.queryByText(J_EN.strip.from.replace('{price}', '$120'))).not.toBeInTheDocument();
+    });
+
+    it('hands a picked city to the stay search, and lights the one the search holds', () => {
+        progress.journey = STAYS_DOCKED;
+        renderWithIntl(<Journey showcaseStays={{}} />);
+        const tokyo = () => screen.getByRole('button', { name: 'Tokyo' });
+
+        fireEvent.click(tokyo());
+        expect(bar.props.destinationPick).toEqual({ name: 'Tokyo' });
+
+        // Lit by what the search's sentence holds, not by the click: the bar reports it back.
+        expect(tokyo()).toHaveAttribute('aria-pressed', 'false');
+        act(() => (bar.props.onDestinationChange as (name: string | null) => void)('Tokyo'));
+        expect(tokyo()).toHaveAttribute('aria-pressed', 'true');
+
+        // A city picked from the dropdown instead puts the pill out again.
+        act(() => (bar.props.onDestinationChange as (name: string | null) => void)('Paris'));
+        expect(tokyo()).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('translates the closing cards, Golf included', () => {

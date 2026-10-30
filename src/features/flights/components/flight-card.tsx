@@ -66,8 +66,10 @@ const CHIP     = 'bg-linear-to-r from-blue-600 to-cyan-500 text-white';
  * The square edition from pics.avs.io — a wide mark centred in a transparent
  * square, so it sits across the disc's middle. The two-letter code holds the disc
  * until the image lands, and stays if it never does.
+ *
+ * Exported for the trip cards, which draw a booked flight the way it was found.
  */
-function AirlineBadge({ code, name }: { code: string; name: string }) {
+export function AirlineBadge({ code, name }: { code: string; name: string }) {
     const [loaded, setLoaded] = useState(false);
     const [failed, setFailed] = useState(false);
     const iata = (code ?? '').toUpperCase().slice(0, 3);
@@ -108,8 +110,11 @@ function AirlineBadge({ code, name }: { code: string; name: string }) {
  * negative margin keeps the card's rhythm what it was with a 1px rule. The
  * motion itself is `.route-flight` in globals.css: the plane waits at the
  * departure end and flies only while the card is hovered.
+ *
+ * Without the plane it is the line a hotel stay's card draws between check-in
+ * and check-out (`booking-card.tsx`) — same streak, nothing flying it.
  */
-function RouteLine({ stops }: { stops: number }) {
+export function RouteLine({ stops, plane = true }: { stops: number; plane?: boolean }) {
     return (
         <span aria-hidden className="relative -my-[7px] block h-4 w-full overflow-hidden">
             <span
@@ -122,14 +127,16 @@ function RouteLine({ stops }: { stops: number }) {
             {stops > 0 && (
                 <span className={cn('absolute top-1/2 left-1/2 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full', CHIP)} />
             )}
-            <span className="route-flight absolute inset-0">
-                {/* The streak the plane leaves behind it. */}
-                <span className="absolute top-1/2 right-2 h-[2px] w-2/5 -translate-y-1/2 rounded-full bg-linear-to-r from-transparent to-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-                <Plane
-                    size={14}
-                    className="absolute top-1/2 right-0 -translate-y-1/2 rotate-45 fill-current text-blue-600 drop-shadow-[0_0_4px_rgba(37,99,235,0.7)] dark:text-cyan-300 dark:drop-shadow-[0_0_5px_rgba(34,211,238,0.9)]"
-                />
-            </span>
+            {plane && (
+                <span className="route-flight absolute inset-0">
+                    {/* The streak the plane leaves behind it. */}
+                    <span className="absolute top-1/2 right-2 h-[2px] w-2/5 -translate-y-1/2 rounded-full bg-linear-to-r from-transparent to-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                    <Plane
+                        size={14}
+                        className="absolute top-1/2 right-0 -translate-y-1/2 rotate-45 fill-current text-blue-600 drop-shadow-[0_0_4px_rgba(37,99,235,0.7)] dark:text-cyan-300 dark:drop-shadow-[0_0_5px_rgba(34,211,238,0.9)]"
+                    />
+                </span>
+            )}
         </span>
     );
 }

@@ -802,10 +802,9 @@
       "noMatch": "No rooms match that rate. Try another filter.",
       "nonRefundable": "Non-refundable",
       "pages": "Room pages",
-      "paymentTerms": "Payment Terms",
       "prevPage": "Previous page",
       "refundable": "Refundable",
-      "viewMore": "View more"
+      "roomDetails": "Room details"
     }
   },
   "invoice": {
@@ -971,6 +970,8 @@
         "aiSearch": "AI Search"
       },
       "go": "GO",
+      "searchingStays": "Searching hotels…",
+      "searchingFlights": "Searching flights…",
       "whosComing": "Who's coming?"
     },
     "journey": {
@@ -983,19 +984,16 @@
       },
       "stages": {
         "stays": {
-          "eyebrow": "STAGE 01 · HOTELS",
           "titleLead": "Find",
           "titleRest": "your stay.",
           "caption": "Hotels and homes, priced per night — every fee shown before you tap book."
         },
         "flights": {
-          "eyebrow": "STAGE 02 · FLIGHTS",
           "titleLead": "Then",
           "titleRest": "get there.",
           "caption": "Every airline, every fare class, sorted by what you actually pay."
         },
         "ai": {
-          "eyebrow": "STAGE 03 · AI PLANNER",
           "titleLead": "Or",
           "titleRest": "just ask.",
           "caption": "Tell us the trip. We'll price the stays and routes that fit."
@@ -2402,7 +2400,7 @@
       "specialRequests": "Special Requests",
       "title": "Modify Booking"
     },
-    "myTrips": "My Trips",
+    "myTrips": "My Bookings",
     "noSegmentDetails": "No segment details available.",
     "sections": {
       "cancellationPolicy": "Cancellation Policy",
@@ -2518,7 +2516,7 @@
       "loadError": "Unable to load invoice"
     },
     "v2": {
-      "backToMyTrips": "Back to My Trips",
+      "backToMyTrips": "Back to My Bookings",
       "downloadETicket": "Download E-Ticket",
       "refundNotice": "Refund eligibility is subject to airline fare rules."
     },

@@ -14,7 +14,7 @@ import type { FlightOffer } from '@/shared/types';
 import {
     DAY_END_MINUTE, DAY_START_MINUTE, DEFAULT_FLIGHT_FILTERS,
     activeFilterCount, filterBounds, offerAirline, offerArrivalAirport, offerIsRefundable, offerMatchesStops,
-    type FlightFilterState, type FlightSortBy,
+    type FlightFilterState, type FlightSortBy, type PriceConverter,
 } from '../lib/filter-offers';
 
 export { DEFAULT_FLIGHT_FILTERS, type FlightFilterState } from '../lib/filter-offers';
@@ -26,6 +26,12 @@ interface FlightFiltersProps {
     onReset?: () => void;
     /** All unfiltered offers — the source of every bound, list and count. */
     allOffers?: FlightOffer[];
+    /**
+     * The page's card conversion, and the currency it prints in, so the price range is the
+     * one the cards show. Left out, prices are offered in the airline's currency.
+     */
+    convert?: PriceConverter;
+    priceCurrency?: string;
     /** Rendered as the handle on the panel's right edge when provided. */
     onCollapse?: () => void;
     className?: string;
@@ -126,7 +132,9 @@ function CheckList({
  * — so the two results pages read as one product. The rules behind every control
  * live in `lib/filter-offers.ts`.
  */
-export function FlightFilters({ filters, onChange, onReset, allOffers = [], onCollapse, className }: FlightFiltersProps) {
+export function FlightFilters({
+    filters, onChange, onReset, allOffers = [], convert, priceCurrency, onCollapse, className,
+}: FlightFiltersProps) {
     const t = useTranslations('flights.filtersPanel');
     const tAll = useTranslations();
     const { theme } = useTheme();
@@ -137,8 +145,8 @@ export function FlightFilters({ filters, onChange, onReset, allOffers = [], onCo
     const section = (k: keyof typeof open) => () => setOpen((s) => ({ ...s, [k]: !s[k] }));
     const reset = t('reset');
 
-    const bounds = useMemo(() => filterBounds(allOffers), [allOffers]);
-    const currency = allOffers[0]?.price?.currency ?? 'USD';
+    const bounds = useMemo(() => filterBounds(allOffers, convert), [allOffers, convert]);
+    const currency = priceCurrency ?? allOffers[0]?.price?.currency ?? 'USD';
 
     // Counts come from the unfiltered set, so an option never reads as empty just
     // because another filter is currently hiding its results.

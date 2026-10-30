@@ -43,15 +43,6 @@ import {
 } from '../lib/hotel-checkout-api';
 import type { HotelGuestPayload } from '../lib/hotel-guest-form';
 
-/**
- * How long to wait before each quiet re-attempt when the supplier answers with no availability.
- *
- * Six attempts over about ninety-five seconds, which is roughly how long a traveller spends on
- * the details form — and far longer than the supplier is usually quiet for. Spaced rather than
- * tight: at its busiest this is four calls a minute for somebody actually waiting on the page.
- */
-const SUPPLIER_RETRY_BACKOFF_MS = [5_000, 10_000, 15_000, 20_000, 25_000, 20_000];
-
 export interface UseHotelCheckoutOptions {
     /** Nothing is requested until this is true (a flight checkout shares the page). */
     enabled:          boolean;
@@ -118,12 +109,6 @@ export function useHotelCheckout(options: UseHotelCheckoutOptions): UseHotelChec
     const polled = useRef({ reference: '', count: 0 });
     /** A quote refused as a price change is taken once more, then left to the traveller. */
     const requotedOnPriceChange = useRef(false);
-    /** Quiet re-attempts spent so far on a supplier that is answering with nothing. */
-    const supplierRetries = useRef(0);
-    const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    // Nothing should still be scheduled once this page is gone.
-    useEffect(() => () => { if (retryTimer.current) clearTimeout(retryTimer.current); }, []);
 
     // ── Quote ────────────────────────────────────────────────────────────────
 
@@ -147,41 +132,10 @@ export function useHotelCheckout(options: UseHotelCheckoutOptions): UseHotelChec
             if (gen !== generation.current) return;
             if (quote.display) shown.current = { total: quote.display.total, currency: quote.display.currency };
             requotedOnPriceChange.current = false;
-            supplierRetries.current = 0;
             dispatch({ type: 'QUOTE_RECEIVED', quote });
         } catch (err) {
             if (gen !== generation.current) return;
             const failure = classifyCheckoutError(err);
-
-            // The supplier goes quiet for seconds at a time — no availability for any hotel,
-            // answered as a success — while the traveller is still typing names and an email.
-            // Re-ask underneath them instead of putting a panel over a problem that usually
-            // clears itself: no event is dispatched, so the phase stays `quoting`, and the
-            // details form stays on screen and usable throughout.
-            //
-            // Finite and spaced, because a guest waiting on a page is not the same thing as
-            // traffic generated on spec, and only the first is something to send a supplier.
-            const wait = failure.kind === 'supplier_unavailable'
-                ? SUPPLIER_RETRY_BACKOFF_MS[supplierRetries.current]
-                : undefined;
-
-            if (wait !== undefined) {
-                supplierRetries.current += 1;
-                if (retryTimer.current) clearTimeout(retryTimer.current);
-                retryTimer.current = setTimeout(() => {
-                    retryTimer.current = null;
-                    // A hidden tab has nobody waiting on it. Report the refusal rather than
-                    // keep calling out, so the panel is there when they come back.
-                    if (typeof document !== 'undefined' && document.hidden) {
-                        dispatch({ type: 'QUOTE_FAILED', failure });
-                        return;
-                    }
-                    void refreshQuote();
-                }, wait);
-                return;
-            }
-
-            supplierRetries.current = 0;
             dispatch({ type: 'QUOTE_FAILED', failure });
 
             // The server named a new price but sent no quote at it. Without one the panel has

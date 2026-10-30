@@ -4,39 +4,31 @@ import { useTranslations } from 'next-intl';
 import React, { useState, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { Luggage, ArrowRight, Hotel, Plane } from 'lucide-react';
+import { Luggage, Hotel, Plane, CloudOff } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
+import { StateScreen, stateActionClass } from '@/shared/components/StateScreen';
 import { BookingCard } from './booking-card';
+import { BookingCardSkeleton, CHIP } from './booking-card-parts';
 import { fetchBookings } from '../lib/bookings-api';
 import type { AnyBooking } from '@/shared/types';
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function SkeletonCard() {
-    return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-pulse">
-            <div className="flex min-h-[100px]">
-                <div className="w-24 sm:w-32 bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
-                <div className="flex-1 px-3 py-2.5 space-y-2">
-                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
-                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
-                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
-                </div>
-            </div>
-        </div>
-    );
-}
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 type TabValue = 'all' | 'hotels' | 'flights';
 
 const TABS: { id: TabValue; label: string; icon: React.ReactNode }[] = [
-    { id: 'all',     label: 'All',     icon: <Luggage size={13} /> },
-    { id: 'hotels',  label: 'Hotels',  icon: <Hotel size={13} /> },
-    { id: 'flights', label: 'Flights', icon: <Plane size={13} /> },
+    { id: 'all',     label: 'All',     icon: <Luggage size={15} aria-hidden /> },
+    { id: 'hotels',  label: 'Hotels',  icon: <Hotel size={15} aria-hidden /> },
+    { id: 'flights', label: 'Flights', icon: <Plane size={15} aria-hidden /> },
 ];
+
+/**
+ * The results sidebar's rows, laid out as a row of pills: the selected one in the brand
+ * gradient, as a chosen sort is (`filter-panel.tsx`); the rest on the cards' white plate,
+ * since they sit on the page ground rather than inside a panel.
+ */
+const TAB_IDLE = 'bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:bg-slate-900 dark:text-white/90 dark:hover:bg-white/8';
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
@@ -44,22 +36,17 @@ function EmptyState({ tab }: { tab: TabValue }) {
     const tAll = useTranslations();
     const msg = tab === 'hotels' ? 'No hotel bookings yet' : tab === 'flights' ? 'No flight bookings yet' : 'No trips yet';
     return (
-        <div className="flex flex-col items-center text-center py-20 px-4">
-            <div className="w-16 h-16 mb-4 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center">
-                <Luggage size={28} className="text-slate-400" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{msg}</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                {tAll('trips.emptyHint')}
-            </p>
-            <Link
-                href="/"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
-            >
-                {tAll('trips.exploreDestinations')}
-                <ArrowRight size={14} />
-            </Link>
-        </div>
+        <StateScreen
+            icon={Luggage}
+            title={msg}
+            lines={[tAll('trips.emptyHint')]}
+            className="rounded-2xl"
+            actions={
+                <Link href="/" className={stateActionClass}>
+                    {tAll('trips.exploreDestinations')}
+                </Link>
+            }
+        />
     );
 }
 
@@ -96,54 +83,66 @@ export function TripsList() {
         return true;
     });
 
+    // Each tab says how many trips are behind it, as a sidebar row says how many results —
+    // but only once there is a count to give.
+    const counts: Record<TabValue, number> = {
+        all:     bookings.length,
+        hotels:  bookings.filter(b => b.type === 'hotel').length,
+        flights: bookings.filter(b => b.type === 'flight').length,
+    };
+    const showCounts = !isLoading && !loadFailed;
+
     return (
         <div>
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 border-b border-slate-200 dark:border-white/10">
-                {TABS.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                            'flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap',
-                            activeTab === tab.id
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-                        )}
-                    >
-                        {tab.icon}
-                        {tab.label}
-                        {activeTab === tab.id && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" />
-                        )}
-                    </button>
-                ))}
+            <div role="group" aria-label={tAll('trips.myTrips')} className="mb-5 flex flex-wrap gap-2">
+                {TABS.map(tab => {
+                    const active = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            aria-pressed={active}
+                            className={cn(
+                                'inline-flex h-10 items-center gap-2 rounded-full px-5 text-[15px] whitespace-nowrap transition-colors',
+                                active ? CHIP : TAB_IDLE,
+                            )}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                            {showCounts && (
+                                <span className={cn('text-[12px]', active ? 'opacity-90' : 'opacity-60')}>{counts[tab.id]}</span>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Content */}
             {isLoading ? (
-                <div className="space-y-3">
-                    <SkeletonCard />
-                    <SkeletonCard />
-                    <SkeletonCard />
+                <div className="space-y-4">
+                    <BookingCardSkeleton />
+                    <BookingCardSkeleton />
+                    <BookingCardSkeleton />
                 </div>
             ) : loadFailed ? (
-                <div role="alert" className="text-center py-16">
-                    <p className="text-slate-600 dark:text-slate-300 mb-4">{tAll('trips.loadFailed.title')}</p>
-                    <button
-                        type="button"
-                        onClick={() => setAttempt(a => a + 1)}
-                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
-                    >
-                        {tAll('trips.loadFailed.retry')}
-                    </button>
-                </div>
+                <StateScreen
+                    icon={CloudOff}
+                    title={tAll('trips.loadFailed.title')}
+                    className="rounded-2xl"
+                    actions={
+                        <button type="button" onClick={() => setAttempt(a => a + 1)} className={stateActionClass}>
+                            {tAll('trips.loadFailed.retry')}
+                        </button>
+                    }
+                />
             ) : filtered.length === 0 ? (
                 <EmptyState tab={activeTab} />
             ) : (
-                <div className="space-y-3">
-                    {filtered.map(booking => (
-                        <BookingCard key={booking.id} booking={booking} />
+                <div className="space-y-4">
+                    {filtered.map((booking, i) => (
+                        <BookingCard key={booking.id} booking={booking} index={i} />
                     ))}
                 </div>
             )}

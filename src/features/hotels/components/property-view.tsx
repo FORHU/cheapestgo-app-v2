@@ -9,11 +9,11 @@
  * client work here leaves the route file free to be a server component that declares them.
  */
 
-import React, { useEffect, useState, useMemo, Suspense } from 'react';
+import React, { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { http } from '@/shared/lib/http';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { NearbyExplorer } from '@/features/hotels/components/nearby/NearbyExplorer';
@@ -113,19 +113,30 @@ function PageColumn({ children, style }: { children: React.ReactNode; style?: Re
  * A body section that fades and rises 32px as it enters the viewport. No
  * `once` — it replays whichever way you scroll across it, and resets to
  * hidden when it leaves.
+ *
+ * What is watched and what moves are two different elements. With
+ * `whileInView` they were one, so the 32px drop of a section on its way out
+ * through the top of the window carried it back over the 15% line, which
+ * brought it back in, which lifted it out again: held still with a section's
+ * last 60px at the top edge, the description flickered in and out on its own
+ * every 150ms. The outer box never moves, so what it reports is where the
+ * section is, not where its animation has put it.
  */
 function Reveal({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const inView = useInView(ref, { amount: 0.15 });
     return (
-        <motion.div
-            className={className}
-            style={style}
-            initial={{ opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ amount: 0.15 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        >
-            {children}
-        </motion.div>
+        <div ref={ref}>
+            <motion.div
+                className={className}
+                style={style}
+                initial={{ opacity: 0, y: 32 }}
+                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+                {children}
+            </motion.div>
+        </div>
     );
 }
 
@@ -597,11 +608,16 @@ function PropertyContent() {
                 </Reveal>
 
                 {/* ── Rooms, and what is around them ─────────────────────────
-                    One row of two columns, as the design lays it out: the rate
-                    stack on the left at roughly five parts to the map's four,
-                    stacking under it below `lg` where neither half has the
-                    width to be half of anything. */}
-                <Reveal className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1fr] lg:gap-12">
+                    Two even columns, as the design lays them out — the room
+                    cards on the left, the map on the right — stacking below
+                    `lg` where neither half has the width to be half of anything.
+
+                    Each side spans the same three rows as a subgrid: headings,
+                    then the cards and the map, then the pager and the place
+                    strip. Sharing the middle row is what puts the map's top on
+                    the first card's top and its bottom on the last card's
+                    bottom, however tall the filter row above them wraps. */}
+                <Reveal className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-x-9 lg:gap-y-4">
 
                 {/* ── Room selection ─────────────────────────────────────────
                     The design's own section: a filter row over a stack of
@@ -624,7 +640,7 @@ function PropertyContent() {
                 ) : (
                 <RoomSelection
                     id="rooms-section"
-                    className="min-w-0"
+                    className="min-w-0 lg:row-span-3 lg:grid lg:grid-cols-1 lg:grid-rows-subgrid"
                     tone={theme}
                     rooms={rooms}
                     image={heroImage}
@@ -644,11 +660,21 @@ function PropertyContent() {
 
                 {/* ── Nearby places ────────────────────────────────────────── */}
                 {coordinates && (
-                    <section className="min-w-0">
+                    <section className="flex min-w-0 flex-col gap-4 lg:row-span-3 lg:grid lg:grid-cols-1 lg:grid-rows-subgrid">
+                        {/* `grid-cols-1` is a `minmax(0, 1fr)` column: left `auto`,
+                            the column would size itself to the place strip's whole
+                            scrolling row and push the map off the page. */}
                         <h2 className={SECTION_HEADING} style={{ color: palette.title }}>{t('v2.nearbyPlaces')}</h2>
-                        <div className="mt-4">
-                            <NearbyExplorer coordinates={coordinates} hotelName={content?.name ?? ''} palette={palette} />
-                        </div>
+                        {/* The map fills the cards' row, but no taller than the
+                            window: beside a long page of rooms it holds still
+                            under the top edge while the rooms scroll past. */}
+                        <NearbyExplorer
+                            className="contents"
+                            mapClassName="lg:sticky lg:top-6 lg:h-[min(100%,calc(100vh_-_3rem))] lg:min-h-80 lg:self-start"
+                            coordinates={coordinates}
+                            hotelName={content?.name ?? ''}
+                            palette={palette}
+                        />
                     </section>
                 )}
                 </Reveal>

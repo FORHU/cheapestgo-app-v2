@@ -40,6 +40,8 @@ const argNames = (value: unknown): string[] =>
  */
 const SEARCH_BAR = [
     'landing.search.go',
+    'landing.search.searchingStays',
+    'landing.search.searchingFlights',
     'landing.search.whosComing',
     'search.prose.origin',
     'search.prose.aDate',
@@ -73,7 +75,8 @@ describe('landing journey messages', () => {
     it('cover every stage the page can show, and the one parked for later', () => {
         const ids = [...new Set([...STAGES.flatMap(stageFaces).map((f) => f.id), 'ai'])];
         for (const id of ids) {
-            for (const field of ['eyebrow', 'titleLead', 'titleRest', 'caption']) {
+            // No eyebrow: it is optional, and only the closing stage has one.
+            for (const field of ['titleLead', 'titleRest', 'caption']) {
                 expect(read(en, `landing.journey.stages.${id}.${field}`), `${id}.${field}`).toBeTypeOf('string');
             }
         }

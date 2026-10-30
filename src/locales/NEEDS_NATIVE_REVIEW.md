@@ -69,12 +69,14 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `property.v2.mealPlan` | Meal plan | 식사 조건 | 食事プラン | 餐食安排 |
 | `property.v2.cancellationPolicy` | Cancellation policy | 취소 정책 | キャンセルポリシー | 取消政策 |
 | `property.v2.price` | Price | 요금 | 料金 | 价格 |
+| `hotels.rooms.roomDetails` | Room details | 객실 상세 정보 | 客室の詳細 | 房型详情 |
 
 ## trips
 
 | Key | English | 한국어 | 日本語 | 中文 |
 |-----|---------|--------|--------|------|
-| `trips.v2.backToMyTrips` | Back to My Trips | 내 여행으로 돌아가기 | マイトリップに戻る | 返回我的行程 |
+| `trips.myTrips` | My Bookings | 내 예약 | マイ予約 | 我的预订 |
+| `trips.v2.backToMyTrips` | Back to My Bookings | 내 예약으로 돌아가기 | マイ予約に戻る | 返回我的预订 |
 | `trips.v2.downloadETicket` | Download E-Ticket | 전자항공권 다운로드 | Eチケットをダウンロード | 下载电子客票 |
 | `trips.v2.refundNotice` | Refund eligibility is subject to airline fare rules. | 환불 가능 여부는 항공사 운임 규정에 따릅니다. | 払い戻しの可否は航空会社の運賃規則に従います。 | 是否可退款取决于航空公司的票价规则。 |
 
@@ -302,15 +304,12 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.journey.hero.titleLine2` | Every way to go. | 모든 여정으로. | あらゆる行き方。 | 所有出行方式。 |
 | `landing.journey.hero.subtitle` | Skip the surprise fees. Chase the sunsets. | 숨은 수수료는 빼고, 노을을 쫓아 떠나세요. | 思わぬ手数料はなし。夕日を追いかけよう。 | 拒绝隐藏费用，追逐日落。 |
 | `landing.journey.hero.scrollCue` | Scroll down to explore | 아래로 스크롤하여 둘러보기 | スクロールして探索 | 向下滚动探索 |
-| `landing.journey.stages.stays.eyebrow` | STAGE 01 · HOTELS | 01단계 · 호텔 | ステージ01 · ホテル | 第 01 站 · 酒店 |
 | `landing.journey.stages.stays.titleLead` | Find | 숙소를 | 宿を | 找到 |
 | `landing.journey.stages.stays.titleRest` | your stay. | 찾아보세요. | 探そう。 | 你的住处。 |
 | `landing.journey.stages.stays.caption` | Hotels and homes, priced per night — every fee shown before you tap book. | 호텔과 숙소를 1박 요금으로 — 예약 버튼을 누르기 전에 모든 수수료를 보여드립니다. | ホテルも民泊も、1泊あたりの料金で。予約ボタンを押す前に、すべての手数料を表示します。 | 酒店与民宿，按晚报价——点击预订前，所有费用一目了然。 |
-| `landing.journey.stages.flights.eyebrow` | STAGE 02 · FLIGHTS | 02단계 · 항공편 | ステージ02 · フライト | 第 02 站 · 航班 |
 | `landing.journey.stages.flights.titleLead` | Then | 그다음엔 | そして、 | 然后 |
 | `landing.journey.stages.flights.titleRest` | get there. | 떠나세요. | 旅立とう。 | 出发吧。 |
 | `landing.journey.stages.flights.caption` | Every airline, every fare class, sorted by what you actually pay. | 모든 항공사, 모든 운임 등급을 실제 지불 금액 순으로 정렬합니다. | 全航空会社・全運賃クラスを、実際に支払う金額順に並べ替え。 | 所有航空公司、所有舱位，按您实际支付的价格排序。 |
-| `landing.journey.stages.ai.eyebrow` | STAGE 03 · AI PLANNER | 03단계 · AI 플래너 | ステージ03 · AIプランナー | 第 03 站 · AI 规划师 |
 | `landing.journey.stages.ai.titleLead` | Or | 아니면 | または、 | 或者 |
 | `landing.journey.stages.ai.titleRest` | just ask. | 그냥 물어보세요. | 聞くだけ。 | 直接问。 |
 | `landing.journey.stages.ai.caption` | Tell us the trip. We'll price the stays and routes that fit. | 여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요. | 旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。 | 告诉我们您的行程，我们会为您报出合适的住宿与路线价格。 |
@@ -332,6 +331,8 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.journey.altitude.label` | Alt | 고도 | 高度 | 高度 |
 | `landing.journey.altitude.unit` | ft | ft | ft | ft |
 | `landing.search.go` | GO | 출발 | 出発 | 出发 |
+| `landing.search.searchingStays` | Searching hotels… | 호텔 검색 중… | ホテルを検索中… | 正在搜索酒店… |
+| `landing.search.searchingFlights` | Searching flights… | 항공편 검색 중… | フライトを検索中… | 正在搜索航班… |
 | `landing.search.whosComing` | Who's coming? | 누가 묵으시나요? | ご宿泊者はどなたですか？ | 谁来入住？ |
 | `search.prose.origin` | wherever you are | 내가 있는 곳 | 今いる場所 | 您所在的地方 |
 | `search.prose.aDate` | a date | 원하는 날 | 好きな日 | 某一天 |

@@ -25,6 +25,8 @@ import { nightsBetween } from '@/shared/lib/stay';
 import type { FlightBooking, HotelBooking } from '@/shared/types';
 import { Link } from '@/i18n/navigation';
 import { availableDocuments, pendingReason, supplierReference, ticketNumbers } from '@/features/trips/lib/documents';
+import { cn } from '@/shared/lib/cn';
+import { DetailPanel, MUTED, SOFT, TEXT } from './booking-card-parts';
 
 // ─── Shared shell ─────────────────────────────────────────────────────────────
 
@@ -323,27 +325,24 @@ export function DocumentLinks({ booking }: { booking: FlightBooking | HotelBooki
     const href = (kind: string) =>
         `/trips/document/${booking.id}?type=${booking.type}&kind=${kind}`;
 
-    const ACTION = 'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors';
+    // The flight card's second action — the soft pill beside Select Now — a step smaller to sit in a panel.
+    const ACTION = cn('inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium transition-opacity hover:opacity-85', SOFT, TEXT);
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-                <span className="text-slate-400"><ReceiptIcon size={15} /></span>
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{t('documents.section')}</h2>
-            </div>
-            <div className="flex flex-wrap gap-2 px-5 py-4">
-                {docs.includes('eticket') && <Link href={href('eticket')} className={ACTION}><Plane size={13} />{t('documents.actions.eticket')}</Link>}
-                {docs.includes('voucher') && <Link href={href('voucher')} className={ACTION}><Hotel size={13} />{t('documents.actions.voucher')}</Link>}
-                {docs.includes('receipt') && <Link href={href('receipt')} className={ACTION}><ReceiptIcon size={13} />{t('documents.actions.receipt')}</Link>}
+        <DetailPanel title={t('documents.section')} icon={ReceiptIcon}>
+            <div className="flex flex-wrap gap-2 py-1">
+                {docs.includes('eticket') && <Link href={href('eticket')} className={ACTION}><Plane size={14} aria-hidden />{t('documents.actions.eticket')}</Link>}
+                {docs.includes('voucher') && <Link href={href('voucher')} className={ACTION}><Hotel size={14} aria-hidden />{t('documents.actions.voucher')}</Link>}
+                {docs.includes('receipt') && <Link href={href('receipt')} className={ACTION}><ReceiptIcon size={14} aria-hidden />{t('documents.actions.receipt')}</Link>}
                 {pending && (
-                    <p className="w-full text-xs text-slate-500 dark:text-slate-400">
+                    <p className={cn('w-full text-[13px]', MUTED)}>
                         {t(pending === 'awaiting_ticket'
                             ? 'documents.pending.awaitingTicket'
                             : 'documents.pending.awaitingConfirmation')}
                     </p>
                 )}
             </div>
-        </div>
+        </DetailPanel>
     );
 }
 

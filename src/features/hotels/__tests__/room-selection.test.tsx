@@ -55,31 +55,10 @@ describe('RoomSelection', () => {
         expect(screen.getByText('/night')).toBeInTheDocument();
     });
 
-    it('shows a short board pill and a refundable pill', () => {
-        render(<RoomSelection {...baseProps} rooms={[makeRoom()]} />);
-        expect(screen.getByText('Room Only')).toBeInTheDocument();
-        // "Refundable" is also a filter button — the pill is the <span>.
-        const pill = screen.getAllByText('Refundable').filter(el => el.tagName === 'SPAN');
-        expect(pill).toHaveLength(1);
-    });
-
-    it('shows "Non-refundable" when the rate is not refundable', () => {
-        const room = makeRoom({
-            rates: [{
-                offerId: 'o', price: 200, currency: 'USD', boardCode: 'RO',
-                refundable: false, refundableTag: 'NON_REFUNDABLE',
-            }],
-        });
-        render(<RoomSelection {...baseProps} rooms={[room]} />);
-        const pill = screen.getAllByText('Non-refundable').filter(el => el.tagName === 'SPAN');
-        expect(pill).toHaveLength(1);
-    });
-
-    it('lists the bed and the searched party under Room Details', () => {
+    it('bullets the bed, the searched party and the board under the name', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom()]} occupancy={{ adults: 2, children: 1 }} />);
-        expect(screen.getByText('Room Details')).toBeInTheDocument();
-        expect(screen.getByText('1 double bed')).toBeInTheDocument();
-        expect(screen.getByText('2 Adults · 1 Child')).toBeInTheDocument();
+        expect(screen.getAllByRole('listitem').map(li => li.textContent))
+            .toEqual(['1 double bed', '2 Adults · 1 Child', 'Room Only']);
     });
 
     it('omits the size row when the room carries no size', () => {
@@ -89,11 +68,10 @@ describe('RoomSelection', () => {
 
     it('words free cancellation as hours before check-in', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom()]} />);
-        expect(screen.getByText('Payment Terms')).toBeInTheDocument();
-        expect(screen.getByText('24-hour free cancellation')).toBeInTheDocument();
+        expect(screen.getByText('Free cancellation up to 24h before check-in')).toBeInTheDocument();
     });
 
-    it('hides the Payment Terms column for a non-refundable rate', () => {
+    it('says "Non-refundable" in place of the cancellation line when the rate is not refundable', () => {
         const room = makeRoom({
             rates: [{
                 offerId: 'o', price: 200, currency: 'USD', boardCode: 'RO',
@@ -101,10 +79,13 @@ describe('RoomSelection', () => {
             }],
         });
         render(<RoomSelection {...baseProps} rooms={[room]} />);
-        expect(screen.queryByText('Payment Terms')).not.toBeInTheDocument();
+        // "Non-refundable" is also a filter button — the row's line is the <p>.
+        const line = screen.getAllByText('Non-refundable').filter(el => el.tagName === 'P');
+        expect(line).toHaveLength(1);
+        expect(screen.queryByText(/Free cancellation/)).not.toBeInTheDocument();
     });
 
-    it('opens the detail modal from "View more" and can select the room from it', () => {
+    it('opens the detail modal from "Room details" and can select the room from it', () => {
         const onSelect = vi.fn();
         // rate.price arrives per night — api-v2 divides the supplier's stay total before
         // sending, as v1 does — so the modal multiplies back up for the total line rather
@@ -112,7 +93,7 @@ describe('RoomSelection', () => {
         const room = makeRoom({ price: 200, rates: [{ ...makeRoom().rates![0], price: 200 }] });
         render(<RoomSelection {...baseProps} rooms={[room]} nights={3} onSelect={onSelect} />);
 
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
 
         const dialog = screen.getByRole('dialog');
         expect(within(dialog).getByText('$200 / night × 3 nights')).toBeInTheDocument();
@@ -127,14 +108,14 @@ describe('RoomSelection', () => {
     it('fires onSelect when the card button is clicked', () => {
         const onSelect = vi.fn();
         render(<RoomSelection {...baseProps} rooms={[makeRoom()]} onSelect={onSelect} />);
-        fireEvent.click(screen.getByRole('button', { name: 'Select Room' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Select' }));
         expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({
             room:  expect.objectContaining({ id: 'room-1' }),
             rate:  expect.objectContaining({ offerId: 'offer-1' }),
         }));
     });
 
-    it('renders one card per room, with its rates inside it', () => {
+    it('renders a whole card for each rate', () => {
         const room = makeRoom({
             rates: [
                 { offerId: 'a', price: 200, currency: 'USD', boardCode: 'RO', refundable: true,  refundableTag: 'REFUNDABLE' },
@@ -142,12 +123,13 @@ describe('RoomSelection', () => {
             ],
         });
         render(<RoomSelection {...baseProps} rooms={[room]} />);
-        // One room, one Select. The rates are a choice of terms within it, not
-        // two listings of the same bed.
-        expect(screen.getAllByRole('button', { name: /^(Select Room|Selected)$/ })).toHaveLength(1);
-        // Both prices are reachable: the cheaper as the headline, the dearer as its chip.
-        expect(screen.getAllByText(/\$200/).length).toBeGreaterThan(0);
-        expect(screen.getAllByText(/\$240/).length).toBeGreaterThan(0);
+        // A whole card per rate, each naming the room and carrying its own Select.
+        expect(screen.getAllByRole('article')).toHaveLength(2);
+        expect(screen.getAllByRole('heading', { level: 4 }).map(h => h.textContent))
+            .toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
+        expect(screen.getAllByRole('button', { name: /^(Select|Selected)$/ })).toHaveLength(2);
+        expect(screen.getByText('$200')).toBeInTheDocument();
+        expect(screen.getByText('$240')).toBeInTheDocument();
     });
 });
 
@@ -165,7 +147,7 @@ describe('RoomSelection — categorised modal', () => {
         const room = makeRoom();
         room.content = content;
         render(<RoomSelection {...baseProps} rooms={[room]} />);
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
         const dialog = screen.getByRole('dialog');
         expect(within(dialog).getByText('Bathroom')).toBeInTheDocument();
         expect(within(dialog).getByText('Media and technology')).toBeInTheDocument();
@@ -188,7 +170,7 @@ describe('RoomSelection — categorised modal', () => {
                 additionalInfo={'Photo ID required at check-in.'}
             />,
         );
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
         const dialog = screen.getByRole('dialog');
         expect(within(dialog).getByText('Child policies')).toBeInTheDocument();
         expect(within(dialog).getByText('Children 0–5 stay free')).toBeInTheDocument();
@@ -198,7 +180,7 @@ describe('RoomSelection — categorised modal', () => {
 
     it('falls back to the legacy amenity list when content is absent', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom({ amenities: ['Sea view', 'Balcony'] })]} hotelAmenities={[]} />);
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
         const dialog = screen.getByRole('dialog');
         expect(within(dialog).getByText('Sea view')).toBeInTheDocument();
         expect(within(dialog).queryByText('Bathroom')).not.toBeInTheDocument();
@@ -213,7 +195,7 @@ describe('RoomSelection — categorised modal', () => {
             bedsExtraSummary: 'Extra beds and cribs are unavailable for this room type',
         };
         render(<RoomSelection {...baseProps} rooms={[room]} hotelAmenities={[]} />);
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
         const dialog = screen.getByRole('dialog');
         // legacy amenity list is back…
         expect(within(dialog).getByText('Sea view')).toBeInTheDocument();
@@ -228,7 +210,7 @@ describe('RoomSelection — categorised modal', () => {
         room.roomPhotos = ['/a.jpg', '/b.jpg'];
         room.content = content;
         render(<RoomSelection {...baseProps} rooms={[room]} />);
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
         const dialog = screen.getByRole('dialog');
 
         fireEvent.click(dialog.querySelectorAll('img')[0]);
@@ -268,10 +250,34 @@ describe('RoomSelection — room photography', () => {
         expect(sources).not.toContain(HOTEL_SHOT);
     });
 
+    it('reads the room’s photos from content.gallery, where current api-v2 sends them', () => {
+        const room = makeRoom({ content: { gallery: ['/gallery-a.jpg', '/gallery-b.jpg'], keyFacts: [], sections: [] } });
+        render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
+
+        const sources = Array.from(document.querySelectorAll('img')).map(img => img.getAttribute('src'));
+        expect(sources).toContain('/gallery-a.jpg');
+        expect(sources).not.toContain(HOTEL_SHOT);
+    });
+
+    it('leads every card with its gallery’s first photo, even where two rooms share a gallery', () => {
+        // Two supplier names for one ETG room group: the same pictures, in the same order. Only
+        // the first is reliably the room — ETG galleries go on to the building and the
+        // toiletries — so the second card does not reach past it to look different.
+        const gallery = ['/twin-room.jpg', '/building.jpg', '/toiletries.jpg'];
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard Twin room (twin beds)', price: 100, rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }], content: { gallery, keyFacts: [], sections: [] } }),
+            makeRoom({ id: 'b', name: 'Standard Twin room (twin beds) (non-smoking)', price: 120, rates: [{ ...makeRoom().rates![0], offerId: 'b', price: 120 }], content: { gallery, keyFacts: [], sections: [] } }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} />);
+
+        const leads = screen.getAllByRole('article').map(card => card.querySelector('img')?.getAttribute('src'));
+        expect(leads).toEqual(['/twin-room.jpg', '/twin-room.jpg']);
+    });
+
     it('shows every room photo in the detail panel, with no ETG content alongside', () => {
         const room = makeRoom({ roomPhotos: ['/room-a.jpg', '/room-b.jpg'] });
         render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
 
         const dialog = screen.getByRole('dialog');
         const sources = Array.from(dialog.querySelectorAll('img')).map(img => img.getAttribute('src'));
@@ -281,7 +287,7 @@ describe('RoomSelection — room photography', () => {
     it('falls back to the hotel’s photo, and says so, when the room has none', () => {
         const room = makeRoom({ roomPhotos: [] });
         render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
-        fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
 
         const dialog = screen.getByRole('dialog');
         const sources = Array.from(dialog.querySelectorAll('img')).map(img => img.getAttribute('src'));

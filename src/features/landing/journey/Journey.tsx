@@ -4,8 +4,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { BRAND } from '@/shared/lib/palette';
-import { formatCurrency } from '@/shared/lib/format';
-import { useSearchStore } from '@/shared/stores/search.store';
+import { useMoney } from '@/features/landing/lib/money';
 import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
 import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
 import type { FeaturedStay } from '@/features/landing/api/featured.api';
@@ -294,24 +293,30 @@ const DRIFT = { eyebrow: [0, 36], lead: [64, 70], rest: [-64, 110], caption: [0,
 function StageHeading({ stage, t, shift = 0 }: { stage: StageFace; t?: number; shift?: number }) {
     const tAll = useTranslations();
     // A stage's wording is in the message files, keyed by its id (see `StageFace.id`).
-    const copy = (field: 'eyebrow' | 'titleLead' | 'titleRest' | 'caption') =>
-        tAll(`landing.journey.stages.${stage.id}.${field}`);
+    const key = (field: 'eyebrow' | 'titleLead' | 'titleRest' | 'caption') =>
+        `landing.journey.stages.${stage.id}.${field}`;
+    const copy = (field: Parameters<typeof key>[0]) => tAll(key(field));
+    // Optional: the search stage dropped its numbered "STAGE 01 · HOTELS" label, so only a
+    // stage that still has an eyebrow in the message files (the closing one) shows one.
+    const eyebrow = tAll.has(key('eyebrow')) ? copy('eyebrow') : null;
     const lead = copy('titleLead');
     const rest = copy('titleRest');
     const leadChars = lead.replace(/ /g, '').length;
     const totalChars = leadChars + rest.replace(/ /g, '').length;
     return (
         <div>
-            <p
-                className="text-[11px] tracking-[0.3em] uppercase"
-                style={{ color: BRAND.accent, ...drift(shift, ...DRIFT.eyebrow) }}
-            >
-                {copy('eyebrow')}
-            </p>
+            {eyebrow && (
+                <p
+                    className="mb-4 text-[11px] tracking-[0.3em] uppercase"
+                    style={{ color: BRAND.accent, ...drift(shift, ...DRIFT.eyebrow) }}
+                >
+                    {eyebrow}
+                </p>
+            )}
             {/* The hero's own treatment — bold, uppercase, tight tracking — rather than
                 the semibold mixed-case it used to carry, so every heading in the Journey
                 reads in one voice instead of the hero sounding like a different page. */}
-            <h2 className="mt-4 text-4xl leading-[0.9] font-bold tracking-tight text-white uppercase sm:text-5xl">
+            <h2 className="text-4xl leading-[0.9] font-bold tracking-tight text-white uppercase sm:text-5xl">
                 <span className="inline-block" style={drift(shift, ...DRIFT.lead)}>
                     <RevealChars text={lead} t={t} totalChars={totalChars} />
                 </span>{' '}
@@ -346,12 +351,7 @@ const StageSurface = memo(function StageSurface({
     onModeSelect?: (mode: SearchMode) => void;
 }) {
     if (stage.id === 'stays') {
-        return (
-            <div className="space-y-5">
-                <ImmersiveSearchBar trendingDestinations={trending} defaultMode="stays" onModeSelect={onModeSelect} />
-                <ShowcaseStrip stays={stays} />
-            </div>
-        );
+        return <StaysSurface trending={trending} stays={stays} onModeSelect={onModeSelect} />;
     }
     if (stage.id === 'flights') {
         return <ImmersiveSearchBar trendingDestinations={trending} defaultMode="flights" onModeSelect={onModeSelect} />;
@@ -361,6 +361,37 @@ const StageSurface = memo(function StageSurface({
     }
     return <OptionsPanel />;
 });
+
+/**
+ * The stay search with the city pills under it. A pill hands its city to the search bar, and
+ * the bar reports back the destination its sentence holds, so the lit pill is always the one the
+ * search will run — including after the visitor picks some other city from the dropdown.
+ */
+function StaysSurface({
+    trending,
+    stays,
+    onModeSelect,
+}: {
+    trending?: TrendingDest[];
+    stays: Record<string, FeaturedStay>;
+    onModeSelect?: (mode: SearchMode) => void;
+}) {
+    // A fresh object per click, so picking the same pill again still reaches the bar.
+    const [pick, setPick] = useState<{ name: string } | null>(null);
+    const [destination, setDestination] = useState<string | null>(null);
+    return (
+        <div className="space-y-5">
+            <ImmersiveSearchBar
+                trendingDestinations={trending}
+                defaultMode="stays"
+                onModeSelect={onModeSelect}
+                destinationPick={pick}
+                onDestinationChange={setDestination}
+            />
+            <ShowcaseStrip stays={stays} chosen={destination} onPick={city => setPick({ name: city })} />
+        </div>
+    );
+}
 
 /** How long the old wording takes to fade out before the new is put in its place, in ms. */
 const FACE_SWAP_MS = 240;
@@ -446,37 +477,42 @@ function StagePanel({
  * The four destinations moving behind this stage, with what they actually cost.
  *
  * It does two jobs. It tells the visitor the backdrop is inventory rather than stock
- * photography, and picking one sets the destination the stay search below will actually run
- * — so the scroll and the search stay the same object rather than two things happening near
- * each other.
+ * photography, and picking one fills the destination of the stay search above it — so the
+ * scroll and the search stay the same object rather than two things happening near each other.
+ * It used to write the city to the search store, which the bar never reads: the pill lit up
+ * and the sentence, and the search GO ran, still said "somewhere amazing".
  *
  * A destination with no promoted stay still appears, just without a price. Empty
  * `hotel_deals` costs the strip its figures, never its destinations.
  */
-function ShowcaseStrip({ stays }: { stays: Record<string, FeaturedStay> }) {
+function ShowcaseStrip({
+    stays,
+    chosen,
+    onPick,
+}: {
+    stays: Record<string, FeaturedStay>;
+    /** The destination the search will run, which lights its pill. */
+    chosen: string | null;
+    onPick: (city: string) => void;
+}) {
     const tAll = useTranslations();
-    const setDestination = useSearchStore(s => s.setDestination);
-    const chosen = useSearchStore(s => s.destination);
+    // In the currency picked in the header, as every other price on the landing page is.
+    const money = useMoney();
 
     return (
         <div className="flex flex-wrap gap-2">
             {SHOWCASE_DESTINATIONS.map(d => {
                 const stay = stays[d.city];
-                const isChosen = chosen?.title === d.city;
+                const isChosen = chosen === d.city;
                 return (
                     <button
                         key={d.city}
                         type="button"
                         aria-pressed={isChosen}
-                        onClick={() =>
-                            setDestination({
-                                type: 'city',
-                                title: d.city,
-                                subtitle: '',
-                                countryCode: d.countryCode,
-                            })
-                        }
-                        className="rounded-full px-4 py-2 text-left transition-[filter] duration-150 hover:brightness-125"
+                        onClick={() => onPick(d.city)}
+                        // `cursor-pointer` spelled out: Tailwind 4 leaves buttons on the
+                        // default arrow, which made the pills look like labels.
+                        className="min-w-36 cursor-pointer rounded-full px-7 py-2.5 text-center transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95"
                         style={{
                             background: isChosen ? BRAND.primaryWash : BRAND.glass,
                             border: `1px solid ${isChosen ? BRAND.accent : BRAND.glassBorder}`,
@@ -485,7 +521,7 @@ function ShowcaseStrip({ stays }: { stays: Record<string, FeaturedStay> }) {
                         <span className="text-sm font-medium text-white">{d.city}</span>
                         {stay && (
                             <span className="ml-2 text-xs text-white/55">
-                                {tAll('landing.journey.strip.from', { price: formatCurrency(stay.price, stay.currency) })}
+                                {tAll('landing.journey.strip.from', { price: money(stay.price, stay.currency) })}
                             </span>
                         )}
                     </button>

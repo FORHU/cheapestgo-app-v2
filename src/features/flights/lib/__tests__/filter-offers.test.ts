@@ -260,3 +260,39 @@ describe('activeFilterCount', () => {
         expect(activeFilterCount(anyFilters({ stops: 0, refundableOnly: true, priceRange: [0, 100] }))).toBe(3);
     });
 });
+
+/**
+ * The cards print every fare in the currency picked in the top bar; the panel beside them
+ * offered the airline's. With KRW picked, the cards said ₩560,000 and the price fields asked
+ * for dollars. Given the page's converter, the bounds, the range and the cheapest-first sort
+ * are all in the currency on show — and a search that comes back in two currencies ranks by
+ * what each fare costs, not by its digits.
+ */
+describe('in the currency on show', () => {
+    // 1 USD = 1,400 KRW; 1 JPY = 9.4 KRW.
+    const toKrw = (amount: number, currency: string) =>
+        currency === 'USD' ? amount * 1400 : currency === 'JPY' ? amount * 9.4 : amount;
+    const usd = (id: string, total: number) =>
+        offer({ id, price: { total, base: total, taxes: 0, currency: 'USD', pricePerAdult: total } });
+    const jpy = (id: string, total: number) =>
+        offer({ id, price: { total, base: total, taxes: 0, currency: 'JPY', pricePerAdult: total } });
+
+    it('offers the price range the cards show', () => {
+        expect(filterBounds([usd('a', 400), usd('b', 650)], toKrw).price).toEqual([560_000, 910_000]);
+    });
+
+    it('narrows by a range given in that currency', () => {
+        const kept = applyFlightFilters([usd('a', 400), usd('b', 650)], anyFilters({ priceRange: [500_000, 600_000] }), toKrw);
+        expect(kept.map(o => o.offerId)).toEqual(['a']);
+    });
+
+    it('ranks fares in two currencies by what they cost, not by their digits', () => {
+        // ¥50,000 is ₩470,000 — cheaper than $400 (₩560,000), though 50,000 > 400.
+        const sorted = applyFlightFilters([usd('dollars', 400), jpy('yen', 50_000)], anyFilters({ sortBy: 'price' }), toKrw);
+        expect(sorted.map(o => o.offerId)).toEqual(['yen', 'dollars']);
+    });
+
+    it('is the offers\' own currency when the page gives no converter', () => {
+        expect(filterBounds([usd('a', 400), usd('b', 650)]).price).toEqual([400, 650]);
+    });
+});

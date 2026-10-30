@@ -7,18 +7,19 @@
  *
  * Both were in v1 and neither reached v2, so a v2 booking could be made and then only
  * looked at. They live together because they are the same shape — a small form against
- * one booking — and they share the card the rest of the booking detail is built from.
+ * one booking — and they share the panel the rest of the booking detail is built from
+ * (`DetailPanel`).
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CheckCircle2, Mail, MessageSquarePlus } from 'lucide-react';
-import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { http } from '@/shared/lib/http';
+import { cn } from '@/shared/lib/cn';
+import { ACTION, CHIP, DetailPanel, MUTED } from './booking-card-parts';
 
-const CARD  = 'rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900';
-const HEAD  = 'flex items-center gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800';
-const TITLE = 'text-sm font-semibold text-slate-900 dark:text-white';
+/** The card's own primary action — the gradient pill — for a form's one button. */
+const SUBMIT = cn(ACTION, CHIP, 'disabled:pointer-events-none disabled:opacity-60');
 
 /** The message of an error the API reported, or a fallback the reader can act on. */
 const messageOf = (err: unknown, fallback: string) =>
@@ -55,12 +56,8 @@ export function SpecialRequestsForm({ booking }: {
     }
 
     return (
-        <div className={CARD}>
-            <div className={HEAD}>
-                <span className="text-slate-400"><MessageSquarePlus size={15} /></span>
-                <h2 className={TITLE}>{t('trips.requestsForm.title')}</h2>
-            </div>
-            <form onSubmit={submit} className="space-y-3 px-5 py-4">
+        <DetailPanel title={t('trips.requestsForm.title')} icon={MessageSquarePlus}>
+            <form onSubmit={submit} className="space-y-3 py-1">
                 <textarea
                     value={remarks}
                     onChange={(e) => { setRemarks(e.target.value); setSaved(false); }}
@@ -71,16 +68,16 @@ export function SpecialRequestsForm({ booking }: {
                 />
                 {/* The property decides, not us — promising an accepted request is how a
                     guest arrives expecting a cot that was never confirmed. */}
-                <p className="text-[11px] text-slate-400">{t('documents.voucher.requestsNotGuaranteed')}</p>
+                <p className={cn('text-[12px]', MUTED)}>{t('documents.voucher.requestsNotGuaranteed')}</p>
                 {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
                 {saved && (
                     <p className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
                         <CheckCircle2 size={15} /> {t('trips.requestsForm.saved')}
                     </p>
                 )}
-                <Button type="submit" disabled={saving}>{t('trips.requestsForm.submit')}</Button>
+                <button type="submit" disabled={saving} className={SUBMIT}>{t('trips.requestsForm.submit')}</button>
             </form>
-        </div>
+        </DetailPanel>
     );
 }
 
@@ -107,13 +104,9 @@ export function ShareBookingForm({ bookingId, defaultEmail }: { bookingId: strin
     }
 
     return (
-        <div className={CARD}>
-            <div className={HEAD}>
-                <span className="text-slate-400"><Mail size={15} /></span>
-                <h2 className={TITLE}>{t('trips.shareForm.title')}</h2>
-            </div>
-            <form onSubmit={submit} className="space-y-3 px-5 py-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400">{t('trips.shareForm.blurb')}</p>
+        <DetailPanel title={t('trips.shareForm.title')} icon={Mail}>
+            <form onSubmit={submit} className="space-y-3 py-1">
+                <p className={cn('text-[13px]', MUTED)}>{t('trips.shareForm.blurb')}</p>
                 <Input
                     type="email"
                     required
@@ -128,8 +121,8 @@ export function ShareBookingForm({ bookingId, defaultEmail }: { bookingId: strin
                         <CheckCircle2 size={15} /> {t('trips.shareForm.sent', { email: sentTo })}
                     </p>
                 )}
-                <Button type="submit" disabled={sending}>{t('trips.shareForm.submit')}</Button>
+                <button type="submit" disabled={sending} className={SUBMIT}>{t('trips.shareForm.submit')}</button>
             </form>
-        </div>
+        </DetailPanel>
     );
 }

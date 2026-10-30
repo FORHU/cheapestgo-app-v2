@@ -116,12 +116,20 @@ body.map-immersive .app-shell-main {
  * Light is slate-100, the hotel list view's ground. Dark is the landing canvas (`BRAND.canvas` in
  * shared/lib/palette.ts), held to the viewport so a long list of results does
  * not stretch its glow down the whole page.
+ *
+ * `.flat-ground-strip` is a sticky bar standing on that ground — the bookings
+ * page's navbar (`LandingHeader`'s themed tone). It paints the same ground in the
+ * same rule, so the bar reads as the page itself with the list scrolling under it;
+ * held to the viewport too, it shows exactly the slice of the glow behind it. In
+ * CSS rather than from the theme in JS, which the server render cannot know.
  */
-body.flat-ground .app-shell {
+body.flat-ground .app-shell,
+body.flat-ground .flat-ground-strip {
   background: #f1f5f9;
 }
 
-html.dark body.flat-ground .app-shell {
+html.dark body.flat-ground .app-shell,
+html.dark body.flat-ground .flat-ground-strip {
   background: radial-gradient(120% 80% at 50% 0%, #0f172a 0%, #0b1222 45%, #020617 100%) fixed;
 }
 
