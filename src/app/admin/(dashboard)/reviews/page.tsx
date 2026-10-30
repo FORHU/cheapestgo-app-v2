@@ -92,10 +92,10 @@ export default function AdminReviewsPage() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Reviews</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Hotel review moderation</p>
+                <h1 className="text-base font-semibold text-slate-900">Reviews</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Hotel review moderation</p>
             </div>
 
             {data?.stats && (
@@ -111,7 +111,7 @@ export default function AdminReviewsPage() {
                 {query && <Button type="button" variant="ghost" size="sm" onClick={() => { setSearch(''); setQuery(''); setPage(1); }}>Clear</Button>}
             </form>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {error ? (
                     <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                 ) : loading ? (
@@ -122,38 +122,38 @@ export default function AdminReviewsPage() {
                         <p className="text-sm font-bold text-slate-900">No reviews found</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                    <div className="max-h-[70vh] overflow-auto">
+                        <table className="w-full text-[13px]">
+                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Hotel</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Reviewer</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Rating</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Review</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Source</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Hotel</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Reviewer</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Rating</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Review</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Source</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Date</th>
+                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {data.reviews.map(review => (
                                     <tr key={review.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             <div className="flex items-center gap-2">
                                                 <Building2 size={13} className="text-slate-400 shrink-0" />
                                                 <code className="text-xs font-mono font-bold text-blue-600">{review.hotel_id}</code>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-slate-700">{review.reviewer_name ?? '—'}</td>
-                                        <td className="px-4 py-3"><StarRating rating={review.rating} /></td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5 text-sm text-slate-700">{review.reviewer_name ?? '—'}</td>
+                                        <td className="px-3 py-1.5"><StarRating rating={review.rating} /></td>
+                                        <td className="px-3 py-1.5">
                                             <p className="text-xs text-slate-500 max-w-[200px] truncate" title={review.review_text ?? ''}>
                                                 {review.review_text ?? <span className="italic text-slate-400">No text</span>}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">{review.source ?? '—'}</td>
-                                        <td className="px-4 py-3 text-xs text-slate-400">{new Date(review.created_at).toLocaleDateString()}</td>
-                                        <td className="px-4 py-3 text-right">
+                                        <td className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">{review.source ?? '—'}</td>
+                                        <td className="px-3 py-1.5 text-xs text-slate-400">{new Date(review.created_at).toLocaleDateString()}</td>
+                                        <td className="px-3 py-1.5 text-right">
                                             <Button
                                                 variant="ghost" size="sm"
                                                 disabled={deletingId === review.id}

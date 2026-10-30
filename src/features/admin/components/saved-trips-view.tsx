@@ -80,10 +80,10 @@ export function SavedTripsView() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Saved Trips</h1>
-                <p className="text-sm text-slate-500 mt-0.5">User-saved flight and hotel offers</p>
+                <h1 className="text-base font-semibold text-slate-900">Saved Trips</h1>
+                <p className="text-xs text-slate-500 mt-0.5">User-saved flight and hotel offers</p>
             </div>
 
             {data?.stats && (
@@ -94,7 +94,7 @@ export function SavedTripsView() {
                 </div>
             )}
 
-            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 w-fit">
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 w-fit">
                 {(['all', 'flight', 'hotel'] as const).map(opt => (
                     <button key={opt} onClick={() => { setTypeFilter(opt); setPage(1); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${typeFilter === opt ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-blue-600'}`}>
@@ -103,7 +103,7 @@ export function SavedTripsView() {
                 ))}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {error ? (
                     <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                 ) : loading ? (
@@ -114,22 +114,22 @@ export function SavedTripsView() {
                         <p className="text-sm font-bold text-slate-900">No saved trips found</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                    <div className="max-h-[70vh] overflow-auto">
+                        <table className="w-full text-[13px]">
+                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Trip</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Type</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Price</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">User</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Saved</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Trip</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Type</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Price</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">User</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Saved</th>
+                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {data.trips.map(trip => (
                                     <tr key={trip.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             <div className="flex items-center gap-3">
                                                 {trip.image_url ? (
                                                     <img src={trip.image_url} alt={trip.title} className="w-8 h-8 rounded-lg object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -144,21 +144,21 @@ export function SavedTripsView() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             <Badge variant={trip.type === 'flight' ? 'default' : 'success'} size="sm">
                                                 {trip.type === 'flight' ? 'Flight' : 'Hotel'}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-3 font-bold text-slate-900">
+                                        <td className="px-3 py-1.5 font-bold text-slate-900">
                                             {trip.price ? fmt(trip.price, trip.currency) : <span className="text-slate-400 italic text-xs">—</span>}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             <code className="text-xs font-mono text-slate-400">{trip.user_id.slice(0, 8)}…</code>
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-slate-400">
+                                        <td className="px-3 py-1.5 text-xs text-slate-400">
                                             {new Date(trip.created_at).toLocaleDateString()}
                                         </td>
-                                        <td className="px-4 py-3 text-right">
+                                        <td className="px-3 py-1.5 text-right">
                                             <div className="flex items-center gap-1 justify-end">
                                                 <a href={trip.deep_link} target="_blank" rel="noopener noreferrer">
                                                     <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-600 hover:bg-blue-50"><ExternalLink size={14} /></Button>

@@ -129,7 +129,7 @@ export default function AdminSettingsPage() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-4">
+            <div className="px-5 py-4 space-y-3">
                 <Skeleton className="h-7 w-32" />
                 <Skeleton className="h-4 w-64" />
                 <div className="mt-6 space-y-3">
@@ -140,16 +140,16 @@ export default function AdminSettingsPage() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Settings</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Platform configuration</p>
+                <h1 className="text-base font-semibold text-slate-900">Settings</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Platform configuration</p>
             </div>
 
-            {error && <div className="p-4 text-sm text-rose-500 bg-rose-50 border border-rose-200 rounded-xl">{error}</div>}
+            {error && <div className="p-3 text-xs text-rose-500 bg-rose-50 border border-rose-200 rounded-lg">{error}</div>}
 
             {toast && (
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border ${toast.ok ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold border ${toast.ok ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
                     {toast.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                     {toast.msg}
                 </div>
@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
+                            className={`w-full flex items-center gap-3 p-4 rounded-lg border text-left transition-all ${
                                 activeTab === tab.id
                                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'
                                     : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'
@@ -176,7 +176,7 @@ export default function AdminSettingsPage() {
 
                 {/* Content */}
                 <div className="lg:col-span-3">
-                    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 space-y-6">
+                    <div className="bg-white rounded-lg border border-slate-200 px-5 py-4 space-y-3.5">
                         {activeTab === 'general' && (
                             <>
                                 <h2 className="text-sm font-bold text-slate-900">General Configuration</h2>
@@ -201,11 +201,11 @@ export default function AdminSettingsPage() {
                                         value={description}
                                         onChange={e => setDescription(e.target.value)}
                                         rows={3}
-                                        className="w-full rounded-xl border border-slate-200 bg-white text-sm px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all"
+                                        className="w-full rounded-lg border border-slate-200 bg-white text-sm px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all"
                                         placeholder="Flight and hotel booking platform…"
                                     />
                                 </div>
-                                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
                                     <div>
                                         <p className="text-sm font-bold text-slate-900">Public Registration</p>
                                         <p className="text-xs text-slate-500">Allow new users to sign up</p>
@@ -222,7 +222,7 @@ export default function AdminSettingsPage() {
                                     `/admin/tgx-health` answers "is TravelgateX reachable", which
                                     stayed green throughout the 2026-10-26 outage. This answers
                                     "did a city that is never empty return rooms". */}
-                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-slate-900">
@@ -247,14 +247,14 @@ export default function AdminSettingsPage() {
                                         <button
                                             onClick={runHealthCheck}
                                             disabled={checkingHealth}
-                                            className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                                            className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                                         >
                                             {checkingHealth ? 'Checking…' : 'Check now'}
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
                                     <div>
                                         <p className="text-sm font-bold text-slate-900">Stays Maintenance Mode</p>
                                         <p className="text-xs text-slate-500">Hotel search and booking off — flights unaffected</p>
@@ -284,7 +284,7 @@ export default function AdminSettingsPage() {
                                         <select
                                             value={currency}
                                             onChange={e => setCurrency(e.target.value)}
-                                            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         >
                                             {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
@@ -294,7 +294,7 @@ export default function AdminSettingsPage() {
                                         <select
                                             value={timezone}
                                             onChange={e => setTimezone(e.target.value)}
-                                            className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         >
                                             {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                                         </select>

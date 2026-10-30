@@ -84,10 +84,10 @@ export function PriceAlertsView() {
     const totalPages = data ? Math.max(1, data.totalPages) : 1;
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Price Alerts</h1>
-                <p className="text-sm text-slate-500 mt-0.5">User-configured fare watch alerts</p>
+                <h1 className="text-base font-semibold text-slate-900">Price Alerts</h1>
+                <p className="text-xs text-slate-500 mt-0.5">User-configured fare watch alerts</p>
             </div>
 
             {stats && (
@@ -98,7 +98,7 @@ export function PriceAlertsView() {
                 </div>
             )}
 
-            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 w-fit">
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 w-fit">
                 {(['all', 'active', 'inactive'] as const).map(opt => (
                     <button key={opt} onClick={() => { setStatusFilter(opt); setPage(1); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${statusFilter === opt ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-blue-600'}`}>
@@ -107,7 +107,7 @@ export function PriceAlertsView() {
                 ))}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {error ? (
                     <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                 ) : loading ? (
@@ -118,48 +118,48 @@ export function PriceAlertsView() {
                         <p className="text-sm font-bold text-slate-900">No price alerts found</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-b border-slate-100 bg-slate-50/50">
+                    <div className="max-h-[70vh] overflow-auto">
+                        <table className="w-full text-[13px]">
+                            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                 <tr>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Route</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">User</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Cabin</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Target</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                                    <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Created</th>
-                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Route</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">User</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cabin</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Target</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
+                                    <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Created</th>
+                                    <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-100">
                                 {alerts.map(alert => (
                                     <tr key={alert.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             <div className="flex items-center gap-2">
                                                 <Plane size={13} className="text-blue-500 shrink-0" />
                                                 <span className="font-bold text-slate-900">{alert.origin} → {alert.destination}</span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-slate-600 max-w-[160px] truncate">{alert.email}</td>
-                                        <td className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        <td className="px-3 py-1.5 text-xs text-slate-600 max-w-[160px] truncate">{alert.email}</td>
+                                        <td className="px-3 py-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
                                             {CABIN_LABELS[alert.cabin_class] ?? alert.cabin_class}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             {alert.target_price ? (
                                                 <span className="text-sm font-bold text-emerald-600">${alert.target_price}</span>
                                             ) : (
                                                 <span className="text-xs text-slate-400 italic">Any</span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 py-1.5">
                                             <Badge variant={alert.is_active ? 'success' : 'secondary'} size="sm">
                                                 {alert.is_active ? 'Active' : 'Inactive'}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-slate-400">
+                                        <td className="px-3 py-1.5 text-xs text-slate-400">
                                             {new Date(alert.created_at).toLocaleDateString()}
                                         </td>
-                                        <td className="px-4 py-3 text-right">
+                                        <td className="px-3 py-1.5 text-right">
                                             <div className="flex items-center gap-1 justify-end">
                                                 <Button
                                                     variant="ghost" size="sm"

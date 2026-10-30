@@ -7,7 +7,7 @@ import { BookingsTable } from '@/features/admin/components/bookings-table';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Skeleton } from '@/shared/components/ui/skeleton';
-import type { Booking, PaginatedResponse } from '@/shared/types';
+import type { Booking } from '@/shared/types';
 
 const PAGE_SIZE = 20;
 
@@ -32,8 +32,15 @@ export function BookingsView() {
             });
             if (q) params.set('q', q);
 
-            const res = await http.get<PaginatedResponse<Booking>>(`/api/bookings?${params}`);
-            setBookings(res.data ?? []);
+            // `/api/bookings` is the customer endpoint: it is scoped to the caller's own
+            // `user_id`, so the back office was listing the signed-in admin's personal
+            // bookings and nobody else's. `/api/admin/bookings` is the one this table was
+            // built for — it merges hotels and flights and normalises them to the shape
+            // `BookingsTable` reads (see its test, which names that contract).
+            const res = await http.get<{ bookings: Booking[]; total: number }>(
+                `/api/admin/bookings?${params}`,
+            );
+            setBookings(res.bookings ?? []);
             setTotal(res.total ?? 0);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to load bookings.');
@@ -60,11 +67,11 @@ export function BookingsView() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">Bookings</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">
+                    <h1 className="text-base font-semibold text-slate-900">Bookings</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">
                         {total > 0 ? `${total.toLocaleString()} total` : 'All platform bookings'}
                     </p>
                 </div>
@@ -85,7 +92,7 @@ export function BookingsView() {
                 )}
             </form>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {error ? (
                     <div className="p-8 text-center text-sm text-rose-500">{error}</div>
                 ) : loading ? (

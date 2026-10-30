@@ -203,6 +203,14 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
                     onDone={(result) => setCancelledStatus(result.status)}
                 />
             )}
+            {cancelOpen && booking.booking_id && (
+                <HotelCancelModal
+                    reference={booking.booking_id}
+                    propertyName={booking.property_name}
+                    onClose={() => setCancelOpen(false)}
+                    onDone={(result) => setCancelledStatus(result.status)}
+                />
+            )}
         </div>
     );
 }

@@ -34,7 +34,7 @@ function SkeletonCards() {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5 space-y-3">
+                <div key={i} className="bg-white rounded-lg border border-slate-200/80 p-5 space-y-3">
                     <Skeleton className="h-3 w-24" />
                     <Skeleton className="h-8 w-20" />
                 </div>
@@ -75,7 +75,7 @@ function PushForm({ deviceCount }: { deviceCount: number }) {
     }
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+        <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-4">
             <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0"><Bell size={14} className="text-violet-600" /></div>
                 <div>
@@ -91,7 +91,7 @@ function PushForm({ deviceCount }: { deviceCount: number }) {
             )}
 
             <form onSubmit={handleSend} className="space-y-3">
-                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1 w-fit">
+                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5 w-fit">
                     {(['all', 'user'] as const).map(t => (
                         <button key={t} type="button" onClick={() => setTarget(t)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${target === t ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-violet-600'}`}>
@@ -111,7 +111,7 @@ function PushForm({ deviceCount }: { deviceCount: number }) {
                     onChange={e => setPushBody(e.target.value)}
                     rows={3}
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-white text-sm px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none transition-all"
+                    className="w-full rounded-lg border border-slate-200 bg-white text-sm px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none transition-all"
                 />
                 <Button type="submit" isLoading={sending} disabled={deviceCount === 0} fullWidth className="bg-violet-600 hover:bg-violet-700" size="sm">
                     <Send size={13} />
@@ -142,14 +142,14 @@ export default function AdminMobilePage() {
     const successRate = stats && stats.total > 0 ? ((stats.confirmed / stats.total) * 100).toFixed(1) : '0.0';
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="px-5 py-4 space-y-4">
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Mobile</h1>
-                <p className="text-sm text-slate-500 mt-0.5">App stats and device token management</p>
+                <h1 className="text-base font-semibold text-slate-900">Mobile</h1>
+                <p className="text-xs text-slate-500 mt-0.5">App stats and device token management</p>
             </div>
 
             {error && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
                     <AlertTriangle size={15} className="shrink-0" />
                     {error}
                 </div>
@@ -172,7 +172,7 @@ export default function AdminMobilePage() {
                     {/* Device tokens */}
                     <section>
                         <h2 className="text-sm font-bold text-slate-900 mb-4">Device Tokens</h2>
-                        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                             {devices.length === 0 ? (
                                 <div className="p-12 text-center">
                                     <Smartphone size={36} className="mx-auto text-slate-200 mb-3" strokeWidth={1} />
@@ -180,33 +180,33 @@ export default function AdminMobilePage() {
                                     <p className="text-xs text-slate-400 mt-1">The mobile app must register a push token on startup.</p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="border-b border-slate-100 bg-slate-50/50">
+                                <div className="max-h-[70vh] overflow-auto">
+                                    <table className="w-full text-[13px]">
+                                        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                                             <tr>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Platform</th>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Token</th>
-                                                <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">User</th>
-                                                <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Registered</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Platform</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Token</th>
+                                                <th className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">User</th>
+                                                <th className="text-right px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Registered</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-50">
+                                        <tbody className="divide-y divide-slate-100">
                                             {devices.map(d => (
                                                 <tr key={d.id} className="hover:bg-slate-50">
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-1.5">
                                                         <Badge variant={d.platform === 'ios' ? 'secondary' : 'default'} size="sm">
                                                             {d.platform.toUpperCase()}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-1.5">
                                                         <code className="text-xs font-mono text-slate-500 truncate block max-w-[220px]">
                                                             {d.token.slice(0, 32)}…
                                                         </code>
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-1.5">
                                                         <code className="text-xs font-mono text-slate-400">{d.user_id.slice(0, 8)}…</code>
                                                     </td>
-                                                    <td className="px-4 py-3 text-right text-xs text-slate-400">
+                                                    <td className="px-3 py-1.5 text-right text-xs text-slate-400">
                                                         {new Date(d.created_at).toLocaleDateString()}
                                                     </td>
                                                 </tr>

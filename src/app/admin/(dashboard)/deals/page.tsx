@@ -94,29 +94,29 @@ function VouchersTable({ items, loading, onToggle, onDelete, loadingId }: {
         </div>
     );
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50/50">
+        <div className="max-h-[70vh] overflow-auto">
+            <table className="w-full text-[13px]">
+                <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                     <tr>{['Code', 'Description', 'Discount', 'Uses', 'Valid Until', 'Status', ''].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</th>
+                        <th key={h} className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</th>
                     ))}</tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                     {items.map(v => (
                         <tr key={v.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-mono font-bold text-xs text-slate-900">{v.code}</td>
-                            <td className="px-4 py-3 text-xs text-slate-500 max-w-[160px] truncate">{v.description || '—'}</td>
-                            <td className="px-4 py-3 text-xs font-semibold text-slate-700">
+                            <td className="px-3 py-1.5 font-mono font-bold text-xs text-slate-900">{v.code}</td>
+                            <td className="px-3 py-1.5 text-xs text-slate-500 max-w-[160px] truncate">{v.description || '—'}</td>
+                            <td className="px-3 py-1.5 text-xs font-semibold text-slate-700">
                                 {v.discount_type === 'percent' ? `${Number(v.discount_value)}%` : `$${Number(v.discount_value)}`} off
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-500 tabular-nums">
+                            <td className="px-3 py-1.5 text-xs text-slate-500 tabular-nums">
                                 {v.times_used ?? 0}{v.usage_limit ? ` / ${v.usage_limit}` : ''}
                             </td>
-                            <td className="px-4 py-3 text-xs text-slate-500">{fmtDate(v.valid_until)}</td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-1.5 text-xs text-slate-500">{fmtDate(v.valid_until)}</td>
+                            <td className="px-3 py-1.5">
                                 {v.active ? <Badge variant="success" size="sm">Active</Badge> : <Badge variant="secondary" size="sm">Inactive</Badge>}
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-1.5">
                                 <div className="flex items-center gap-1 justify-end">
                                     <button disabled={loadingId === v.id} onClick={() => onToggle(v.id)}
                                         className={cn('p-1.5 rounded-lg transition-colors', v.active ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100')}
@@ -147,22 +147,22 @@ function FlightDealsTable({ items, loading }: { items: DealRow[]; loading: boole
         </div>
     );
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50/50">
+        <div className="max-h-[70vh] overflow-auto">
+            <table className="w-full text-[13px]">
+                <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                     <tr>{['Route', 'Airline', 'Price', 'Departure', 'Tag', 'Updated'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</th>
+                        <th key={h} className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</th>
                     ))}</tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                     {items.map(f => (
                         <tr key={f.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-bold text-xs text-slate-900">{f.origin} → {f.destination}</td>
-                            <td className="px-4 py-3 text-xs text-slate-500">{f.airline ?? '—'}</td>
-                            <td className="px-4 py-3 text-xs font-semibold">{f.currency ?? 'USD'} {Number(f.price).toLocaleString()}</td>
-                            <td className="px-4 py-3 text-xs text-slate-400">{fmtDate(f.departure_date)}</td>
-                            <td className="px-4 py-3">{f.discount_tag ? <Badge variant="warning" size="sm">{f.discount_tag}</Badge> : <span className="text-xs text-slate-400">—</span>}</td>
-                            <td className="px-4 py-3 text-xs text-slate-400">{fmtDate(f.updated_at)}</td>
+                            <td className="px-3 py-1.5 font-bold text-xs text-slate-900">{f.origin} → {f.destination}</td>
+                            <td className="px-3 py-1.5 text-xs text-slate-500">{f.airline ?? '—'}</td>
+                            <td className="px-3 py-1.5 text-xs font-semibold">{f.currency ?? 'USD'} {Number(f.price).toLocaleString()}</td>
+                            <td className="px-3 py-1.5 text-xs text-slate-400">{fmtDate(f.departure_date)}</td>
+                            <td className="px-3 py-1.5">{f.discount_tag ? <Badge variant="warning" size="sm">{f.discount_tag}</Badge> : <span className="text-xs text-slate-400">—</span>}</td>
+                            <td className="px-3 py-1.5 text-xs text-slate-400">{fmtDate(f.updated_at)}</td>
                         </tr>
                     ))}
                 </tbody>
@@ -181,22 +181,22 @@ function HotelDealsTable({ items, loading }: { items: DealRow[]; loading: boolea
         </div>
     );
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50/50">
+        <div className="max-h-[70vh] overflow-auto">
+            <table className="w-full text-[13px]">
+                <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
                     <tr>{['Hotel', 'Destination', 'Price', 'Check-in', 'Discount', 'Stars'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</th>
+                        <th key={h} className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</th>
                     ))}</tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                     {items.map(h => (
                         <tr key={h.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-bold text-xs text-slate-900 max-w-[180px] truncate">{h.name}</td>
-                            <td className="px-4 py-3 text-xs text-slate-500">{h.destination}</td>
-                            <td className="px-4 py-3 text-xs font-semibold">{h.currency ?? 'USD'} {Number(h.price).toLocaleString()}</td>
-                            <td className="px-4 py-3 text-xs text-slate-400">{fmtDate(h.check_in)}</td>
-                            <td className="px-4 py-3">{h.discount_pct ? <Badge variant="warning" size="sm">{h.discount_pct}% off</Badge> : <span className="text-xs text-slate-400">—</span>}</td>
-                            <td className="px-4 py-3 text-xs text-amber-400">{'★'.repeat(Math.min(5, Number(h.stars ?? 0)))}</td>
+                            <td className="px-3 py-1.5 font-bold text-xs text-slate-900 max-w-[180px] truncate">{h.name}</td>
+                            <td className="px-3 py-1.5 text-xs text-slate-500">{h.destination}</td>
+                            <td className="px-3 py-1.5 text-xs font-semibold">{h.currency ?? 'USD'} {Number(h.price).toLocaleString()}</td>
+                            <td className="px-3 py-1.5 text-xs text-slate-400">{fmtDate(h.check_in)}</td>
+                            <td className="px-3 py-1.5">{h.discount_pct ? <Badge variant="warning" size="sm">{h.discount_pct}% off</Badge> : <span className="text-xs text-slate-400">—</span>}</td>
+                            <td className="px-3 py-1.5 text-xs text-amber-400">{'★'.repeat(Math.min(5, Number(h.stars ?? 0)))}</td>
                         </tr>
                     ))}
                 </tbody>
@@ -283,11 +283,11 @@ export default function AdminDealsPage() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="px-5 py-4 space-y-3.5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">Deals</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Vouchers, flight deals, and hotel offers</p>
+                    <h1 className="text-base font-semibold text-slate-900">Deals</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Vouchers, flight deals, and hotel offers</p>
                 </div>
                 {tab === 'vouchers' && (
                     <Button size="sm" onClick={() => setShowForm(v => !v)}>
@@ -297,7 +297,7 @@ export default function AdminDealsPage() {
             </div>
 
             {toast && (
-                <div className={cn('flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border',
+                <div className={cn('flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold border',
                     toast.ok ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
                 )}>
                     {toast.msg}
@@ -306,9 +306,9 @@ export default function AdminDealsPage() {
             )}
 
             {tab === 'vouchers' && showForm && (
-                <form onSubmit={handleCreate} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+                <form onSubmit={handleCreate} className="bg-white rounded-lg border border-slate-200 p-5 space-y-4">
                     <h2 className="text-sm font-bold text-slate-900">Create Voucher</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Code *</label>
                             <Input placeholder="SUMMER25" value={form.code} onChange={e => setFormState(f => ({ ...f, code: e.target.value.toUpperCase() }))} required />
@@ -316,7 +316,7 @@ export default function AdminDealsPage() {
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Type</label>
                             <select value={form.discount_type} onChange={e => setFormState(f => ({ ...f, discount_type: e.target.value as 'percent' | 'fixed' }))}
-                                className="w-full rounded-xl border border-slate-200 bg-white text-sm px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                className="w-full rounded-lg border border-slate-200 bg-white text-sm px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
                                 <option value="percent">Percentage (%)</option>
                                 <option value="fixed">Fixed Amount</option>
                             </select>
@@ -355,7 +355,7 @@ export default function AdminDealsPage() {
 
             {/* Tab bar + search */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
+                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5">
                     {TABS.map(({ key, label, icon: Icon }) => (
                         <button key={key} onClick={() => { setTab(key); setPage(1); }}
                             className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
@@ -371,7 +371,7 @@ export default function AdminDealsPage() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {tab === 'vouchers'     && <VouchersTable     items={items} loading={loading} onToggle={handleToggle} onDelete={handleDelete} loadingId={loadingId} />}
                 {tab === 'flight_deals' && <FlightDealsTable  items={items} loading={loading} />}
                 {tab === 'hotel_deals'  && <HotelDealsTable   items={items} loading={loading} />}

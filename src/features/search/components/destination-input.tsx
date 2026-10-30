@@ -7,6 +7,7 @@ import { MapPin, History, Plane, Building2, Globe, X, Hotel } from 'lucide-react
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
+import { env } from '@/shared/lib/env';
 import type { Destination } from '@/shared/types';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import {
@@ -67,7 +68,7 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     const { data: trendingData } = useQuery<TrendingDestination[]>({
         queryKey: ['trending-destinations'],
         queryFn: () =>
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/hotels/trending`)
+            fetch(`${env.NEXT_PUBLIC_API_URL}/hotels/trending`)
                 .then(r => r.json())
                 .then((res: { success: boolean; data: TrendingDestination[] }) => res.success ? res.data : []),
         staleTime: 30 * 60 * 1000,

@@ -25,9 +25,9 @@ interface AdminStats {
 
 function StatsSkeleton() {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5 space-y-3">
+                <div key={i} className="bg-white rounded-lg border border-slate-200/80 p-5 space-y-3">
                     <Skeleton className="h-3 w-24" />
                     <Skeleton className="h-8 w-32" />
                 </div>
@@ -45,9 +45,24 @@ export default function AdminOverviewPage() {
     const [bookingsLoading, setBookingsLoading] = useState(true);
 
     useEffect(() => {
-        // Try to load stats — endpoint may not exist in api-v2 yet
+        // Try to load stats — endpoint may not exist in api-v2 yet, and may answer 200 with
+        // a shape this page cannot render. Both are the same failure to a reader, so both
+        // take the placeholder branch below.
+        //
+        // The shape check is not belt-and-braces: `.catch` sees rejections only, so when
+        // api-v2 answered `{bookingCount, revenue, userCount}` against the five fields named
+        // above, every one of them was undefined, `stats.totalBookings.toLocaleString()`
+        // threw, and the whole route hit its error boundary — a blank "Something went wrong"
+        // while the network tab showed nothing but 200s. The placeholder this component
+        // already carries was written for exactly that case and never got to run.
         http.get<AdminStats>('/api/admin/stats')
-            .then(setStats)
+            .then((s) => {
+                const numeric = [s?.totalBookings, s?.totalRevenue, s?.activeUsers, s?.hotelDeals];
+                if (numeric.some(v => typeof v !== 'number')) {
+                    throw new Error('unexpected /api/admin/stats shape');
+                }
+                setStats(s);
+            })
             .catch(() => setStatsError(true));
 
         // Load recent bookings
@@ -58,21 +73,21 @@ export default function AdminOverviewPage() {
     }, []);
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="px-5 py-4 space-y-4">
             {/* Page header */}
             <div>
-                <h1 className="text-xl font-bold text-slate-900">Overview</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Platform-wide snapshot</p>
+                <h1 className="text-base font-semibold text-slate-900">Overview</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Platform-wide snapshot</p>
             </div>
 
             {/* Stats */}
             {statsError ? (
                 <div>
-                    <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 mb-4">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 mb-4">
                         <Info size={15} className="shrink-0" />
                         Stats endpoint not available yet — showing placeholder data.
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                         <StatsCard label="Total Bookings" value="—" />
                         <StatsCard label="Revenue"        value="—" prefix="$" />
                         <StatsCard label="Active Users"   value="—" />
@@ -82,7 +97,7 @@ export default function AdminOverviewPage() {
             ) : stats === null ? (
                 <StatsSkeleton />
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                     <StatsCard
                         label="Total Bookings"
                         value={stats.totalBookings.toLocaleString()}
@@ -111,7 +126,7 @@ export default function AdminOverviewPage() {
                         View all →
                     </Link>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                     {bookingsLoading ? (
                         <div className="p-6 space-y-3">
                             {Array.from({ length: 5 }).map((_, i) => (
