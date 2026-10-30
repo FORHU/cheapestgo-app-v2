@@ -103,21 +103,54 @@ describe('arriving', () => {
         expect(prebookBodies(c)).toHaveLength(1);
     });
 
-    it('lets a supplier outage be tried again', async () => {
-        let calls = 0;
-        const c = fakeClient({
-            prebook: () => {
-                calls += 1;
-                if (calls === 1) throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'down' });
-                return { success: true, data: { prebookId: 'MOCK:abc', display: DISPLAY } };
-            },
-        });
-        const { result } = setup(c);
-        await waitFor(() => expect(result.current.state.phase).toBe('supplier_down'));
+    it('absorbs a brief supplier outage without troubling the traveller', async () => {
+        // The supplier answers with no availability for seconds at a time. Re-asking happens
+        // underneath the details form — the phase stays `quoting`, so no panel appears over
+        // somebody who is still typing, and the quote simply lands.
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        try {
+            let calls = 0;
+            const c = fakeClient({
+                prebook: () => {
+                    calls += 1;
+                    if (calls === 1) throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'down' });
+                    return { success: true, data: { prebookId: 'MOCK:abc', display: DISPLAY } };
+                },
+            });
+            const { result } = setup(c);
 
-        await act(async () => { await result.current.refreshQuote(); });
+            await waitFor(() => expect(calls).toBe(1));
+            expect(result.current.state.phase).not.toBe('supplier_down');
 
-        expect(result.current.state.phase).toBe('quoted');
+            await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+
+            await waitFor(() => expect(result.current.state.phase).toBe('quoted'));
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('reports the outage once the quiet attempts are spent', async () => {
+        // A supplier that never comes back must still be reported — the traveller is owed an
+        // answer and a way to try again, rather than a spinner that never resolves.
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        try {
+            let calls = 0;
+            const c = fakeClient({
+                prebook: () => {
+                    calls += 1;
+                    throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'down' });
+                },
+            });
+            const { result } = setup(c);
+
+            await act(async () => { await vi.advanceTimersByTimeAsync(120_000); });
+
+            await waitFor(() => expect(result.current.state.phase).toBe('supplier_down'));
+            expect(calls).toBe(7);   // the opening attempt plus six quiet ones
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
 
