@@ -648,6 +648,7 @@ function PropertyContent() {
                     tone={theme}
                     rooms={rooms}
                     image={heroImage}
+                    images={allImages}
                     hotelAmenities={amenities}
                     nights={nights}
                     checkIn={checkIn}

@@ -195,6 +195,16 @@ interface RoomSelectionProps {
      */
     image?: string | null;
     /**
+     * The hotel's whole photo set, so cards falling back can take a different one each.
+     *
+     * Plenty of properties have room groups with no pictures in them — ETG files 56k that way —
+     * and every card then drew the same building shot. Three rooms at three prices under one
+     * identical photo reads as a broken page rather than as missing data. Taking a different
+     * property photo per card claims nothing new (the card never says the photo is of that room,
+     * and the expanded panel labels it) and the list stops looking faulty.
+     */
+    images?: string[];
+    /**
      * The hotel's amenity list, as a fallback for rates that carry none of
      * their own — see `amenityFeatures`.
      */
@@ -928,7 +938,7 @@ const PAGE_EASE = [0.37, 0, 0.63, 1] as [number, number, number, number];
 const PAGE_SLIDE_SECONDS = 1;
 
 export function RoomSelection({
-    rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
+    rooms, image, images, hotelAmenities, nights, checkIn, occupancy, currency,
     selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
 }: RoomSelectionProps) {
     const tAll = useTranslations();
@@ -1080,11 +1090,16 @@ export function RoomSelection({
                     transition={{ duration: PAGE_SLIDE_SECONDS, ease: PAGE_EASE }}
                     className="flex flex-col gap-4"
                 >
-                    {paged.map((group) => (
+                    {paged.map((group, i) => (
                         <RoomCard
                             key={group[0].rate.offerId}
                             cards={group}
-                            image={image}
+                            // Indexed across the whole list, not the page, so a card keeps its
+                            // photo when the pager moves. Only reaches the card at all when the
+                            // room has none of its own — see `photo` in `RoomCard`.
+                            image={images?.length
+                                ? images[(safePage * CARDS_PER_PAGE + i) % images.length]
+                                : image}
                             currency={currency}
                             nights={nights}
                             selectedOfferId={selectedOfferId}

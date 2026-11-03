@@ -308,6 +308,44 @@ describe('RoomSelection — room photography', () => {
         expect(leads).toEqual(['/twin-room.jpg', '/twin-room.jpg']);
     });
 
+    /**
+     * ETG files tens of thousands of properties with room groups that carry no pictures —
+     * Sangbong May has three groups and zero photos between them. Every card then drew the same
+     * building shot, and three rooms at three prices under one identical photo reads as a broken
+     * page rather than as missing data.
+     */
+    it('gives each photo-less room a different property shot', () => {
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard room', price: 100, rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }] }),
+            makeRoom({ id: 'b', name: 'Suite',         price: 200, rates: [{ ...makeRoom().rates![0], offerId: 'b', price: 200 }] }),
+            makeRoom({ id: 'c', name: 'Royal Suite',   price: 300, rates: [{ ...makeRoom().rates![0], offerId: 'c', price: 300 }] }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} images={['/p1.jpg', '/p2.jpg', '/p3.jpg']} />);
+
+        const leads = screen.getAllByRole('article').map(card => card.querySelector('img')?.getAttribute('src'));
+        expect(leads).toEqual(['/p1.jpg', '/p2.jpg', '/p3.jpg']);
+    });
+
+    it('cycles when the property has fewer photos than rooms', () => {
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard room', price: 100, rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }] }),
+            makeRoom({ id: 'b', name: 'Suite',         price: 200, rates: [{ ...makeRoom().rates![0], offerId: 'b', price: 200 }] }),
+            makeRoom({ id: 'c', name: 'Royal Suite',   price: 300, rates: [{ ...makeRoom().rates![0], offerId: 'c', price: 300 }] }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} images={['/p1.jpg', '/p2.jpg']} />);
+
+        const leads = screen.getAllByRole('article').map(card => card.querySelector('img')?.getAttribute('src'));
+        expect(leads).toEqual(['/p1.jpg', '/p2.jpg', '/p1.jpg']);
+    });
+
+    it('still prefers the room’s own photo over the property set', () => {
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard room', roomPhotos: ['/actual-room.jpg'], rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }] }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} images={['/p1.jpg', '/p2.jpg']} />);
+        expect(screen.getByRole('article').querySelector('img')?.getAttribute('src')).toBe('/actual-room.jpg');
+    });
+
     it('shows every room photo in the detail panel, with no ETG content alongside', () => {
         const room = makeRoom({ roomPhotos: ['/room-a.jpg', '/room-b.jpg'] });
         render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
