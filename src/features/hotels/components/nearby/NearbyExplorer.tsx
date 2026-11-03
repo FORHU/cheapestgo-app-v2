@@ -20,14 +20,20 @@ import { PlaceCards, PlaceFilters } from './PlaceStrip';
 import { PlaceDetailsModal } from './PlaceDetailsModal';
 import type { LatLng, NearbyPalette } from './types';
 
+/**
+ * How much of the map's bottom edge the filters and the cards cover: their 32px lift off the
+ * Mapbox logo, the filter row and the card row (measured: 210px with the filters on one line).
+ */
+const OVERLAY_INSET = 210;
+
 interface NearbyExplorerProps {
     coordinates: LatLng;
     hotelName: string;
     palette: NearbyPalette;
     /**
-     * Merged over the default stack of map-then-strip. The property page passes
-     * `contents`, so the map and the strip land in its own grid rows instead —
-     * the map in the row it shares with the room list.
+     * Merged over the default wrapper around the map. The property page passes
+     * `contents`, so the map lands in its own grid row instead — the row it
+     * shares with the room list.
      */
     className?: string;
     /** Merged over the map frame's default fixed height. */
@@ -87,36 +93,40 @@ export function NearbyExplorer({ coordinates, hotelName, palette, className, map
                     mapStyle={palette.mapStyle}
                     route={null}
                     height="100%"
+                    bottomInset={OVERLAY_INSET}
                 >
-                    {/* The places ride the map's bottom edge, lifted clear of the
-                        Mapbox logo and attribution, which have to stay visible. */}
-                    <PlaceCards
-                        className="absolute inset-x-0 bottom-8 z-10"
-                        gems={gems}
-                        loading={loading}
-                        error={error}
-                        onRetry={retry}
-                        unit={unit}
-                        hotel={coordinates}
-                        activeId={active?.id ?? null}
-                        onSelect={select}
-                        onDetails={showDetails}
-                        palette={palette}
-                    />
+                    {/* The filters, and the places just under them, ride the map's
+                        bottom edge, lifted clear of the Mapbox logo and attribution,
+                        which have to stay visible. Neither takes pointer events
+                        outside its own controls, so the map still pans from the gaps. */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-8 z-10">
+                        <PlaceFilters
+                            gems={gems}
+                            error={error}
+                            onRetry={retry}
+                            category={category}
+                            onCategoryChange={changeCategory}
+                            radius={radius}
+                            onRadiusChange={setRadius}
+                            unit={unit}
+                            onUnitChange={setUnit}
+                            palette={palette}
+                        />
+                        <PlaceCards
+                            gems={gems}
+                            loading={loading}
+                            error={error}
+                            onRetry={retry}
+                            unit={unit}
+                            hotel={coordinates}
+                            activeId={active?.id ?? null}
+                            onSelect={select}
+                            onDetails={showDetails}
+                            palette={palette}
+                        />
+                    </div>
                 </NearbyMap>
             </div>
-            <PlaceFilters
-                gems={gems}
-                error={error}
-                onRetry={retry}
-                category={category}
-                onCategoryChange={changeCategory}
-                radius={radius}
-                onRadiusChange={setRadius}
-                unit={unit}
-                onUnitChange={setUnit}
-                palette={palette}
-            />
             <PlaceDetailsModal gem={detailsGem} hotel={coordinates} unit={unit} palette={palette} onClose={closeDetails} />
         </div>
     );

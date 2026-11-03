@@ -11,7 +11,7 @@ import { useMapInteractions, PoiData } from './hooks/useMapInteractions';
 import { useMapViewport } from './hooks/useMapViewport';
 import { MapContainer } from './components/MapContainer';
 import { SelectedPropertyPopup } from './components/SelectedPropertyPopup';
-import { Source, Layer, Marker } from 'react-map-gl/mapbox';
+import { Source, Layer } from 'react-map-gl/mapbox';
 import { PoiPopup } from './components/PoiPopup';
 import { MapSearchOverlay } from './components/MapSearchOverlay';
 import { useRouter } from '@/i18n/navigation';
@@ -125,14 +125,17 @@ const RADIUS_INK = { light: '#0f172a', dark: '#e2e8f0' } as const; // slate-900 
  */
 const SELECT_ZOOM = 15.5;
 
-// Fixed offsets (in degrees) for loading placeholder pins around the city centre
-const LOADING_PIN_OFFSETS = [
-    { lat:  0.000, lng:  0.000 },
-    { lat:  0.012, lng:  0.018 },
-    { lat: -0.010, lng: -0.015 },
-    { lat:  0.008, lng: -0.020 },
-    { lat: -0.015, lng:  0.010 },
-];
+/**
+ * What the pins are drawn from while a search is still running: nothing.
+ *
+ * A streaming search lands its hotels in batches, so drawing them as they came put
+ * pins popping on and off the map for the whole of the search — and the grey
+ * placeholder pins that stood in before the first batch claimed spots no hotel was
+ * at. The search page says it is still looking instead, and the pins arrive
+ * together once the answer is in. Module-level so the empty list keeps one
+ * identity and the clustering memo does not rerun on every render.
+ */
+const NO_PINS: MappableProperty[] = [];
 
 interface SearchMapContainerProps {
     properties: MappableProperty[];
@@ -143,6 +146,7 @@ interface SearchMapContainerProps {
     onViewDetails: (id: string, offerId?: string) => void;
     searchOverlayClassName?: string;
     defaultCenter?: { lng: number; lat: number };
+    /** A search is still running: no hotel pins are drawn until it finishes. */
     isSearching?: boolean;
     districtBbox?: [number, number, number, number];
     districtName?: string;
@@ -204,12 +208,6 @@ export const SearchMapContainer = React.memo(({
             p.coordinates.lng <= 180
         ),
         [properties]
-    );
-
-    // Center for loading placeholder pins — use defaultCenter, fall back to first hotel's coords
-    const loadingPinCenter = useMemo(
-        () => defaultCenter ?? mappableProperties[0]?.coordinates ?? null,
-        [defaultCenter, mappableProperties]
     );
 
     const markerPrices = useMemo(() => {
@@ -284,8 +282,14 @@ export const SearchMapContainer = React.memo(({
     // Seoul search — and every one is re-transformed on each frame of a pan. Grouping
     // bounds that count without hiding anything: a cluster says how many it stands
     // for and the cheapest price among them.
+    //
+    // Fed nothing while the search runs (see `NO_PINS`): with no clusters, the marker
+    // effect below removes every pin already up and mounts none, and the moment the
+    // search finishes the whole set is drawn in one pass. A hotel picked from the
+    // card rail meanwhile still gets its own pin and popup — that is
+    // `SelectedPropertyPopup`, which reads `mappableProperties` rather than this.
     const { clusters, getExpansionZoom, getLeaves } = useHotelClusters(
-        markerProperties,
+        isSearching ? NO_PINS : markerProperties,
         viewBounds,
         currentZoom,
         markerPrices,
@@ -682,7 +686,11 @@ export const SearchMapContainer = React.memo(({
 
     // Three categories, three calls: the endpoint takes one category per
     // request, and the hook count has to stay fixed across renders.
-    const gemCoords = (isMapLoaded && selectedProperty && gemsEnabled)
+    //
+    // Not asked at all while the toolbar has nearby places off — which is the
+    // default — since these feed nothing but the place markers: every hotel
+    // picked would otherwise cost three lookups for discs nobody sees.
+    const gemCoords = (isMapLoaded && selectedProperty && gemsEnabled && showPois)
         ? { lat: selectedProperty.coordinates.lat, lng: selectedProperty.coordinates.lng }
         : undefined;
 
@@ -937,45 +945,8 @@ export const SearchMapContainer = React.memo(({
                 topViewOnly={true}
             >
                 <>
-                        {/* Loading placeholder pins — ghost circles while hotels arrive */}
-                        {isSearching && mappableProperties.length === 0 && loadingPinCenter && (
-                            LOADING_PIN_OFFSETS.map((offset, i) => (
-                                <Marker
-                                    key={`loading-pin-${i}`}
-                                    longitude={loadingPinCenter.lng + offset.lng}
-                                    latitude={loadingPinCenter.lat + offset.lat}
-                                    anchor="bottom"
-                                >
-                                    <div className="flex flex-col items-center" style={{ opacity: 0.75 }}>
-                                        <div
-                                            className="animate-pulse"
-                                            style={{
-                                                width: 48, height: 48,
-                                                borderRadius: '50%',
-                                                border: '2.5px solid white',
-                                                background: 'linear-gradient(90deg, #dbeafe 0%, #cffafe 100%)', // the brand gradient, pale: blue-100 → cyan-100
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-                                                animationDelay: `${i * 0.15}s`,
-                                            }}
-                                        />
-                                        <div style={{
-                                            marginTop: 3,
-                                            background: 'white',
-                                            borderRadius: 10,
-                                            padding: '2px 8px',
-                                            fontSize: 11,
-                                            fontWeight: 700,
-                                            boxShadow: '0 1px 5px rgba(0,0,0,0.12)',
-                                            lineHeight: '1.5',
-                                        }}>
-                                            <span style={{ letterSpacing: '0.2em', color: '#94a3b8' }}>···</span>
-                                        </div>
-                                    </div>
-                                </Marker>
-                            ))
-                        )}
-
-                        {/* Hotel pins rendered imperatively via mapboxgl.Marker — see useEffect above */}
+                        {/* Hotel pins rendered imperatively via mapboxgl.Marker — see useEffect above.
+                            None while the search runs; the page shows a searching pill instead. */}
 
                         {radiusCircleGeoJSON && (
                             <Source id="nearby-radius" type="geojson" data={radiusCircleGeoJSON}>

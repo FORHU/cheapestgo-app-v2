@@ -343,7 +343,7 @@ function RailCard({
             style={{
                 position: 'relative',
                 width: width ? `${width}px` : g.width, minHeight: g.minH,
-                borderRadius: px(16), overflow: 'hidden',
+                overflow: 'hidden',
                 display: 'flex', alignItems: 'stretch',
                 background: c.surface,
                 border: '',
@@ -606,9 +606,10 @@ function HotelSearchContent() {
     const [hoveredId, setHoveredId]             = useState<string | null>(null);
     const [mapZoom, setMapZoom]                 = useState(12);
     const [showAllCityOverride, setShowAllCityOverride] = useState(false);
-    /** The toolbar's nearby-places toggle. On by default, as the map has always
-     *  behaved; the button only gives that behaviour a way off. */
-    const [showPois, setShowPois]               = useState(true);
+    /** The toolbar's nearby-places toggle. Off by default: picking a stay should
+     *  show the stay, not a ring of cafés and clinics around it the traveller
+     *  did not ask for. The button turns them on. */
+    const [showPois, setShowPois]               = useState(false);
     const [filtersOpen, setFiltersOpen]         = useState(false);
     /**
      * The list view's own toolbar panel, and the filters behind it.
@@ -1565,6 +1566,54 @@ function HotelSearchContent() {
                                 {tAll('hotels.results.datesPicked')}
                             </p>
                         )}
+
+            {/* ── Still searching ──────────────────────────────── */}
+            {/* The map draws no pins while the stream is still landing hotels
+                (see `NO_PINS` in SearchMapContainer), so this is what says the
+                empty map is work in progress rather than an empty city. Only
+                while streaming: before the first batch the full-screen status
+                below already covers the map and says the same thing.
+
+                Pointer-transparent — it is a notice, not a control, and it sits
+                over the part of the map people drag from. */}
+            <AnimatePresence>
+                {isStreaming && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        style={{ pointerEvents: 'none' }}
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <div
+                            className="flex items-center gap-2.5 rounded-full px-4 py-2"
+                            style={{
+                                background: chrome.surface,
+                                border: `1px solid ${chrome.border}`,
+                                boxShadow: chrome.shadow,
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                            }}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="shrink-0 animate-spin rounded-full motion-reduce:animate-none"
+                                style={{
+                                    width: 14, height: 14,
+                                    border: `2px solid ${chrome.border}`,
+                                    borderTopColor: chrome.text,
+                                }}
+                            />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                                {destination ? `Searching for stays in ${destination}…` : 'Searching for stays…'}
+                            </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ── Prices unavailable ───────────────────────────── */}
             {/* The supplier never answered, so the catalog stays on the map —

@@ -12,7 +12,6 @@ export type DistanceUnit = 'km' | 'mi';
 const MILES_REGIONS = new Set(['US', 'GB', 'LR', 'MM']);
 
 const METERS_PER_MILE = 1609.344;
-const FEET_PER_METER = 3.28084;
 const EARTH_RADIUS_M = 6_371_000;
 
 /**
@@ -32,7 +31,7 @@ export function guessDistanceUnit(languages: readonly string[]): DistanceUnit {
     return 'km';
 }
 
-type FormatUnit = 'meter' | 'kilometer' | 'foot' | 'mile';
+type FormatUnit = 'kilometer' | 'mile';
 
 /** Map markers format on every render, and building an Intl.NumberFormat is the costly part. */
 const formatters = new Map<string, Intl.NumberFormat>();
@@ -48,23 +47,21 @@ function unitFormat(locale: string, value: number, unit: FormatUnit, digits: num
 }
 
 /**
- * `meters` as text: metres under a kilometre, feet under a tenth of a mile, otherwise one decimal.
- * Short distances round to 10 — "350 m", not "347 m" — which is all a walk needs.
- * A distance that is not a number shows as a dash; a negative one counts as zero.
+ * `meters` as text, always in the unit the viewer picked: kilometres or miles, never stepping down
+ * to metres or feet. The km / mi toggle sits right beside these figures, and a card reading
+ * "360 ft" under a selected "mi" read as the toggle not having worked.
+ *
+ * Two decimals under one unit ("0.36 km", "0.22 mi") so a short walk still tells two places
+ * apart; one decimal from there up. Anything closer than a hundredth shows as 0.01 rather than
+ * as zero, which would read as "at the hotel". A distance that is not a number shows as a dash;
+ * a negative one counts as zero.
  */
 export function formatDistance(distance: number, unit: DistanceUnit, locale = 'en'): string {
     if (!Number.isFinite(distance)) return '—';
     const meters = Math.max(0, distance);
-    if (unit === 'km') {
-        const rounded = Math.round(meters / 10) * 10;
-        return rounded < 1000
-            ? unitFormat(locale, rounded, 'meter', 0)
-            : unitFormat(locale, meters / 1000, 'kilometer', 1);
-    }
-    const miles = meters / METERS_PER_MILE;
-    return miles < 0.1
-        ? unitFormat(locale, Math.round((meters * FEET_PER_METER) / 10) * 10, 'foot', 0)
-        : unitFormat(locale, miles, 'mile', 1);
+    const value = unit === 'km' ? meters / 1000 : meters / METERS_PER_MILE;
+    const shown = meters > 0 ? Math.max(value, 0.01) : 0;
+    return unitFormat(locale, shown, unit === 'km' ? 'kilometer' : 'mile', shown < 1 ? 2 : 1);
 }
 
 /** Search-radius steps, in metres, that read as round numbers in each unit. */

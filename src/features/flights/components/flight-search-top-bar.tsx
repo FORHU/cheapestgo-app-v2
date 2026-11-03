@@ -44,9 +44,12 @@ export function FlightSearchTopBar({
             // The phone bar takes less padding than the hotel bar's: it carries a
             // route — two airports and a swap — where that one has a single field,
             // and at the hotel bar's padding there was no width left to print them.
+            //
+            // Square-cornered, as the hotel bar is; the pills and round buttons
+            // inside keep their own shapes.
             className={cn(
-                'flex h-12 items-center gap-1.5 rounded-[16px] p-3',
-                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
+                'flex h-12 items-center gap-1.5 p-3',
+                'md:h-[60px] md:gap-2 md:p-8',
                 className,
             )}
             style={{ background: barBackground ?? chrome.bar, boxShadow: chrome.shadow }}

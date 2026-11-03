@@ -117,7 +117,7 @@ export function PreferencesSection() {
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
                     {tAll('account.preferences.notifications')}
                 </label>
-                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5">
                     <div>
                         <p className="text-sm font-medium text-slate-900 dark:text-white">{tAll('account.preferences.emailNotifications')}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

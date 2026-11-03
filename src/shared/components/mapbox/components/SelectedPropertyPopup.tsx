@@ -369,10 +369,8 @@ function HotelPreviewCard({
             onClick={() => onViewDetails(property.id)}
             style={{
                 position: 'relative', width: CARD_W, height: CARD_H,
-                borderRadius: 16,
-                // The photo runs to the card's edges and is clipped to its corners
-                // here rather than carrying radii of its own, so the two curves
-                // cannot drift apart.
+                // Square, like the room cards on the property page. The photo runs to
+                // the card's edges and is clipped here rather than shaped on its own.
                 overflow: 'hidden',
                 // Fixed rather than `--map-card-bg`: every mark on this card is
                 // white, over photography. A light surface underneath it in light

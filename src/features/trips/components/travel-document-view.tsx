@@ -40,7 +40,7 @@ function PrintButton() {
 function Pending({ reason }: { reason: 'awaiting_ticket' | 'awaiting_confirmation' }) {
     const t = useTranslations();
     return (
-        <div className="max-w-3xl mx-auto rounded-2xl bg-white dark:bg-slate-900 px-8 py-12 text-center shadow-lg">
+        <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 px-8 py-12 text-center shadow-lg">
             <Clock size={28} className="mx-auto mb-3 text-amber-500" />
             <p className="text-sm text-slate-600 dark:text-slate-300">
                 {t(reason === 'awaiting_ticket'
@@ -115,7 +115,7 @@ function Inner() {
 
     if (fetchError || !booking) {
         return (
-            <div className="max-w-3xl mx-auto rounded-2xl bg-white dark:bg-slate-900 px-8 py-12 text-center shadow-lg">
+            <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 px-8 py-12 text-center shadow-lg">
                 <p className="text-lg font-bold text-slate-800 dark:text-white">{t('trips.invoice.loadError')}</p>
                 {fetchError && <p className="mt-2 text-sm text-slate-500">{fetchError}</p>}
             </div>
@@ -127,7 +127,7 @@ function Inner() {
     if (!availableDocuments(booking).includes(kind)) {
         const why = pendingReason(booking);
         return why ? <Pending reason={why} /> : (
-            <div className="max-w-3xl mx-auto rounded-2xl bg-white dark:bg-slate-900 px-8 py-12 text-center shadow-lg">
+            <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 px-8 py-12 text-center shadow-lg">
                 <p className="text-sm text-slate-500">{t('trips.invoice.loadError')}</p>
             </div>
         );

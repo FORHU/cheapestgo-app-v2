@@ -106,7 +106,7 @@ function HotelGuestFields({
 }) {
     const tAll = useTranslations();
     return (
-        <div className="rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm">
+        <div className="border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
                 <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
                     <User size={14} className="text-blue-600 dark:text-blue-400" />
@@ -172,7 +172,7 @@ function FlightPassengerFields({
             {passengers.map((p, idx) => (
                 <div
                     key={idx}
-                    className="rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm"
+                    className="border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm"
                 >
                     <div className="flex items-center gap-2 mb-1">
                         <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">

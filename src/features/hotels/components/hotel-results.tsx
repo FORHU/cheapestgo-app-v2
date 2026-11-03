@@ -166,7 +166,7 @@ export function HotelResults({
     // ── Error ─────────────────────────────────────────────────────────────────
     if (error && hotels.length === 0) {
         return (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-20 text-center dark:border-white/10 dark:bg-slate-900">
+            <div className="border border-dashed border-slate-300 bg-slate-50 px-4 py-20 text-center dark:border-white/10 dark:bg-slate-900">
                 <p className="text-sm font-medium text-slate-500 dark:text-white/70">{tAll('hotels.results.searchFailed')}</p>
                 <p className="mt-1 text-xs text-slate-400 dark:text-white/40">{error}</p>
             </div>
@@ -315,7 +315,7 @@ export function HotelResults({
                         ))}
                     </div>
                 ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-16 text-center dark:border-white/10 dark:bg-slate-900">
+                    <div className="border border-dashed border-slate-300 bg-slate-50 px-4 py-16 text-center dark:border-white/10 dark:bg-slate-900">
                         <h3 className="font-medium text-slate-900 dark:text-white">
                             {destination ? `No hotels found in ${destination}` : 'No properties found'}
                         </h3>

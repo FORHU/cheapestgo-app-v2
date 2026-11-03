@@ -111,8 +111,9 @@ export function HotelFilters({
     return (
         <div className="relative">
             {/* Same surface as the map view's rail cards, so the panel and the
-                results it filters read as one material. */}
-            <aside className={cn('w-full overflow-hidden rounded-[20px]', palette.panel)}>
+                results it filters read as one material — and square-cornered like
+                them; the pills and round buttons inside keep their own shapes. */}
+            <aside className={cn('w-full overflow-hidden', palette.panel)}>
                 {/* Still scrolls when the sections outgrow the viewport — the bar
                     is what's gone, not the overflow. A 3px thumb on a panel this
                     narrow was mostly a seam down its right edge. */}

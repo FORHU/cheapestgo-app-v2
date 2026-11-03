@@ -542,7 +542,7 @@ function AskPanel() {
 
     return (
         <div
-            className="rounded-2xl p-5 backdrop-blur-md"
+            className="p-5 backdrop-blur-md"
             style={{ background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` }}
         >
             <div className="flex items-center gap-3">
@@ -590,7 +590,7 @@ function OptionsPanel() {
         { label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
     ];
 
-    const card = 'rounded-2xl p-4 backdrop-blur-md';
+    const card = 'p-4 backdrop-blur-md';
     const glass = { background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` };
 
     return (

@@ -48,7 +48,7 @@ export function AccountView() {
                             <div key={t.id} className="h-9 w-24 bg-slate-200 dark:bg-slate-800 rounded-xl" />
                         ))}
                     </div>
-                    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+                    <div className="h-64 bg-slate-200 dark:bg-slate-800" />
                 </div>
             </div>
         );
@@ -88,7 +88,7 @@ export function AccountView() {
                     ))}
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/5 p-6">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 p-6">
                     {activeTab === 'profile'     && <ProfileSection />}
                     {activeTab === 'preferences' && <PreferencesSection />}
                     {activeTab === 'saved'       && <SavedTripsSection />}

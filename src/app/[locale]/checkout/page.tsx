@@ -478,7 +478,7 @@ function StripePaymentForm({
 
     return (
         <>
-            <div style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
+            <div style={{ background: palette.surface, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
                 <PaymentElement options={{
                     layout: 'accordion',
                     ...(country ? { defaultValues: { billingDetails: { address: { country } } } } : {}),
@@ -579,7 +579,7 @@ function ConfirmedScreen({
                     <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
                 </div>
 
-                <div className="receipt-card" style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 24, overflow: 'hidden' }}>
+                <div className="receipt-card" style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, overflow: 'hidden' }}>
                     {hotelImage && (
                         <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
                             <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1214,7 +1214,7 @@ function CheckoutContent() {
         const rule = <div aria-hidden style={{ height: 1, background: palette.cardLine, margin: '12px 0' }} />;
         return (
             <div style={{ position: 'sticky', top: 24 }}>
-                <div style={{ background: palette.surface, borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ background: palette.surface, overflow: 'hidden' }}>
                     {hotelImage && (
                         <div style={{ height: 204, overflow: 'hidden' }}>
                             <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />

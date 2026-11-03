@@ -237,7 +237,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03, duration: 0.25 }}
             className={cn(
-                'group relative w-full overflow-hidden rounded-2xl transition-shadow duration-150',
+                'group relative w-full overflow-hidden transition-shadow duration-150',
                 SURFACE,
                 isSelected ? 'ring-2 ring-blue-500' : 'hover:shadow-lg dark:hover:shadow-black/40',
                 className,
@@ -356,7 +356,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                 </h4>
                                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
                                     {/* Current main offer as one of the options */}
-                                    <div className="flex flex-col rounded-xl border border-blue-500 p-3">
+                                    <div className="flex flex-col border border-blue-500 p-3">
                                         <div className="mb-1 flex items-start justify-between gap-2">
                                             <span className={cn('text-[12px] uppercase', TEXT)}>
                                                 {offer.brandedFare?.brandName || offer.brandedFare?.fareType || 'Standard'}
@@ -379,7 +379,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
 
                                     {/* Alternatives */}
                                     {offer.alternatives.map((alt) => (
-                                        <div key={alt.offerId} className={cn('flex flex-col rounded-xl border p-3', HAIRLINE)}>
+                                        <div key={alt.offerId} className={cn('flex flex-col border p-3', HAIRLINE)}>
                                             <div className="mb-1 flex items-start justify-between gap-2">
                                                 <span className={cn('text-[12px] uppercase', TEXT)}>
                                                     {alt.brandedFare?.brandName || alt.brandedFare?.fareType || 'Option'}

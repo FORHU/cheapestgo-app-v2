@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Compass, List, LogIn, Map as MapIcon, Moon, SlidersHorizontal, Sun } from 'lucide-react';
+import { ArrowLeft, List, LogIn, Map as MapIcon, MapPinned, Moon, SlidersHorizontal, Sun } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { useAuthStore } from '@/shared/stores/auth.store';
@@ -108,9 +108,12 @@ export function SearchTopBar({
             // padding inside it. The phone keeps its own tighter 48px, where the
             // bar is already as small as it goes and the desktop controls step
             // down to fit.
+            //
+            // Square-cornered, like the rail cards and panels around it; the
+            // pills and round buttons inside keep their own shapes.
             className={cn(
-                'flex h-12 items-center gap-1.5 rounded-[16px] p-8',
-                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
+                'flex h-12 items-center gap-1.5 p-8',
+                'md:h-[60px] md:gap-2 md:p-8',
                 className,
             )}
             style={{
@@ -155,7 +158,11 @@ export function SearchTopBar({
                     colour of its own. Only ever
                     useful once a stay is picked, since that is what the discs are
                     drawn around, but the toggle stays put so it does not appear and
-                    disappear under the thumb. */}
+                    disappear under the thumb.
+
+                    A pin on a map, not the compass it used to be: a compass reads
+                    as orientation or "locate me", and what this switches is a set
+                    of places pinned around the stay. */}
                 {pois && (
                     <button
                         onClick={pois.onToggle}
@@ -164,7 +171,7 @@ export function SearchTopBar({
                         title={pois.on ? 'Hide nearby places' : 'Show nearby places'}
                         className={cn(ICON_BTN, 'transition-colors')}
                         style={pois.on ? lit : rest}>
-                        <Compass size={13} className="md:size-[17px]" />
+                        <MapPinned size={13} className="md:size-[17px]" />
                     </button>
                 )}
 

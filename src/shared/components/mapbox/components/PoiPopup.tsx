@@ -34,7 +34,7 @@ export const PoiPopup = React.memo(({ poi, distance, carDuration, walkDuration, 
             className="z-50"
             maxWidth="min(260px, calc(100vw - 32px))"
         >
-            <div className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl w-[240px]">
+            <div className="bg-white dark:bg-slate-900 overflow-hidden shadow-2xl w-[240px]">
                 {/* Image placeholder */}
                 <div className="relative h-28 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                     <span className="text-[10px] text-slate-400 px-2 text-center">{poi.name}</span>

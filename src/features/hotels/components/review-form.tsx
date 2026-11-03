@@ -43,7 +43,7 @@ export function ReviewForm({ hotelId }: ReviewFormProps) {
     }
 
     return (
-        <div style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, padding: '20px 24px', border: '1px solid rgba(255,255,255,.08)' }}>
+        <div style={{ background: 'rgba(255,255,255,.05)', padding: '20px 24px', border: '1px solid rgba(255,255,255,.08)' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: HOTEL_TOKENS.TEXT, marginBottom: 14 }}>{tAll('hotels.review.shareTitle')}</div>
 
             {/* Stars */}

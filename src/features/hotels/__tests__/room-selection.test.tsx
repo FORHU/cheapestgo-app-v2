@@ -95,11 +95,13 @@ describe('RoomSelection', () => {
 
         fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
 
+        // The footer prices the night, as the card does, and states the stay under it.
         const dialog = screen.getByRole('dialog');
-        expect(within(dialog).getByText('$200 / night × 3 nights')).toBeInTheDocument();
-        expect(within(dialog).getByText('Total $600')).toBeInTheDocument();
+        expect(within(dialog).getByText('$200')).toBeInTheDocument();
+        expect(within(dialog).getByText('/night')).toBeInTheDocument();
+        expect(within(dialog).getByText('Total $600 · 3 nights')).toBeInTheDocument();
 
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Select Room' }));
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Select room' }));
         expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({
             rate: expect.objectContaining({ offerId: 'offer-1' }),
         }));
@@ -199,7 +201,7 @@ describe('RoomSelection — categorised modal', () => {
         const dialog = screen.getByRole('dialog');
         // legacy amenity list is back…
         expect(within(dialog).getByText('Sea view')).toBeInTheDocument();
-        expect(within(dialog).getByText('Room')).toBeInTheDocument();
+        expect(within(dialog).getByText('Amenities')).toBeInTheDocument();
         // …but the name-derived bed line and metapolicy cribs line still show.
         expect(within(dialog).getByText('Double bed')).toBeInTheDocument();
         expect(within(dialog).getByText('Extra beds and cribs are unavailable for this room type')).toBeInTheDocument();
@@ -213,15 +215,18 @@ describe('RoomSelection — categorised modal', () => {
         fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
         const dialog = screen.getByRole('dialog');
 
+        // The gallery counts its own place too, so the viewer's counter is the one outside the dialog.
+        const viewerCounters = () => screen.queryAllByText('1 / 2').filter(el => !dialog.contains(el));
+
         fireEvent.click(dialog.querySelectorAll('img')[0]);
         // Viewer counter appears…
-        expect(screen.getByText('1 / 2')).toBeInTheDocument();
+        expect(viewerCounters()).toHaveLength(1);
         // …and the room-detail modal is still mounted behind it.
         expect(screen.getByRole('dialog')).toBeInTheDocument();
 
         // Dismissing the viewer (Escape) must not also close the modal.
         fireEvent.keyDown(window, { key: 'Escape' });
-        expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
+        expect(viewerCounters()).toHaveLength(0);
         expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 });
@@ -294,5 +299,97 @@ describe('RoomSelection — room photography', () => {
         expect(sources).toContain(HOTEL_SHOT);
         // Labelled, so the hotel's building is never passed off as the room.
         expect(within(dialog).getByText('Photo of the property')).toBeInTheDocument();
+    });
+});
+
+/**
+ * The split layout (Room Details Modal 1a): a gallery on the left — one large photo, a counter,
+ * a strip of thumbnails — and the room on the right, with the price and Select pinned below it.
+ */
+describe('RoomSelection — room details modal, split layout', () => {
+    const openWith = (overrides: Partial<RoomOption> = {}, props: Record<string, unknown> = {}) => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom(overrides)]} {...props} />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
+        return screen.getByRole('dialog');
+    };
+    const mainPhoto = (dialog: HTMLElement) => within(dialog).getByTestId('room-gallery-main').getAttribute('src');
+
+    it('leads with the first photo and swaps it for the thumbnail pressed', () => {
+        const dialog = openWith({ roomPhotos: ['/a.jpg', '/b.jpg', '/c.jpg'] });
+        expect(mainPhoto(dialog)).toBe('/a.jpg');
+        expect(within(dialog).getByText('1 / 3')).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Photo 2 of 3' }));
+        expect(mainPhoto(dialog)).toBe('/b.jpg');
+        expect(within(dialog).getByText('2 / 3')).toBeInTheDocument();
+        expect(within(dialog).getByRole('button', { name: 'Photo 2 of 3' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('moves through the photos with the arrow keys, round from the last to the first', () => {
+        const dialog = openWith({ roomPhotos: ['/a.jpg', '/b.jpg', '/c.jpg'] });
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+        expect(mainPhoto(dialog)).toBe('/b.jpg');
+        fireEvent.keyDown(window, { key: 'ArrowLeft' });
+        fireEvent.keyDown(window, { key: 'ArrowLeft' });
+        expect(mainPhoto(dialog)).toBe('/c.jpg');
+    });
+
+    it('counts what the strip cannot hold on its last tile, which opens the viewer there', () => {
+        const photos = ['/1.jpg', '/2.jpg', '/3.jpg', '/4.jpg', '/5.jpg', '/6.jpg'];
+        const dialog = openWith({ roomPhotos: photos });
+        expect(within(dialog).getAllByRole('button', { name: /^Photo \d of 6$/ })).toHaveLength(3);
+
+        fireEvent.click(within(dialog).getByRole('button', { name: '+3 more photos' }));
+        expect(screen.getAllByText('4 / 6').filter(el => !dialog.contains(el))).toHaveLength(1);
+    });
+
+    it('draws a placeholder and no strip when there is no photo at all', () => {
+        const dialog = openWith({ roomPhotos: [] });
+        expect(within(dialog).getByTestId('room-gallery-placeholder')).toBeInTheDocument();
+        expect(dialog.querySelectorAll('img')).toHaveLength(0);
+        expect(within(dialog).queryAllByRole('button', { name: /^Photo \d+ of/ })).toHaveLength(0);
+    });
+
+    it('states the meal plan and the cancellation terms as policy badges', () => {
+        const dialog = openWith();
+        expect(within(dialog).getByText('Policies')).toBeInTheDocument();
+        expect(within(dialog).getByText('Room Only').closest('[data-slot="badge"]')).not.toBeNull();
+        expect(within(dialog).getByText('Free cancellation').closest('[data-slot="badge"]')).not.toBeNull();
+    });
+
+    it('marks a non-refundable rate as such', () => {
+        const dialog = openWith({
+            rates: [{ offerId: 'o', price: 200, currency: 'USD', boardCode: 'RO', refundable: false, refundableTag: 'NON_REFUNDABLE' }],
+        });
+        expect(within(dialog).getByText('Non-refundable').closest('[data-slot="badge"]')).not.toBeNull();
+        expect(within(dialog).queryByText('Free cancellation')).not.toBeInTheDocument();
+    });
+
+    it('closes on Escape, on its close button and on the backdrop', () => {
+        openWith();
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Room details' })[0]);
+        fireEvent.click(screen.getByTestId('room-dialog-backdrop'));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('takes focus when it opens and keeps Tab inside it', () => {
+        const dialog = openWith({ roomPhotos: ['/a.jpg', '/b.jpg'] });
+        const close = within(dialog).getByRole('button', { name: 'Close' });
+        const select = within(dialog).getByRole('button', { name: 'Select room' });
+        expect(document.activeElement).toBe(close);
+
+        select.focus();
+        fireEvent.keyDown(select, { key: 'Tab' });
+        expect(document.activeElement).toBe(close);
+
+        fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
+        expect(document.activeElement).toBe(select);
     });
 });

@@ -182,7 +182,7 @@ export function FlightConfirmedScreen({
                     {tAll('checkout.flight.receipt.confirmedSentTo', { destination: destinationCity ?? destination, email: contactEmail })}
                 </p>
 
-                <div className="receipt-card" style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', marginTop: 'clamp(24px,3vw,40px)' }}>
+                <div className="receipt-card" style={{ background: palette.surface, padding: 'clamp(20px,3vw,36px)', marginTop: 'clamp(24px,3vw,40px)' }}>
                     {/* The airline, its reference, and what the fare includes */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px 24px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>

@@ -38,14 +38,14 @@ describe('PlaceStrip', () => {
     it('shows each place with its distance in kilometres', () => {
         renderWithIntl(<PlaceStrip {...props()} />);
         expect(screen.getByText('Cafe Onion')).toBeInTheDocument();
-        expect(screen.getByText('360 m')).toBeInTheDocument();
+        expect(screen.getByText('0.36 km')).toBeInTheDocument();
     });
 
     it('marks the rating as a star and score in line with the distance, read out of 5', () => {
         renderWithIntl(<PlaceStrip {...props()} />);
         const rating = screen.getByRole('img', { name: '4.6 out of 5 stars' });
         expect(rating).toHaveTextContent('4.6');
-        expect(rating.parentElement).toHaveTextContent('360 m');
+        expect(rating.parentElement).toHaveTextContent('0.36 km');
     });
 
     it('leaves the rating off a place that has none', () => {
@@ -55,7 +55,7 @@ describe('PlaceStrip', () => {
 
     it('shows distances and radius steps in miles', () => {
         renderWithIntl(<PlaceStrip {...props({ unit: 'mi', radius: 1609 })} />);
-        expect(screen.getByText('0.2 mi')).toBeInTheDocument();
+        expect(screen.getByText('0.22 mi')).toBeInTheDocument();
         expect(radiusLabels()).toEqual(['0.5 mi', '1 mi', '3 mi', '5 mi']);
     });
 

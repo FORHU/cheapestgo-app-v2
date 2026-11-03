@@ -2,11 +2,14 @@
 
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { useLocale, useTranslations } from 'next-intl';
-import { Clock, Globe, MapPin, Phone, Star, X } from 'lucide-react';
+import { Globe, MapPin, Phone, Star, X } from 'lucide-react';
 import { categoryToBg, type NearbyGem, type PoiReview } from '@/features/hotels/hooks/useNearbyGems';
 import { formatDistance, haversineMeters, type DistanceUnit } from '@/shared/lib/distance';
 import { BRAND } from '@/shared/lib/palette';
+import { cn } from '@/shared/lib/cn';
+import { Badge } from '@/shared/components/ui/badge';
 import { useBodyScrollLock } from '@/shared/hooks/useBodyScrollLock';
 import { googleMapsUrl, safeHttpUrl } from './links';
 import { groupOpeningHours } from './opening-hours';
@@ -21,7 +24,34 @@ interface PlaceDetailsModalProps {
 }
 
 /**
+ * The modal's surfaces and ink, per tone — the room details modal's own (`roomPalette` in
+ * room-selection), so the two dialogs on the property page read as one design: the same slate-900
+ * or white sheet, the same body and label greys, the same hairline and close button.
+ */
+function modalChrome(dark: boolean) {
+    return {
+        sheet:  dark ? 'bg-slate-900' : 'bg-white',
+        title:  dark ? 'text-white' : 'text-slate-900',
+        text:   dark ? 'text-slate-300' : 'text-slate-700',
+        label:  'text-slate-500',
+        empty:  dark ? 'text-slate-500' : 'text-slate-400',
+        rule:   dark ? 'divide-white/[0.08]' : 'divide-slate-100',
+        close:  dark
+            ? 'bg-white/[0.08] text-slate-300 hover:bg-white/[0.14]'
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+        /** The room cards' quiet outline — the rest state of their filter chips — squared off. */
+        action: dark
+            ? 'border border-white/25 text-white/80 hover:bg-white/[0.06]'
+            : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
+    };
+}
+
+/**
  * v1's place popup — photo, rating, call / website / map, hours, Google's reviews.
+ *
+ * Drawn as the room details modal is: square, on the same deep scrim, a bottom sheet on a phone and
+ * a centred dialog from `md`, with small uppercase labels over each section and the open / closed
+ * state as the same badge the room modal uses for its cancellation terms.
  *
  * v1 also had a form to post a review and photos. It saved to the poster's own browser and showed
  * the result as "Cheapest Go Reviews" though nobody else could ever see it, so it is not ported.
@@ -75,129 +105,153 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
     const reviews = gem.reviews ?? [];
     const Icon = gem.icon;
     const website = safeHttpUrl(gem.website);
-    const dark = isDarkBackground(palette.bg);
+    const c = modalChrome(isDarkBackground(palette.bg));
     const hasRatingInfo = (gem.rating !== null && gem.rating > 0) || !!gem.userRatingsTotal;
 
-    const action: React.CSSProperties = {
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px',
-        borderRadius: 12, background: palette.iconBg, color: palette.title, fontSize: 14, fontWeight: 700,
-        textDecoration: 'none', border: `1px solid ${palette.cardBorder}`,
-    };
+    const eyebrow = cn('text-[10px] font-bold tracking-[0.12em] uppercase', c.label);
+    const action = cn(
+        'flex flex-1 items-center justify-center gap-2 rounded-[2px] px-3 py-2.5 text-[13px] font-bold no-underline transition-colors',
+        c.action,
+    );
 
     return createPortal(
+        // The room modal's scrim, so opening either dialog dims the page the same way.
         <div
             role="presentation"
             onClick={onClose}
-            style={{ position: 'fixed', inset: 0, zIndex: 10050, background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            className="fixed inset-0 z-[10050] flex items-end justify-center bg-slate-950/75 md:items-center md:p-4"
         >
-            <div
+            <motion.div
                 ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={titleId}
                 onClick={(e) => e.stopPropagation()}
-                style={{ width: '100%', maxWidth: 520, maxHeight: '88vh', overflowY: 'auto', borderRadius: 20, background: palette.bg, color: palette.text, border: `1px solid ${palette.cardBorder}`, boxShadow: '0 24px 60px rgba(0,0,0,.4)' }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className={cn(
+                    // Square, like the room details modal and the cards on the page.
+                    'relative flex max-h-[92vh] w-full flex-col overflow-hidden shadow-[0_20px_25px_-5px_rgba(0,0,0,0.15)]',
+                    'md:max-h-[88vh] md:max-w-[520px]',
+                    c.sheet,
+                )}
             >
-                <div className={`relative bg-linear-to-br ${categoryToBg(gem.category)}`} style={{ height: 200 }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the api-v2 proxy with an SVG fallback */}
-                    <img src={gem.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center"><Icon size={48} className="text-white/20" aria-hidden /></div>
-                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-                    <button
-                        ref={closeRef}
-                        type="button"
-                        aria-label={t('close')}
-                        onClick={onClose}
-                        style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.45)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                    >
-                        <X size={18} aria-hidden />
-                    </button>
-                    <div style={{ position: 'absolute', left: 20, right: 20, bottom: 16, color: '#fff' }}>
-                        <h2 id={titleId} style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>{name}</h2>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 14, flexWrap: 'wrap' }}>
-                            {gem.rating !== null && gem.rating > 0 && (
-                                <span role="img" aria-label={t('ratingOutOf5', { rating: gem.rating.toFixed(1) })} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
-                                    <Star size={14} fill="#f59e0b" color="#f59e0b" aria-hidden /> <span aria-hidden>{gem.rating.toFixed(1)}</span>
-                                </span>
-                            )}
-                            {gem.userRatingsTotal ? <span style={{ opacity: 0.8 }}>{t('reviewsCount', { count: gem.userRatingsTotal })}</span> : null}
-                            {hasRatingInfo && <span aria-hidden style={{ opacity: 0.8 }}>·</span>}
-                            <span style={{ opacity: 0.8 }}>{t('away', { distance })}</span>
-                        </div>
-                    </div>
-                </div>
+                {/* Outside the scrolling body, so it stays at the corner as the reviews scroll. */}
+                <button
+                    ref={closeRef}
+                    type="button"
+                    aria-label={t('close')}
+                    onClick={onClose}
+                    className={cn('absolute top-5 right-5 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors', c.close)}
+                >
+                    <X size={16} aria-hidden />
+                </button>
 
-                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {gem.phone && <a href={`tel:${gem.phone}`} style={action}><Phone size={16} aria-hidden />{t('call')}</a>}
-                        {website && <a href={website} target="_blank" rel="noopener noreferrer" style={action}><Globe size={16} aria-hidden />{t('website')}</a>}
-                        <a href={googleMapsUrl(gem)} target="_blank" rel="noopener noreferrer" style={action}><MapPin size={16} aria-hidden />{t('googleMaps')}</a>
-                    </div>
-
-                    {gem.vicinity && (
-                        <p style={{ display: 'flex', gap: 8, alignItems: 'flex-start', margin: 0, color: palette.soft, fontSize: 15 }}>
-                            <MapPin size={16} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />{gem.vicinity}
-                        </p>
-                    )}
-
-                    {hours.length > 0 && (
-                        <section>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                <Clock size={16} color={palette.muted} aria-hidden />
-                                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: palette.title }}>{tPoi('openingHours')}</h3>
-                                {gem.openingHours?.open_now !== undefined && (
-                                    <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: gem.openingHours.open_now ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)', color: gem.openingHours.open_now ? (dark ? '#34d399' : '#047857') : (dark ? '#f87171' : '#b91c1c') }}>
-                                        {gem.openingHours.open_now ? tPoi('openNow') : tPoi('closed')}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    {/* The photo edge to edge, the name and rating riding its bottom on the same
+                        scrim the room modal lays under its counter and thumbnails. */}
+                    <div className={`relative h-52 shrink-0 bg-linear-to-br ${categoryToBg(gem.category)}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the api-v2 proxy with an SVG fallback */}
+                        <img src={gem.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center"><Icon size={48} className="text-white/20" aria-hidden /></div>
+                        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 via-black/30 to-transparent px-6 pt-16 pb-4 text-white">
+                            <h2 id={titleId} className="font-display text-[22px] leading-[1.2] font-bold tracking-[-0.02em]">{name}</h2>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px]">
+                                {gem.rating !== null && gem.rating > 0 && (
+                                    <span role="img" aria-label={t('ratingOutOf5', { rating: gem.rating.toFixed(1) })} className="inline-flex items-center gap-1 font-bold">
+                                        <Star size={13} className="fill-amber-400 text-amber-400" aria-hidden /> <span aria-hidden>{gem.rating.toFixed(1)}</span>
                                     </span>
                                 )}
+                                {gem.userRatingsTotal ? <span className="text-white/80">{t('reviewsCount', { count: gem.userRatingsTotal })}</span> : null}
+                                {hasRatingInfo && <span aria-hidden className="text-white/80">·</span>}
+                                <span className="text-white/80">{t('away', { distance })}</span>
                             </div>
-                            {hours.map((h) => (
-                                <p key={h.text} style={{ margin: '2px 0', fontSize: 14, color: h.includesToday ? palette.title : palette.muted, fontWeight: h.includesToday ? 700 : 400 }}>{h.text}</p>
-                            ))}
-                        </section>
-                    )}
+                        </div>
+                    </div>
 
-                    <section>
-                        <h3 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700, color: palette.title }}>{tPoi('googleReviews')}</h3>
-                        {reviews.length === 0
-                            ? <p style={{ margin: 0, fontSize: 14, color: palette.muted }}>{tPoi('noReviews')}</p>
-                            : reviews.map((r, i) => <ReviewItem key={`${r.author_name}-${i}`} review={r} palette={palette} />)}
-                    </section>
+                    <div className="flex flex-col gap-[18px] px-6 py-5">
+                        <div className="flex gap-2">
+                            {gem.phone && <a href={`tel:${gem.phone}`} className={action}><Phone size={15} strokeWidth={1.75} aria-hidden />{t('call')}</a>}
+                            {website && <a href={website} target="_blank" rel="noopener noreferrer" className={action}><Globe size={15} strokeWidth={1.75} aria-hidden />{t('website')}</a>}
+                            <a href={googleMapsUrl(gem)} target="_blank" rel="noopener noreferrer" className={action}><MapPin size={15} strokeWidth={1.75} aria-hidden />{t('googleMaps')}</a>
+                        </div>
+
+                        {gem.vicinity && (
+                            <p className={cn('flex items-start gap-2 text-[13px] leading-[1.5]', c.text)}>
+                                <MapPin size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden />{gem.vicinity}
+                            </p>
+                        )}
+
+                        {hours.length > 0 && (
+                            <section className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                    <p className={eyebrow}>{tPoi('openingHours')}</p>
+                                    {gem.openingHours?.open_now !== undefined && (
+                                        <Badge variant={gem.openingHours.open_now ? 'success' : 'destructive'}>
+                                            {gem.openingHours.open_now ? tPoi('openNow') : tPoi('closed')}
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                    {hours.map((h) => (
+                                        <p key={h.text} className={cn('text-[13px]', h.includesToday ? cn('font-bold', c.title) : c.text)}>{h.text}</p>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        <section className="flex flex-col gap-2">
+                            <p className={eyebrow}>{tPoi('googleReviews')}</p>
+                            {reviews.length === 0
+                                ? <p className={cn('text-[13px]', c.empty)}>{tPoi('noReviews')}</p>
+                                : (
+                                    <div className={cn('flex flex-col divide-y', c.rule)}>
+                                        {reviews.map((r, i) => <ReviewItem key={`${r.author_name}-${i}`} review={r} chrome={c} />)}
+                                    </div>
+                                )}
+                        </section>
+                    </div>
                 </div>
-            </div>
+            </motion.div>
         </div>,
         document.body,
     );
 }
 
-function ReviewItem({ review, palette }: { review: PoiReview; palette: NearbyPalette }) {
+/** One Google review: no plate of its own, set off from the next by the list's hairline. */
+function ReviewItem({ review, chrome: c }: { review: PoiReview; chrome: ReturnType<typeof modalChrome> }) {
     const t = useTranslations('property.nearby');
     const [photoFailed, setPhotoFailed] = useState(false);
     return (
-        <div style={{ padding: 14, borderRadius: 14, background: palette.cardBg, border: `1px solid ${palette.cardBorder}`, marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <div className="py-3 first:pt-1 last:pb-0">
+            <div className="mb-1.5 flex items-center gap-2.5">
                 {review.profile_photo_url && !photoFailed
                     ? (
                         // eslint-disable-next-line @next/next/no-img-element -- Google avatar URLs are remote and not proxied
-                        <img src={review.profile_photo_url} alt="" width={28} height={28} referrerPolicy="no-referrer" onError={() => setPhotoFailed(true)} style={{ borderRadius: '50%' }} />
+                        <img src={review.profile_photo_url} alt="" width={28} height={28} referrerPolicy="no-referrer" onError={() => setPhotoFailed(true)} className="size-7 rounded-full" />
                     )
-                    : <div style={{ width: 28, height: 28, borderRadius: '50%', background: BRAND.primaryStrong, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{review.author_name.charAt(0)}</div>}
+                    : (
+                        <div className="flex size-7 items-center justify-center rounded-full text-[13px] font-bold text-white" style={{ background: BRAND.primaryStrong }}>
+                            {review.author_name.charAt(0)}
+                        </div>
+                    )}
                 <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: palette.title }}>{review.author_name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: palette.muted }}>
-                        <span role="img" aria-label={t('ratingOutOf5', { rating: review.rating })}>{'★'.repeat(Math.round(review.rating))}</span>
+                    <div className={cn('text-[13px] font-bold', c.title)}>{review.author_name}</div>
+                    <div className={cn('flex items-center gap-1.5 text-[12px]', c.label)}>
+                        <span role="img" aria-label={t('ratingOutOf5', { rating: review.rating })} className="text-amber-400">{'★'.repeat(Math.round(review.rating))}</span>
                         {review.relative_time_description && <span>{review.relative_time_description}</span>}
                     </div>
                 </div>
             </div>
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: palette.text }}>{review.text}</p>
+            <p className={cn('text-[13px] leading-[1.55]', c.text)}>{review.text}</p>
         </div>
     );
 }
 
 /**
  * Whether the palette's ground is dark, judged by its luminance — the page passes one palette for
- * both themes (ADR-0004), so the badge colours follow from it. Unparseable colours count as light.
+ * both themes (ADR-0004), so the modal's tone follows from it. Unparseable colours count as light.
  */
 function isDarkBackground(bg: string): boolean {
     const m = /^#([0-9a-f]{6})$/i.exec(bg.trim());

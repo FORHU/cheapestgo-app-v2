@@ -131,7 +131,7 @@ function InvoiceReceipt({ booking, isHotel, customerEmail }: InvoiceReceiptProps
     const flight = !isHotel ? (booking as FlightBooking) : null;
 
     return (
-        <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-lg print:shadow-none print:rounded-none">
+        <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 shadow-lg print:shadow-none">
             {/* Header */}
             <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div>
@@ -333,7 +333,7 @@ function InvoicePageContent() {
     if (isLoading || isFetching) {
         return (
             <div className="max-w-3xl mx-auto animate-pulse space-y-4">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg h-96" />
+                <div className="bg-white dark:bg-slate-900 shadow-lg h-96" />
             </div>
         );
     }
@@ -341,7 +341,7 @@ function InvoicePageContent() {
     if (fetchError) {
         return (
             <div className="max-w-3xl mx-auto">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg px-8 py-12 text-center space-y-3">
+                <div className="bg-white dark:bg-slate-900 shadow-lg px-8 py-12 text-center space-y-3">
                     <p className="text-lg font-bold text-slate-800 dark:text-white">{tAll('trips.invoice.loadError')}</p>
                     <p className="text-sm text-slate-500">{fetchError}</p>
                 </div>
@@ -375,7 +375,7 @@ export function InvoiceView() {
 
             <Suspense fallback={
                 <div className="max-w-3xl mx-auto animate-pulse">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg h-96" />
+                    <div className="bg-white dark:bg-slate-900 shadow-lg h-96" />
                 </div>
             }>
                 <InvoicePageContent />
