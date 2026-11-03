@@ -148,7 +148,7 @@ export function HotelResults({
         return (
             <div className="flex flex-col gap-6 lg:flex-row">
                 <div className="hidden w-[280px] shrink-0 animate-pulse lg:block">
-                    <div className="h-[520px] rounded-[20px] bg-slate-200 dark:bg-slate-900" />
+                    <div className="h-[520px] bg-slate-200 dark:bg-slate-900" />
                 </div>
                 <div className="flex-1 space-y-4">
                     <div className="space-y-2">

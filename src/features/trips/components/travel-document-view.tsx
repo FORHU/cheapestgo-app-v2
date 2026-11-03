@@ -110,7 +110,7 @@ function Inner() {
     }, [kind, hotelCode]);
 
     if (isLoading || isFetching) {
-        return <div className="max-w-3xl mx-auto h-96 animate-pulse rounded-2xl bg-white shadow-lg dark:bg-slate-900" />;
+        return <div className="max-w-3xl mx-auto h-96 animate-pulse bg-white shadow-lg dark:bg-slate-900" />;
     }
 
     if (fetchError || !booking) {
@@ -146,7 +146,7 @@ function Inner() {
 export function TravelDocumentView() {
     return (
         <div className="min-h-screen bg-slate-50 px-4 py-8 dark:bg-slate-950 print:bg-white print:p-0">
-            <Suspense fallback={<div className="max-w-3xl mx-auto h-96 animate-pulse rounded-2xl bg-white dark:bg-slate-900" />}>
+            <Suspense fallback={<div className="max-w-3xl mx-auto h-96 animate-pulse bg-white dark:bg-slate-900" />}>
                 <Inner />
             </Suspense>
         </div>

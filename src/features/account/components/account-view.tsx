@@ -45,7 +45,7 @@ export function AccountView() {
                     <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded mb-6" />
                     <div className="flex gap-2 mb-6">
                         {TABS.map(t => (
-                            <div key={t.id} className="h-9 w-24 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                            <div key={t.id} className="h-9 w-24 bg-slate-200 dark:bg-slate-800" />
                         ))}
                     </div>
                     <div className="h-64 bg-slate-200 dark:bg-slate-800" />

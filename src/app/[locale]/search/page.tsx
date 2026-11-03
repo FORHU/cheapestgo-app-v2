@@ -416,7 +416,7 @@ function RailCard({
                     {/* Price / rating stack */}
                     <div style={{ minWidth: 0 }}>
                         {property.priceLoading ? (
-                            <div className="animate-pulse rounded-full" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
+                            <div className="animate-pulse rounded" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
                         ) : (
                             <p style={{
                                 fontSize: g.priceFs, fontWeight: 700, color: c.title, lineHeight: 1.3,

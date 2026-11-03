@@ -226,7 +226,7 @@ export function HotelCardSkeleton() {
                     <div className="h-3.5 w-24 rounded bg-slate-200 dark:bg-white/10" />
                 </div>
                 <div className="mt-6 flex items-center justify-between">
-                    <div className="h-10 w-32 rounded-[12px] bg-slate-200 dark:bg-white/10" />
+                    <div className="h-10 w-32 rounded bg-slate-200 dark:bg-white/10" />
                     <div className="h-10 w-28 rounded-full bg-slate-200 dark:bg-white/10" />
                 </div>
             </div>

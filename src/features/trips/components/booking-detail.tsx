@@ -350,8 +350,8 @@ export function BookingDetail({ id }: BookingDetailProps) {
                 <div className="space-y-5">
                     <BookingCardSkeleton />
                     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-                        <div className="h-48 animate-pulse rounded-[20px] bg-white shadow-sm dark:bg-slate-900" />
-                        <div className="h-48 animate-pulse rounded-[20px] bg-white shadow-sm dark:bg-slate-900" />
+                        <div className="h-48 animate-pulse bg-white shadow-sm dark:bg-slate-900" />
+                        <div className="h-48 animate-pulse bg-white shadow-sm dark:bg-slate-900" />
                     </div>
                 </div>
             )}
