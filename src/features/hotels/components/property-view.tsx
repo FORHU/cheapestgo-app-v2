@@ -20,7 +20,7 @@ import { NearbyExplorer } from '@/features/hotels/components/nearby/NearbyExplor
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
-import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
+import { RoomSelection, ratesOf, roomPhotosOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
 import { StaysMaintenanceNotice } from '@/features/hotels/components/stays-maintenance-notice';
 import { useUserCurrency } from '@/stores/searchStore';
 import { checkoutMoney, checkoutExpectedTotal } from '@/features/hotels/lib/checkout-money';
@@ -270,7 +270,11 @@ function PropertyContent() {
      * it as both the hotel's and the room's.
      */
     const heroImages = useMemo<string[]>(() => {
-        const roomShots = rooms.flatMap(r => r.roomPhotos ?? []);
+        // Through `roomPhotosOf`, the same reader the cards use: api-v2 sends the matched ETG
+        // room group's pictures as `content.gallery` and leaves `roomPhotos` unset, so reading
+        // only the latter left the banner with the hotel's shots while the cards below it
+        // showed the rooms.
+        const roomShots = rooms.flatMap(roomPhotosOf);
         return Array.from(new Set([...allImages, ...roomShots])).filter(Boolean);
     }, [allImages, rooms]);
     const heroCount = heroImages.length;
