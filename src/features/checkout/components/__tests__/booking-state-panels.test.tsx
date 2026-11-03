@@ -102,6 +102,24 @@ describe('SupplierDownPanel', () => {
         wrap(<SupplierDownPanel palette={palette} onRetry={vi.fn()} busy />);
         expect(screen.getByRole('button', { name: /try again/i })).toBeDisabled();
     });
+
+    /**
+     * Retrying is right when the supplier is briefly unwell. It is not always brief — OTV lists
+     * HOTEL NOBLE Yongsan and then refuses every quote for it, round after round — and a panel
+     * offering only "try again" leaves that traveller with nowhere to go but the back button.
+     */
+    it('offers a way out beside the retry', () => {
+        const onChooseAnother = vi.fn();
+        wrap(<SupplierDownPanel palette={palette} onRetry={vi.fn()} onChooseAnother={onChooseAnother} />);
+
+        fireEvent.click(screen.getByRole('button', { name: /choose another room/i }));
+        expect(onChooseAnother).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows only the retry when there is nowhere to send them', () => {
+        wrap(<SupplierDownPanel palette={palette} onRetry={vi.fn()} />);
+        expect(screen.queryByRole('button', { name: /choose another room/i })).not.toBeInTheDocument();
+    });
 });
 
 describe('SettlingPanel', () => {

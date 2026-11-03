@@ -1596,7 +1596,12 @@ function CheckoutContent() {
                             />
                         )}
                         {hotelState.phase === 'supplier_down' && (
-                            <SupplierDownPanel palette={palette} busy={hotel.busy} onRetry={() => void hotel.refreshQuote()} />
+                            <SupplierDownPanel
+                                palette={palette}
+                                busy={hotel.busy}
+                                onRetry={() => void hotel.refreshQuote()}
+                                onChooseAnother={() => router.back()}
+                            />
                         )}
                         {hotelState.phase === 'failed' && hotelState.failure?.kind === 'duplicate' && (
                             <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
