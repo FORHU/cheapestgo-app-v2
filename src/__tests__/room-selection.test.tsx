@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render as rtlRender, screen, cleanup } from '@testing-library/react';
+import { render as rtlRender, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RoomSelection } from '@/features/hotels/components/room-selection';
 import { ThemeProvider } from '@/shared/components/ThemeContext';
@@ -240,7 +240,7 @@ describe('RoomSelection', () => {
         expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('draws a whole card for each rate of a room sold several ways, cheapest first', () => {
+    it('draws one card for a room sold several ways, headlining the cheapest rate', () => {
         render(
             <RoomSelection
                 {...base}
@@ -252,18 +252,17 @@ describe('RoomSelection', () => {
                 })]}
             />,
         );
-        // One card per rate, each naming its room in full.
-        expect(shownRooms()).toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
-        // Cheapest first, each headed by its own board.
+        // One card, named once — not the same room twice over differing only in price.
+        expect(shownRooms()).toEqual(['Comfort Leisure Room']);
+        // The cheapest rate is what the card reads as.
         expect(screen.getByText('$169')).toBeInTheDocument();
-        expect(screen.getByText('$200')).toBeInTheDocument();
         expect(screen.getByText('Room Only')).toBeInTheDocument();
-        expect(screen.getByText('Breakfast Included', { selector: 'li' })).toBeInTheDocument();
-        const prices = screen.getAllByText(/^\$\d+$/).map(el => el.textContent);
-        expect(prices).toEqual(['$169', '$200']);
+        // The dearer one is reachable as a chip rather than as a second card.
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.textContent)).toEqual(['$169 · Room Only', '$200 · Breakfast Included']);
     });
 
-    it('keeps a room’s cards together, cheapest room first, rather than interleaving by price', () => {
+    it('orders rooms cheapest first', () => {
         render(
             <RoomSelection
                 {...base}
@@ -273,11 +272,12 @@ describe('RoomSelection', () => {
                 ]}
             />,
         );
-        expect(shownRooms()).toEqual(['Twin', 'Twin', 'Double']);
-        expect(screen.getAllByText(/^\$\d+$/).map(el => el.textContent)).toEqual(['$100', '$300', '$200']);
+        // Twin leads on its cheapest rate ($100), so it sorts above Double ($200); its $300
+        // rate lives on its own card as a chip and no longer pushes between the two rooms.
+        expect(shownRooms()).toEqual(['Twin', 'Double']);
     });
 
-    it('selects the rate whose own card was pressed', async () => {
+    it('selects the rate whose chip was picked', async () => {
         const onSelect = vi.fn();
         render(
             <RoomSelection
@@ -292,25 +292,27 @@ describe('RoomSelection', () => {
             />,
         );
 
-        await userEvent.click(screen.getAllByRole('button', { name: 'Select' })[1]);
+        await userEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
+        await userEvent.click(screen.getByRole('button', { name: 'Select' }));
 
         expect(onSelect).toHaveBeenCalledTimes(1);
         expect(onSelect.mock.calls[0][0].rate.offerId).toBe('b');
     });
 
-    it('offers a Select per rate, and lights only the picked one', () => {
+    it('reads as the already-selected rate rather than the cheapest', () => {
         render(
             <RoomSelection
                 {...base}
                 rooms={[room({ rates: [rate({ offerId: 'a' }), rate({ offerId: 'b', price: 200 })] })]}
-                selectedOfferId="a"
+                selectedOfferId="b"
             />,
         );
-        // Two rates, two cards — each with its own action.
-        expect(shownRooms()).toHaveLength(2);
-        expect(screen.getAllByRole('button', { name: /^(Selected|Select)$/ })).toHaveLength(2);
+        // One action on the card, and it shows as taken because 'b' is the chosen offer.
+        expect(screen.getAllByRole('button', { name: /^(Selected|Select)$/ })).toHaveLength(1);
         expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
-        expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'false');
+        // The dearer chip is the lit one, not the cheaper first chip.
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.getAttribute('aria-checked'))).toEqual(['false', 'true']);
     });
 
     it('prints the nightly rate it was given, and does not divide it again', () => {

@@ -716,14 +716,19 @@ function RoomDetailDialog({
 }
 
 /**
- * One rate, drawn as one whole card, as the design lays it out: the photo, then
+ * One room, drawn as one whole card, as the design lays it out: the photo, then
  * the name, a bulleted line of facts ending in the board, the cancellation terms,
  * and a last line with "Room details" on the left and Select on the right. The
- * price, which the design leaves off, sits just before Select on that line:
- * eight cards for one room differ by little else.
+ * price, which the design leaves off, sits just before Select on that line.
  *
- * Every card states its room in full, so a room sold eight ways is eight cards
- * that each read on their own; `RoomSelection` keeps them next to each other.
+ * A room sold several ways carries its rates as a row of chips under that line, and the
+ * card reads as whichever chip is picked — price, board, bed and cancellation all follow it.
+ * One card per rate put the same room on screen twice differing only in price, which reads
+ * as a listing fault; the chips put the difference beside the thing that differs.
+ *
+ * `cards` is one `RateCard` per rate, cheapest first, all sharing a heading. The bed can
+ * still differ between them ("(twin beds)" against nothing at all), so every rate-specific
+ * fact is read off the picked card rather than the first.
  *
  * The photo sits beside the text and fills the card's height, so the card is as
  * tall as its text and no taller. On a card narrower than `@lg` — a phone, or the
@@ -732,10 +737,10 @@ function RoomDetailDialog({
  * the price and Select on one line.
  */
 function RoomCard({
-    card, image, selectedOfferId, palette, currency, nights, onSelect,
+    cards, image, selectedOfferId, palette, currency, nights, onSelect,
     propertySections, additionalInfo,
 }: {
-    card: RateCard;
+    cards: RateCard[];
     image?: string | null;
     selectedOfferId?: string | null;
     palette: Palette; currency: string; nights?: number | null;
@@ -745,6 +750,16 @@ function RoomCard({
 }) {
     const tAll = useTranslations();
     const [modalOpen, setModalOpen] = useState(false);
+    /** The chip the reader picked. Null until they pick one — see `card` below. */
+    const [pickedOfferId, setPickedOfferId] = useState<string | null>(null);
+
+    /**
+     * The rate the card is currently showing: the one picked, else the one already selected
+     * for checkout, else the cheapest. Resolved by id rather than index so a re-filter that
+     * drops a rate cannot leave the card reading off a different one than it highlights.
+     */
+    const pickedIdx = cards.findIndex(c => c.rate.offerId === (pickedOfferId ?? selectedOfferId));
+    const card = cards[pickedIdx >= 0 ? pickedIdx : 0];
     const selected = card.rate.offerId === selectedOfferId;
 
     // The room's own photo where there is one, the hotel's where there is not.
@@ -844,6 +859,38 @@ function RoomCard({
                             </button>
                         </div>
                     </div>
+
+                    {/* The room's other rates. Only when there is a choice to make — a room
+                        sold one way shows nothing here rather than a single inert chip.
+                        Each chip is the price and the board, which is what separates two
+                        rates a reader can act on; picking one re-reads the whole card. */}
+                    {cards.length > 1 && (
+                        <div
+                            role="radiogroup"
+                            aria-label={tAll('hotels.rooms.roomDetails')}
+                            className="mt-3 flex flex-wrap gap-2"
+                        >
+                            {cards.map((option) => {
+                                const active = option.rate.offerId === card.rate.offerId;
+                                return (
+                                    <button
+                                        key={option.rate.offerId}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={active}
+                                        onClick={() => setPickedOfferId(option.rate.offerId)}
+                                        className={cn(
+                                            'cursor-pointer rounded-full px-3 py-1 text-[12px] font-bold whitespace-nowrap transition-[filter,color]',
+                                            active ? palette.selectOn : palette.selectIdle,
+                                        )}
+                                    >
+                                        {symbol}{Math.round(option.nightly).toLocaleString()}
+                                        {option.boardName ? ` · ${option.boardName}` : ''}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -940,16 +987,20 @@ export function RoomSelection({
     }, [cards, filter]);
 
     /**
-     * The cards in reading order: one per rate, a room's rates kept together.
+     * The rooms in reading order, each with every rate it is sold at.
      *
-     * Every rate is a card of its own, the room drawn in full on each. Sorted by price
-     * alone, a room sold eight ways would scatter its eight cards between other rooms', so
-     * they are grouped by room first — cheapest room first, each room's rates cheapest
-     * first — and a reader compares one room's terms side by side before moving on.
+     * One card per *room*, not per rate. Drawn per rate, a room sold two ways was two cards
+     * identical but for the price — "Standard Family room" twice over at ₱5,409 and ₱5,506 —
+     * which reads as a listing fault rather than as a choice of terms. The rates ride inside
+     * the card as chips instead, so the difference between them is next to the thing that
+     * differs rather than a card away.
      *
-     * Grouped *after* filtering, so only rates that survived the chips are placed. Keyed on
-     * the heading because that is what a reader distinguishes rooms by — two supplier room
-     * codes with one display name are one room to the person choosing.
+     * Grouped *after* filtering, so only rates that survived the chips are placed and a card
+     * never offers one the filter excluded. Keyed on the heading because that is what a reader
+     * distinguishes rooms by — two supplier room codes with one display name are one room to
+     * the person choosing, and `splitRoomName` has already taken the bed off the end.
+     *
+     * Cheapest room first, and each room's rates cheapest first: the card headlines its first.
      */
     const ordered = useMemo(() => {
         const byRoom = new Map<string, RateCard[]>();
@@ -960,7 +1011,7 @@ export function RoomSelection({
             else byRoom.set(key, [card]);
         }
         const groups = [...byRoom.values()].map(rates => [...rates].sort((a, b) => a.nightly - b.nightly));
-        return groups.sort((a, b) => a[0].nightly - b[0].nightly).flat();
+        return groups.sort((a, b) => a[0].nightly - b[0].nightly);
     }, [filtered]);
 
     const pageCount = Math.max(1, Math.ceil(ordered.length / CARDS_PER_PAGE));
@@ -1029,10 +1080,10 @@ export function RoomSelection({
                     transition={{ duration: PAGE_SLIDE_SECONDS, ease: PAGE_EASE }}
                     className="flex flex-col gap-4"
                 >
-                    {paged.map((card) => (
+                    {paged.map((group) => (
                         <RoomCard
-                            key={card.rate.offerId}
-                            card={card}
+                            key={group[0].rate.offerId}
+                            cards={group}
                             image={image}
                             currency={currency}
                             nights={nights}

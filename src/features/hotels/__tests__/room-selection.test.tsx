@@ -115,21 +115,55 @@ describe('RoomSelection', () => {
         }));
     });
 
-    it('renders a whole card for each rate', () => {
-        const room = makeRoom({
-            rates: [
-                { offerId: 'a', price: 200, currency: 'USD', boardCode: 'RO', refundable: true,  refundableTag: 'REFUNDABLE' },
-                { offerId: 'b', price: 240, currency: 'USD', boardCode: 'BB', refundable: false, refundableTag: 'NON_REFUNDABLE' },
-            ],
-        });
-        render(<RoomSelection {...baseProps} rooms={[room]} />);
-        // A whole card per rate, each naming the room and carrying its own Select.
-        expect(screen.getAllByRole('article')).toHaveLength(2);
+    /**
+     * One room is one card however many ways it is sold. Drawn per rate, "Standard Family
+     * room" appeared twice over at ₱5,409 and ₱5,506 — identical but for the price, which
+     * reads as a listing fault rather than as a choice of terms.
+     */
+    const twoRateRoom = () => makeRoom({
+        rates: [
+            { offerId: 'a', price: 200, currency: 'USD', boardCode: 'RO', refundable: true,  refundableTag: 'REFUNDABLE' },
+            { offerId: 'b', price: 240, currency: 'USD', boardCode: 'BB', refundable: false, refundableTag: 'NON_REFUNDABLE' },
+        ],
+    });
+
+    it('draws one card for a room sold at several rates', () => {
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        expect(screen.getAllByRole('article')).toHaveLength(1);
         expect(screen.getAllByRole('heading', { level: 4 }).map(h => h.textContent))
-            .toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
-        expect(screen.getAllByRole('button', { name: /^(Select|Selected)$/ })).toHaveLength(2);
+            .toEqual(['Comfort Leisure Room']);
+        // One Select — it books whichever rate is showing.
+        expect(screen.getAllByRole('button', { name: /^(Select|Selected)$/ })).toHaveLength(1);
+    });
+
+    it('offers every rate as a chip, cheapest showing first', () => {
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.textContent)).toEqual(['$200 · Room Only', '$240 · Breakfast Included']);
+        expect(chips[0]).toHaveAttribute('aria-checked', 'true');
         expect(screen.getByText('$200')).toBeInTheDocument();
+    });
+
+    it('re-reads the card from the chip that is picked', () => {
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        fireEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
         expect(screen.getByText('$240')).toBeInTheDocument();
+        expect(screen.queryByText('$200')).not.toBeInTheDocument();
+    });
+
+    it('books the picked rate, not the cheapest', () => {
+        const onSelect = vi.fn();
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} onSelect={onSelect} />);
+        fireEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
+        fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+        expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({
+            rate: expect.objectContaining({ offerId: 'b' }),
+        }));
+    });
+
+    it('shows no chip row for a room sold one way', () => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom()]} />);
+        expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
     });
 });
 
