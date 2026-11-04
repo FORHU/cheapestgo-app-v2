@@ -10,12 +10,14 @@ import type { GolfCourse } from '@/features/golf/types';
 
 const api = vi.hoisted(() => ({ fetchGolfCatalogue: vi.fn(), fetchGolfCourse: vi.fn(), fetchTeeTimes: vi.fn() }));
 vi.mock('@/features/golf/api/golf.api', () => api);
-vi.mock('@/shared/components/header', () => ({ Header: () => null }));
-vi.mock('@/shared/components/footer', () => ({ Footer: () => null }));
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }));
 vi.mock('@/i18n/navigation', () => ({
     Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => <a href={href} {...rest}>{children}</a>,
-    useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+    useRouter: () => router,
 }));
+// The hero's corner controls are the app's own and tested where they live.
+vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', toggleTheme: vi.fn() }) }));
+vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
 
 import { GolfCourseView } from '@/features/golf/components/golf-course-view';
 
@@ -60,11 +62,30 @@ describe('GolfCourseView', () => {
         expect(screen.queryByText(en.golf.addressTitle)).toBeNull();
     });
 
-    it('switches the large photo from the thumbnails', async () => {
+    it('pages the photographs from the dots and the arrows', async () => {
         api.fetchGolfCourse.mockResolvedValue(course());
         renderWithIntl(<GolfCourseView slug="wack-wack" />);
-        await userEvent.setup().click(await screen.findByRole('button', { name: 'Photo 2' }));
+        const user = userEvent.setup();
+        await user.click(await screen.findByRole('button', { name: 'Photo 2' }));
         expect(screen.getByRole('img', { name: 'Wack Wack' })).toHaveAttribute('src', 'https://img.example/b.jpg');
+        await user.click(screen.getByRole('button', { name: en.property.v2.nextPhoto }));
+        expect(screen.getByRole('img', { name: 'Wack Wack' })).toHaveAttribute('src', 'https://img.example/a.jpg');
+    });
+
+    it('draws no arrows or dots for a single photograph', async () => {
+        api.fetchGolfCourse.mockResolvedValue(course({ imageUrls: ['https://img.example/a.jpg'] }));
+        renderWithIntl(<GolfCourseView slug="wack-wack" />);
+        await screen.findByRole('heading', { level: 1, name: 'Wack Wack' });
+        expect(screen.queryByRole('button', { name: en.property.v2.nextPhoto })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Photo 1' })).toBeNull();
+    });
+
+    it('goes back to the catalogue for a visitor who arrived on a shared link', async () => {
+        api.fetchGolfCourse.mockResolvedValue(course());
+        renderWithIntl(<GolfCourseView slug="wack-wack" />);
+        await userEvent.setup().click(await screen.findByRole('button', { name: en.golf.back }));
+        expect(router.push).toHaveBeenCalledWith('/golf');
+        expect(router.back).not.toHaveBeenCalled();
     });
 
     it('says the course is not available when there is no such course', async () => {

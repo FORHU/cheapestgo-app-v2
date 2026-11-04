@@ -1,18 +1,23 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useTransition } from 'react';
-import { Link, useRouter } from '@/i18n/navigation';
+import React, { useState, useRef, useEffect, useCallback, useTransition } from 'react';
+import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
 import { excludeOrigin } from '@/features/search/lib/exclude-origin';
 import { nightsBetween } from '@/shared/lib/stay';
 import { BRAND } from '@/shared/lib/palette';
+import { GolfSentence } from '@/features/golf/components/golf-sentence';
+import type { GolfCourse } from '@/features/golf/types';
+import {
+    CalendarGrid, FILL, GRADIENT_TEXT, GoPill, NotePanel, PROSE, SearchMiniIcon, Token, fmtDate, useProseWidth,
+} from './prose-parts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = 'stays' | 'flights';
+type Mode = 'stays' | 'flights' | 'golf';
 type TripType = 'oneway' | 'roundtrip';
 type PanelType = 'origin' | 'destination' | 'dates' | 'travelers' | null;
 
@@ -56,170 +61,7 @@ const TRENDING: TrendingDest[] = [
 
 const FLEX_CHIPS =['Weekend getaway', 'One week', 'Two weeks', 'Flexible / anytime'];
 
-/** Every button on the landing page — and anything filled behind white text, like a
- *  picked date — wears v1's blue-to-cyan gradient. */
-const FILL = BRAND.gradient;
-/** The same gradient as text, for the one button that is only a word ("Clear"). */
-const GRADIENT_TEXT: React.CSSProperties = {
-    background: BRAND.gradient, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmtDate(d: Date): string {
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function sameDay(a: Date, b: Date): boolean {
-    return a.toDateString() === b.toDateString();
-}
-
-function startOfDay(d: Date): Date {
-    const r = new Date(d); r.setHours(0, 0, 0, 0); return r;
-}
-
-/**
- * How far the sentence's longest line reaches from its left edge, in px. Wrapped text is as
- * wide as its box, not its words, so the lines are measured instead: the words between the
- * tokens by range, each token by its own box — which leaves out the dropdown hanging off it.
- * 0 where there is no layout to measure (jsdom has no `Range.getClientRects`).
- */
-function longestLine(prose: HTMLElement): number {
-    const left = prose.getBoundingClientRect().left;
-    const range = document.createRange();
-    if (typeof range.getClientRects !== 'function') return 0;
-    let right = left;
-    prose.childNodes.forEach(node => {
-        if (node instanceof HTMLElement) {
-            right = Math.max(right, node.getBoundingClientRect().right);
-        } else if (node.nodeType === Node.TEXT_NODE) {
-            range.selectNodeContents(node);
-            for (const r of Array.from(range.getClientRects())) right = Math.max(right, r.right);
-        }
-    });
-    return Math.ceil(right - left);
-}
-
-// ─── Month-grid calendar ──────────────────────────────────────────────────────
-
-interface CalendarGridProps {
-    checkIn:   Date | null;
-    checkOut:  Date | null;
-    onSelect:  (d: Date) => void;
-    accent:    string;
-}
-
-function CalendarGrid({ checkIn, checkOut, onSelect, accent }: CalendarGridProps) {
-    const today = startOfDay(new Date());
-    const [viewYear,  setViewYear]  = useState(today.getFullYear());
-    const [viewMonth, setViewMonth] = useState(today.getMonth());
-
-    const prevMonth = () => {
-        if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-        else setViewMonth(m => m - 1);
-    };
-    const nextMonth = () => {
-        if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-        else setViewMonth(m => m + 1);
-    };
-
-    const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const monthLabel = new Date(viewYear, viewMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    const cells: (Date | null)[] = [
-        ...Array(firstDay).fill(null),
-        ...Array.from({ length: daysInMonth }, (_, i) => new Date(viewYear, viewMonth, i + 1)),
-    ];
-    // pad to full weeks
-    while (cells.length % 7 !== 0) cells.push(null);
-
-    const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-    return (
-        <div style={{ userSelect: 'none' }}>
-            {/* Month nav */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-                </button>
-                <span style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{monthLabel}</span>
-                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-                </button>
-            </div>
-
-            {/* Day-of-week headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
-                {DAY_LABELS.map(l => (
-                    <div key={l} style={{ textAlign: 'center', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em', color: 'rgba(241,245,249,0.4)', padding: '2px 0' }}>{l}</div>
-                ))}
-            </div>
-
-            {/* Date grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                {cells.map((d, i) => {
-                    if (!d) return <div key={i} />;
-                    const isPast    = d < today;
-                    const isStart   = checkIn  && sameDay(d, checkIn);
-                    const isEnd     = checkOut && sameDay(d, checkOut);
-                    const inRange   = checkIn && checkOut && d > checkIn && d < checkOut;
-                    const isToday   = sameDay(d, today);
-
-                    const bg = (isStart || isEnd)
-                        ? accent
-                        : inRange
-                            ? BRAND.primaryWash
-                            : 'transparent';
-                    const fg = (isStart || isEnd)
-                        ? '#fff'
-                        : isPast
-                            ? 'rgba(241,245,249,0.2)'
-                            : '#f1f5f9';
-
-                    return (
-                        <div
-                            key={i}
-                            onClick={isPast ? undefined : e => { e.stopPropagation(); onSelect(d); }}
-                            style={{
-                                textAlign: 'center', padding: '5px 0', borderRadius: '8px',
-                                fontSize: '13px', fontWeight: isToday ? 700 : 500,
-                                background: bg, color: fg,
-                                cursor: isPast ? 'default' : 'pointer',
-                                outline: isToday && !isStart && !isEnd ? `1.5px solid rgba(241,245,249,0.3)` : 'none',
-                                outlineOffset: '-1px',
-                                transition: 'background .15s',
-                            }}
-                            onMouseEnter={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)'; }}
-                            onMouseLeave={e => { if (!isPast && !isStart && !isEnd) (e.currentTarget as HTMLDivElement).style.background = inRange ? BRAND.primaryWash : 'transparent'; }}
-                        >
-                            {d.getDate()}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
 // ─── Shared SVGs ─────────────────────────────────────────────────────────────
-
-function CaretIcon() {
-    return (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9l6 6 6-6" />
-        </svg>
-    );
-}
-
-function SearchMiniIcon() {
-    return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="m20 20-3.2-3.2" />
-        </svg>
-    );
-}
 
 /** An airport's IATA code, where a city row has its search glyph. */
 function CodeBadge({ code }: { code: string }) {
@@ -238,145 +80,6 @@ function ClockMiniIcon() {
             <circle cx="12" cy="12" r="8.5" />
             <path d="M12 7.5V12l3 2" />
         </svg>
-    );
-}
-
-// ─── Token ────────────────────────────────────────────────────────────────────
-
-interface TokenProps {
-    filled: boolean;
-    hint: boolean;
-    /** Where the token sits in the sentence, 0 first: staggers its caret's bounce into a wave. */
-    order: number;
-    onClick: (e: React.MouseEvent) => void;
-    children: React.ReactNode;
-}
-
-/** Delay between one token's caret bouncing and the next one's, in seconds. */
-const CARET_STAGGER = 0.18;
-
-/**
- * A fill-in-the-blank in the sentence. No underline: the dashed and dotted rules read as a
- * rendering glitch rather than a field, so the dropdown chip alone says "this opens" — and
- * bounces, so it reads as something to press rather than as punctuation.
- */
-function Token({ filled, hint, order, onClick, children }: TokenProps) {
-    return (
-        <span
-            onClick={onClick}
-            className="imm-token cursor-pointer font-bold inline-flex items-center gap-2 transition-opacity duration-300"
-            style={{
-                opacity: filled ? 1 : 0.92,
-                animation: (!filled && hint) ? 'immSbHint 1.6s ease-in-out infinite' : 'none',
-            }}
-        >
-            {children}
-            <span
-                aria-hidden
-                className="imm-token-caret"
-                style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: '1.45rem', height: '1.45rem', flexShrink: 0, borderRadius: '9999px',
-                    color: '#fff', background: BRAND.gradient, boxShadow: BRAND.gradientShadow,
-                    transition: 'transform .2s',
-                    animationDelay: `${order * CARET_STAGGER}s`,
-                }}
-            >
-                <CaretIcon />
-            </span>
-        </span>
-    );
-}
-
-// ─── Sticky-note panel ────────────────────────────────────────────────────────
-
-const NOTE_GAP = 18;
-const NOTE_MAX_HEIGHT = 380;
-/** Below this much room under the token, a panel opens above it instead. */
-const NOTE_MIN_ROOM = 240;
-/** Keeps a panel opening upwards clear of the landing page's fixed navbar. */
-const NOTE_TOP_CLEARANCE = 92;
-const NOTE_EDGE = 12;
-
-/**
- * The dropdown under a token. Sized and placed against the viewport when it opens: it used to
- * hang a fixed 380px below the token whatever the room, so on a short screen its last rows ran
- * off the bottom and on the right-hand stage its side ran off the edge — rows the visitor
- * could not reach, since the page behind a docked stage does not scroll.
- */
-function NotePanel({ children, width = 'min(360px,88vw)', extra = {} }: {
-    children: React.ReactNode;
-    width?: string;
-    extra?: React.CSSProperties;
-}) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [fit, setFit] = useState({ above: false, maxHeight: NOTE_MAX_HEIGHT, shift: 0 });
-
-    useLayoutEffect(() => {
-        const el = ref.current;
-        const anchor = el?.parentElement;
-        if (!el || !anchor) return;
-
-        const place = () => {
-            const a = anchor.getBoundingClientRect();
-            const below = window.innerHeight - a.bottom - NOTE_GAP - NOTE_EDGE;
-            const above = a.top - NOTE_GAP - NOTE_TOP_CLEARANCE;
-            // A panel that asks for no height cap (dates, travellers) still may not outgrow
-            // the screen; it just gets to be as tall as its content when there is room.
-            const cap = extra.maxHeight === 'none' ? Infinity : NOTE_MAX_HEIGHT;
-            const needs = Math.min(el.scrollHeight + 2, cap, NOTE_MIN_ROOM);
-            const flip = below < needs && above > below;
-            const room = flip ? above : below;
-
-            // Centred on the token, then pulled back inside the viewport's side edges.
-            const centre = a.left + a.width / 2;
-            const w = el.offsetWidth;
-            const left = Math.min(Math.max(centre - w / 2, NOTE_EDGE), window.innerWidth - w - NOTE_EDGE);
-
-            setFit({
-                above: flip,
-                maxHeight: Math.max(140, Math.min(cap, room)),
-                shift: Math.round(left - (centre - w / 2)),
-            });
-        };
-
-        place();
-        window.addEventListener('resize', place);
-        return () => window.removeEventListener('resize', place);
-    }, []);
-
-    return (
-        <div ref={ref} className="imm-note" style={{
-            position: 'absolute',
-            top: fit.above ? 'auto' : `calc(100% + ${NOTE_GAP}px)`,
-            bottom: fit.above ? `calc(100% + ${NOTE_GAP}px)` : 'auto',
-            left: '50%',
-            transform: `translateX(calc(-50% + ${fit.shift}px)) rotate(-0.6deg)`,
-            width,
-            // Solid: at 98% the sentence behind it ghosted through the list.
-            background: '#0f172a',
-            borderRadius: '20px',
-            padding: '22px',
-            boxShadow: '0 26px 55px -18px rgba(0,0,0,0.7)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            zIndex: 40,
-            overflowY: 'auto',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '15px',
-            lineHeight: '1.4',
-            color: '#f1f5f9',
-            ...extra,
-            // After `extra`, so a panel asking for no cap is still held to the room there is.
-            maxHeight: `${fit.maxHeight}px`,
-        }}>
-            {/* Paper-fold tab */}
-            <div style={{
-                position: 'absolute', top: '-10px', left: '28px',
-                width: '56px', height: '16px', background: 'rgba(255,255,255,0.14)',
-                borderRadius: '3px', transform: 'rotate(-5deg)', boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-            }} />
-            {children}
-        </div>
     );
 }
 
@@ -527,8 +230,21 @@ export function ImmersiveSearchBar({
     onModeSelect,
     destinationPick,
     onDestinationChange,
+    golfCourses,
+    coursePick,
+    onCourseChange,
 }: {
     trendingDestinations?: TrendingDest[];
+    /**
+     * Golf's courses, for its sentence: `null` while loading, `[]` for none. Left out, the golf
+     * sentence asks for them itself — the case for a bar switched to Golf in place, which nobody
+     * handed a catalogue.
+     */
+    golfCourses?: GolfCourse[] | null;
+    /** A course chosen outside the bar — the landing page's course pills. */
+    coursePick?: { slug: string } | null;
+    /** Told which course the golf sentence holds, so the pill for it can light. */
+    onCourseChange?: (slug: string | null) => void;
     /**
      * A destination chosen outside the bar — the landing page's city pills. Each new pick fills
      * the destination token as a dropdown pick would. The bar keeps its sentence in its own
@@ -539,15 +255,13 @@ export function ImmersiveSearchBar({
      *  outside the bar can light the one the search will actually run. */
     onDestinationChange?: (name: string | null) => void;
     /**
-     * When given, picking the *other* tab calls this instead of switching in place. The
-     * landing Journey uses it to glide to the sibling stage, whose own bar opens on that
-     * mode — so the pill moves the visitor to the section rather than reskinning this one.
+     * When given, picking another tab calls this instead of switching in place. The landing
+     * Journey uses it to slide its panel to that tab's face, whose own bar opens on that mode.
      */
     onModeSelect?: (mode: Mode) => void;
     /**
-     * Which tab the bar opens on. The landing Journey docks this bar once per stage —
-     * stays, then flights — and each stage pins the mode it is about, so the visitor is
-     * not asked to find the tab for the thing they just scrolled to. The tab still works.
+     * Which tab the bar opens on. The landing Journey mounts one bar per face — stays,
+     * flights, golf — and each pins the mode it is about. The tabs still work.
      */
     defaultMode?: Mode;
 }) {
@@ -591,8 +305,6 @@ export function ImmersiveSearchBar({
     const [searching, startSearch] = useTransition();
     const [shake, setShake] = useState(false);
     const [hint, setHint] = useState(true);
-    /** The sentence's longest line, which the search pill runs to; 0 until measured. */
-    const [proseWidth, setProseWidth] = useState(0);
 
     // Refs
     const wrapRef  = useRef<HTMLDivElement>(null);
@@ -866,27 +578,9 @@ export function ImmersiveSearchBar({
     // Flights leads with the origin token, so every token after it bounces one beat later.
     const firstToken = mode === 'flights' ? 1 : 0;
 
-    // Re-measured whenever the words change or the sentence's box does (a resize, a rewrap),
-    // and once the web font lands, since the fallback font sets every line at another width.
-    useLayoutEffect(() => {
-        const prose = proseRef.current;
-        if (!prose) return;
-        let live = true;
-        const measure = () => { if (live) setProseWidth(longestLine(prose)); };
-        measure();
-        const ro = new ResizeObserver(measure);
-        ro.observe(prose);
-        document.fonts?.ready.then(measure);
-        return () => { live = false; ro.disconnect(); };
-    }, [mode, originValue, destValue, datesValue, travelersValue]);
+    /** The sentence's longest line, which the search pill runs to; 0 until measured. */
+    const proseWidth = useProseWidth(proseRef, [mode, originValue, destValue, datesValue, travelersValue]);
 
-    // v1's gradient with white ink. While searching the pill stops pulsing and holds still: its
-    // spinner turns and a sheen runs across it (`.imm-stamp[aria-busy]` below) instead.
-    const stampAnimation = shake
-        ? 'immSbShake 420ms ease'
-        : searching
-            ? 'none'
-            : 'immSbPulse 2.6s ease-in-out infinite';
     const searchingLabel = mode === 'stays' ? tAll('landing.search.searchingStays') : tAll('landing.search.searchingFlights');
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -945,7 +639,7 @@ export function ImmersiveSearchBar({
 
                         {/* ── Mode tabs ── */}
                         <div style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(2,6,23,.35)', border: `1px solid ${BRAND.glassBorder}`, backdropFilter: 'blur(24px)', borderRadius: '100px', padding: '4px', gap: '2px' }}>
-                            {(['stays', 'flights'] as Mode[]).map(m => (
+                            {(['stays', 'flights', 'golf'] as Mode[]).map(m => (
                                 <button
                                     key={m}
                                     onClick={handleSetMode(m)}
@@ -961,20 +655,16 @@ export function ImmersiveSearchBar({
                                     }}
                                 >{tAll(`landing.search.searchMode.${m}`)}</button>
                             ))}
-                            {/* Golf has no search form yet, so its tab is a way to the catalogue rather than a mode. */}
-                            <Link
-                                href="/golf"
-                                style={{
-                                    padding: '7px 16px', borderRadius: '100px', textDecoration: 'none',
-                                    fontSize: '12px', fontWeight: 700, letterSpacing: '.04em',
-                                    fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,.85)',
-                                    display: 'inline-flex', alignItems: 'center', transition: 'color .2s',
-                                }}
-                            >{tAll('landing.search.searchMode.golf')}</Link>
                         </div>
 
+                        {/* Golf's sentence is its own component (it has its own tokens and its own
+                            GO); the tabs above stay the bar's, so the three read as one control. */}
+                        {mode === 'golf' ? (
+                            <GolfSentence courses={golfCourses} coursePick={coursePick} onCourseChange={onCourseChange} />
+                        ) : (<>
+
                         {/* ── Prose headline ── */}
-                        <div ref={proseRef} style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'clamp(23px,3.4vw,42px)', lineHeight: 1.42, color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,.35)', maxWidth: '680px' }}>
+                        <div ref={proseRef} style={PROSE}>
 
                             {/* FLIGHTS MODE */}
                             {mode === 'flights' && (
@@ -1160,48 +850,16 @@ export function ImmersiveSearchBar({
                         </div>
 
                         {/* ── Search pill ───────────────────────────────── */}
-                        {/* Under the sentence and exactly as wide as its longest line,
-                            so the pill reads as the sentence's own last line: fill the
-                            tokens, then hit GO. Full width until measured.
-                            `aria-disabled` rather than `disabled` while searching, so the
-                            button keeps keyboard focus; `handleSearch` ignores a second press. */}
-                        <button
-                            className="imm-stamp"
+                        {/* `handleSearch` ignores a second press while searching. */}
+                        <GoPill
                             onClick={handleSearch}
-                            aria-busy={searching}
-                            aria-disabled={searching}
-                            style={{
-                                position: 'relative', overflow: 'hidden',
-                                alignSelf: 'flex-start', flexShrink: 0,
-                                width: proseWidth ? `${proseWidth}px` : '100%', maxWidth: '680px',
-                                height: '56px', borderRadius: '9999px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                color: '#fff', fontFamily: 'var(--font-sans)', fontWeight: 700,
-                                cursor: searching ? 'progress' : 'pointer', zIndex: 20,
-                                border: 'none',
-                                boxShadow: '0 16px 30px -10px rgba(37,99,235,.55)',
-                                background: FILL,
-                                animation: stampAnimation,
-                            }}
-                        >
-                            {searching ? (
-                                <>
-                                    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" style={{ animation: 'immSbSpin .8s linear infinite' }}>
-                                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="3" />
-                                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
-                                    </svg>
-                                    <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '.04em' }}>{searchingLabel}</span>
-                                </>
-                            ) : (
-                                <>
-                                    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
-                                        <path d="m21.854 2.147-10.94 10.939" />
-                                    </svg>
-                                    <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '.12em' }}>{tAll('landing.search.go')}</span>
-                                </>
-                            )}
-                        </button>
+                            searching={searching}
+                            shake={shake}
+                            width={proseWidth}
+                            label={tAll('landing.search.go')}
+                            searchingLabel={searchingLabel}
+                        />
+                        </>)}
                     </div>
                 </div>
             </div>

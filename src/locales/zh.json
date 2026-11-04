@@ -973,7 +973,8 @@
       "go": "出发",
       "searchingStays": "正在搜索酒店…",
       "searchingFlights": "正在搜索航班…",
-      "whosComing": "谁来入住？"
+      "whosComing": "谁来入住？",
+      "searchingGolf": "正在查找开球时间…"
     },
     "journey": {
       "hero": {
@@ -1004,6 +1005,11 @@
           "titleLead": "现在",
           "titleRest": "做出选择。",
           "caption": "住宿、航班与高尔夫，一站搞定。"
+        },
+        "golf": {
+          "titleLead": "或者",
+          "titleRest": "去开球。",
+          "caption": "合作球场的真实开球时间，按每位球员计价。"
         }
       },
       "strip": {
@@ -2120,7 +2126,13 @@
       "origin": "您所在的地方",
       "aDate": "某一天",
       "yourDates": "您的出行日期",
-      "flexibleTrip": "灵活的行程"
+      "flexibleTrip": "灵活的行程",
+      "teeOffAt": "球场",
+      "onDay": "，日期 ",
+      "forPlayers": "，人数 ",
+      "theCourse": "心仪的球场",
+      "firstOpenDay": "最早可订日",
+      "players": "{count} 人"
     },
     "trendingCities": "热门城市",
     "popularAirports": "热门机场",
@@ -2133,7 +2145,20 @@
     "nights": "{count} 晚",
     "listView": "列表视图",
     "mapView": "地图视图",
-    "metaTitle": "搜索酒店和住宿"
+    "metaTitle": "搜索酒店和住宿",
+    "golf": {
+      "findCourse": "搜索球场、城市、国家…",
+      "loading": "正在加载球场…",
+      "none": "暂无可预订的球场。",
+      "noMatch": "没有与“{query}”匹配的球场。",
+      "allCourses": "全部球场 →",
+      "courses": "球场",
+      "whenPlay": "您想哪天打球？",
+      "anyDayNote": "留空则显示最早有开球时间的日期。",
+      "howMany": "几位球员？",
+      "fewer": "减少人数",
+      "more": "增加人数"
+    }
   },
   "seo": {
     "orgDescription": "CheapestGo 是一个现代旅行预订平台，帮助旅行者在全球范围内找到最便宜的机票和酒店。",
@@ -2857,6 +2882,9 @@
       "pickHint": "选择时间后即可直接咨询。",
       "askThis": "咨询这个开球时间",
       "draft": "您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？"
-    }
+    },
+    "count": "{count} 个球场",
+    "countIn": "{country}的 {count} 个球场",
+    "back": "返回"
   }
 }

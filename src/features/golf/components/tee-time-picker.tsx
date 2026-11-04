@@ -23,6 +23,9 @@ type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; da
 
 const PARTY = [1, 2, 3, 4];
 
+/** A chosen party size, day or time: the brand's gradient, as every chosen control on v2 is. */
+const CHOSEN = 'border-transparent bg-linear-to-r from-blue-600 to-cyan-500 text-white shadow-[0_8px_20px_-8px_rgba(37,99,235,.6)]';
+
 /** A date on the course's clock, which must not move with the visitor's zone; hence UTC. */
 const utcDate = (date: string) => {
     const [y, m, d] = date.split('-').map(Number);
@@ -114,7 +117,7 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
 
     return (
         <section aria-labelledby="tee-times-title" className="space-y-4">
-            <h2 id="tee-times-title" className="text-sm font-semibold text-slate-900 dark:text-white">{t('teeTimes.title')}</h2>
+            <h2 id="tee-times-title" className="text-base font-bold text-slate-900 dark:text-slate-50">{t('teeTimes.title')}</h2>
 
             <div>
                 <p className="mb-1.5 text-xs text-slate-500 dark:text-slate-400">{t('teeTimes.players')}</p>
@@ -126,10 +129,10 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
                             aria-pressed={players === n}
                             onClick={() => setPlayers(n)}
                             className={cn(
-                                'h-9 border text-sm font-medium transition-colors',
+                                'h-9 rounded-full border text-sm font-medium transition-colors',
                                 players === n
-                                    ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900'
-                                    : 'border-slate-200 text-slate-700 hover:border-slate-400 dark:border-white/10 dark:text-slate-200',
+                                    ? CHOSEN
+                                    : 'border-slate-200 text-slate-700 hover:border-slate-400 dark:border-white/10 dark:text-slate-200 dark:hover:border-white/30',
                             )}
                         >{n}</button>
                     ))}
@@ -169,10 +172,10 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
                                     aria-label={formats.full.format(utcDate(cell.date))}
                                     onClick={() => { setDate(cell.date); setPicked(undefined); }}
                                     className={cn(
-                                        'h-8 text-xs transition-colors',
+                                        'h-8 rounded-full text-xs transition-colors',
                                         !cell.inMonth && 'invisible',
                                         chosen
-                                            ? 'bg-slate-900 font-semibold text-white dark:bg-white dark:text-slate-900'
+                                            ? `${CHOSEN} font-semibold`
                                             : 'text-slate-700 hover:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:text-white/20',
                                     )}
                                 >{Number(cell.date.slice(8))}</button>
@@ -184,7 +187,7 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
 
             {state.status === 'loading' && (
                 <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
                 </div>
             )}
 
@@ -211,9 +214,9 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
                                     aria-pressed={chosen}
                                     onClick={() => setPicked(chosen ? undefined : offer.id)}
                                     className={cn(
-                                        'flex flex-col items-start border px-3 py-2 text-left transition-colors',
+                                        'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-colors',
                                         chosen
-                                            ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900'
+                                            ? CHOSEN
                                             : 'border-slate-200 text-slate-900 hover:border-slate-400 dark:border-white/10 dark:text-white dark:hover:border-white/30',
                                     )}
                                 >

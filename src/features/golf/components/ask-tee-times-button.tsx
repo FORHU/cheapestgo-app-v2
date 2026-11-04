@@ -37,7 +37,7 @@ export function AskTeeTimesButton({ draft }: { draft?: string }) {
                 type="button"
                 onClick={ask}
                 disabled={checking}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 bg-slate-900 px-6 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-white dark:text-slate-900"
+                className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-[filter] duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 <MessageCircle size={16} aria-hidden />
                 {draft ? t('teeTimes.askThis') : t('askTeeTimes')}

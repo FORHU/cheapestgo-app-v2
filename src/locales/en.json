@@ -973,7 +973,8 @@
       "go": "GO",
       "searchingStays": "Searching hotels…",
       "searchingFlights": "Searching flights…",
-      "whosComing": "Who's coming?"
+      "whosComing": "Who's coming?",
+      "searchingGolf": "Finding tee times…"
     },
     "journey": {
       "hero": {
@@ -1004,6 +1005,11 @@
           "titleLead": "Now",
           "titleRest": "choose.",
           "caption": "Stays, flights and golf, all in one place."
+        },
+        "golf": {
+          "titleLead": "Or",
+          "titleRest": "tee off.",
+          "caption": "Real tee times at courses we work with, priced per player."
         }
       },
       "strip": {
@@ -2120,7 +2126,13 @@
       "origin": "wherever you are",
       "aDate": "a date",
       "yourDates": "your dates",
-      "flexibleTrip": "a flexible trip"
+      "flexibleTrip": "a flexible trip",
+      "teeOffAt": "Tee off at",
+      "onDay": ", on ",
+      "forPlayers": ", for ",
+      "theCourse": "the course",
+      "firstOpenDay": "the first open day",
+      "players": "{count, plural, one {# player} other {# players}}"
     },
     "trendingCities": "Popular cities",
     "popularAirports": "Popular airports",
@@ -2133,7 +2145,20 @@
     "nights": "{count, plural, one {# night} other {# nights}}",
     "listView": "List View",
     "mapView": "Map View",
-    "metaTitle": "Search hotels and stays"
+    "metaTitle": "Search hotels and stays",
+    "golf": {
+      "findCourse": "Search courses, cities, countries…",
+      "loading": "Loading courses…",
+      "none": "No courses are open for booking yet.",
+      "noMatch": "No course matches “{query}”.",
+      "allCourses": "All courses →",
+      "courses": "Courses",
+      "whenPlay": "When do you want to play?",
+      "anyDayNote": "Leave it open and the course shows its first day with a tee time.",
+      "howMany": "How many players?",
+      "fewer": "Fewer players",
+      "more": "More players"
+    }
   },
   "seo": {
     "orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
@@ -2857,6 +2882,9 @@
       "pickHint": "Pick a time to ask us about it.",
       "askThis": "Ask about this tee time",
       "draft": "Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available?"
-    }
+    },
+    "count": "{count, plural, one {# course} other {# courses}}",
+    "countIn": "{count, plural, one {# course} other {# courses}} in {country}",
+    "back": "Back"
   }
 }

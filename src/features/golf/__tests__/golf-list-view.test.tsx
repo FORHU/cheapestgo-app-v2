@@ -9,8 +9,8 @@ import type { GolfCourse } from '@/features/golf/types';
 
 const api = vi.hoisted(() => ({ fetchGolfCatalogue: vi.fn(), fetchGolfCourse: vi.fn() }));
 vi.mock('@/features/golf/api/golf.api', () => api);
-vi.mock('@/shared/components/header', () => ({ Header: () => null }));
-vi.mock('@/shared/components/footer', () => ({ Footer: () => null }));
+// The landing navbar is tested where it lives; here it only has to be there.
+vi.mock('@/features/landing/components/landing-header', () => ({ LandingHeader: () => <header data-testid="landing-header" /> }));
 vi.mock('@/i18n/navigation', () => ({
     Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => <a href={href} {...rest}>{children}</a>,
     useRouter: () => ({ push: vi.fn() }),
@@ -42,6 +42,21 @@ describe('GolfListView', () => {
         expect(within(wack).getByText('Green fees from ₩120,000')).toBeInTheDocument();
         expect(within(screen.getByRole('link', { name: /Sky72/ })).queryByText(/Green fees from/)).toBeNull();
         expect(api.fetchGolfCatalogue).toHaveBeenCalledWith({ country: undefined, currency: 'KRW' });
+    });
+
+    it('stands on the results ground under the landing navbar, and counts the courses', async () => {
+        api.fetchGolfCatalogue.mockResolvedValue({ courses: [course(), course({ id: '2', slug: 'sky72', name: 'Sky72' })], countries: [] });
+        renderWithIntl(<GolfListView />);
+        expect(await screen.findByText('2 courses')).toBeInTheDocument();
+        expect(screen.getByTestId('landing-header')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 1, name: en.golf.title })).toBeInTheDocument();
+        expect(document.body).toHaveClass('flat-ground');
+    });
+
+    it('says which country it is counting', async () => {
+        api.fetchGolfCatalogue.mockResolvedValue({ courses: [course()], countries: ['Japan', 'Philippines'] });
+        renderWithIntl(<GolfListView country="Philippines" />);
+        expect(await screen.findByText('1 course in Philippines')).toBeInTheDocument();
     });
 
     it('offers the countries as links once there is more than one', async () => {

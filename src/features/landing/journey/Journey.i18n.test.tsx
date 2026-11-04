@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithIntl } from '@/shared/testing/renderWithIntl';
 import { formatCurrency } from '@/shared/lib/format';
@@ -35,6 +35,9 @@ vi.mock('@/i18n/navigation', () => ({
     Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) =>
         <a href={href} {...rest}>{children}</a>,
 }));
+// The Golf face asks for the catalogue when it is first shown.
+const golfApi = vi.hoisted(() => ({ fetchGolfCatalogue: vi.fn() }));
+vi.mock('@/features/golf/api/golf.api', () => golfApi);
 
 import { Journey } from './Journey';
 
@@ -55,6 +58,8 @@ const OPTIONS_DOCKED = 0.9;
 beforeEach(() => {
     progress.journey = 0;
     progress.reduced = false;
+    golfApi.fetchGolfCatalogue.mockReset();
+    golfApi.fetchGolfCatalogue.mockResolvedValue({ courses: [], countries: [] });
 });
 
 describe('Journey hero', () => {
@@ -186,9 +191,67 @@ describe('Journey without motion', () => {
         expect(headings).toEqual([
             `${J_KO.stages.stays.titleLead} ${J_KO.stages.stays.titleRest}`,
             `${J_KO.stages.flights.titleLead} ${J_KO.stages.flights.titleRest}`,
+            `${J_KO.stages.golf.titleLead} ${J_KO.stages.golf.titleRest}`,
             `${J_KO.stages.options.titleLead} ${J_KO.stages.options.titleRest}`,
         ]);
         expect(screen.queryByText('Find your stay.')).not.toBeInTheDocument();
+    });
+});
+
+describe('Journey golf face', () => {
+    const course = {
+        id: 'c1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
+        description: '', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW', imageUrls: [], amenities: [],
+        status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, scheduleCount: 1, bookable: true,
+    };
+    const more = ['b', 'c', 'd', 'e'].map((id) => ({ ...course, id, slug: `course-${id}`, name: `Course ${id.toUpperCase()}`, greenFeeFrom: null }));
+
+    const toGolf = async () => {
+        progress.journey = STAYS_DOCKED;
+        useSearchStore.setState({ userCurrency: 'KRW' });
+        const view = renderWithIntl(<Journey showcaseStays={{}} />);
+        act(() => { (bar.props.onModeSelect as (m: string) => void)('golf'); });
+        // The old face fades out before the new one is put in its place.
+        await screen.findByText(J_EN.stages.golf.caption);
+        return view;
+    };
+
+    it('slides in place to golf, whose bar opens on golf with the catalogue in the visitor\'s currency', async () => {
+        golfApi.fetchGolfCatalogue.mockResolvedValue({ courses: [course], countries: ['Philippines'] });
+        await toGolf();
+
+        expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(`${J_EN.stages.golf.titleLead} ${J_EN.stages.golf.titleRest}`);
+        expect(bar.props.defaultMode).toBe('golf');
+        expect(golfApi.fetchGolfCatalogue).toHaveBeenCalledWith({ currency: 'KRW' });
+        await screen.findByRole('button', { name: /Wack Wack/ });
+        expect(bar.props.golfCourses).toEqual([course]);
+    });
+
+    it('names four courses under the search, priced as api-v2 sent them, and the way to the rest', async () => {
+        golfApi.fetchGolfCatalogue.mockResolvedValue({ courses: [course, ...more], countries: [] });
+        await toGolf();
+
+        const wack = await screen.findByRole('button', { name: /Wack Wack/ });
+        expect(within(wack).getByText(`from ${formatCurrency(120000, 'KRW')}`)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Course D' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Course E' })).toBeNull();
+        expect(screen.getByRole('link', { name: en.search.golf.allCourses })).toHaveAttribute('href', '/golf');
+    });
+
+    it('hands a picked course to the sentence, and lights the pill the sentence holds', async () => {
+        golfApi.fetchGolfCatalogue.mockResolvedValue({ courses: [course], countries: [] });
+        await toGolf();
+
+        fireEvent.click(await screen.findByRole('button', { name: /Wack Wack/ }));
+        expect(bar.props.coursePick).toEqual({ slug: 'wack-wack' });
+        act(() => { (bar.props.onCourseChange as (s: string | null) => void)('wack-wack'); });
+        expect(screen.getByRole('button', { name: /Wack Wack/ })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('draws no pills when there are no courses', async () => {
+        await toGolf();
+        await waitFor(() => expect(bar.props.golfCourses).toEqual([]));
+        expect(screen.queryByRole('link', { name: en.search.golf.allCourses })).toBeNull();
     });
 });
 

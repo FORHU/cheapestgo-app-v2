@@ -13,7 +13,7 @@
  * order the pass fills in — a stage may only write a line below the one before it.
  */
 
-export type StageId = 'stays' | 'flights' | 'ai' | 'options';
+export type StageId = 'stays' | 'flights' | 'golf' | 'ai' | 'options';
 
 const IMG = '/images/destinations';
 
@@ -78,28 +78,31 @@ export interface StageFace {
      * open sky into deep space into daylight. One dark canvas for all four was the
      * flattest possible reading of "premium", and made four different products look
      * like four slides of the same one.
+     *
+     * A face other than the stage's own is normally hidden behind its photograph; its ground
+     * shows only when that photograph cannot be loaded (see `StageShowcase`).
      */
     ground: string;
 }
 
-/** The two things the search stage can be searching for. */
-export type SearchMode = 'stays' | 'flights';
+/** The things the search stage can be searching for. */
+export type SearchMode = 'stays' | 'flights' | 'golf';
 
 export interface Stage extends StageFace {
     from: number;
     to: number;
     /**
      * Other faces this stretch of track can wear, in place. The stage's own fields are its
-     * `'stays'` face; this holds the rest. Hotels and Flights are one stage: choosing the other
-     * tab slides the panel across and changes the backdrop under it, rather than carrying the
-     * visitor to a separate section further down the track.
+     * `'stays'` face; this holds the rest. Hotels, Flights and Golf are one stage: choosing
+     * another tab slides the panel across and changes the backdrop under it, rather than
+     * carrying the visitor to a separate section further down the track.
      */
-    faces?: { flights?: StageFace };
+    faces?: Partial<Record<Exclude<SearchMode, 'stays'>, StageFace>>;
 }
 
 /** The face a stage shows in this mode; a stage with no face for it shows its own. */
 export function faceOf(stage: Stage, mode: SearchMode): StageFace {
-    return stage.faces?.[mode as 'flights'] ?? stage;
+    return (mode !== 'stays' && stage.faces?.[mode]) || stage;
 }
 
 /** Every face a stage can wear, the stage's own first — for anything that has to know them all. */
@@ -139,6 +142,16 @@ const ALL_STAGES: Stage[] = [
                 // Hidden behind the photograph; the stage keeps its own ground so the change
                 // of face is the photograph's cross-fade and nothing else.
                 ground: 'linear-gradient(180deg,#0a1a3a 0%,#17457e 55%,#4a8fc7 100%)',
+            },
+            // Golf docks in the middle, so each of the three tabs has a place of its own and
+            // moving between any two of them is a slide.
+            golf: {
+                id: 'golf',
+                side: 'center',
+                // A fairway at dusk, held still like the aircraft.
+                showcase: { kind: 'still', image: `${IMG}/golf-dusk.webp`, strength: 0.95 },
+                // Dusk over grass. Seen only if the photograph will not load.
+                ground: 'linear-gradient(180deg,#0b1f17 0%,#14532d 55%,#3f7d4f 100%)',
             },
         },
     },

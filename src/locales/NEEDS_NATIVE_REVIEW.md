@@ -402,3 +402,37 @@ the first golf slice (2026-11-04).
 | `golf.teeTimes.pickHint` | Pick a time to ask us about it. | 시간을 선택하면 바로 문의하실 수 있습니다. | 時間を選ぶと、そのままお問い合わせいただけます。 | 选择时间后即可直接咨询。 |
 | `golf.teeTimes.askThis` | Ask about this tee time | 이 티타임 문의하기 | このティータイムを問い合わせる | 咨询这个开球时间 |
 | `golf.teeTimes.draft` | Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available? | 안녕하세요! {course}에서 {date} {time}({city} 현지 시간)에 {count}명이 라운드하고 싶습니다. 예약 가능할까요? | こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？ | 您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？ |
+
+## Golf on the landing page, and the golf pages in the v2 design
+
+The search stage's Golf face (its heading and its "Tee off at … on … for …" sentence, with the course
+panel, the calendar and the player count), and the catalogue's count line. Written by Claude for
+the design pass of 2026-11-04. The sentence pieces follow the stays sentence's pattern in each
+language (a label, then the token), not English word order.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `landing.journey.stages.golf.titleLead` | Or | 또는 | または、 | 或者 |
+| `landing.journey.stages.golf.titleRest` | tee off. | 티오프하세요. | ティーオフ。 | 去开球。 |
+| `landing.journey.stages.golf.caption` | Real tee times at courses we work with, priced per player. | 제휴 골프장의 실제 티타임을 1인 기준 요금으로 보여드립니다. | 提携ゴルフ場のリアルなティータイムを、1人あたりの料金で。 | 合作球场的真实开球时间，按每位球员计价。 |
+| `landing.search.searchingGolf` | Finding tee times… | 티타임 찾는 중… | ティータイムを検索中… | 正在查找开球时间… |
+| `search.prose.teeOffAt` | Tee off at | 골프장 | ゴルフ場 | 球场 |
+| `search.prose.onDay` | , on  | , 날짜  | 、日付  | ，日期  |
+| `search.prose.forPlayers` | , for  | , 인원  | 、人数  | ，人数  |
+| `search.prose.theCourse` | the course | 원하는 골프장 | お好きなゴルフ場 | 心仪的球场 |
+| `search.prose.firstOpenDay` | the first open day | 가장 빠른 날 | 最短の空き日 | 最早可订日 |
+| `search.prose.players` | {count, plural, one {# player} other {# players}} | {count}명 | {count}人 | {count} 人 |
+| `search.golf.findCourse` | Search courses, cities, countries… | 골프장, 도시, 국가 검색… | ゴルフ場・都市・国を検索… | 搜索球场、城市、国家… |
+| `search.golf.loading` | Loading courses… | 골프장을 불러오는 중… | ゴルフ場を読み込み中… | 正在加载球场… |
+| `search.golf.none` | No courses are open for booking yet. | 아직 예약 가능한 골프장이 없습니다. | 予約できるゴルフ場はまだありません。 | 暂无可预订的球场。 |
+| `search.golf.noMatch` | No course matches “{query}”. | “{query}”와 일치하는 골프장이 없습니다. | 「{query}」に一致するゴルフ場はありません。 | 没有与“{query}”匹配的球场。 |
+| `search.golf.allCourses` | All courses → | 전체 골프장 → | すべてのゴルフ場 → | 全部球场 → |
+| `search.golf.courses` | Courses | 골프장 | ゴルフ場 | 球场 |
+| `search.golf.whenPlay` | When do you want to play? | 언제 라운드하시겠어요? | いつプレーしますか？ | 您想哪天打球？ |
+| `search.golf.anyDayNote` | Leave it open and the course shows its first day with a tee time. | 비워 두면 티타임이 있는 가장 빠른 날을 보여드립니다. | 空欄のままにすると、ティータイムのある最短の日を表示します。 | 留空则显示最早有开球时间的日期。 |
+| `search.golf.howMany` | How many players? | 몇 분이 라운드하시나요? | 何名でプレーしますか？ | 几位球员？ |
+| `search.golf.fewer` | Fewer players | 인원 줄이기 | 人数を減らす | 减少人数 |
+| `search.golf.more` | More players | 인원 늘리기 | 人数を増やす | 增加人数 |
+| `golf.count` | {count, plural, one {# course} other {# courses}} | 골프장 {count}곳 | ゴルフ場 {count}件 | {count} 个球场 |
+| `golf.countIn` | {count, plural, one {# course} other {# courses}} in {country} | {country}의 골프장 {count}곳 | {country}のゴルフ場 {count}件 | {country}的 {count} 个球场 |
+| `golf.back` | Back | 뒤로 | 戻る | 返回 |
