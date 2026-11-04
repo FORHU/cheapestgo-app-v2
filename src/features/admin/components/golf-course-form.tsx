@@ -22,7 +22,12 @@ interface Props {
 interface FormState {
     name: string; country: string; city: string; slug: string; address: string; description: string;
     holes: string; par: string; greenFeeFrom: string; currency: string; imageUrls: string; amenities: GolfAmenity[];
+    timezone: string; bookingWindowDays: string;
 }
+
+/** Every IANA zone the browser knows (ES2022's `Intl.supportedValuesOf`; the project targets ES2017). */
+const TIME_ZONES: string[] =
+    (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone') ?? [];
 
 const fromCourse = (c?: GolfCourse): FormState => ({
     name:         c?.name ?? '',
@@ -37,6 +42,8 @@ const fromCourse = (c?: GolfCourse): FormState => ({
     currency:     c?.currency ?? 'USD',
     imageUrls:    (c?.imageUrls ?? []).join('\n'),
     amenities:    c?.amenities ?? [],
+    timezone:     c?.timezone ?? '',
+    bookingWindowDays: String(c?.bookingWindowDays ?? 60),
 });
 
 /** The form's strings as api-v2 takes them. It checks everything again; this only shapes it. */
@@ -53,6 +60,8 @@ const toDraft = (f: FormState): GolfCourseDraft => ({
     currency:     f.currency.trim().toUpperCase(),
     imageUrls:    f.imageUrls.split('\n').map((u) => u.trim()).filter(Boolean),
     amenities:    f.amenities,
+    timezone:     f.timezone || null,
+    bookingWindowDays: Number(f.bookingWindowDays),
 });
 
 const boxClass   = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:border-blue-500 focus-visible:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white';
@@ -75,6 +84,11 @@ export function GolfCourseForm({ course, saving, errors, onSubmit, onCancel }: P
         });
 
     const error = (key: keyof GolfCourseDraft) => errors[key]?.[0];
+
+    // Tee times were made on the course's clock and schedule prices are in its currency, so api-v2
+    // refuses to change either while schedules exist; the form says so before anyone tries.
+    const locked = (course?.scheduleCount ?? 0) > 0;
+    const zones = form.timezone && !TIME_ZONES.includes(form.timezone) ? [form.timezone, ...TIME_ZONES] : TIME_ZONES;
 
     const toggle = (a: GolfAmenity) =>
         set('amenities', form.amenities.includes(a) ? form.amenities.filter((x) => x !== a) : [...form.amenities, a]);
@@ -102,8 +116,27 @@ export function GolfCourseForm({ course, saving, errors, onSubmit, onCancel }: P
                     id="golf-fee" label="Green fee from" type="number" min="0" step="0.01" value={form.greenFeeFrom}
                     onChange={(e) => set('greenFeeFrom', e.target.value)} error={error('greenFeeFrom')}
                 />
-                <Input id="golf-currency" label="Currency" maxLength={3} value={form.currency} onChange={(e) => set('currency', e.target.value)} error={error('currency')} />
+                <Input
+                    id="golf-currency" label="Currency" maxLength={3} value={form.currency} disabled={locked}
+                    onChange={(e) => set('currency', e.target.value)} error={error('currency')}
+                />
+                <div className="space-y-1.5">
+                    <label htmlFor="golf-timezone" className={labelClass}>Time zone</label>
+                    <select
+                        id="golf-timezone" value={form.timezone} disabled={locked}
+                        onChange={(e) => set('timezone', e.target.value)} className={`${boxClass} h-11 disabled:opacity-50`}
+                    >
+                        <option value="">Not set</option>
+                        {zones.map((z) => <option key={z} value={z}>{z}</option>)}
+                    </select>
+                    {error('timezone') && <p className={errorClass}>{error('timezone')}</p>}
+                </div>
+                <Input
+                    id="golf-window" label="Booking window (days)" type="number" min="1" max="90" value={form.bookingWindowDays}
+                    onChange={(e) => set('bookingWindowDays', e.target.value)} error={error('bookingWindowDays')}
+                />
             </div>
+            {locked && <p className="ml-1 text-xs text-slate-500">Locked while this course has tee-time schedules.</p>}
 
             <div className="space-y-1.5">
                 <label htmlFor="golf-images" className={labelClass}>Image URLs — one per line, the first is the cover</label>

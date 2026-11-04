@@ -23,7 +23,7 @@ const course = (over: Partial<GolfCourse> = {}): GolfCourse => ({
     id: '1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: '1 Golf Rd',
     description: 'First paragraph.\n\nSecond paragraph.', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW',
     imageUrls: ['https://img.example/a.jpg', 'https://img.example/b.jpg'], amenities: ['caddie', 'night_golf'],
-    status: 'published', createdAt: '', updatedAt: '', ...over,
+    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, scheduleCount: 1, bookable: true, ...over,
 });
 
 beforeEach(() => {

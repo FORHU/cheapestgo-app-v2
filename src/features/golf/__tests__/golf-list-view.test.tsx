@@ -21,7 +21,7 @@ import { GolfListView } from '@/features/golf/components/golf-list-view';
 const course = (over: Partial<GolfCourse> = {}): GolfCourse => ({
     id: '1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
     description: '', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW', imageUrls: ['https://img.example/a.jpg'],
-    amenities: [], status: 'published', createdAt: '', updatedAt: '', ...over,
+    amenities: [], status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, scheduleCount: 1, bookable: true, ...over,
 });
 
 beforeEach(() => {

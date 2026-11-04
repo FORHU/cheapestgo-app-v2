@@ -1,5 +1,7 @@
 import { http } from '@/shared/lib/http';
-import type { AdminGolfPage, GolfCatalogue, GolfCourse, GolfCourseDraft, GolfCourseStatus } from '@/features/golf/types';
+import type {
+    AdminGolfPage, GolfCatalogue, GolfCourse, GolfCourseDraft, GolfCourseStatus, ScheduleDraft, TeeTimeDay, TeeTimeSchedule,
+} from '@/features/golf/types';
 
 interface Envelope<T> {
     success: boolean;
@@ -23,6 +25,15 @@ export async function fetchGolfCourse(slug: string, currency?: string): Promise<
     return (await http.get<Envelope<GolfCourse>>(`/golf/courses/${encodeURIComponent(slug)}${query({ currency })}`)).data;
 }
 
+/**
+ * One course-local day of tee times, priced for `players` in `currency`. With no `date`, api-v2
+ * answers the first day that has a tee time; a date outside the range is answered for its nearer end.
+ */
+export async function fetchTeeTimes(slug: string, opts: { date?: string; players: number; currency?: string }): Promise<TeeTimeDay> {
+    const path = `/golf/courses/${encodeURIComponent(slug)}/tee-times`;
+    return (await http.get<Envelope<TeeTimeDay>>(`${path}${query({ date: opts.date, players: String(opts.players), currency: opts.currency })}`)).data;
+}
+
 /** The back office's side: api-v2 `/admin/golf`, admins only. */
 export const adminGolfApi = {
     list: (page: number, q?: string) =>
@@ -34,4 +45,10 @@ export const adminGolfApi = {
     setStatus: async (id: string, status: GolfCourseStatus) =>
         (await http.patch<Envelope<GolfCourse>>(`/admin/golf/courses/${id}/status`, { status })).data,
     remove: (id: string) => http.delete<{ success: boolean }>(`/admin/golf/courses/${id}`),
+    listSchedules: async (courseId: string) =>
+        (await http.get<Envelope<TeeTimeSchedule[]>>(`/admin/golf/courses/${courseId}/schedules`)).data,
+    addSchedule: async (courseId: string, draft: ScheduleDraft) =>
+        (await http.post<Envelope<{ schedule: TeeTimeSchedule; created: number }>>(`/admin/golf/courses/${courseId}/schedules`, draft)).data,
+    removeSchedule: (courseId: string, scheduleId: string) =>
+        http.delete<{ success: boolean }>(`/admin/golf/courses/${courseId}/schedules/${scheduleId}`),
 };

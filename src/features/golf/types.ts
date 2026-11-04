@@ -34,6 +34,59 @@ export interface GolfCourse {
     status:       GolfCourseStatus;
     createdAt:    string;
     updatedAt:    string;
+    /** IANA name; tee times are set on this clock. */
+    timezone:     string | null;
+    bookingWindowDays: number;
+    scheduleCount: number;
+    /** A time zone and at least one schedule: the course has tee times to show. */
+    bookable:     boolean;
+}
+
+/** One tee time on the course page. Priced all-in per player in the visitor's currency; null only without a rate. */
+export interface TeeTimeOffer {
+    id:             string;
+    startsAt:       string;
+    /** "07:30" on the course's clock. */
+    localTime:      string;
+    spotsLeft:      number;
+    allInPerPlayer: number | null;
+    currency:       string | null;
+}
+
+/** A course-local day of tee times, and the range of days that can be picked. */
+export interface TeeTimeDay {
+    timezone:  string;
+    date:      string;
+    firstDate: string;
+    lastDate:  string;
+    players:   number;
+    teeTimes:  TeeTimeOffer[];
+}
+
+export interface TeeTimeSchedule {
+    id:              string;
+    courseId:        string;
+    name:            string;
+    /** 0 = Sunday … 6 = Saturday. */
+    daysOfWeek:      number[];
+    firstTee:        string;
+    lastTee:         string;
+    intervalMinutes: number;
+    spots:           number;
+    /** In the course's currency. */
+    pricePerPlayer:  number;
+    createdAt:       string;
+}
+
+/** What the admin's schedule form sends. */
+export interface ScheduleDraft {
+    name:            string;
+    daysOfWeek:      number[];
+    firstTee:        string;
+    lastTee:         string;
+    intervalMinutes: number;
+    spots:           number;
+    pricePerPlayer:  number;
 }
 
 export interface GolfCatalogue {
@@ -56,6 +109,8 @@ export interface GolfCourseDraft {
     currency:     string;
     imageUrls:    string[];
     amenities:    GolfAmenity[];
+    timezone:     string | null;
+    bookingWindowDays: number;
 }
 
 export interface AdminGolfPage {
