@@ -44,3 +44,12 @@ describe('Ask about tee times', () => {
         expect(screen.getByRole('button', { name: en.golf.askTeeTimes })).toBeDisabled();
     });
 });
+
+describe('Ask about this tee time', () => {
+    it('asks with a draft naming the tee time, for the customer to send', async () => {
+        signedIn(true);
+        renderWithIntl(<AskTeeTimesButton draft="Hi! I'd like to play Wack Wack at 07:30." />);
+        await userEvent.setup().click(screen.getByRole('button', { name: en.golf.teeTimes.askThis }));
+        expect(useSupportWidget.getState()).toMatchObject({ openRequests: 1, draft: "Hi! I'd like to play Wack Wack at 07:30." });
+    });
+});

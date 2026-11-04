@@ -13,6 +13,7 @@ import { formatCurrency } from '@/shared/lib/format';
 import { useUserCurrency } from '@/shared/stores/search.store';
 import { fetchGolfCourse } from '@/features/golf/api/golf.api';
 import { AskTeeTimesButton } from '@/features/golf/components/ask-tee-times-button';
+import { TeeTimePicker, type TeeTimeSelection } from '@/features/golf/components/tee-time-picker';
 import type { GolfCourse } from '@/features/golf/types';
 
 type State = { status: 'loading' } | { status: 'missing' } | { status: 'error' } | { status: 'ready'; course: GolfCourse };
@@ -25,7 +26,7 @@ const paragraphs = (text: string) => text.split(/\n\s*\n/).map((p) => p.trim()).
  * the viewer's Display Currency and again when that changes. An unknown or draft slug is already a
  * 404 from the server page; `missing` here covers a course unpublished while the page was open.
  */
-export function GolfCourseView({ slug }: { slug: string }) {
+export function GolfCourseView({ slug, initial }: { slug: string; initial?: TeeTimeSelection }) {
     const t = useTranslations('golf');
     const tAll = useTranslations();
     const currency = useUserCurrency();
@@ -159,14 +160,21 @@ export function GolfCourseView({ slug }: { slug: string }) {
                                 </div>
 
                                 <aside className="h-fit space-y-4 border border-slate-200 bg-white p-5 lg:sticky lg:top-24 dark:border-white/10 dark:bg-slate-900">
-                                    {c.greenFeeFrom != null && (
-                                        <div>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">{t('fromLabel')}</p>
-                                            <p className="text-2xl font-semibold text-slate-900 dark:text-white">{formatCurrency(c.greenFeeFrom, c.currency)}</p>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('guidePrice')}</p>
-                                        </div>
+                                    {/* With tee times the picker shows real prices, so the "from" guide would only repeat it. */}
+                                    {c.bookable ? (
+                                        <TeeTimePicker course={c} initial={initial} />
+                                    ) : (
+                                        <>
+                                            {c.greenFeeFrom != null && (
+                                                <div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('fromLabel')}</p>
+                                                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">{formatCurrency(c.greenFeeFrom, c.currency)}</p>
+                                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('guidePrice')}</p>
+                                                </div>
+                                            )}
+                                            <AskTeeTimesButton />
+                                        </>
                                     )}
-                                    <AskTeeTimesButton />
                                 </aside>
                             </div>
                         </>

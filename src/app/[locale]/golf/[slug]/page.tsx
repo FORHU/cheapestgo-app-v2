@@ -35,8 +35,29 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
 }
 
-export default async function GolfCoursePage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = await params;
+type Query = Record<string, string | string[] | undefined>;
+const one = (v: string | string[] | undefined) => (typeof v === 'string' ? v.trim() : undefined);
+
+/**
+ * The tee time picked, read from the address on the server so the picker opens on it: a shared link,
+ * or a visitor coming back from signing in. Only shapes are checked here; api-v2 decides the rest.
+ */
+function selection(query: Query) {
+    const date = one(query.date);
+    const players = Number(one(query.players));
+    const time = one(query.time);
+    return {
+        date:    date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined,
+        players: Number.isInteger(players) && players >= 1 && players <= 4 ? players : undefined,
+        time:    time && /^[0-9a-f-]{36}$/i.test(time) ? time : undefined,
+    };
+}
+
+export default async function GolfCoursePage({ params, searchParams }: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<Query>;
+}) {
+    const [{ slug }, query] = await Promise.all([params, searchParams]);
     if (await lookUp(slug) === 'missing') notFound();
-    return <GolfCourseView slug={slug} />;
+    return <GolfCourseView slug={slug} initial={selection(query)} />;
 }
