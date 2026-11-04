@@ -12,7 +12,7 @@ import { GOLF_FACE, rememberGolfSearch } from '@/features/golf/lib/last-search';
 import { useGolfCourses } from '@/features/golf/lib/use-golf-courses';
 import type { GolfCourse } from '@/features/golf/types';
 
-type Panel ='course' | 'date' | 'players' | null;
+type Panel = 'course' | 'date' | 'players' | null;
 
 /** The tee-time picker's party sizes, so the sentence never asks for a party the course page cannot price. */
 const MIN_PLAYERS = 1;

@@ -45,7 +45,7 @@ export function GolfListView({ country }: { country?: string }) {
         rememberGolfSearch(country ? `/golf?country=${encodeURIComponent(country)}` : '/golf');
     }, [country]);
 
-    const countries =state.status === 'ready' ? state.catalogue.countries : [];
+    const countries = state.status === 'ready' ? state.catalogue.countries : [];
     const count = state.status === 'ready' ? state.catalogue.courses.length : null;
 
     return (
