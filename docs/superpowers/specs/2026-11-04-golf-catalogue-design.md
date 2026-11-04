@@ -35,13 +35,13 @@ This is the first of five golf slices ported from v1. Each gets its own spec, pl
   `feat/flight-booking-money-safety`. This slice edits the first two and follows the third, so it
   cannot start from `staging`. It is rebased onto `staging` once the flight branch merges. Same
   precedent as the hotel booking flow spec.
-- **v2 authors the migration, carrying v1's SQL.** A new v2-numbered file holds v1's `golf_courses`
-  DDL verbatim. v1's version number is deliberately not reused: dbmate keys on version alone, and
-  v1 and v2 already collide at `20261015000001` (v1 `golf_course_photos`, v2
-  `hotel_booking_lifecycle`), so a reused number would make v2 silently skip a golf migration in
-  slice 4. v1's DDL is `IF NOT EXISTS` throughout, so the migration is a no-op if a refresh from v1
-  (ADR-0018) has already created the table. This follows the flight and hotel lifecycle migrations,
-  which v2 also authored.
+- **v2 has its own golf migration.** v1's migration file is not copied. The table is defined in a
+  migration written for v2, in the style of api-v2's other migrations, with its own header saying
+  what the table is for. It keeps v1's columns and constraints (§3), because those are the rules
+  being ported, but it does not depend on v1's file, version number or a refresh from v1's
+  database. v1's version number is deliberately not reused: dbmate keys on version alone, and v1
+  and v2 already collide at `20261015000001` (v1 `golf_course_photos`, v2 `hotel_booking_lifecycle`).
+  This follows the flight and hotel lifecycle migrations, which v2 also authored.
 - **Photos are pasted `https://` URLs**, one ordered list whose first entry is the cover, as v2's
   destinations admin does today. Upload arrives with slice 4, as it did in v1. `image_urls` stays
   the list customers see, so uploads slot in without a schema change.
@@ -54,9 +54,9 @@ This is the first of five golf slices ported from v1. Each gets its own spec, pl
 
 ## 3. Data
 
-Migration `cheapestgo-api-v2/db/migrations/20261104000001_golf_courses.sql`, dbmate format. The
-`migrate:up` section is v1's `20260930000001_golf_courses.sql` DDL verbatim; `migrate:down` drops
-the table.
+Migration `cheapestgo-api-v2/db/migrations/20261104000001_golf_courses.sql`, dbmate format, written
+for v2. `migrate:up` creates the table below with `IF NOT EXISTS`, as api-v2's other migrations do,
+so re-applying it by hand is harmless; `migrate:down` drops the table.
 
 | column | type | notes |
 |---|---|---|
