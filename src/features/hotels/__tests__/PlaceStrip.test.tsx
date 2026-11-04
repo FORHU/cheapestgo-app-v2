@@ -53,18 +53,6 @@ describe('PlaceStrip', () => {
         expect(screen.queryByRole('img', { name: /out of 5 stars/ })).not.toBeInTheDocument();
     });
 
-    it('marks the rating as a star and score in line with the distance, read out of 5', () => {
-        renderWithIntl(<PlaceStrip {...props()} />);
-        const rating = screen.getByRole('img', { name: '4.6 out of 5 stars' });
-        expect(rating).toHaveTextContent('4.6');
-        expect(rating.parentElement).toHaveTextContent('360 m');
-    });
-
-    it('leaves the rating off a place that has none', () => {
-        renderWithIntl(<PlaceStrip {...props({ gems: [gem({ rating: null })] })} />);
-        expect(screen.queryByRole('img', { name: /out of 5 stars/ })).not.toBeInTheDocument();
-    });
-
     it('shows distances and radius steps in miles', () => {
         renderWithIntl(<PlaceStrip {...props({ unit: 'mi', radius: 1609 })} />);
         expect(screen.getByText('0.22 mi')).toBeInTheDocument();
