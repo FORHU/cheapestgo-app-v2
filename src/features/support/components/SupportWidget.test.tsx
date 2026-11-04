@@ -77,6 +77,28 @@ describe('SupportWidget', () => {
         await waitFor(() => expect(screen.queryByRole('button', { name: /open support chat/i })).toBeNull());
     });
 
+    it('puts a draft the page asked with into the empty message box, for the customer to send', async () => {
+        api.fetchConversation.mockResolvedValue(null);
+        renderWidget();
+        act(() => useSupportWidget.getState().requestOpen('Hi! I would like to play Wack Wack at 07:30.'));
+        const box = await screen.findByRole('textbox', { name: en.support.placeholder });
+        await waitFor(() => expect(box).toHaveValue('Hi! I would like to play Wack Wack at 07:30.'));
+        expect(api.sendMessage).not.toHaveBeenCalled();
+        expect(useSupportWidget.getState().draft).toBeNull();
+    });
+
+    it('never overwrites what the customer is already typing', async () => {
+        api.fetchConversation.mockResolvedValue(null);
+        const user = userEvent.setup();
+        renderWidget();
+        await user.click(screen.getByRole('button', { name: /open support chat/i }));
+        const box = await screen.findByRole('textbox', { name: en.support.placeholder });
+        await user.type(box, 'My own words');
+        act(() => useSupportWidget.getState().requestOpen('Hi! I would like to play Wack Wack at 07:30.'));
+        await waitFor(() => expect(useSupportWidget.getState().draft).toBeNull());
+        expect(box).toHaveValue('My own words');
+    });
+
     it('creates no chat for someone who only reads, not even on opening the panel', async () => {
         // ADR-0044: a customer who taps a question, reads the answer and leaves should not be
         // left with a chat, a reference and a doorbell ring behind them. Writing is what starts

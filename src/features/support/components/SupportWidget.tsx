@@ -102,6 +102,18 @@ function SupportPanel({
     const [draft, setDraft] = useState('');
     const [answer, setAnswer] = useState<SuggestionId | null>(null);
     const endRef = useRef<HTMLDivElement>(null);
+    const boxRef = useRef<HTMLTextAreaElement>(null);
+
+    // A draft a page asked with (useSupportWidget) goes into an empty box, never over the
+    // customer's own words; it is taken either way, so it cannot turn up later by surprise.
+    const pendingDraft = useSupportWidget((s) => s.draft);
+    useEffect(() => {
+        if (pendingDraft === null) return;
+        const offered = useSupportWidget.getState().takeDraft();
+        if (!offered) return;
+        setDraft((typed) => (typed.trim() ? typed : offered));
+        requestAnimationFrame(() => boxRef.current?.focus());
+    }, [pendingDraft]);
 
     /**
      * A tapped question (ADR-0044).
@@ -217,6 +229,7 @@ function SupportPanel({
                 onSubmit={e => { e.preventDefault(); onSend(draft); setDraft(''); }}
             >
                 <textarea
+                    ref={boxRef}
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
                     onKeyDown={e => {
