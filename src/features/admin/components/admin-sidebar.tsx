@@ -25,6 +25,7 @@ import {
     Globe,
     Smartphone,
     Clock,
+    Flag,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -54,6 +55,7 @@ const NAV_GROUPS = [
         title: 'Content',
         items: [
             { href: '/admin/destinations', label: 'Destinations', icon: MapPin },
+            { href: '/admin/golf',         label: 'Golf Courses', icon: Flag },
             { href: '/admin/deals',        label: 'Deals',        icon: Tag },
             { href: '/admin/saved-trips',  label: 'Saved Trips',  icon: Bookmark },
             { href: '/admin/reviews',      label: 'Reviews',      icon: Star },
