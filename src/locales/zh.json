@@ -967,7 +967,8 @@
       "searchMode": {
         "stays": "住宿",
         "flights": "航班",
-        "aiSearch": "AI 搜索"
+        "aiSearch": "AI 搜索",
+        "golf": "高尔夫"
       },
       "go": "出发",
       "searchingStays": "正在搜索酒店…",
@@ -1012,7 +1013,7 @@
         "staysNote": "酒店与民宿",
         "flightsNote": "覆盖所有可订航空公司",
         "golf": "高尔夫",
-        "golfNote": "即将推出"
+        "golfNote": "精选球场，开球时间可咨询"
       },
       "ask": {
         "placeholder": "描述您想要的旅行…",
@@ -2795,6 +2796,51 @@
     "meta": {
       "title": "关于我们 — CheapestGo",
       "description": "CheapestGo 是一家现代化的在线旅行社，帮助东南亚旅客以透明的价格查找并预订机票、酒店和套餐。"
+    }
+  },
+  "golf": {
+    "metaTitle": "高尔夫球场",
+    "metaDescription": "我们团队可为您安排打球的高尔夫球场。查看果岭费参考价，开球时间欢迎咨询。",
+    "courseMetaTitle": "{name} — 高尔夫",
+    "eyebrow": "高尔夫",
+    "title": "高尔夫球场",
+    "subtitle": "我们团队可为您安排打球的球场。选好球场，向我们咨询开球时间。",
+    "allCountries": "所有国家",
+    "filterLabel": "按国家筛选",
+    "holes": "{holes} 洞",
+    "par": "标准杆 {par}",
+    "greenFeesFrom": "果岭费 {price} 起",
+    "fromLabel": "果岭费",
+    "guidePrice": "每位球员的参考价格。咨询开球时间时，我们会确认准确费用。",
+    "amenitiesTitle": "球场设施",
+    "aboutTitle": "球场介绍",
+    "addressTitle": "地址",
+    "askTeeTimes": "咨询开球时间",
+    "askHint": "我们的团队会在客服聊天中回复您。",
+    "askSignIn": "登录后即可通过聊天咨询开球时间。",
+    "photo": "照片 {n}",
+    "breadcrumb": "高尔夫",
+    "emptyTitle": "暂无球场",
+    "emptyBody": "我们正在添加高尔夫球场，请稍后再来看看。",
+    "emptyCountryTitle": "{country}暂无球场",
+    "emptyCountryBody": "试试其他国家，或查看所有球场。",
+    "seeAll": "查看所有球场",
+    "errorTitle": "球场加载失败",
+    "errorBody": "我们这边出了点问题，请重试。",
+    "retry": "重试",
+    "missingTitle": "该球场暂不可见",
+    "missingBody": "它可能已被移除。看看我们可以安排的其他球场。",
+    "amenities": {
+      "caddie": "球童",
+      "cart": "球车",
+      "driving_range": "练习场",
+      "putting_green": "推杆果岭",
+      "clubhouse": "会所",
+      "restaurant": "餐厅",
+      "club_rental": "球杆租赁",
+      "pro_shop": "专卖店",
+      "lessons": "课程",
+      "night_golf": "夜间高尔夫"
     }
   }
 }

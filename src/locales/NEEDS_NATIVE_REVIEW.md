@@ -321,7 +321,7 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.journey.options.staysNote` | Hotels & homes | 호텔 및 숙소 | ホテル＆宿泊施設 | 酒店与民宿 |
 | `landing.journey.options.flightsNote` | Every carrier we reach | 연결 가능한 모든 항공사 | 取り扱いの全航空会社 | 覆盖所有可订航空公司 |
 | `landing.journey.options.golf` | Golf | 골프 | ゴルフ | 高尔夫 |
-| `landing.journey.options.golfNote` | Coming soon | 출시 예정 | 近日公開 | 即将推出 |
+| `landing.journey.options.golfNote` | Curated courses, tee times on request | 엄선한 골프장, 티타임은 문의로 | 厳選コース、ティータイムはお問い合わせで | 精选球场，开球时间可咨询 |
 | `landing.journey.ask.placeholder` | Describe the trip you want… | 원하는 여행을 설명해 주세요… | ご希望の旅を教えてください… | 描述您想要的旅行… |
 | `landing.journey.ask.label` | Describe the trip you want | 원하는 여행을 설명해 주세요 | ご希望の旅を教えてください | 描述您想要的旅行 |
 | `landing.journey.ask.submit` | Ask | 물어보기 | 聞く | 提问 |
@@ -338,3 +338,53 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `search.prose.aDate` | a date | 원하는 날 | 好きな日 | 某一天 |
 | `search.prose.yourDates` | your dates | 원하는 일정 | ご希望の日程 | 您的出行日期 |
 | `search.prose.flexibleTrip` | a flexible trip | 유연한 여행 | 柔軟な旅 | 灵活的行程 |
+
+## golf
+
+The golf catalogue: `/golf`, a course page, and the search bar's Golf tab. Written by Claude for
+the first golf slice (2026-11-04).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `golf.metaTitle` | Golf courses | 골프장 | ゴルフ場 | 高尔夫球场 |
+| `golf.metaDescription` | Golf courses our team can arrange play at, with a guide green fee and tee times on request. | 저희 팀이 라운드를 주선해 드리는 골프장입니다. 그린피 참고가를 확인하고 티타임을 문의하세요. | 当チームがプレーを手配できるゴルフ場です。グリーンフィーの目安を確認し、ティータイムはお問い合わせください。 | 我们团队可为您安排打球的高尔夫球场。查看果岭费参考价，开球时间欢迎咨询。 |
+| `golf.courseMetaTitle` | {name} — golf | {name} — 골프 | {name} — ゴルフ | {name} — 高尔夫 |
+| `golf.eyebrow` | Golf | 골프 | ゴルフ | 高尔夫 |
+| `golf.title` | Golf courses | 골프장 | ゴルフ場 | 高尔夫球场 |
+| `golf.subtitle` | Courses our team can arrange play at. Pick one and ask us about tee times. | 저희 팀이 라운드를 주선해 드리는 골프장입니다. 마음에 드는 곳을 골라 티타임을 문의하세요. | 当チームがプレーを手配できるゴルフ場です。気になるコースを選んで、ティータイムをお問い合わせください。 | 我们团队可为您安排打球的球场。选好球场，向我们咨询开球时间。 |
+| `golf.allCountries` | All countries | 전체 국가 | すべての国 | 所有国家 |
+| `golf.filterLabel` | Filter by country | 국가별 보기 | 国で絞り込む | 按国家筛选 |
+| `golf.holes` | {holes} holes | {holes}홀 | {holes}ホール | {holes} 洞 |
+| `golf.par` | Par {par} | 파 {par} | パー{par} | 标准杆 {par} |
+| `golf.greenFeesFrom` | Green fees from {price} | 그린피 {price}부터 | グリーンフィー {price}〜 | 果岭费 {price} 起 |
+| `golf.fromLabel` | Green fees from | 그린피 최저 | グリーンフィー | 果岭费 |
+| `golf.guidePrice` | A guide price per player. We confirm the exact fee when you ask about a tee time. | 1인 기준 참고 요금입니다. 티타임을 문의하시면 정확한 요금을 안내해 드립니다. | 1名あたりの目安料金です。ティータイムのお問い合わせ時に正確な料金をご案内します。 | 每位球员的参考价格。咨询开球时间时，我们会确认准确费用。 |
+| `golf.amenitiesTitle` | At the course | 부대시설 | 施設・サービス | 球场设施 |
+| `golf.aboutTitle` | About the course | 골프장 소개 | コース紹介 | 球场介绍 |
+| `golf.addressTitle` | Address | 주소 | 住所 | 地址 |
+| `golf.askTeeTimes` | Ask about tee times | 티타임 문의하기 | ティータイムを問い合わせる | 咨询开球时间 |
+| `golf.askHint` | Our team replies in the support chat. | 고객지원 채팅으로 저희 팀이 답변해 드립니다. | サポートチャットで当チームがお答えします。 | 我们的团队会在客服聊天中回复您。 |
+| `golf.askSignIn` | Sign in to chat with our team about tee times. | 로그인하시면 채팅으로 티타임을 문의하실 수 있습니다. | ログインすると、チャットでティータイムをお問い合わせいただけます。 | 登录后即可通过聊天咨询开球时间。 |
+| `golf.photo` | Photo {n} | 사진 {n} | 写真 {n} | 照片 {n} |
+| `golf.breadcrumb` | Golf | 골프 | ゴルフ | 高尔夫 |
+| `golf.emptyTitle` | No courses yet | 아직 등록된 골프장이 없습니다 | まだゴルフ場がありません | 暂无球场 |
+| `golf.emptyBody` | We're adding golf courses. Check back soon. | 골프장을 준비하고 있습니다. 곧 다시 확인해 주세요. | ゴルフ場を準備中です。しばらくしてからご確認ください。 | 我们正在添加高尔夫球场，请稍后再来看看。 |
+| `golf.emptyCountryTitle` | No courses in {country} | {country}에는 골프장이 없습니다 | {country}のゴルフ場はありません | {country}暂无球场 |
+| `golf.emptyCountryBody` | Try another country, or see every course. | 다른 국가를 선택하거나 전체 골프장을 확인해 보세요. | 別の国を選ぶか、すべてのゴルフ場をご覧ください。 | 试试其他国家，或查看所有球场。 |
+| `golf.seeAll` | See all courses | 전체 골프장 보기 | すべてのゴルフ場を見る | 查看所有球场 |
+| `golf.errorTitle` | Golf courses didn't load | 골프장을 불러오지 못했습니다 | ゴルフ場を読み込めませんでした | 球场加载失败 |
+| `golf.errorBody` | Something went wrong on our side. Please try again. | 일시적인 문제가 발생했습니다. 다시 시도해 주세요. | 問題が発生しました。もう一度お試しください。 | 我们这边出了点问题，请重试。 |
+| `golf.retry` | Try again | 다시 시도 | 再試行 | 重试 |
+| `golf.missingTitle` | This course isn't available | 이 골프장은 볼 수 없습니다 | このゴルフ場はご覧いただけません | 该球场暂不可见 |
+| `golf.missingBody` | It may have been removed. See the courses we can arrange. | 삭제되었을 수 있습니다. 주선 가능한 골프장을 확인해 보세요. | 削除された可能性があります。手配可能なゴルフ場をご覧ください。 | 它可能已被移除。看看我们可以安排的其他球场。 |
+| `golf.amenities.caddie` | Caddies | 캐디 | キャディ | 球童 |
+| `golf.amenities.cart` | Golf carts | 골프 카트 | ゴルフカート | 球车 |
+| `golf.amenities.driving_range` | Driving range | 드라이빙 레인지 | 練習場 | 练习场 |
+| `golf.amenities.putting_green` | Putting green | 퍼팅 그린 | パッティンググリーン | 推杆果岭 |
+| `golf.amenities.clubhouse` | Clubhouse | 클럽하우스 | クラブハウス | 会所 |
+| `golf.amenities.restaurant` | Restaurant | 레스토랑 | レストラン | 餐厅 |
+| `golf.amenities.club_rental` | Club rental | 클럽 대여 | レンタルクラブ | 球杆租赁 |
+| `golf.amenities.pro_shop` | Pro shop | 프로숍 | プロショップ | 专卖店 |
+| `golf.amenities.lessons` | Lessons | 레슨 | レッスン | 课程 |
+| `golf.amenities.night_golf` | Night golf | 야간 골프 | ナイター | 夜间高尔夫 |
+| `landing.search.searchMode.golf` | Golf | 골프 | ゴルフ | 高尔夫 |

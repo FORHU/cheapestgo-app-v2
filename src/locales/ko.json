@@ -967,7 +967,8 @@
       "searchMode": {
         "stays": "숙소",
         "flights": "항공편",
-        "aiSearch": "AI 검색"
+        "aiSearch": "AI 검색",
+        "golf": "골프"
       },
       "go": "출발",
       "searchingStays": "호텔 검색 중…",
@@ -1012,7 +1013,7 @@
         "staysNote": "호텔 및 숙소",
         "flightsNote": "연결 가능한 모든 항공사",
         "golf": "골프",
-        "golfNote": "출시 예정"
+        "golfNote": "엄선한 골프장, 티타임은 문의로"
       },
       "ask": {
         "placeholder": "원하는 여행을 설명해 주세요…",
@@ -2795,6 +2796,51 @@
     "meta": {
       "title": "회사 소개 — CheapestGo",
       "description": "CheapestGo는 동남아시아 여행객이 항공권, 호텔, 패키지를 투명한 가격으로 찾고 예약할 수 있도록 돕는 모던 온라인 여행사입니다."
+    }
+  },
+  "golf": {
+    "metaTitle": "골프장",
+    "metaDescription": "저희 팀이 라운드를 주선해 드리는 골프장입니다. 그린피 참고가를 확인하고 티타임을 문의하세요.",
+    "courseMetaTitle": "{name} — 골프",
+    "eyebrow": "골프",
+    "title": "골프장",
+    "subtitle": "저희 팀이 라운드를 주선해 드리는 골프장입니다. 마음에 드는 곳을 골라 티타임을 문의하세요.",
+    "allCountries": "전체 국가",
+    "filterLabel": "국가별 보기",
+    "holes": "{holes}홀",
+    "par": "파 {par}",
+    "greenFeesFrom": "그린피 {price}부터",
+    "fromLabel": "그린피 최저",
+    "guidePrice": "1인 기준 참고 요금입니다. 티타임을 문의하시면 정확한 요금을 안내해 드립니다.",
+    "amenitiesTitle": "부대시설",
+    "aboutTitle": "골프장 소개",
+    "addressTitle": "주소",
+    "askTeeTimes": "티타임 문의하기",
+    "askHint": "고객지원 채팅으로 저희 팀이 답변해 드립니다.",
+    "askSignIn": "로그인하시면 채팅으로 티타임을 문의하실 수 있습니다.",
+    "photo": "사진 {n}",
+    "breadcrumb": "골프",
+    "emptyTitle": "아직 등록된 골프장이 없습니다",
+    "emptyBody": "골프장을 준비하고 있습니다. 곧 다시 확인해 주세요.",
+    "emptyCountryTitle": "{country}에는 골프장이 없습니다",
+    "emptyCountryBody": "다른 국가를 선택하거나 전체 골프장을 확인해 보세요.",
+    "seeAll": "전체 골프장 보기",
+    "errorTitle": "골프장을 불러오지 못했습니다",
+    "errorBody": "일시적인 문제가 발생했습니다. 다시 시도해 주세요.",
+    "retry": "다시 시도",
+    "missingTitle": "이 골프장은 볼 수 없습니다",
+    "missingBody": "삭제되었을 수 있습니다. 주선 가능한 골프장을 확인해 보세요.",
+    "amenities": {
+      "caddie": "캐디",
+      "cart": "골프 카트",
+      "driving_range": "드라이빙 레인지",
+      "putting_green": "퍼팅 그린",
+      "clubhouse": "클럽하우스",
+      "restaurant": "레스토랑",
+      "club_rental": "클럽 대여",
+      "pro_shop": "프로숍",
+      "lessons": "레슨",
+      "night_golf": "야간 골프"
     }
   }
 }

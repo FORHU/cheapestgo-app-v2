@@ -989,13 +989,15 @@ beforeAll(async () => {
 afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 beforeEach(() => vi.clearAllMocks());
 
+type Body = { error?: string; details?: Record<string, string[]>; [key: string]: unknown };
+
 const call = async (method: string, path: string, opts: { role?: string; body?: unknown } = {}) => {
     const res = await fetch(base + path, {
         method,
         headers: { 'content-type': 'application/json', ...(opts.role ? { 'x-test-role': opts.role } : {}) },
         body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     });
-    return { status: res.status, body: await res.json().catch(() => null) };
+    return { status: res.status, body: (await res.json().catch(() => ({}))) as Body };
 };
 
 const ID     = '0b6c7a2e-1111-4a5b-9c3d-000000000001';
@@ -1040,7 +1042,7 @@ describe('admin', () => {
     it('names the fields that are wrong', async () => {
         const res = await call('POST', '/admin/golf/courses', { role: 'admin', body: { ...VALID, name: '', holes: 12 } });
         expect(res.status).toBe(422);
-        expect(Object.keys(res.body.details).sort()).toEqual(['holes', 'name']);
+        expect(Object.keys(res.body.details ?? {}).sort()).toEqual(['holes', 'name']);
         expect(svc.create).not.toHaveBeenCalled();
     });
 
@@ -1500,7 +1502,7 @@ Expected: the api test PASSES (its module exists); the locale test FAILS — `me
 - [ ] **Step 4: Check the locale files survive a JSON round-trip** (so a script can edit them without reformatting)
 
 ```bash
-cd /c/Users/USER/Documents/GitHub/cheapestgo-app-v2-nearby && for l in en ko ja zh; do node -e "const fs=require('fs');const s=fs.readFileSync('src/locales/$l.json','utf8');const o=JSON.stringify(JSON.parse(s),null,4)+'\n';console.log('$l', s===o?'round-trips':'DIFFERS')"; done
+cd /c/Users/USER/Documents/GitHub/cheapestgo-app-v2-nearby && for l in en ko ja zh; do node -e "const fs=require('fs');const s=fs.readFileSync('src/locales/$l.json','utf8').replace(/\r\n/g,'\n');const o=JSON.stringify(JSON.parse(s),null,2)+'\n';console.log('$l', s===o?'round-trips':'DIFFERS')"; done
 ```
 Expected: `round-trips` for all four. If one differs, edit that file by hand with the same values instead of Step 5's script.
 
@@ -1674,12 +1676,15 @@ const golfNote = {
 };
 
 for (const locale of Object.keys(golf)) {
-    const file = path.join(__dirname, '..', 'src', 'locales', `${locale}.json`);
-    const messages = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const file = path.join('C:/Users/USER/Documents/GitHub/cheapestgo-app-v2-nearby', 'src', 'locales', `${locale}.json`);
+    const raw = fs.readFileSync(file, 'utf8');
+    const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+    const messages = JSON.parse(raw);
     messages.golf = golf[locale];
     messages.landing.search.searchMode.golf = tab[locale];
     messages.landing.journey.options.golfNote = golfNote[locale];
-    fs.writeFileSync(file, `${JSON.stringify(messages, null, 4)}\n`);
+    // The files are 2-space JSON and round-trip exactly; keep whatever line endings they have.
+    fs.writeFileSync(file, `${JSON.stringify(messages, null, 2)}\n`.replace(/\n/g, eol));
     console.log(`${locale}: golf ${Object.keys(golf[locale]).length} keys`);
 }
 ```

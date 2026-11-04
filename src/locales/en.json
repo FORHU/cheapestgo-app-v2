@@ -967,7 +967,8 @@
       "searchMode": {
         "stays": "Stays",
         "flights": "Flights",
-        "aiSearch": "AI Search"
+        "aiSearch": "AI Search",
+        "golf": "Golf"
       },
       "go": "GO",
       "searchingStays": "Searching hotels…",
@@ -1012,7 +1013,7 @@
         "staysNote": "Hotels & homes",
         "flightsNote": "Every carrier we reach",
         "golf": "Golf",
-        "golfNote": "Coming soon"
+        "golfNote": "Curated courses, tee times on request"
       },
       "ask": {
         "placeholder": "Describe the trip you want…",
@@ -2795,6 +2796,51 @@
     "meta": {
       "title": "About Us — CheapestGo",
       "description": "CheapestGo is a modern online travel agency helping travelers across Southeast Asia find and book flights, hotels, and packages at transparent prices."
+    }
+  },
+  "golf": {
+    "metaTitle": "Golf courses",
+    "metaDescription": "Golf courses our team can arrange play at, with a guide green fee and tee times on request.",
+    "courseMetaTitle": "{name} — golf",
+    "eyebrow": "Golf",
+    "title": "Golf courses",
+    "subtitle": "Courses our team can arrange play at. Pick one and ask us about tee times.",
+    "allCountries": "All countries",
+    "filterLabel": "Filter by country",
+    "holes": "{holes} holes",
+    "par": "Par {par}",
+    "greenFeesFrom": "Green fees from {price}",
+    "fromLabel": "Green fees from",
+    "guidePrice": "A guide price per player. We confirm the exact fee when you ask about a tee time.",
+    "amenitiesTitle": "At the course",
+    "aboutTitle": "About the course",
+    "addressTitle": "Address",
+    "askTeeTimes": "Ask about tee times",
+    "askHint": "Our team replies in the support chat.",
+    "askSignIn": "Sign in to chat with our team about tee times.",
+    "photo": "Photo {n}",
+    "breadcrumb": "Golf",
+    "emptyTitle": "No courses yet",
+    "emptyBody": "We're adding golf courses. Check back soon.",
+    "emptyCountryTitle": "No courses in {country}",
+    "emptyCountryBody": "Try another country, or see every course.",
+    "seeAll": "See all courses",
+    "errorTitle": "Golf courses didn't load",
+    "errorBody": "Something went wrong on our side. Please try again.",
+    "retry": "Try again",
+    "missingTitle": "This course isn't available",
+    "missingBody": "It may have been removed. See the courses we can arrange.",
+    "amenities": {
+      "caddie": "Caddies",
+      "cart": "Golf carts",
+      "driving_range": "Driving range",
+      "putting_green": "Putting green",
+      "clubhouse": "Clubhouse",
+      "restaurant": "Restaurant",
+      "club_rental": "Club rental",
+      "pro_shop": "Pro shop",
+      "lessons": "Lessons",
+      "night_golf": "Night golf"
     }
   }
 }

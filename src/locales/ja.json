@@ -967,7 +967,8 @@
       "searchMode": {
         "stays": "宿泊",
         "flights": "フライト",
-        "aiSearch": "AI 検索"
+        "aiSearch": "AI 検索",
+        "golf": "ゴルフ"
       },
       "go": "出発",
       "searchingStays": "ホテルを検索中…",
@@ -1012,7 +1013,7 @@
         "staysNote": "ホテル＆宿泊施設",
         "flightsNote": "取り扱いの全航空会社",
         "golf": "ゴルフ",
-        "golfNote": "近日公開"
+        "golfNote": "厳選コース、ティータイムはお問い合わせで"
       },
       "ask": {
         "placeholder": "ご希望の旅を教えてください…",
@@ -2795,6 +2796,51 @@
     "meta": {
       "title": "会社概要 — CheapestGo",
       "description": "CheapestGoは、東南アジアを旅する人が航空券・ホテル・パッケージを明瞭な料金で検索・予約できるモダンなオンライン旅行会社です。"
+    }
+  },
+  "golf": {
+    "metaTitle": "ゴルフ場",
+    "metaDescription": "当チームがプレーを手配できるゴルフ場です。グリーンフィーの目安を確認し、ティータイムはお問い合わせください。",
+    "courseMetaTitle": "{name} — ゴルフ",
+    "eyebrow": "ゴルフ",
+    "title": "ゴルフ場",
+    "subtitle": "当チームがプレーを手配できるゴルフ場です。気になるコースを選んで、ティータイムをお問い合わせください。",
+    "allCountries": "すべての国",
+    "filterLabel": "国で絞り込む",
+    "holes": "{holes}ホール",
+    "par": "パー{par}",
+    "greenFeesFrom": "グリーンフィー {price}〜",
+    "fromLabel": "グリーンフィー",
+    "guidePrice": "1名あたりの目安料金です。ティータイムのお問い合わせ時に正確な料金をご案内します。",
+    "amenitiesTitle": "施設・サービス",
+    "aboutTitle": "コース紹介",
+    "addressTitle": "住所",
+    "askTeeTimes": "ティータイムを問い合わせる",
+    "askHint": "サポートチャットで当チームがお答えします。",
+    "askSignIn": "ログインすると、チャットでティータイムをお問い合わせいただけます。",
+    "photo": "写真 {n}",
+    "breadcrumb": "ゴルフ",
+    "emptyTitle": "まだゴルフ場がありません",
+    "emptyBody": "ゴルフ場を準備中です。しばらくしてからご確認ください。",
+    "emptyCountryTitle": "{country}のゴルフ場はありません",
+    "emptyCountryBody": "別の国を選ぶか、すべてのゴルフ場をご覧ください。",
+    "seeAll": "すべてのゴルフ場を見る",
+    "errorTitle": "ゴルフ場を読み込めませんでした",
+    "errorBody": "問題が発生しました。もう一度お試しください。",
+    "retry": "再試行",
+    "missingTitle": "このゴルフ場はご覧いただけません",
+    "missingBody": "削除された可能性があります。手配可能なゴルフ場をご覧ください。",
+    "amenities": {
+      "caddie": "キャディ",
+      "cart": "ゴルフカート",
+      "driving_range": "練習場",
+      "putting_green": "パッティンググリーン",
+      "clubhouse": "クラブハウス",
+      "restaurant": "レストラン",
+      "club_rental": "レンタルクラブ",
+      "pro_shop": "プロショップ",
+      "lessons": "レッスン",
+      "night_golf": "ナイター"
     }
   }
 }
