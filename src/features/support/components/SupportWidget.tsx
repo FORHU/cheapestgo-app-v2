@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { MessageCircle, X, Send, Loader2, Paperclip, FileText } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/components/ui/button';
+import { NAV_SKIN } from '@/shared/components/common/MobileBottomNav';
+import { useChromeTone } from '@/shared/components/ChromeToneContext';
 import { useSupportChat } from '@/features/support/lib/useSupportChat';
 import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 import { readerView } from '@/features/support/lib/translationView';
@@ -28,6 +30,9 @@ export function SupportWidget() {
         availability, sending, failed, open, close, send,
         staged, attaching, canAttach, attach, unstage,
     } = useSupportChat();
+    // The bottom nav's skin rather than the brand blue: both float over the page, so both
+    // take the screen's chrome tone, and invert together on the search map.
+    const skin = NAV_SKIN[useChromeTone()];
 
     // A page asking for the chat (useSupportWidget). Requests made before this mounted are not
     // replayed: the widget is on every page, so there is no "before".
@@ -61,11 +66,16 @@ export function SupportWidget() {
                 />
             )}
 
-            <Button
+            <button
                 type="button"
                 onClick={panelOpen ? close : open}
                 aria-label={panelOpen ? t('close') : t('open')}
-                className="relative h-14 w-14 rounded-full shadow-lg"
+                className={cn(
+                    'relative grid h-14 w-14 place-items-center rounded-full outline-none transition-all',
+                    'focus-visible:ring-2 active:scale-[0.98]',
+                    skin.ring,
+                )}
+                style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow, color: skin.on }}
             >
                 {panelOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
                 {!panelOpen && unread > 0 && (
@@ -74,7 +84,7 @@ export function SupportWidget() {
                         {unread > 9 ? '9+' : unread}
                     </span>
                 )}
-            </Button>
+            </button>
         </div>
     );
 }

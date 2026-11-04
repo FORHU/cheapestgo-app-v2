@@ -790,6 +790,38 @@ describe('after the card', () => {
         expect(screen.queryByText('USD 0')).not.toBeInTheDocument();
     });
 
+    it('offers a hotel and a tee time where a round trip lands, for the stay until it flies home', async () => {
+        const [out] = FLIGHT_OFFER.segments;
+        const roundTrip = {
+            ...FLIGHT_OFFER,
+            segments: [out, {
+                ...out, segmentIndex: 1, flightNumber: 'ZZ2201', origin: 'NRT', destination: 'MNL',
+                departure: { ...out.arrival,   time: '2026-12-06T10:00:00' },
+                arrival:   { ...out.departure, time: '2026-12-06T14:00:00' },
+            }],
+        };
+        const tokyoHills = {
+            id: 'c1', slug: 'tokyo-hills', name: 'Tokyo Hills', country: 'Japan', city: 'Tokyo', address: null,
+            description: '', holes: 18, par: 72, greenFeeFrom: null, currency: 'JPY', imageUrls: [], amenities: [],
+            status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Tokyo', bookingWindowDays: 30,
+            scheduleCount: 1, bookable: true,
+        };
+        get.mockImplementation(async (path: string) => {
+            if (path.split('?')[0] === '/flights/offers/off_1') return roundTrip;
+            if (path.split('?')[0] === '/golf/courses') return { success: true, data: { courses: [tokyoHills], countries: ['Japan'] } };
+            throw new Error(`unexpected GET ${path}`);
+        });
+        await payForFlight();
+
+        // Where the outbound lands — the return's arrival is Manila, home.
+        expect(await screen.findByText(/Your flight to Tokyo is confirmed/)).toBeInTheDocument();
+
+        const hotel = await screen.findByRole('link', { name: /Book a hotel/ });
+        expect(hotel).toHaveAttribute('href', '/search?destination=Tokyo&checkIn=2026-12-01&checkOut=2026-12-06&adults=1&children=0&rooms=1');
+        const golf = await screen.findByRole('link', { name: /Book a tee time/ });
+        expect(golf).toHaveAttribute('href', '/golf/tokyo-hills?date=2026-12-02&players=1');
+    });
+
     it('keeps "Total paid" in the currency the card was charged in, and adds what it comes to in the one picked', async () => {
         rates.live = true;                       // the store's currency is KRW
         await payForFlight();

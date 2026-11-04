@@ -46,12 +46,30 @@ type PlaceCardsProps = Pick<
 
 const SKELETONS = 8;
 
+/** Lifts a plate off the map, so what stands on it holds against a pale street tile or a dark one. */
+const FLOAT_SHADOW = '0 8px 24px rgba(0,0,0,.25)';
+
 function pillStyle(palette: NearbyPalette): React.CSSProperties {
     return {
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999,
         border: `1px solid ${palette.cardBorder}`, background: palette.cardBg, color: palette.title,
         fontSize: 13, fontWeight: 700, cursor: 'pointer',
     };
+}
+
+/**
+ * How tall the category menu may open: the room between its trigger and the top of whatever clips
+ * it — the map, which is as tall as its page draws it, so the room is measured rather than assumed.
+ * Undefined when nothing clips, or when there is nothing to measure (a test renderer lays nothing out).
+ */
+function roomAbove(trigger: HTMLElement | null): number | undefined {
+    for (let el = trigger?.parentElement; trigger && el; el = el.parentElement) {
+        if (getComputedStyle(el).overflow === 'visible') continue;
+        // 6px for the gap to the trigger, 6px of breathing room under the map's top edge.
+        const room = trigger.getBoundingClientRect().top - el.getBoundingClientRect().top - 12;
+        return room > 0 ? room : undefined;
+    }
+    return undefined;
 }
 
 /** The category dropdown, the radius steps and the unit toggle — and a note when the lookup came back incomplete. */
@@ -103,6 +121,7 @@ export function PlaceFilters({
     const selected = POI_FILTERS.find((f) => f.id === category) ?? POI_FILTERS[0];
     const SelectedIcon = selected.icon;
     const pill = pillStyle(palette);
+    const plate: React.CSSProperties = { background: palette.bg, boxShadow: FLOAT_SHADOW, pointerEvents: 'auto' };
 
     return (
         // Inset like the cards' row above, so the first pill starts under the first card.
@@ -244,7 +263,7 @@ export function PlaceCards({
     const notice: React.CSSProperties = {
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14,
         background: palette.bg, color: palette.muted, fontSize: 15,
-        boxShadow: '0 8px 24px rgba(0,0,0,.25)', pointerEvents: 'auto',
+        boxShadow: FLOAT_SHADOW, pointerEvents: 'auto',
     };
 
     let body: React.ReactNode;

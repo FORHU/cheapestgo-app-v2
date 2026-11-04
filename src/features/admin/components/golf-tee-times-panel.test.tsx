@@ -14,7 +14,7 @@ import { GolfTeeTimesPanel } from '@/features/admin/components/golf-tee-times-pa
 const course: GolfCourse = {
     id: 'c1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
     description: '', holes: 36, par: 72, greenFeeFrom: 85, currency: 'USD', imageUrls: [], amenities: [],
-    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60,
+    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, freeCancelHours: 48,
     scheduleCount: 1, bookable: true,
 };
 
@@ -40,7 +40,7 @@ describe('GolfTeeTimesPanel', () => {
         renderWithIntl(<GolfTeeTimesPanel course={course} onChanged={vi.fn()} />);
         const row = (await screen.findByText('Weekday mornings')).closest('tr')!;
         expect(within(row).getByText('Mon, Tue, Wed, Thu, Fri')).toBeInTheDocument();
-        expect(within(row).getByText('06:30–11:00 every 8 min')).toBeInTheDocument();
+        expect(within(row).getByText('6:30 AM–11:00 AM every 8 min')).toBeInTheDocument();
         expect(within(row).getByText('USD 85')).toBeInTheDocument();
     });
 

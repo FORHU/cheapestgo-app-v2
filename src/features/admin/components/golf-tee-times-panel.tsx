@@ -7,12 +7,13 @@ import { Input } from '@/shared/components/ui/input';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { adminGolfApi } from '@/features/golf/api/golf.api';
 import type { GolfCourse, ScheduleDraft, TeeTimeSchedule } from '@/features/golf/types';
+import { clockTime } from '@/features/golf/lib/format';
 
 type FieldErrors = Partial<Record<keyof ScheduleDraft, string[]>>;
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const EMPTY = { name: '', days: [] as number[], firstTee: '', lastTee: '', interval: '10', spots: '4', price: '' };
+const EMPTY = { name: '', days: [] as number[], firstTee: '', lastTee: '', interval: '30', spots: '4', price: '' };
 
 const message = (err: unknown, fallback: string) => (err instanceof Error && err.message ? err.message : fallback);
 
@@ -123,7 +124,7 @@ export function GolfTeeTimesPanel({ course, onChanged }: { course: GolfCourse; o
                             <tr key={s.id}>
                                 <td className="py-1.5 font-semibold text-slate-900">{s.name}</td>
                                 <td className="text-slate-600">{s.daysOfWeek.map((d) => DAYS[d]).join(', ')}</td>
-                                <td className="text-slate-600">{`${s.firstTee}–${s.lastTee} every ${s.intervalMinutes} min`}</td>
+                                <td className="text-slate-600">{`${clockTime(s.firstTee, 'en')}–${clockTime(s.lastTee, 'en')} every ${s.intervalMinutes} min`}</td>
                                 <td className="text-slate-600">{s.spots}</td>
                                 <td className="text-slate-600">{`${course.currency} ${s.pricePerPlayer.toLocaleString()}`}</td>
                                 <td className="text-right">
@@ -158,7 +159,7 @@ export function GolfTeeTimesPanel({ course, onChanged }: { course: GolfCourse; o
                         onChange={(e) => setForm((f) => ({ ...f, firstTee: e.target.value }))} error={error('firstTee')} />
                     <Input id="sched-last" label="Last tee" type="time" value={form.lastTee}
                         onChange={(e) => setForm((f) => ({ ...f, lastTee: e.target.value }))} error={error('lastTee')} />
-                    <Input id="sched-interval" label="Every (minutes)" type="number" min="5" max="60" value={form.interval}
+                    <Input id="sched-interval" label="Every (minutes)" type="number" min="5" max="300" value={form.interval}
                         onChange={(e) => setForm((f) => ({ ...f, interval: e.target.value }))} error={error('intervalMinutes')} />
                     <Input id="sched-spots" label="Spots" type="number" min="1" max="4" value={form.spots}
                         onChange={(e) => setForm((f) => ({ ...f, spots: e.target.value }))} error={error('spots')} />

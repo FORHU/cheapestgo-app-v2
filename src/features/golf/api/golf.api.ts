@@ -1,6 +1,8 @@
 import { http } from '@/shared/lib/http';
 import type {
-    AdminGolfPage, GolfCatalogue, GolfCourse, GolfCourseDraft, GolfCourseStatus, ScheduleDraft, TeeTimeDay, TeeTimeSchedule,
+    AdminGolfBooking, AdminGolfBookingPage, AdminGolfPage, GolfBooking, GolfBookingList, GolfCatalogue, GolfCourse,
+    GolfCourseDraft, GolfCourseStatus, GolfExtraChoice, GolfExtraOffer, ScheduleDraft, StartedGolfBooking, TeeTimeDay,
+    TeeTimeQuote, TeeTimeSchedule,
 } from '@/features/golf/types';
 
 interface Envelope<T> {
@@ -34,6 +36,44 @@ export async function fetchTeeTimes(slug: string, opts: { date?: string; players
     return (await http.get<Envelope<TeeTimeDay>>(`${path}${query({ date: opts.date, players: String(opts.players), currency: opts.currency })}`)).data;
 }
 
+/**
+ * What a tee time costs this party, with `extras` as `formatExtrasParam` writes them. Rejects with
+ * `status: 409` and a `code` when it can no longer be booked, and `status: 404` for one that is not there.
+ */
+export async function fetchTeeTimeQuote(teeTimeId: string, opts: { players: number; currency?: string; extras?: string }): Promise<TeeTimeQuote> {
+    const path = `/golf/tee-times/${encodeURIComponent(teeTimeId)}/quote`;
+    return (await http.get<Envelope<TeeTimeQuote>>(`${path}${query({ players: String(opts.players), currency: opts.currency, extras: opts.extras })}`)).data;
+}
+
+/**
+ * Take the spots and open the payment. `shownTotal` is what the customer was shown: they are never
+ * asked for more than that, and a rate that moved comes back as `code: 'PRICE_CHANGED'` with the new figures.
+ * Extras the course no longer offers come back as `code: 'EXTRAS_UNAVAILABLE'`.
+ */
+export async function startGolfBooking(body: {
+    teeTimeId: string; players: number; leadName: string; currency?: string; shownTotal: number; extras: GolfExtraChoice[];
+}): Promise<StartedGolfBooking> {
+    return (await http.post<Envelope<StartedGolfBooking>>('/golf/bookings', body)).data;
+}
+
+/** The customer's own booking, brought up to date with the payment. Rejects with `status: 404` for anyone else's. */
+export async function fetchGolfBooking(reference: string): Promise<GolfBooking> {
+    return (await http.get<Envelope<GolfBooking>>(`/golf/bookings/${encodeURIComponent(reference)}`)).data;
+}
+
+/** The customer's own bookings, for My Bookings. */
+export async function fetchMyGolfBookings(): Promise<GolfBooking[]> {
+    return (await http.get<Envelope<GolfBooking[]>>('/golf/bookings')).data ?? [];
+}
+
+/**
+ * The customer cancels their own booking: a request releases the card, a confirmed booking is refunded
+ * in full while free cancellation lasts. Rejects with a `code` when it cannot be done.
+ */
+export async function cancelGolfBooking(reference: string): Promise<GolfBooking> {
+    return (await http.post<Envelope<GolfBooking>>(`/golf/bookings/${encodeURIComponent(reference)}/cancel`)).data;
+}
+
 /** The back office's side: api-v2 `/admin/golf`, admins only. */
 export const adminGolfApi = {
     list: (page: number, q?: string) =>
@@ -51,4 +91,16 @@ export const adminGolfApi = {
         (await http.post<Envelope<{ schedule: TeeTimeSchedule; created: number }>>(`/admin/golf/courses/${courseId}/schedules`, draft)).data,
     removeSchedule: (courseId: string, scheduleId: string) =>
         http.delete<{ success: boolean }>(`/admin/golf/courses/${courseId}/schedules/${scheduleId}`),
+    listExtras: async (courseId: string) =>
+        (await http.get<Envelope<GolfExtraOffer[]>>(`/admin/golf/courses/${courseId}/extras`)).data,
+    setExtras: async (courseId: string, extras: GolfExtraOffer[]) =>
+        (await http.put<Envelope<GolfExtraOffer[]>>(`/admin/golf/courses/${courseId}/extras`, { extras })).data,
+    listBookings: (view: GolfBookingList, page: number) =>
+        http.get<AdminGolfBookingPage>(`/admin/golf/bookings${query({ view, page: String(page) })}`),
+    confirmBooking: async (reference: string) =>
+        (await http.post<Envelope<AdminGolfBooking>>(`/admin/golf/bookings/${encodeURIComponent(reference)}/confirm`)).data,
+    declineBooking: async (reference: string) =>
+        (await http.post<Envelope<AdminGolfBooking>>(`/admin/golf/bookings/${encodeURIComponent(reference)}/decline`)).data,
+    cancelBooking: async (reference: string) =>
+        (await http.post<Envelope<AdminGolfBooking>>(`/admin/golf/bookings/${encodeURIComponent(reference)}/cancel`)).data,
 };

@@ -7,7 +7,7 @@ import { LandingFooter } from '@/features/landing/components/landing-footer';
 const FooterContent = () => {
     const pathname = usePathname();
     if (pathname === '/') return null;
-    return <LandingFooter />;
+    return <LandingFooter tone="default" />;
 };
 
 export function Footer() {

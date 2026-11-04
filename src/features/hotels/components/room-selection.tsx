@@ -6,8 +6,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
-    AirVent, Bath, Bed, Building2, Check, ChevronLeft, ChevronRight,
-    Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, UtensilsCrossed,
+    AirVent, Bath, Bed, BedDouble, Building2, Check, ChevronLeft, ChevronRight,
+    Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, User, UtensilsCrossed,
     Users, Wifi, Wind, X, type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
@@ -570,8 +570,8 @@ interface RateCard {
     roomDetails: Feature[];
     /** The refundable rate's cancellation line; `null` for a non-refundable one. */
     terms: string | null;
-    /** Everything the modal's "Room" section lists — structural rows plus amenities. */
-    allFeatures: Feature[];
+    /** The in-room amenities the modal lists when ETG matched no content — see `amenityFeatures`. */
+    amenities: Feature[];
     boardPill?: string;
     boardName?: string;
     refundable: boolean;
@@ -580,7 +580,7 @@ interface RateCard {
     /** Per night, in the user's currency. */
     nightly: number;
     /** ETG room-detail content, when the API matched this room to a room-group.
-     *  Absent → the modal falls back to `allFeatures`. */
+     *  Absent → the modal falls back to `amenities`. */
     content?: RoomContent;
     /** The room's own photographs. Empty → the hotel's shot stands in, labelled as such. */
     photos: string[];
@@ -1225,7 +1225,7 @@ export function RoomSelection({
             bed: room.bedType ?? split.bed ?? bedFromName(room.name),
             roomDetails: structural,
             terms: cancellationTerms(rate, checkIn),
-            allFeatures: [...structural, ...amenities],
+            amenities,
             boardPill: boardPillLabel(rate),
             boardName: boardLabel(rate),
             refundable: isRefundable(rate),

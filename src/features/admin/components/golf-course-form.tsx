@@ -22,7 +22,7 @@ interface Props {
 interface FormState {
     name: string; country: string; city: string; slug: string; address: string; description: string;
     holes: string; par: string; greenFeeFrom: string; currency: string; imageUrls: string; amenities: GolfAmenity[];
-    timezone: string; bookingWindowDays: string;
+    timezone: string; bookingWindowDays: string; freeCancelHours: string;
 }
 
 /** Every IANA zone the browser knows (ES2022's `Intl.supportedValuesOf`; the project targets ES2017). */
@@ -44,6 +44,7 @@ const fromCourse = (c?: GolfCourse): FormState => ({
     amenities:    c?.amenities ?? [],
     timezone:     c?.timezone ?? '',
     bookingWindowDays: String(c?.bookingWindowDays ?? 60),
+    freeCancelHours: String(c?.freeCancelHours ?? 48),
 });
 
 /** The form's strings as api-v2 takes them. It checks everything again; this only shapes it. */
@@ -62,6 +63,7 @@ const toDraft = (f: FormState): GolfCourseDraft => ({
     amenities:    f.amenities,
     timezone:     f.timezone || null,
     bookingWindowDays: Number(f.bookingWindowDays),
+    freeCancelHours: Number(f.freeCancelHours),
 });
 
 const boxClass   = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:border-blue-500 focus-visible:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white';
@@ -137,6 +139,11 @@ export function GolfCourseForm({ course, saving, errors, onSubmit, onCancel }: P
                 />
             </div>
             {locked && <p className="ml-1 text-xs text-slate-500">Locked while this course has tee-time schedules.</p>}
+
+            <Input
+                id="golf-free-cancel" label="Free cancellation (hours before tee time)" type="number" min="0" max="720" value={form.freeCancelHours}
+                onChange={(e) => set('freeCancelHours', e.target.value)} error={error('freeCancelHours')}
+            />
 
             <div className="space-y-1.5">
                 <label htmlFor="golf-images" className={labelClass}>Image URLs — one per line, the first is the cover</label>

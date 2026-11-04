@@ -21,8 +21,11 @@ import { useChromeTone } from '@/shared/components/ChromeToneContext';
  * Tone comes from context rather than a `dark:` variant because the search page
  * hardcodes `dark` on its own root — a Tailwind variant would resolve to the
  * dark skin there no matter what.
+ *
+ * The support chat button wears the same skin, so the two pieces of floating
+ * furniture read as one set.
  */
-const NAV_SKIN = {
+export const NAV_SKIN = {
     dark: {
         bar:    '#1C1C1E',
         border: '1px solid rgba(255,255,255,0.06)',

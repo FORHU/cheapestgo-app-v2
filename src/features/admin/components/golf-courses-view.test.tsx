@@ -6,7 +6,7 @@ import type { GolfCourse } from '@/features/golf/types';
 
 const adminGolfApi = vi.hoisted(() => ({
     list: vi.fn(), create: vi.fn(), update: vi.fn(), setStatus: vi.fn(), remove: vi.fn(),
-    listSchedules: vi.fn(), addSchedule: vi.fn(), removeSchedule: vi.fn(),
+    listSchedules: vi.fn(), addSchedule: vi.fn(), removeSchedule: vi.fn(), listExtras: vi.fn(), setExtras: vi.fn(),
 }));
 vi.mock('@/features/golf/api/golf.api', () => ({ adminGolfApi }));
 
@@ -15,7 +15,7 @@ import { GolfCoursesView } from '@/features/admin/components/golf-courses-view';
 const course = (over: Partial<GolfCourse>): GolfCourse => ({
     id: 'c1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
     description: '', holes: 36, par: 72, greenFeeFrom: 85, currency: 'USD', imageUrls: [], amenities: [],
-    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60,
+    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, freeCancelHours: 48,
     scheduleCount: 1, bookable: true, ...over,
 });
 
@@ -26,6 +26,7 @@ beforeEach(() => {
         total: 2, page: 1, pageSize: 20, totalPages: 1,
     });
     adminGolfApi.listSchedules.mockResolvedValue([]);
+    adminGolfApi.listExtras.mockResolvedValue([]);
 });
 
 describe('GolfCoursesView', () => {

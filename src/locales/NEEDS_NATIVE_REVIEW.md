@@ -45,6 +45,12 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `checkout.guestsCount` | {count, plural, one {# guest} other {# guests}} | {count}명 | {count}名 | {count} 位 |
 | `checkout.roomFallback` | Standard Room | 스탠다드 룸 | スタンダードルーム | 标准房 |
 | `checkout.confirmingFinalPrice` | Confirming the final price… | 최종 금액을 확인하고 있습니다… | 最終料金を確認しています… | 正在确认最终价格… |
+| `checkout.flight.receipt.next.title` | Complete your trip | 여행 준비를 마무리하세요 | 旅の準備を整えましょう | 完善您的行程 |
+| `checkout.flight.receipt.next.hotel` | Book a hotel | 호텔 예약하기 | ホテルを予約する | 预订酒店 |
+| `checkout.flight.receipt.next.hotelLine` | Stays in {city} · {dates} | {city} 숙소 · {dates} | {city}の宿泊施設 · {dates} | {city}的住宿 · {dates} |
+| `checkout.flight.receipt.next.teeTime` | Book a tee time | 티타임 예약하기 | ティータイムを予約する | 预订开球时间 |
+| `checkout.flight.receipt.next.teeTimeLine` | Golf courses in {city} | {city} 골프장 | {city}のゴルフ場 | {city}的高尔夫球场 |
+| `checkout.flight.receipt.next.teeTimeAnywhere` | Browse our golf courses | 골프장 둘러보기 | ゴルフ場を探す | 浏览高尔夫球场 |
 
 ## property
 
@@ -402,3 +408,159 @@ the first golf slice (2026-11-04).
 | `golf.teeTimes.pickHint` | Pick a time to ask us about it. | 시간을 선택하면 바로 문의하실 수 있습니다. | 時間を選ぶと、そのままお問い合わせいただけます。 | 选择时间后即可直接咨询。 |
 | `golf.teeTimes.askThis` | Ask about this tee time | 이 티타임 문의하기 | このティータイムを問い合わせる | 咨询这个开球时间 |
 | `golf.teeTimes.draft` | Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available? | 안녕하세요! {course}에서 {date} {time}({city} 현지 시간)에 {count}명이 라운드하고 싶습니다. 예약 가능할까요? | こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？ | 您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？ |
+
+## Golf on the landing page, and the golf pages in the v2 design
+
+The search stage's Golf face (its heading and its "Tee off at … on … for …" sentence, with the course
+panel, the calendar and the player count), and the catalogue's count line. Written by Claude for
+the design pass of 2026-11-04. The sentence pieces follow the stays sentence's pattern in each
+language (a label, then the token), not English word order.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `landing.journey.stages.golf.titleLead` | Or | 또는 | または、 | 或者 |
+| `landing.journey.stages.golf.titleRest` | tee off. | 티오프하세요. | ティーオフ。 | 去开球。 |
+| `landing.journey.stages.golf.caption` | Real tee times at courses we work with, priced per player. | 제휴 골프장의 실제 티타임을 1인 기준 요금으로 보여드립니다. | 提携ゴルフ場のリアルなティータイムを、1人あたりの料金で。 | 合作球场的真实开球时间，按每位球员计价。 |
+| `landing.search.searchingGolf` | Finding tee times… | 티타임 찾는 중… | ティータイムを検索中… | 正在查找开球时间… |
+| `search.prose.teeOffAt` | Tee off at | 골프장 | ゴルフ場 | 球场 |
+| `search.prose.onDay` | , on  | , 날짜  | 、日付  | ，日期  |
+| `search.prose.forPlayers` | , for  | , 인원  | 、人数  | ，人数  |
+| `search.prose.theCourse` | the course | 원하는 골프장 | お好きなゴルフ場 | 心仪的球场 |
+| `search.prose.firstOpenDay` | the first open day | 가장 빠른 날 | 最短の空き日 | 最早可订日 |
+| `search.prose.players` | {count, plural, one {# player} other {# players}} | {count}명 | {count}人 | {count} 人 |
+| `search.golf.findCourse` | Search courses, cities, countries… | 골프장, 도시, 국가 검색… | ゴルフ場・都市・国を検索… | 搜索球场、城市、国家… |
+| `search.golf.loading` | Loading courses… | 골프장을 불러오는 중… | ゴルフ場を読み込み中… | 正在加载球场… |
+| `search.golf.none` | No courses are open for booking yet. | 아직 예약 가능한 골프장이 없습니다. | 予約できるゴルフ場はまだありません。 | 暂无可预订的球场。 |
+| `search.golf.noMatch` | No course matches “{query}”. | “{query}”와 일치하는 골프장이 없습니다. | 「{query}」に一致するゴルフ場はありません。 | 没有与“{query}”匹配的球场。 |
+| `search.golf.allCourses` | All courses → | 전체 골프장 → | すべてのゴルフ場 → | 全部球场 → |
+| `search.golf.courses` | Courses | 골프장 | ゴルフ場 | 球场 |
+| `search.golf.whenPlay` | When do you want to play? | 언제 라운드하시겠어요? | いつプレーしますか？ | 您想哪天打球？ |
+| `search.golf.anyDayNote` | Leave it open and the course shows its first day with a tee time. | 비워 두면 티타임이 있는 가장 빠른 날을 보여드립니다. | 空欄のままにすると、ティータイムのある最短の日を表示します。 | 留空则显示最早有开球时间的日期。 |
+| `search.golf.howMany` | How many players? | 몇 분이 라운드하시나요? | 何名でプレーしますか？ | 几位球员？ |
+| `search.golf.fewer` | Fewer players | 인원 줄이기 | 人数を減らす | 减少人数 |
+| `search.golf.more` | More players | 인원 늘리기 | 人数を増やす | 增加人数 |
+| `golf.count` | {count, plural, one {# course} other {# courses}} | 골프장 {count}곳 | ゴルフ場 {count}件 | {count} 个球场 |
+| `golf.countIn` | {count, plural, one {# course} other {# courses}} in {country} | {country}의 골프장 {count}곳 | {country}のゴルフ場 {count}件 | {country}的 {count} 个球场 |
+| `golf.back` | Back | 뒤로 | 戻る | 返回 |
+
+## Golf booking — the tee-time band, checkout and booking page
+
+Wording around money: review these first. Written by Claude for golf booking (2026-11-04). "Authorised, not charged" must read as a hold on the card, not a payment.
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `golf.teeTimes.title` | Book a tee time | 티타임 예약 | ティータイムを予約 | 预订开球时间 |
+| `golf.teeTimes.pickHint` | Pick a time to book it. | 예약할 시간을 선택하세요. | 予約する時間を選んでください。 | 请选择要预订的时间。 |
+| `golf.teeTimes.earlierDays` | Earlier days | 이전 날짜 | 前の日 | 更早的日期 |
+| `golf.teeTimes.laterDays` | Later days | 다음 날짜 | 次の日 | 更晚的日期 |
+| `golf.teeTimes.earlierTimes` | Earlier times | 이전 시간 | 前の時間 | 更早的时间 |
+| `golf.teeTimes.laterTimes` | Later times | 다음 시간 | 次の時間 | 更晚的时间 |
+| `golf.teeTimes.summary` | {date} · {time} · {count, plural, one {# player} other {# players}} | {date} · {time} · {count}명 | {date} · {time} · {count}名 | {date} · {time} · {count} 人 |
+| `golf.teeTimes.chargedAfter` | Your card is only charged once the course confirms. | 골프장이 확정한 후에만 카드가 청구됩니다. | カードへの請求はゴルフ場の確定後のみです。 | 球场确认后才会从您的银行卡扣款。 |
+| `golf.teeTimes.total` | Total | 합계 | 合計 | 合计 |
+| `golf.teeTimes.justGone` | That time has just gone. Please pick another. | 방금 마감된 시간입니다. 다른 시간을 선택해 주세요. | この時間は先ほど埋まりました。別の時間をお選びください。 | 该时间刚刚被订走，请选择其他时间。 |
+| `golf.teeTimes.book` | Book | 예약 | 予約 | 预订 |
+| `golf.booking.metaTitle` | Book your tee time | 티타임 예약 | ティータイムの予約 | 预订开球时间 |
+| `golf.booking.title` | Book your tee time | 티타임 예약 | ティータイムの予約 | 预订开球时间 |
+| `golf.booking.yourBooking` | Your golf booking | 내 골프 예약 | ゴルフのご予約 | 您的高尔夫预订 |
+| `golf.booking.backToCourse` | Back to the course | 골프장으로 돌아가기 | ゴルフ場に戻る | 返回球场 |
+| `golf.booking.leadName` | Lead player | 대표 플레이어 | 代表プレーヤー | 主要球员 |
+| `golf.booking.leadNameRequired` | Please enter the lead player’s name. | 대표 플레이어의 이름을 입력해 주세요. | 代表プレーヤーのお名前を入力してください。 | 请输入主要球员的姓名。 |
+| `golf.booking.leadNameHint` | The name the course will have on its sheet. | 골프장 예약표에 올라갈 이름입니다. | ゴルフ場の予約表に載るお名前です。 | 球场预订表上显示的姓名。 |
+| `golf.booking.continue` | Continue to payment | 결제 계속하기 | お支払いに進む | 继续付款 |
+| `golf.booking.starting` | Holding your spots… | 자리를 잡는 중… | 枠を確保しています… | 正在为您保留名额… |
+| `golf.booking.startError` | We couldn’t start the payment. Please try again. | 결제를 시작할 수 없습니다. 다시 시도해 주세요. | お支払いを開始できませんでした。もう一度お試しください。 | 无法开始付款，请重试。 |
+| `golf.booking.tooMany` | Too many attempts. Please wait a moment and try again. | 시도 횟수가 너무 많습니다. 잠시 후 다시 시도해 주세요. | 試行回数が多すぎます。少し待ってからもう一度お試しください。 | 尝试次数过多，请稍后再试。 |
+| `golf.booking.priceChanged` | The price of this tee time has just changed. Please check the new total before you continue. | 이 티타임의 가격이 방금 변경되었습니다. 계속하기 전에 새 합계를 확인해 주세요. | このティータイムの料金が変更されました。続ける前に新しい合計をご確認ください。 | 此开球时间的价格刚刚发生变化，请在继续之前确认新的合计金额。 |
+| `golf.booking.holdTimer` | Your spots are held for {time}. | {time} 동안 자리가 유지됩니다. | 枠は {time} の間確保されます。 | 名额将为您保留 {time}。 |
+| `golf.booking.payButton` | Request this tee time · {amount} | 이 티타임 요청 · {amount} | このティータイムをリクエスト · {amount} | 申请此开球时间 · {amount} |
+| `golf.booking.paying` | Authorising your card… | 카드 승인 중… | カードを承認しています… | 正在授权您的银行卡… |
+| `golf.booking.payFailed` | Your card couldn’t be authorised. Please try again. | 카드를 승인할 수 없습니다. 다시 시도해 주세요. | カードを承認できませんでした。もう一度お試しください。 | 无法授权您的银行卡，请重试。 |
+| `golf.booking.howItWorks` | Your card is authorised now and charged only once the course confirms your tee time, within 48 hours at most. If the course can’t take you, the hold is released and you’re not charged. | 지금은 카드 승인만 이루어지며, 골프장이 티타임을 확정한 후(최대 48시간 이내)에만 청구됩니다. 골프장에서 받을 수 없으면 승인이 해제되고 비용은 청구되지 않습니다. | 今はカードの承認のみで、ゴルフ場がティータイムを確定した後（最長48時間以内）にのみ請求されます。ゴルフ場がお受けできない場合、承認は解除され、料金はかかりません。 | 现在仅授权您的银行卡，球场确认开球时间后（最长 48 小时内）才会扣款。如果球场无法接待，授权将被释放，您无需付款。 |
+| `golf.booking.date` | Date | 날짜 | 日付 | 日期 |
+| `golf.booking.time` | Tee time | 티타임 | ティータイム | 开球时间 |
+| `golf.booking.players` | Players | 인원 | 人数 | 人数 |
+| `golf.booking.greenFee` | Green fees | 그린피 | グリーンフィー | 果岭费 |
+| `golf.booking.serviceFee` | Service fee | 서비스 수수료 | サービス料 | 服务费 |
+| `golf.booking.total` | Total | 합계 | 合計 | 合计 |
+| `golf.booking.reference` | Reference | 예약 번호 | 予約番号 | 预订编号 |
+| `golf.booking.email` | Email | 이메일 | メール | 电子邮箱 |
+| `golf.booking.finishPaying` | Finish paying | 결제 마치기 | お支払いを完了する | 完成付款 |
+| `golf.booking.pickAnother` | Pick another time | 다른 시간 선택 | 別の時間を選ぶ | 选择其他时间 |
+| `golf.booking.unavailableTitle` | This tee time is no longer available | 더 이상 예약할 수 없는 티타임입니다 | このティータイムはご利用いただけなくなりました | 此开球时间已不可预订 |
+| `golf.booking.unavailableBody` | It has been taken or closed since you picked it. Nothing was charged. | 선택하신 후 마감되었거나 닫혔습니다. 청구된 금액은 없습니다. | お選びいただいた後に埋まったか、締め切られました。請求はありません。 | 在您选择之后已被订走或关闭。未产生任何费用。 |
+| `golf.booking.tooFewSpots` | Only {count, plural, one {# spot is} other {# spots are}} left on this tee time. Nothing was charged. | 이 티타임에는 {count}자리만 남아 있습니다. 청구된 금액은 없습니다. | このティータイムの残りは{count}枠のみです。請求はありません。 | 此开球时间仅剩 {count} 个名额。未产生任何费用。 |
+| `golf.booking.holdRanOutTitle` | Your hold ran out | 자리 유지 시간이 끝났습니다 | 確保時間が終了しました | 保留时间已结束 |
+| `golf.booking.holdRanOutBody` | We released your spots after 15 minutes. Nothing was charged. | 15분이 지나 자리를 해제했습니다. 청구된 금액은 없습니다. | 15分が過ぎたため枠を解放しました。請求はありません。 | 15 分钟后我们已释放您的名额。未产生任何费用。 |
+| `golf.booking.missingTitle` | We can’t find this booking | 이 예약을 찾을 수 없습니다 | このご予約が見つかりません | 找不到此预订 |
+| `golf.booking.missingBody` | It may belong to another account. Check you’re signed in with the email you booked with. | 다른 계정의 예약일 수 있습니다. 예약에 사용한 이메일로 로그인했는지 확인해 주세요. | 別のアカウントのご予約かもしれません。ご予約時のメールアドレスでログインしているかご確認ください。 | 它可能属于其他账户。请确认您使用预订时的邮箱登录。 |
+| `golf.booking.status.held.title` | Waiting for your payment | 결제를 기다리고 있습니다 | お支払いをお待ちしています | 等待您付款 |
+| `golf.booking.status.held.body` | Your spots are held until {holdEnds}. Finish paying to send your request to the course. | {holdEnds}까지 자리가 유지됩니다. 결제를 마치면 골프장에 요청이 전달됩니다. | {holdEnds}まで枠を確保しています。お支払いを完了すると、ゴルフ場へリクエストが送られます。 | 名额保留至 {holdEnds}。完成付款后，您的申请将发送给球场。 |
+| `golf.booking.status.requested.title` | We’re checking with the course | 골프장에 확인 중입니다 | ゴルフ場に確認しています | 正在与球场确认 |
+| `golf.booking.status.requested.body` | Your card is authorised, not charged. We’ll have an answer by {deadline}. If the course can’t take you, the hold is released and you pay nothing. | 카드는 승인만 되었고 청구되지 않았습니다. {deadline}까지 답변드리겠습니다. 골프장에서 받을 수 없으면 승인이 해제되고 비용은 없습니다. | カードは承認のみで、請求はされていません。{deadline}までにご回答します。ゴルフ場がお受けできない場合、承認は解除され、料金はかかりません。 | 您的银行卡已授权，尚未扣款。我们将在 {deadline} 前给您答复。如果球场无法接待，授权将被释放，您无需付款。 |
+| `golf.booking.status.confirmed.title` | You’re booked | 예약이 확정되었습니다 | ご予約が確定しました | 预订成功 |
+| `golf.booking.status.confirmed.body` | The course has confirmed your tee time and your card has been charged. | 골프장이 티타임을 확정했고 카드가 청구되었습니다. | ゴルフ場がティータイムを確定し、カードに請求しました。 | 球场已确认您的开球时间，并已从您的银行卡扣款。 |
+| `golf.booking.status.expired.title` | This booking ran out | 예약이 만료되었습니다 | このご予約は期限切れです | 此预订已过期 |
+| `golf.booking.status.expired.body` | It wasn’t paid for in time, so nothing was charged and the spots were released. | 시간 내에 결제되지 않아 청구된 금액은 없으며 자리는 해제되었습니다. | 時間内にお支払いがなかったため、請求はなく、枠は解放されました。 | 未在规定时间内付款，因此未产生费用，名额已释放。 |
+| `golf.booking.status.declined.title` | The course couldn’t take this tee time | 골프장에서 이 티타임을 받을 수 없습니다 | ゴルフ場がこのティータイムをお受けできませんでした | 球场无法接待此开球时间 |
+| `golf.booking.status.declined.body` | Your card wasn’t charged, and the hold on it has been released. Please pick another time. | 카드는 청구되지 않았고 승인은 해제되었습니다. 다른 시간을 선택해 주세요. | カードへの請求はなく、承認は解除されました。別の時間をお選びください。 | 您的银行卡未被扣款，授权已释放。请选择其他时间。 |
+| `golf.booking.status.notAnswered.title` | We couldn’t confirm this in time | 시간 내에 확정하지 못했습니다 | 時間内に確定できませんでした | 未能及时确认 |
+| `golf.booking.status.notAnswered.body` | Your card wasn’t charged, and the hold on it has been released. We’re sorry. Please pick another time. | 카드는 청구되지 않았고 승인은 해제되었습니다. 죄송합니다. 다른 시간을 선택해 주세요. | カードへの請求はなく、承認は解除されました。申し訳ございません。別の時間をお選びください。 | 您的银行卡未被扣款，授权已释放。非常抱歉，请选择其他时间。 |
+
+## Golf booking — cancelling and refunds
+
+Wording around money: review these first. Written by Claude for golf cancellation (2026-11-04).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `golf.booking.freeCancelUntil` | Free cancellation until {date}. | {date}까지 무료 취소 가능합니다. | {date}まで無料でキャンセルできます。 | {date} 前可免费取消。 |
+| `golf.booking.noFreeCancel` | Free cancellation has already passed for this tee time, so once it’s confirmed it can’t be cancelled online. | 이 티타임은 무료 취소 기한이 이미 지났으므로, 확정 후에는 온라인으로 취소할 수 없습니다. | このティータイムの無料キャンセル期限はすでに過ぎているため、確定後はオンラインでキャンセルできません。 | 此开球时间的免费取消期限已过，确认后无法在线取消。 |
+| `golf.booking.freeCancelEnded` | Free cancellation ended on {date}. To change this booking, please talk to us. | 무료 취소는 {date}에 종료되었습니다. 예약을 변경하시려면 문의해 주세요. | 無料キャンセルは{date}に終了しました。ご予約の変更はお問い合わせください。 | 免费取消已于 {date} 结束。如需更改此预订，请联系我们。 |
+| `golf.booking.contactSupport` | Contact support | 고객센터 문의 | サポートに問い合わせる | 联系客服 |
+| `golf.booking.supportDraft` | Hi! I’d like to ask about changing my golf booking {reference}. | 안녕하세요! 골프 예약 {reference} 변경에 대해 문의드립니다. | こんにちは。ゴルフのご予約 {reference} の変更について相談したいです。 | 您好！我想咨询更改高尔夫预订 {reference} 的事宜。 |
+| `golf.booking.cancelRequest` | Cancel this request | 이 요청 취소 | このリクエストをキャンセル | 取消此申请 |
+| `golf.booking.cancelBooking` | Cancel booking | 예약 취소 | 予約をキャンセル | 取消预订 |
+| `golf.booking.cancelRequestNote` | Nothing has been charged. Cancelling releases the hold on your card and gives up these spots. | 청구된 금액은 없습니다. 취소하면 카드 승인이 해제되고 이 자리는 포기하게 됩니다. | 請求はありません。キャンセルするとカードの承認が解除され、この枠は手放すことになります。 | 未产生任何费用。取消后，银行卡授权将被释放，这些名额也将放弃。 |
+| `golf.booking.refundNote` | You’ll get {amount} back, the whole amount including the service fee. | 서비스 수수료를 포함한 전액 {amount}을(를) 돌려받으십니다. | サービス料を含む全額 {amount} をご返金します。 | 您将获得 {amount} 的全额退款，包含服务费。 |
+| `golf.booking.confirmCancel` | Yes, cancel it | 네, 취소합니다 | はい、キャンセルします | 是的，取消 |
+| `golf.booking.keepBooking` | Keep my booking | 예약 유지 | 予約を続ける | 保留预订 |
+| `golf.booking.cancelling` | Cancelling… | 취소 중… | キャンセルしています… | 正在取消… |
+| `golf.booking.cancelFailed` | We couldn’t cancel this just now, and nothing has changed. Please try again. | 지금은 취소할 수 없으며 변경된 내용은 없습니다. 다시 시도해 주세요. | 今はキャンセルできませんでした。変更はありません。もう一度お試しください。 | 暂时无法取消，预订没有任何变化。请重试。 |
+| `golf.booking.refunded` | We’ve refunded {amount}. It can take 5–10 business days to appear on your statement. | {amount}을(를) 환불했습니다. 명세서에 표시되기까지 영업일 기준 5~10일이 걸릴 수 있습니다. | {amount} を返金しました。明細に反映されるまで 5〜10 営業日かかる場合があります。 | 我们已退款 {amount}。可能需要 5–10 个工作日才会显示在您的账单上。 |
+| `golf.booking.status.cancelled.title` | This booking is cancelled | 예약이 취소되었습니다 | このご予約はキャンセルされました | 此预订已取消 |
+| `golf.booking.status.cancelled.body` | You weren’t charged, and the hold on your card has been released. | 청구된 금액은 없으며 카드 승인은 해제되었습니다. | 請求はなく、カードの承認は解除されました。 | 未产生任何费用，银行卡授权已释放。 |
+| `golf.booking.status.cancelledByTeam.title` | The course had to cancel this tee time | 골프장 사정으로 티타임이 취소되었습니다 | ゴルフ場の都合によりティータイムがキャンセルされました | 球场不得不取消此开球时间 |
+| `golf.booking.status.cancelledByTeam.body` | You weren’t charged, and the hold on your card has been released. | 청구된 금액은 없으며 카드 승인은 해제되었습니다. | 請求はなく、カードの承認は解除されました。 | 未产生任何费用，银行卡授权已释放。 |
+
+## My Bookings — golf
+
+The golf card in My Bookings. Written by Claude for golf in My Bookings (2026-11-04).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `trips.golfCard.date` | Date | 날짜 | 日付 | 日期 |
+| `trips.golfCard.teeTime` | Tee time | 티타임 | ティータイム | 开球时间 |
+| `trips.golfCard.view` | View booking | 예약 보기 | 予約を見る | 查看预订 |
+| `trips.golfCard.empty` | No golf bookings yet | 아직 골프 예약이 없습니다 | ゴルフのご予約はまだありません | 暂无高尔夫预订 |
+| `trips.golfCard.totalPaid` | Total paid | 결제 금액 | お支払い総額 | 已付总额 |
+| `trips.golfCard.chargedOnConfirmation` | Charged once the course confirms | 골프장 확정 후 청구됩니다 | ゴルフ場の確定後に請求されます | 球场确认后扣款 |
+| `trips.golfCard.notCharged` | Not charged | 청구되지 않음 | 請求なし | 未扣款 |
+| `trips.golfCard.refunded` | Refunded {amount} | {amount} 환불됨 | {amount} 返金済み | 已退款 {amount} |
+| `trips.golfCard.status.held` | Awaiting payment | 결제 대기 | お支払い待ち | 等待付款 |
+| `trips.golfCard.status.requested` | Waiting for the course | 골프장 확인 중 | ゴルフ場に確認中 | 等待球场确认 |
+| `trips.golfCard.status.confirmed` | Confirmed | 확정 | 確定 | 已确认 |
+| `trips.golfCard.status.expired` | Expired | 만료 | 期限切れ | 已过期 |
+| `trips.golfCard.status.declined` | Declined | 거절됨 | お断り | 已拒绝 |
+| `trips.golfCard.status.cancelled` | Cancelled | 취소됨 | キャンセル済み | 已取消 |
+
+## golf extras
+
+What a customer adds to a tee time at checkout. The heading, the hint and the price wording came from
+v1; these did not. Written by Claude (2026-11-04).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `golf.booking.extraAdd` | Add one: {name} | {name} 추가 | {name}を追加 | 增加{name} |
+| `golf.booking.extraRemove` | Remove one: {name} | {name} 빼기 | {name}を減らす | 减少{name} |
+| `golf.booking.extraNames.lessons` | Golf lesson | 골프 레슨 | ゴルフレッスン | 高尔夫课程 |
+| `golf.booking.extraNames.range_balls` | Bucket of range balls | 연습볼 바구니 | 練習ボール(カゴ) | 练习球(每筐) |

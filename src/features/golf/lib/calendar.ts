@@ -12,10 +12,17 @@ export interface CalendarDay {
     inMonth: boolean;
 }
 
-const addDays = (date: string, days: number) => {
+export const addDays = (date: string, days: number) => {
     const [y, m, d] = date.split('-').map(Number);
     return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 };
+
+/** Every date from `first` to `last`, inclusive. */
+export function eachDay(first: string, last: string): string[] {
+    const days: string[] = [];
+    for (let d = first; d <= last; d = addDays(d, 1)) days.push(d);
+    return days;
+}
 
 const dayOfWeek = (date: string) => {
     const [y, m, d] = date.split('-').map(Number);
