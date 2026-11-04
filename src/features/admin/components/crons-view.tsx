@@ -45,6 +45,7 @@ const CRONS: CronDef[] = [
     { id: 'etg-reviews-sync',               label: 'ETG Reviews Sync',               description: 'Syncs hotel review scores and content from the ETG reviews API.',     schedule: 'Nightly' },
     { id: 'etg-dump-sync',                  label: 'ETG Dump Sync',                  description: 'Ingests the ETG hotel dump.',                                         schedule: 'Nightly', warning: 'Long-running and bandwidth-heavy.' },
     { id: 'geocode-hotels',                 label: 'Geocode Hotels',                 description: 'Adds coordinates to hotels missing location data.',                   schedule: 'Nightly' },
+    { id: 'golf-generate-tee-times',        label: 'Golf Tee Times',                 description: 'Makes tee times from each course’s schedules, to the end of its booking window.', schedule: 'Daily' },
     { id: 'seed-room-groups',               label: 'Seed Room Groups',               description: 'Rebuilds the room-name grouping used to dedupe offers.',              schedule: 'Weekly' },
     { id: 'refresh-hotel-content',          label: 'Refresh Hotel Content',          description: 'Refreshes hotel metadata from TravelgateX.',                          schedule: 'Weekly', warning: 'Long-running — may take up to 10 minutes.' },
 ];

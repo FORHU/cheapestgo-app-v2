@@ -214,6 +214,16 @@ export function GolfCoursesView() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={teeTimesOf !== null} onOpenChange={(open) => { if (!open) setTeeTimesOf(null); }}>
+                <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto p-6">
+                    <DialogHeader className="mb-4">
+                        <DialogTitle className="text-lg">{`Tee times — ${teeTimesOf?.name ?? ''}`}</DialogTitle>
+                    </DialogHeader>
+                    {/* Reloading the list keeps each row's schedule count and bookability current. */}
+                    {teeTimesOf && <GolfTeeTimesPanel key={teeTimesOf.id} course={teeTimesOf} onChanged={() => void load(page, query)} />}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
