@@ -190,7 +190,7 @@ export function MapGemsPanel({
                     ))}
 
                     {!isLoading && gems.length === 0 && (
-                        <div className="flex items-center justify-center w-full min-w-[200px] h-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-center w-full min-w-[200px] h-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700">
                             <span className="text-xs text-slate-400">{tAll('map.noPlacesInArea')}</span>
                         </div>
                     )}

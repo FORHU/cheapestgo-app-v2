@@ -8,6 +8,10 @@ import { useMoney } from '@/features/landing/lib/money';
 import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
 import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
 import type { FeaturedStay } from '@/features/landing/api/featured.api';
+import { formatCurrency } from '@/shared/lib/format';
+import { isGolfFace } from '@/features/golf/lib/last-search';
+import { useGolfCourses } from '@/features/golf/lib/use-golf-courses';
+import type { GolfCourse } from '@/features/golf/types';
 import {
     HERO_FADE_END,
     JOURNEY_STOPS,
@@ -29,6 +33,9 @@ import { useJourneyProgress } from './useJourneyProgress';
 import { useSectionSnap } from './useSectionSnap';
 import { StageShowcase } from './StageShowcase';
 import { HeroBackdrop } from './HeroBackdrop';
+
+/** The stop the search docks on, in `JOURNEY_STOPS`: the hero is stop 0, then a stop per stage. */
+const SEARCH_STOP = STAGES.findIndex(s => s.faces?.golf) + 1;
 
 /**
  * The landing page's Journey.
@@ -56,13 +63,29 @@ export function Journey({
 }) {
     const trackRef = useRef<HTMLDivElement>(null);
     const { journey, trackPx, reducedMotion } = useJourneyProgress(trackRef);
-    useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
+    const goToStop = useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
     const tAll = useTranslations();
 
     // What the search stage is searching for. Held here, above the stage, so it survives the
     // visitor scrolling away and back; changing it slides the panel across and changes the
-    // backdrop in place — the Stays / Flights tabs no longer carry anyone to another section.
+    // backdrop in place — the Stays / Flights / Golf tabs never carry anyone to another section.
     const [mode, setMode] = useState<SearchMode>('stays');
+
+    // Back from a golf course found here: the search itself, Golf face up, not the hero. Read from
+    // the address in the browser so this page stays cached. Once only, because `trackPx` moves on
+    // every resize, and a visitor who has scrolled on must not be carried back.
+    const cameBack = useRef(false);
+    useEffect(() => {
+        if (cameBack.current || !isGolfFace(window.location.search)) return;
+        if (reducedMotion) {
+            cameBack.current = true;
+            document.getElementById('stage-golf')?.scrollIntoView();
+        } else if (trackPx > 0) {
+            cameBack.current = true;
+            setMode('golf');
+            goToStop(SEARCH_STOP);
+        }
+    }, [reducedMotion, trackPx, goToStop]);
 
     // Every stage photograph, fetched once the page is idle. Each is otherwise first requested
     // the moment its stage mounts — partway through a glide — and pops in a beat after the
@@ -95,7 +118,7 @@ export function Journey({
                 <StageShowcase journey={0} mode="stays" reducedMotion />
                 <div className="relative z-[1] mx-auto w-full max-w-5xl space-y-20 px-6 py-24">
                     {STAGES.flatMap(stageFaces).map(face => (
-                        <section key={face.id}>
+                        <section key={face.id} id={`stage-${face.id}`}>
                             <StageHeading stage={face} />
                             <div className="mt-8">
                                 <StageSurface stage={face} trending={trending} stays={showcaseStays} />
@@ -356,6 +379,9 @@ const StageSurface = memo(function StageSurface({
     if (stage.id === 'flights') {
         return <ImmersiveSearchBar trendingDestinations={trending} defaultMode="flights" onModeSelect={onModeSelect} />;
     }
+    if (stage.id === 'golf') {
+        return <GolfSurface onModeSelect={onModeSelect} />;
+    }
     if (stage.id === 'ai') {
         return <AskPanel />;
     }
@@ -393,6 +419,105 @@ function StaysSurface({
     );
 }
 
+/**
+ * The golf search with the course pills under it — Stays' arrangement, for golf. The catalogue is
+ * asked for here, once, and handed to both, so the pills and the sentence's dropdown are the same
+ * list; it is asked for only when the Golf face is first shown, since this mounts with it.
+ */
+function GolfSurface({ onModeSelect }: { onModeSelect?: (mode: SearchMode) => void }) {
+    const courses = useGolfCourses();
+    // A fresh object per click, so picking the same pill again still reaches the bar.
+    const [pick, setPick] = useState<{ slug: string } | null>(null);
+    const [chosen, setChosen] = useState<string | null>(null);
+    return (
+        <div className="space-y-5">
+            <ImmersiveSearchBar
+                defaultMode="golf"
+                onModeSelect={onModeSelect}
+                golfCourses={courses}
+                coursePick={pick}
+                onCourseChange={setChosen}
+            />
+            <CourseStrip courses={courses} chosen={chosen} onPick={slug => setPick({ slug })} />
+        </div>
+    );
+}
+
+/** How many courses the strip under the golf search names, and how many of those a phone shows. */
+const STRIP_COURSES = 4;
+const PHONE_COURSES = 2;
+
+/**
+ * A few courses under the golf search, with what they cost to play — `ShowcaseStrip`'s job for golf.
+ * Picking one fills the sentence's course, and the lit pill is always the course GO will open.
+ *
+ * The fee is api-v2's, already in the currency picked in the header and only a guide: unlike the
+ * stays strip it is not converted here, because golf never converts in the browser. Nothing is
+ * drawn when there are no courses — the sentence's own dropdown says so, once.
+ */
+function CourseStrip({
+    courses,
+    chosen,
+    onPick,
+}: {
+    courses: GolfCourse[] | null;
+    chosen: string | null;
+    onPick: (slug: string) => void;
+}) {
+    const tAll = useTranslations();
+    // Narrower on a phone, where a course name is longer than a city's: two to a row, as the stay
+    // pills sit, rather than one each running down under the bottom bar.
+    const pill = 'min-w-36 rounded-full px-5 py-2.5 text-center sm:px-7';
+    const glass = { background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` };
+
+    if (courses === null) {
+        return (
+            <div className="flex flex-wrap gap-2" aria-hidden>
+                {Array.from({ length: STRIP_COURSES }, (_, i) => (
+                    <span key={i} className={`${pill} h-10 animate-pulse`} style={glass} />
+                ))}
+            </div>
+        );
+    }
+    if (courses.length === 0) return null;
+
+    return (
+        <div className="flex flex-wrap gap-2">
+            {courses.slice(0, STRIP_COURSES).map((c, i) => {
+                const isChosen = chosen === c.slug;
+                return (
+                    <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={isChosen}
+                        onClick={() => onPick(c.slug)}
+                        // A phone names two; the rest are a tap away in the sentence's own list.
+                        className={`${pill} ${i >= PHONE_COURSES ? 'hidden sm:inline-block' : ''} cursor-pointer transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95`}
+                        style={{
+                            background: isChosen ? BRAND.primaryWash : BRAND.glass,
+                            border: `1px solid ${isChosen ? BRAND.accent : BRAND.glassBorder}`,
+                        }}
+                    >
+                        <span className="text-sm font-medium text-white">{c.name}</span>
+                        {c.greenFeeFrom != null && (
+                            <span className="ml-2 hidden text-xs text-white/55 sm:inline">
+                                {tAll('landing.journey.strip.from', { price: formatCurrency(c.greenFeeFrom, c.currency) })}
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
+            <Link
+                href="/golf"
+                className={`${pill} text-sm font-medium text-white/80 transition-[filter] duration-150 hover:brightness-125`}
+                style={glass}
+            >
+                {tAll('search.golf.allCourses')}
+            </Link>
+        </div>
+    );
+}
+
 /** How long the old wording takes to fade out before the new is put in its place, in ms. */
 const FACE_SWAP_MS = 240;
 
@@ -402,7 +527,7 @@ const FACE_SWAP_MS = 240;
  * Keyed on stage id by the caller, so moving between stages unmounts the previous
  * surface — which is what keeps two search bars from fighting over the search store.
  *
- * A stage with two faces (Hotels and Flights) changes between them here, in place. The panel
+ * A stage with several faces (Hotels, Flights, Golf) changes between them here, in place. The panel
  * slides to the side the new face docks on, and the wording and the search are swapped while
  * it is on the way: the old fade out, the new fade in, so there is never a frame of one face's
  * heading above the other's search. `shown` lags `mode` by the time that fade takes.
@@ -542,7 +667,7 @@ function AskPanel() {
 
     return (
         <div
-            className="rounded-2xl p-5 backdrop-blur-md"
+            className="p-5 backdrop-blur-md"
             style={{ background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` }}
         >
             <div className="flex items-center gap-3">
@@ -582,15 +707,13 @@ function AskPanel() {
 /** The last stage: every way in, side by side, for a visitor who skipped the rest. */
 function OptionsPanel() {
     const tAll = useTranslations();
-    // Golf has no page to go to yet, so its card has no `href` and says so rather than
-    // linking somewhere that is not golf. Give it one and it becomes a link like the others.
-    const options: Array<{ href?: string; label: string; note: string }> = [
+    const options: Array<{ href: string; label: string; note: string }> = [
         { href: '/search', label: tAll('landing.search.searchMode.stays'), note: tAll('landing.journey.options.staysNote') },
         { href: '/flights/search', label: tAll('landing.search.searchMode.flights'), note: tAll('landing.journey.options.flightsNote') },
-        { label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
+        { href: '/golf', label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
     ];
 
-    const card = 'rounded-2xl p-4 backdrop-blur-md';
+    const card = 'p-4 backdrop-blur-md';
     const glass = { background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` };
 
     return (
@@ -602,7 +725,7 @@ function OptionsPanel() {
                         <p className="mt-1 text-xs text-white/60">{o.note}</p>
                     </>
                 );
-                return o.href ? (
+                return (
                     <Link
                         key={o.label}
                         href={o.href}
@@ -611,8 +734,6 @@ function OptionsPanel() {
                     >
                         {body}
                     </Link>
-                ) : (
-                    <div key={o.label} className={card} style={glass}>{body}</div>
                 );
             })}
         </div>

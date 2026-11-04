@@ -5,8 +5,10 @@ import {
     BRAND_PREVIEW_COOKIE,
     BRAND_PREVIEW_PARAM,
     BRAND_PREVIEW_RESET,
+    DEPLOYMENT_BRAND_NAME,
     brandPreviewEnabled,
     parsePreviewBrand,
+    resolveBrandName,
 } from '@/shared/lib/brand';
 
 const intlMiddleware = createMiddleware(routing);
@@ -36,9 +38,25 @@ const STAFF_HOST = process.env.NEXT_PUBLIC_STAFF_HOST?.trim().toLowerCase() || u
 const BRAND_PREVIEW_MAX_AGE = 60 * 60 * 24 * 30;
 
 /**
+ * next-intl's own cookie for a language the visitor picked. Its default name: `routing.ts` does
+ * not rename it. The language menu writes it on every switch, English included.
+ */
+const LOCALE_COOKIE = 'NEXT_LOCALE';
+
+/** `/ja/hotels` → `/hotels`, `/ko` → `/`; an unprefixed path is returned as it is. */
+function withoutLocalePrefix(pathname: string): string {
+    const prefix = routing.locales.find((locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`));
+    return prefix ? pathname.slice(prefix.length + 1) || '/' : pathname;
+}
+
+/**
  * `?brand_preview=airanggo` on a deployment with the brand preview on: remember the pick in a
  * cookie, then send the visitor to the same page without the parameter so the address they share
  * is the page, not the switch.
+ *
+ * The page, but in the picked brand's own language: the locale prefix and any language picked
+ * from the menu are dropped with the old brand. AirangGo opens in Korean and CheapestGo in
+ * English, and either choice made under the other brand would otherwise hold the new one in it.
  *
  * Returns null — and does nothing — when the preview is off. That is the whole production story:
  * a link carrying the parameter is an ordinary link there.
@@ -51,17 +69,21 @@ function brandPreviewResponse(request: NextRequest): NextResponse | null {
 
     const clean = request.nextUrl.clone();
     clean.searchParams.delete(BRAND_PREVIEW_PARAM);
-    const response = NextResponse.redirect(clean);
 
-    if (asked.trim().toLowerCase() === BRAND_PREVIEW_RESET) {
-        response.cookies.delete(BRAND_PREVIEW_COOKIE);
-        return response;
-    }
-
+    const reset = asked.trim().toLowerCase() === BRAND_PREVIEW_RESET;
     // Only a brand the preview offers is stored. Anything else is dropped from the address and
     // otherwise ignored: the cookie's value ends up in page copy.
-    const brand = parsePreviewBrand(asked);
-    if (brand) {
+    const brand = reset ? null : parsePreviewBrand(asked);
+    if (!reset && !brand) return NextResponse.redirect(clean);
+
+    clean.pathname = withoutLocalePrefix(clean.pathname);
+    const response = NextResponse.redirect(clean);
+    // On `/`, where next-intl sets it: a delete on any other path leaves the visitor's copy.
+    response.cookies.delete({ name: LOCALE_COOKIE, path: '/' });
+
+    if (reset) {
+        response.cookies.delete(BRAND_PREVIEW_COOKIE);
+    } else if (brand) {
         response.cookies.set({
             name:     BRAND_PREVIEW_COOKIE,
             value:    brand,
@@ -73,6 +95,43 @@ function brandPreviewResponse(request: NextRequest): NextResponse | null {
         });
     }
     return response;
+}
+
+/** The language AirangGo opens in. */
+const AIRANGGO_LOCALE = 'ko';
+
+/**
+ * AirangGo is the Korean brand, so it opens in Korean: an unprefixed — English — page is sent on
+ * to the same page under `/ko`.
+ *
+ * A default, not a lock. Once the visitor picks a language from the menu, next-intl's cookie
+ * carries it and the unprefixed address is English for them, as on CheapestGo. `Accept-Language`
+ * does not outrank Korean here, though next-intl would otherwise consult it: the production
+ * AirangGo build is Korean whatever the browser asks for, and the preview should look like it.
+ *
+ * Nothing to do on a build locked to one language (`NEXT_PUBLIC_LOCALE`): every unprefixed page is
+ * already in it and is the canonical address (seo.ts), so a `/ko` there would be a second one.
+ */
+function koreanByDefaultResponse(request: NextRequest): NextResponse | null {
+    if (process.env.NEXT_PUBLIC_LOCALE?.trim()) return null;
+    if (request.cookies.has(LOCALE_COOKIE)) return null;
+
+    const { pathname } = request.nextUrl;
+    // Pages only: `/api/og` is an image route, outside the locale segment.
+    if (pathname.startsWith('/api/') || withoutLocalePrefix(pathname) !== pathname) return null;
+
+    // Resolved as `getBrandName()` resolves it, so this agrees with the header the page renders.
+    const brand = resolveBrandName({
+        deployment: DEPLOYMENT_BRAND_NAME,
+        enabled:    brandPreviewEnabled(),
+        cookie:     request.cookies.get(BRAND_PREVIEW_COOKIE)?.value,
+        host:       request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+    });
+    if (brand !== 'AirangGo') return null;
+
+    const korean = request.nextUrl.clone();
+    korean.pathname = `/${AIRANGGO_LOCALE}${pathname === '/' ? '' : pathname}`;
+    return NextResponse.redirect(korean);
 }
 
 export default function middleware(request: NextRequest) {
@@ -123,6 +182,12 @@ export default function middleware(request: NextRequest) {
         adminUrl.pathname = '/admin';
         adminUrl.search = '';
         return NextResponse.redirect(adminUrl);
+    }
+
+    // Not on the staff host: the door into the back office stays in the back office's English.
+    if (!onStaffHost) {
+        const korean = koreanByDefaultResponse(request);
+        if (korean) return korean;
     }
 
     return intlMiddleware(request);

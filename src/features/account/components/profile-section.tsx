@@ -40,7 +40,7 @@ export function ProfileSection() {
             </div>
 
             {/* Avatar + Name */}
-            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-white/5">
+            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-white/5">
                 <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold shrink-0">
                     {initials}
                 </div>

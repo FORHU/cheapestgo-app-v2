@@ -488,7 +488,15 @@
         "paymentProcessedSecurely": "お支払いはStripeにより安全に処理されました。",
         "viewBookings": "予約を見る",
         "passengerSectionTitle": "搭乗者",
-        "contact": "連絡先"
+        "contact": "連絡先",
+        "next": {
+          "title": "旅の準備を整えましょう",
+          "hotel": "ホテルを予約する",
+          "hotelLine": "{city}の宿泊施設 · {dates}",
+          "teeTime": "ティータイムを予約する",
+          "teeTimeLine": "{city}のゴルフ場",
+          "teeTimeAnywhere": "ゴルフ場を探す"
+        }
       }
     },
     "datePicker": {
@@ -967,12 +975,14 @@
       "searchMode": {
         "stays": "宿泊",
         "flights": "フライト",
-        "aiSearch": "AI 検索"
+        "aiSearch": "AI 検索",
+        "golf": "ゴルフ"
       },
       "go": "出発",
       "searchingStays": "ホテルを検索中…",
       "searchingFlights": "フライトを検索中…",
-      "whosComing": "ご宿泊者はどなたですか？"
+      "whosComing": "ご宿泊者はどなたですか？",
+      "searchingGolf": "ティータイムを検索中…"
     },
     "journey": {
       "hero": {
@@ -1003,6 +1013,11 @@
           "titleLead": "さあ、",
           "titleRest": "選ぼう。",
           "caption": "宿泊、フライト、ゴルフをひとつの場所で。"
+        },
+        "golf": {
+          "titleLead": "または、",
+          "titleRest": "ティーオフ。",
+          "caption": "提携ゴルフ場のリアルなティータイムを、1人あたりの料金で。"
         }
       },
       "strip": {
@@ -1012,7 +1027,7 @@
         "staysNote": "ホテル＆宿泊施設",
         "flightsNote": "取り扱いの全航空会社",
         "golf": "ゴルフ",
-        "golfNote": "近日公開"
+        "golfNote": "厳選コース、ティータイムはお問い合わせで"
       },
       "ask": {
         "placeholder": "ご希望の旅を教えてください…",
@@ -2119,7 +2134,13 @@
       "origin": "今いる場所",
       "aDate": "好きな日",
       "yourDates": "ご希望の日程",
-      "flexibleTrip": "柔軟な旅"
+      "flexibleTrip": "柔軟な旅",
+      "teeOffAt": "ゴルフ場",
+      "onDay": "、日付 ",
+      "forPlayers": "、人数 ",
+      "theCourse": "お好きなゴルフ場",
+      "firstOpenDay": "最短の空き日",
+      "players": "{count}人"
     },
     "trendingCities": "人気の都市",
     "popularAirports": "人気の空港",
@@ -2132,7 +2153,20 @@
     "nights": "{count}泊",
     "listView": "リスト表示",
     "mapView": "地図表示",
-    "metaTitle": "ホテル・宿泊先の検索"
+    "metaTitle": "ホテル・宿泊先の検索",
+    "golf": {
+      "findCourse": "ゴルフ場・都市・国を検索…",
+      "loading": "ゴルフ場を読み込み中…",
+      "none": "予約できるゴルフ場はまだありません。",
+      "noMatch": "「{query}」に一致するゴルフ場はありません。",
+      "allCourses": "すべてのゴルフ場 →",
+      "courses": "ゴルフ場",
+      "whenPlay": "いつプレーしますか？",
+      "anyDayNote": "空欄のままにすると、ティータイムのある最短の日を表示します。",
+      "howMany": "何名でプレーしますか？",
+      "fewer": "人数を減らす",
+      "more": "人数を増やす"
+    }
   },
   "seo": {
     "orgDescription": "CheapestGo は、世界中で最安値の航空券とホテルを見つける現代的な旅行予約プラットフォームです。",
@@ -2565,6 +2599,24 @@
       "doneRefundFailed": "ご予約はキャンセルされましたが、返金が完了しませんでした。サポートまでご連絡ください。対応いたします。",
       "failed": "ご予約をキャンセルできませんでした。もう一度お試しいただくか、サポートまでお問い合わせください。",
       "close": "閉じる"
+    },
+    "golfCard": {
+      "date": "日付",
+      "teeTime": "ティータイム",
+      "view": "予約を見る",
+      "empty": "ゴルフのご予約はまだありません",
+      "totalPaid": "お支払い総額",
+      "chargedOnConfirmation": "ゴルフ場の確定後に請求されます",
+      "notCharged": "請求なし",
+      "refunded": "{amount} 返金済み",
+      "status": {
+        "held": "お支払い待ち",
+        "requested": "ゴルフ場に確認中",
+        "confirmed": "確定",
+        "expired": "期限切れ",
+        "declined": "お断り",
+        "cancelled": "キャンセル済み"
+      }
     }
   },
   "support": {
@@ -2638,7 +2690,6 @@
     "settings": "設定",
     "primary": "メイン",
     "closeSettings": "設定を閉じる",
-    "scrollToTop": "上へ戻る",
     "scrollLeft": "左へスクロール",
     "scrollRight": "右へスクロール",
     "filter": "フィルター",
@@ -2795,6 +2846,177 @@
     "meta": {
       "title": "会社概要 — CheapestGo",
       "description": "CheapestGoは、東南アジアを旅する人が航空券・ホテル・パッケージを明瞭な料金で検索・予約できるモダンなオンライン旅行会社です。"
+    }
+  },
+  "golf": {
+    "metaTitle": "ゴルフ場",
+    "metaDescription": "当チームがプレーを手配できるゴルフ場です。グリーンフィーの目安を確認し、ティータイムはお問い合わせください。",
+    "courseMetaTitle": "{name} — ゴルフ",
+    "eyebrow": "ゴルフ",
+    "title": "ゴルフ場",
+    "subtitle": "当チームがプレーを手配できるゴルフ場です。気になるコースを選んで、ティータイムをお問い合わせください。",
+    "allCountries": "すべての国",
+    "filterLabel": "国で絞り込む",
+    "holes": "{holes}ホール",
+    "par": "パー{par}",
+    "greenFeesFrom": "グリーンフィー {price}〜",
+    "fromLabel": "グリーンフィー",
+    "guidePrice": "1名あたりの目安料金です。ティータイムのお問い合わせ時に正確な料金をご案内します。",
+    "amenitiesTitle": "施設・サービス",
+    "aboutTitle": "コース紹介",
+    "addressTitle": "住所",
+    "askTeeTimes": "ティータイムを問い合わせる",
+    "askHint": "サポートチャットで当チームがお答えします。",
+    "askSignIn": "ログインすると、チャットでティータイムをお問い合わせいただけます。",
+    "photo": "写真 {n}",
+    "breadcrumb": "ゴルフ",
+    "emptyTitle": "まだゴルフ場がありません",
+    "emptyBody": "ゴルフ場を準備中です。しばらくしてからご確認ください。",
+    "emptyCountryTitle": "{country}のゴルフ場はありません",
+    "emptyCountryBody": "別の国を選ぶか、すべてのゴルフ場をご覧ください。",
+    "seeAll": "すべてのゴルフ場を見る",
+    "errorTitle": "ゴルフ場を読み込めませんでした",
+    "errorBody": "問題が発生しました。もう一度お試しください。",
+    "retry": "再試行",
+    "missingTitle": "このゴルフ場はご覧いただけません",
+    "missingBody": "削除された可能性があります。手配可能なゴルフ場をご覧ください。",
+    "amenities": {
+      "caddie": "キャディ",
+      "cart": "ゴルフカート",
+      "driving_range": "練習場",
+      "putting_green": "パッティンググリーン",
+      "clubhouse": "クラブハウス",
+      "restaurant": "レストラン",
+      "club_rental": "レンタルクラブ",
+      "pro_shop": "プロショップ",
+      "lessons": "レッスン",
+      "night_golf": "ナイター"
+    },
+    "teeTimes": {
+      "title": "ティータイムを予約",
+      "date": "日付",
+      "players": "人数",
+      "playerCount": "{count}名",
+      "spotsLeft": "残り{count}枠",
+      "priceNote": "{count}名でご利用の場合の1名あたりの総額（サービス料込み）です。人数によって変わります。",
+      "priceOnRequest": "料金はお問い合わせ",
+      "none": "この日は空いているティータイムがありません。別の日をお選びください。",
+      "loadError": "ティータイムを読み込めませんでした。",
+      "prevMonth": "前の月",
+      "nextMonth": "次の月",
+      "pickHint": "予約する時間を選んでください。",
+      "askThis": "このティータイムを問い合わせる",
+      "draft": "こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？",
+      "earlierDays": "前の日",
+      "laterDays": "次の日",
+      "earlierTimes": "前の時間",
+      "laterTimes": "次の時間",
+      "summary": "{date} · {time} · {count}名",
+      "chargedAfter": "カードへの請求はゴルフ場の確定後のみです。",
+      "total": "合計",
+      "justGone": "この時間は先ほど埋まりました。別の時間をお選びください。",
+      "book": "予約"
+    },
+    "count": "ゴルフ場 {count}件",
+    "countIn": "{country}のゴルフ場 {count}件",
+    "back": "戻る",
+    "booking": {
+      "metaTitle": "ティータイムの予約",
+      "title": "ティータイムの予約",
+      "yourBooking": "ゴルフのご予約",
+      "backToCourse": "ゴルフ場に戻る",
+      "leadName": "代表プレーヤー",
+      "leadNameRequired": "代表プレーヤーのお名前を入力してください。",
+      "leadNameHint": "ゴルフ場の予約表に載るお名前です。",
+      "continue": "お支払いに進む",
+      "starting": "枠を確保しています…",
+      "startError": "お支払いを開始できませんでした。もう一度お試しください。",
+      "tooMany": "試行回数が多すぎます。少し待ってからもう一度お試しください。",
+      "priceChanged": "このティータイムの料金が変更されました。続ける前に新しい合計をご確認ください。",
+      "holdTimer": "枠は {time} の間確保されます。",
+      "payButton": "このティータイムをリクエスト · {amount}",
+      "paying": "カードを承認しています…",
+      "payFailed": "カードを承認できませんでした。もう一度お試しください。",
+      "howItWorks": "今はカードの承認のみで、ゴルフ場がティータイムを確定した後（最長48時間以内）にのみ請求されます。ゴルフ場がお受けできない場合、承認は解除され、料金はかかりません。",
+      "date": "日付",
+      "time": "ティータイム",
+      "players": "人数",
+      "greenFee": "グリーンフィー",
+      "serviceFee": "サービス料",
+      "total": "合計",
+      "reference": "予約番号",
+      "email": "メール",
+      "finishPaying": "お支払いを完了する",
+      "pickAnother": "別の時間を選ぶ",
+      "unavailableTitle": "このティータイムはご利用いただけなくなりました",
+      "unavailableBody": "お選びいただいた後に埋まったか、締め切られました。請求はありません。",
+      "tooFewSpots": "このティータイムの残りは{count}枠のみです。請求はありません。",
+      "holdRanOutTitle": "確保時間が終了しました",
+      "holdRanOutBody": "15分が過ぎたため枠を解放しました。請求はありません。",
+      "missingTitle": "このご予約が見つかりません",
+      "missingBody": "別のアカウントのご予約かもしれません。ご予約時のメールアドレスでログインしているかご確認ください。",
+      "status": {
+        "held": {
+          "title": "お支払いをお待ちしています",
+          "body": "{holdEnds}まで枠を確保しています。お支払いを完了すると、ゴルフ場へリクエストが送られます。"
+        },
+        "requested": {
+          "title": "ゴルフ場に確認しています",
+          "body": "カードは承認のみで、請求はされていません。{deadline}までにご回答します。ゴルフ場がお受けできない場合、承認は解除され、料金はかかりません。"
+        },
+        "confirmed": {
+          "title": "ご予約が確定しました",
+          "body": "ゴルフ場がティータイムを確定し、カードに請求しました。"
+        },
+        "expired": {
+          "title": "このご予約は期限切れです",
+          "body": "時間内にお支払いがなかったため、請求はなく、枠は解放されました。"
+        },
+        "declined": {
+          "title": "ゴルフ場がこのティータイムをお受けできませんでした",
+          "body": "カードへの請求はなく、承認は解除されました。別の時間をお選びください。"
+        },
+        "notAnswered": {
+          "title": "時間内に確定できませんでした",
+          "body": "カードへの請求はなく、承認は解除されました。申し訳ございません。別の時間をお選びください。"
+        },
+        "cancelled": {
+          "title": "このご予約はキャンセルされました",
+          "body": "請求はなく、カードの承認は解除されました。"
+        },
+        "cancelledByTeam": {
+          "title": "ゴルフ場の都合によりティータイムがキャンセルされました",
+          "body": "請求はなく、カードの承認は解除されました。"
+        }
+      },
+      "freeCancelUntil": "{date}まで無料でキャンセルできます。",
+      "noFreeCancel": "このティータイムの無料キャンセル期限はすでに過ぎているため、確定後はオンラインでキャンセルできません。",
+      "freeCancelEnded": "無料キャンセルは{date}に終了しました。ご予約の変更はお問い合わせください。",
+      "contactSupport": "サポートに問い合わせる",
+      "extrasHeading": "オプション",
+      "extrasHint": "任意です。ティータイムの確定時に、当社スタッフがゴルフ場に手配します。",
+      "extraEach": "1点あたり{price}",
+      "extraLine": "{name} × {count}",
+      "extrasUnavailable": "提供されているオプションが変更されました。内容をご確認のうえ、もう一度お試しください。",
+      "extraAdd": "{name}を追加",
+      "extraRemove": "{name}を減らす",
+      "extraNames": {
+        "club_rental": "レンタルクラブ",
+        "caddie": "キャディ",
+        "cart": "ゴルフカート",
+        "lessons": "ゴルフレッスン",
+        "range_balls": "練習ボール(カゴ)"
+      },
+      "supportDraft": "こんにちは。ゴルフのご予約 {reference} の変更について相談したいです。",
+      "cancelRequest": "このリクエストをキャンセル",
+      "cancelBooking": "予約をキャンセル",
+      "cancelRequestNote": "請求はありません。キャンセルするとカードの承認が解除され、この枠は手放すことになります。",
+      "refundNote": "サービス料を含む全額 {amount} をご返金します。",
+      "confirmCancel": "はい、キャンセルします",
+      "keepBooking": "予約を続ける",
+      "cancelling": "キャンセルしています…",
+      "cancelFailed": "今はキャンセルできませんでした。変更はありません。もう一度お試しください。",
+      "refunded": "{amount} を返金しました。明細に反映されるまで 5〜10 営業日かかる場合があります。"
     }
   }
 }

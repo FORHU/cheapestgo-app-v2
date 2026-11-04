@@ -20,17 +20,31 @@ describe('guessDistanceUnit', () => {
 
 describe('formatDistance', () => {
     it.each([
-        [990, 'km', '990 m'],
-        [995, 'km', '1 km'],
+        [360, 'km', '0.36 km'],
+        [990, 'km', '0.99 km'],
         [999, 'km', '1 km'],
-        [-50, 'km', '0 m'],
-        [-50, 'mi', '0 ft'],
+        [-50, 'km', '0 km'],
+        [-50, 'mi', '0 mi'],
+        [3, 'km', '0.01 km'],
         [1234, 'km', '1.2 km'],
-        [144.8, 'mi', '480 ft'],
-        [160.9344, 'mi', '0.1 mi'],
+        [144.8, 'mi', '0.09 mi'],
+        [360, 'mi', '0.22 mi'],
         [1609.344, 'mi', '1 mi'],
+        [4828, 'mi', '3 mi'],
     ] as const)('%d m in %s → %s', (meters, unit, text) => {
         expect(formatDistance(meters, unit, 'en')).toBe(text);
+    });
+
+    it('never steps down to metres or feet, whatever the distance', () => {
+        for (const meters of [1, 50, 120, 480, 900]) {
+            expect(formatDistance(meters, 'km', 'en')).toMatch(/ km$/);
+            expect(formatDistance(meters, 'mi', 'en')).toMatch(/ mi$/);
+        }
+    });
+
+    it('reads the radius steps as round numbers', () => {
+        expect(RADIUS_OPTIONS.mi.map(m => formatDistance(m, 'mi', 'en'))).toEqual(['0.5 mi', '1 mi', '3 mi', '5 mi']);
+        expect(RADIUS_OPTIONS.km.map(m => formatDistance(m, 'km', 'en'))).toEqual(['1 km', '2 km', '5 km', '10 km']);
     });
 
     it('shows a dash for a distance that is not a number', () => {

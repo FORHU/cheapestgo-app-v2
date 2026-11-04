@@ -2,14 +2,16 @@
 
 import { useTranslations } from 'next-intl';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
-    AirVent, Bath, Bed, Building2, Check, ChevronLeft, ChevronRight,
-    Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, UtensilsCrossed,
+    AirVent, Bath, Bed, BedDouble, Building2, Check, ChevronLeft, ChevronRight,
+    Coffee, Dog, Maximize2, Refrigerator, Sparkles, Tv, User,
     Users, Wifi, Wind, X, type LucideIcon,
 } from 'lucide-react';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/cn';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { currencySymbol } from '@/shared/lib/format';
@@ -304,8 +306,16 @@ function roomPalette(tone: 'light' | 'dark') {
         /** The detail modal — the same slate-900 as the room card that opens it. */
         modalBg:      dark ? 'bg-slate-900' : 'bg-white',
         modalTitle:   dark ? 'text-white' : 'text-slate-900',
-        modalLabel:   dark ? 'text-slate-500' : 'text-slate-400',
-        modalClose:   dark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-700',
+        /** The modal's body copy — the facts, amenities and sections. */
+        modalText:    dark ? 'text-slate-300' : 'text-slate-700',
+        /** The small uppercase eyebrows over each block. */
+        modalLabel:   'text-slate-500',
+        /** The 32px round close button. */
+        modalClose:   dark
+            ? 'bg-white/[0.08] text-slate-300 hover:bg-white/[0.14]'
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+        /** The hairline over the pinned price and Select. */
+        modalRule:    dark ? 'border-white/[0.08]' : 'border-slate-100',
         empty:    dark ? 'text-slate-500' : 'text-slate-400',
     };
 }
@@ -460,11 +470,11 @@ function structuralDetails(room: RoomOption, bedHint: string | null, occupancy?:
     const out: Feature[] = [];
 
     const bed = room.bedType ?? bedHint ?? bedFromName(room.name);
-    if (bed) out.push({ label: bed, icon: Bed });
+    if (bed) out.push({ label: bed, icon: BedDouble });
 
     const occ = occupancyLabel(occupancy)
         ?? (room.maxOccupancy ? `Up to ${room.maxOccupancy} guests` : null);
-    if (occ) out.push({ label: occ, icon: Users });
+    if (occ) out.push({ label: occ, icon: User });
 
     if (room.size) out.push({ label: `${room.size}sqm`, icon: Maximize2 });
 
@@ -499,22 +509,11 @@ function boardPillLabel(rate: RateRow): string | undefined {
 
 // ─── Small parts ──────────────────────────────────────────────────────────────
 
-function Pill({ palette, children }: { palette: Palette; children: React.ReactNode }) {
-    return (
-        <span className={cn(
-            'inline-flex items-center rounded-full px-3 py-1 text-[12px] font-medium whitespace-nowrap',
-            palette.tag,
-        )}>
-            {children}
-        </span>
-    );
-}
-
 function FeatureRow({ feature, palette }: { feature: Feature; palette: Palette }) {
     const Icon = feature.icon;
     return (
-        <li className={cn('flex items-start gap-2 text-[15px]', palette.feature)}>
-            <Icon size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
+        <li className={cn('flex items-start gap-1.5 text-[13px]', palette.modalText)}>
+            <Icon size={16} strokeWidth={1.75} className="mt-px shrink-0" />
             <span className="min-w-0 capitalize">{feature.label}</span>
         </li>
     );
@@ -571,8 +570,8 @@ interface RateCard {
     roomDetails: Feature[];
     /** The refundable rate's cancellation line; `null` for a non-refundable one. */
     terms: string | null;
-    /** Everything the modal's "Room" section lists — structural rows plus amenities. */
-    allFeatures: Feature[];
+    /** The in-room amenities the modal lists when ETG matched no content — see `amenityFeatures`. */
+    amenities: Feature[];
     boardPill?: string;
     boardName?: string;
     refundable: boolean;
@@ -581,12 +580,27 @@ interface RateCard {
     /** Per night, in the user's currency. */
     nightly: number;
     /** ETG room-detail content, when the API matched this room to a room-group.
-     *  Absent → the modal falls back to `allFeatures`. */
+     *  Absent → the modal falls back to `amenities`. */
     content?: RoomContent;
     /** The room's own photographs. Empty → the hotel's shot stands in, labelled as such. */
     photos: string[];
 }
 
+/** Tiles in the gallery's thumbnail strip. Past that, the last tile counts the photos left over. */
+const STRIP_TILES = 4;
+
+/** The modal photo's back / next buttons, less the edge each one sits on. */
+const MODAL_PHOTO_ARROW =
+    'absolute top-1/2 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]';
+
+/**
+ * The room details modal, as the 1a design splits it: the gallery on the left, the room on the
+ * right, and the price with Select pinned under the room. Below `md` it is a bottom sheet — the
+ * gallery over the room, the price and Select still pinned to the bottom edge.
+ *
+ * The close button comes first in the DOM, the photos next and Select last, which is the order
+ * Tab walks; `trapTab` wraps it at both ends while the modal is open.
+ */
 function RoomDetailDialog({
     card, palette, currency, nights, selected, onClose, onSelect,
     propertySections, additionalInfo, galleryFallback,
@@ -597,29 +611,55 @@ function RoomDetailDialog({
      *  room sections. */
     propertySections?: DetailSection[];
     additionalInfo?: string;
-    /** The hotel photo, shown when the matched room-group carried no images. */
+    /** The hotel photo, shown when the room carries no photos of its own. */
     galleryFallback?: string | null;
 }) {
     const tAll = useTranslations();
     const t = useTranslations('property');
     const [lightboxStart, setLightboxStart] = useState<number | null>(null);
+    const [active, setActive] = useState(0);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const closeRef = useRef<HTMLButtonElement>(null);
+    const photos = card.photos;
+
+    // Focus moves in when the modal opens, and back to whatever opened it when it closes.
+    useEffect(() => {
+        const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        closeRef.current?.focus();
+        return () => { if (opener?.isConnected) opener.focus(); };
+    }, []);
 
     useEffect(() => {
-        // While the photo viewer is open it owns Escape (and closes itself);
-        // the modal only takes Escape once the viewer is gone.
+        // While the photo viewer is open it owns the keyboard — Escape closes it, the arrows
+        // move it — so the modal only takes keys once the viewer is gone.
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && lightboxStart === null) onClose();
+            if (lightboxStart !== null) return;
+            if (e.key === 'Escape') onClose();
+            else if (e.key === 'ArrowRight' && photos.length > 1) setActive(i => (i + 1) % photos.length);
+            else if (e.key === 'ArrowLeft' && photos.length > 1) setActive(i => (i - 1 + photos.length) % photos.length);
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [onClose, lightboxStart]);
+    }, [onClose, lightboxStart, photos.length]);
+
+    /** Tab off either end comes round to the other, so focus never reaches the page behind. */
+    const trapTab = (e: React.KeyboardEvent) => {
+        if (e.key !== 'Tab' || !dialogRef.current) return;
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
 
     const symbol = currencySymbol(currency) || currency;
     const stayNights = Math.max(1, nights ?? 1);
     const total = card.nightly * stayNights;
     const penalties = card.room.cancelPolicy?.cancelPenalties?.filter(p => fmtDate(p.deadline)) ?? [];
 
-    const sectionLabel = cn('text-[12px] font-bold tracking-[0.12em] uppercase', palette.modalLabel);
+    const eyebrow = cn('text-[10px] font-bold tracking-[0.12em] uppercase', palette.modalLabel);
+    const contentPalette = { feature: palette.modalText, columnHeading: palette.modalTitle, empty: palette.empty };
 
     /**
      * The room-group match can miss even when the hotel has ETG content — the
@@ -639,176 +679,269 @@ function RoomDetailDialog({
      *  comes off the room name, the second off the hotel's metapolicy. */
     const bedLine = roomContent?.bedLine;
     const bedsExtraSummary = roomContent?.bedsExtraSummary;
+    /** The key facts under the name — the bed, the party, the size. ETG's bed line, where it
+     *  has one, is the better wording of the bed. */
+    const facts = bedLine
+        ? [{ label: bedLine, icon: BedDouble }, ...card.roomDetails.filter(f => f.icon !== BedDouble)]
+        : card.roomDetails;
+    const amenityCount = hasRoomContent ? roomContent!.keyFacts.length : card.amenities.length;
+
+    /** The strip shows every photo while they fit, and three plus a "+N" tile once they do not. */
+    const thumbs = photos.length > STRIP_TILES ? photos.slice(0, STRIP_TILES - 1) : photos;
+    const leftOver = photos.length - thumbs.length;
 
     return createPortal(
+        // A deep scrim rather than a light tint: the page behind is a busy one — photos,
+        // a map, prices — and at 45% it still competed with the modal for the eye.
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            data-testid="room-dialog-backdrop"
+            className="fixed inset-0 z-[9999] flex items-end justify-center bg-slate-950/75 md:items-center md:p-4"
             onClick={onClose}
         >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <div
+            <motion.div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-label={`${card.heading} details`}
                 onClick={(e) => e.stopPropagation()}
-                className={cn('relative z-10 max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-[18px] p-6', palette.modalBg)}
+                onKeyDown={trapTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className={cn(
+                    // Square, like the room cards that open it.
+                    'relative flex max-h-[92vh] w-full flex-col overflow-hidden shadow-[0_20px_25px_-5px_rgba(0,0,0,0.15)]',
+                    'md:grid md:h-[min(680px,calc(100vh-2rem))] md:w-[min(1080px,calc(100vw-2rem))] md:grid-cols-[minmax(0,1.2fr)_minmax(380px,1fr)] md:grid-rows-[minmax(0,1fr)_auto]',
+                    palette.modalBg,
+                )}
             >
+                {/* Where the design's header puts it on desktop; over the photo on the sheet. */}
                 <button
+                    ref={closeRef}
                     type="button"
                     onClick={onClose}
                     aria-label={tAll('trips.cancellationModal.close')}
-                    className={cn('absolute right-5 top-5 cursor-pointer transition-colors', palette.modalClose)}
+                    className={cn('absolute top-5 right-5 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors', palette.modalClose)}
                 >
-                    <X size={18} />
+                    <X size={16} />
                 </button>
 
-                <h3 className={cn('pr-8 text-[22px] font-semibold', palette.modalTitle)}>{card.heading}</h3>
+                {/* One scroll on the sheet, gallery and room together; on desktop this wrapper
+                    dissolves and its two children take the grid's two columns. */}
+                <div className="min-h-0 flex-1 overflow-y-auto md:contents">
+                    {/* The photo takes the whole column, edge to edge. Its counter and the
+                        thumbnails ride its bottom edge on a scrim, as the place cards ride the map. */}
+                    <div className={cn('relative h-72 shrink-0 overflow-hidden md:col-start-1 md:row-span-2 md:row-start-1 md:h-auto', palette.imageBg)}>
+                        {photos.length > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => setLightboxStart(active)}
+                                aria-label={t('rooms.viewRoomPhotos')}
+                                className="absolute inset-0 cursor-zoom-in"
+                            >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img data-testid="room-gallery-main" src={photos[active]} alt="" className="h-full w-full object-cover" />
+                            </button>
+                        ) : galleryFallback ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={galleryFallback} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                        ) : (
+                            <div data-testid="room-gallery-placeholder" className="absolute inset-0" />
+                        )}
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {card.boardPill && <Pill palette={palette}>{card.boardPill}</Pill>}
-                    <Pill palette={palette}>{card.refundable ? 'Refundable' : 'Non-refundable'}</Pill>
+                        {(photos.length > 0 || galleryFallback) && (
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-2 bg-linear-to-t from-black/65 via-black/25 to-transparent px-3 pt-16 pb-3">
+                                {photos.length > 0 ? (
+                                    <span className="self-end rounded-full bg-slate-900/75 px-2 py-[3px] font-mono text-[11px] text-white">
+                                        {active + 1} / {photos.length}
+                                    </span>
+                                ) : (
+                                    // Labelled, so the hotel's building is never passed off as the room.
+                                    <span className="self-start rounded-full bg-slate-900/75 px-2 py-[3px] text-[11px] text-white">
+                                        {t('v2.photoOfProperty')}
+                                    </span>
+                                )}
+
+                                {photos.length > 1 && (
+                                    <div className="pointer-events-auto grid grid-cols-4 gap-2">
+                                        {thumbs.map((src, i) => (
+                                            <button
+                                                key={`${i}-${src}`}
+                                                type="button"
+                                                onClick={() => setActive(i)}
+                                                aria-label={`Photo ${i + 1} of ${photos.length}`}
+                                                aria-pressed={i === active}
+                                                className={cn(
+                                                    'h-16 cursor-pointer overflow-hidden transition-opacity',
+                                                    i === active ? 'outline-2 outline-white' : 'opacity-70 hover:opacity-100',
+                                                )}
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={src} alt="" className="h-full w-full object-cover" />
+                                            </button>
+                                        ))}
+                                        {leftOver > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setLightboxStart(thumbs.length)}
+                                                aria-label={`+${leftOver} more photos`}
+                                                className={cn(
+                                                    'h-16 cursor-pointer bg-black/55 text-[13px] font-semibold text-white backdrop-blur-sm hover:bg-black/70',
+                                                    active >= thumbs.length && 'outline-2 outline-white',
+                                                )}
+                                            >
+                                                +{leftOver}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Back and next, at the photo's edges — the same bare chevrons
+                            as the banner and the nearby-places strip, held legible on a
+                            bright photo by a drop-shadow rather than a plate. They step
+                            through every photo, wrapping at the ends, as the arrow keys
+                            already did; the strip below follows along. 44px targets, so
+                            the glyph can stay slim. Last in the box, so they sit over
+                            the zoom button and the scrim rather than under them. */}
+                        {photos.length > 1 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setActive(i => (i - 1 + photos.length) % photos.length)}
+                                    aria-label={t('v2.previousPhoto')}
+                                    className={cn(MODAL_PHOTO_ARROW, 'left-2')}
+                                >
+                                    <ChevronLeft size={30} strokeWidth={2.25} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActive(i => (i + 1) % photos.length)}
+                                    aria-label={t('v2.nextPhoto')}
+                                    className={cn(MODAL_PHOTO_ARROW, 'right-2')}
+                                >
+                                    <ChevronRight size={30} strokeWidth={2.25} />
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex min-w-0 flex-col md:col-start-2 md:row-start-1 md:min-h-0">
+                        <h3 className={cn('font-display pt-5 pr-5 pl-6 text-[22px] leading-[1.2] font-bold tracking-[-0.02em] md:pr-16', palette.modalTitle)}>
+                            {card.heading}
+                        </h3>
+
+                        <div className="flex flex-col gap-[18px] px-6 py-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
+                            {(facts.length > 0 || bedsExtraSummary) && (
+                                <div className="flex flex-col gap-1.5">
+                                    {facts.length > 0 && (
+                                        <ul className={cn('flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px]', palette.modalText)}>
+                                            {facts.map((f, i) => {
+                                                const Icon = f.icon;
+                                                return (
+                                                    <li key={`${f.label}-${i}`} className="flex items-center gap-1.5">
+                                                        <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+                                                        <span className="capitalize">{f.label}</span>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
+                                    {bedsExtraSummary && (
+                                        <p className={cn('text-[12px]', palette.empty)}>{bedsExtraSummary}</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {amenityCount > 0 && (
+                                <section className="flex flex-col gap-2">
+                                    <p className={eyebrow}>{tAll('propertyNav.amenities')}</p>
+                                    {hasRoomContent ? (
+                                        <KeyFactsRow facts={roomContent!.keyFacts} palette={contentPalette} />
+                                    ) : (
+                                        <ul className="grid grid-cols-2 gap-2">
+                                            {card.amenities.map((feature, i) => (
+                                                <FeatureRow key={`${feature.label}-${i}`} feature={feature} palette={palette} />
+                                            ))}
+                                        </ul>
+                                    )}
+                                </section>
+                            )}
+
+                            {modalSections.length > 0 && (
+                                <DetailSectionGrid sections={modalSections} palette={contentPalette} />
+                            )}
+
+                            <section className="flex flex-col gap-2">
+                                <p className={eyebrow}>{tAll('property.policies.title')}</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {card.boardPill && <Badge variant="secondary">{card.boardPill}</Badge>}
+                                    <Badge variant={card.refundable ? 'success' : 'destructive'}>
+                                        {card.refundable ? tAll('property.rooms.freeCancellation') : tAll('property.rooms.nonRefundable')}
+                                    </Badge>
+                                </div>
+                                <p className={cn('text-[12px] leading-[1.5]', palette.empty)}>{card.cancellation}</p>
+                                {penalties.length > 0 && (
+                                    <ul className={cn('flex flex-col gap-1 text-[12px]', palette.empty)}>
+                                        {penalties.map((p, i) => (
+                                            <li key={i}>
+                                                From {fmtDate(p.deadline)}:{' '}
+                                                {p.amount
+                                                    ? `${currencySymbol(p.currency || currency) || p.currency || symbol}${Math.round(p.amount).toLocaleString()} charge`
+                                                    : 'free'}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {card.rate.currency && card.rate.currency !== currency && (
+                                    <p className={cn('text-[12px]', palette.empty)}>{`Charged in ${card.rate.currency} at booking.`}</p>
+                                )}
+                            </section>
+
+                            {additionalInfo && (
+                                <section className="flex flex-col gap-2">
+                                    <p className={eyebrow}>{t('v2.additionalInfo')}</p>
+                                    <p className={cn('text-[13px] leading-[1.5] whitespace-pre-line', palette.modalText)}>{additionalInfo}</p>
+                                </section>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                {bedLine && (
-                    <p className={cn('mt-4 flex items-center gap-2 text-[15px]', palette.feature)}>
-                        <Bed size={17} strokeWidth={1.75} className="shrink-0" />
-                        {bedLine}
-                    </p>
-                )}
-                {bedsExtraSummary && (
-                    <p className={cn('mt-1 text-[13px]', palette.empty)}>{bedsExtraSummary}</p>
-                )}
-
-                {/*
-                  * The room's photographs, independent of whether ETG also matched key facts
-                  * or sections. They used to hang off `content.gallery` inside the branch
-                  * below, so a room with eight pictures and no other content showed the
-                  * hotel's exterior instead — and since nothing ever built `content`, that
-                  * was every room.
-                  */}
-                {card.photos.length > 0 ? (
-                    <div className="mt-4 flex gap-2 overflow-x-auto">
-                        {card.photos.map((src, i) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                key={src}
-                                src={src}
-                                alt=""
-                                onClick={() => setLightboxStart(i)}
-                                className="h-28 w-40 shrink-0 cursor-pointer rounded-lg object-cover"
-                            />
-                        ))}
-                    </div>
-                ) : galleryFallback && (
-                    <div className="mt-4">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={galleryFallback} alt="" className="h-40 w-full rounded-lg object-cover" />
-                        <p className={cn('mt-1 text-[12px]', palette.empty)}>{t('v2.photoOfProperty')}</p>
-                    </div>
-                )}
-
-                {hasRoomContent ? (
-                    <>
-                        {roomContent!.keyFacts.length > 0 && (
-                            <section className="mt-5">
-                                <KeyFactsRow facts={roomContent!.keyFacts} palette={palette} />
-                            </section>
-                        )}
-                    </>
-                ) : (
-                    card.allFeatures.length > 0 && (
-                        <section className="mt-6">
-                            <p className={sectionLabel}>{tAll('property.rooms.room')}</p>
-                            <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                {card.allFeatures.map((feature, i) => (
-                                    <FeatureRow key={`${feature.label}-${i}`} feature={feature} palette={palette} />
-                                ))}
-                            </ul>
-                        </section>
-                    )
-                )}
-
-                {modalSections.length > 0 && (
-                    <section className="mt-6">
-                        <DetailSectionGrid sections={modalSections} palette={palette} />
-                    </section>
-                )}
-
-                {card.boardName && (
-                    <section className="mt-6">
-                        <p className={sectionLabel}>{t('v2.mealPlan')}</p>
-                        <p className={cn('mt-2 flex items-center gap-2 text-[15px]', palette.feature)}>
-                            <UtensilsCrossed size={17} strokeWidth={1.75} className="shrink-0" />
-                            {card.boardName}
+                {/* Pinned: the bottom of the sheet, and the foot of the room column on desktop. */}
+                <div className={cn('flex items-center justify-between gap-4 border-t px-6 py-3.5 md:col-start-2 md:row-start-2', palette.modalRule)}>
+                    <div className="min-w-0">
+                        <p className="flex items-baseline gap-1">
+                            <span className={cn('font-mono text-[20px] font-bold', palette.modalTitle)}>
+                                {`${symbol}${Math.round(card.nightly).toLocaleString()}`}
+                            </span>
+                            <span className={cn('text-[12px]', palette.modalLabel)}>{t('rooms.perNight')}</span>
                         </p>
-                    </section>
-                )}
-
-                <section className="mt-6">
-                    <p className={sectionLabel}>{t('v2.cancellationPolicy')}</p>
-                    <p className={cn('mt-2 flex items-start gap-2 text-[15px]', palette.feature)}>
-                        <ShieldCheck size={17} strokeWidth={1.75} className="mt-0.5 shrink-0" />
-                        <span>{card.cancellation}</span>
-                    </p>
-                    {penalties.length > 0 && (
-                        <ul className={cn('mt-2 flex flex-col gap-1 pl-[25px] text-[14px]', palette.empty)}>
-                            {penalties.map((p, i) => (
-                                <li key={i}>
-                                    From {fmtDate(p.deadline)}:{' '}
-                                    {p.amount
-                                        ? `${currencySymbol(p.currency || currency) || p.currency || symbol}${Math.round(p.amount).toLocaleString()} charge`
-                                        : 'free'}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
-
-                {additionalInfo && (
-                    <section className="mt-6">
-                        <p className={sectionLabel}>{t('v2.additionalInfo')}</p>
-                        <p className={cn('mt-2 whitespace-pre-line text-[14px]', palette.feature)}>{additionalInfo}</p>
-                    </section>
-                )}
-
-                <section className="mt-6">
-                    <p className={sectionLabel}>{t('v2.price')}</p>
-                    <p className={cn('mt-2 text-[15px]', palette.feature)}>
-                        {`${symbol}${Math.round(card.nightly).toLocaleString()} / night × ${stayNights} night${stayNights === 1 ? '' : 's'}`}
-                    </p>
-                    <p className={cn('text-[17px] font-semibold', palette.modalTitle)}>
-                        {`Total ${symbol}${Math.round(total).toLocaleString()}`}
-                    </p>
-                    <p className={cn('mt-1 text-[13px]', palette.empty)}>
-                        {`Charged in ${card.rate.currency} at booking.`}
-                    </p>
-                </section>
-
-                <div className="mt-7 flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className={cn('cursor-pointer rounded-full px-6 py-2.5 text-[14px] font-medium', palette.pillOn)}
-                    >
-                        {tAll('trips.cancellationModal.close')}
-                    </button>
-                    <button
+                        {stayNights > 1 && (
+                            <p className={cn('text-[12px]', palette.empty)}>
+                                {`Total ${symbol}${Math.round(total).toLocaleString()} · ${stayNights} nights`}
+                            </p>
+                        )}
+                    </div>
+                    <Button
                         type="button"
                         onClick={() => { onSelect({ room: card.room, rate: card.rate }); onClose(); }}
                         aria-pressed={selected}
-                        className={cn('cursor-pointer rounded-full px-6 py-2.5 text-[14px] font-medium', palette.pillIdle)}
+                        // The card's own Select corner, so the two read as the same button.
+                        className={cn('shrink-0 cursor-pointer rounded-[2px]', selected ? cn(palette.selectOn, 'shadow-none') : palette.selectIdle)}
                     >
-                        {selected ? 'Selected' : 'Select Room'}
-                    </button>
+                        {selected ? 'Selected' : 'Select room'}
+                    </Button>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Its own layer — clicks inside the viewer (backdrop, close, arrows)
                 must not bubble to the modal's `onClick={onClose}` behind it. */}
-            {lightboxStart !== null && card.photos.length > 0 && (
+            {lightboxStart !== null && photos.length > 0 && (
                 <div onClick={(e) => e.stopPropagation()}>
                     <Lightbox
-                        images={card.photos}
+                        images={photos}
                         startIndex={lightboxStart}
                         onClose={() => setLightboxStart(null)}
                     />
@@ -1092,7 +1225,7 @@ export function RoomSelection({
             bed: room.bedType ?? split.bed ?? bedFromName(room.name),
             roomDetails: structural,
             terms: cancellationTerms(rate, checkIn),
-            allFeatures: [...structural, ...amenities],
+            amenities,
             boardPill: boardPillLabel(rate),
             boardName: boardLabel(rate),
             refundable: isRefundable(rate),

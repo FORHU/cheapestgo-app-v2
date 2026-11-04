@@ -488,7 +488,15 @@
         "paymentProcessedSecurely": "付款已通过 Stripe 安全处理。",
         "viewBookings": "查看预订",
         "passengerSectionTitle": "乘客",
-        "contact": "联系方式"
+        "contact": "联系方式",
+        "next": {
+          "title": "完善您的行程",
+          "hotel": "预订酒店",
+          "hotelLine": "{city}的住宿 · {dates}",
+          "teeTime": "预订开球时间",
+          "teeTimeLine": "{city}的高尔夫球场",
+          "teeTimeAnywhere": "浏览高尔夫球场"
+        }
       }
     },
     "datePicker": {
@@ -967,12 +975,14 @@
       "searchMode": {
         "stays": "住宿",
         "flights": "航班",
-        "aiSearch": "AI 搜索"
+        "aiSearch": "AI 搜索",
+        "golf": "高尔夫"
       },
       "go": "出发",
       "searchingStays": "正在搜索酒店…",
       "searchingFlights": "正在搜索航班…",
-      "whosComing": "谁来入住？"
+      "whosComing": "谁来入住？",
+      "searchingGolf": "正在查找开球时间…"
     },
     "journey": {
       "hero": {
@@ -1003,6 +1013,11 @@
           "titleLead": "现在",
           "titleRest": "做出选择。",
           "caption": "住宿、航班与高尔夫，一站搞定。"
+        },
+        "golf": {
+          "titleLead": "或者",
+          "titleRest": "去开球。",
+          "caption": "合作球场的真实开球时间，按每位球员计价。"
         }
       },
       "strip": {
@@ -1012,7 +1027,7 @@
         "staysNote": "酒店与民宿",
         "flightsNote": "覆盖所有可订航空公司",
         "golf": "高尔夫",
-        "golfNote": "即将推出"
+        "golfNote": "精选球场，开球时间可咨询"
       },
       "ask": {
         "placeholder": "描述您想要的旅行…",
@@ -2119,7 +2134,13 @@
       "origin": "您所在的地方",
       "aDate": "某一天",
       "yourDates": "您的出行日期",
-      "flexibleTrip": "灵活的行程"
+      "flexibleTrip": "灵活的行程",
+      "teeOffAt": "球场",
+      "onDay": "，日期 ",
+      "forPlayers": "，人数 ",
+      "theCourse": "心仪的球场",
+      "firstOpenDay": "最早可订日",
+      "players": "{count} 人"
     },
     "trendingCities": "热门城市",
     "popularAirports": "热门机场",
@@ -2132,7 +2153,20 @@
     "nights": "{count} 晚",
     "listView": "列表视图",
     "mapView": "地图视图",
-    "metaTitle": "搜索酒店和住宿"
+    "metaTitle": "搜索酒店和住宿",
+    "golf": {
+      "findCourse": "搜索球场、城市、国家…",
+      "loading": "正在加载球场…",
+      "none": "暂无可预订的球场。",
+      "noMatch": "没有与“{query}”匹配的球场。",
+      "allCourses": "全部球场 →",
+      "courses": "球场",
+      "whenPlay": "您想哪天打球？",
+      "anyDayNote": "留空则显示最早有开球时间的日期。",
+      "howMany": "几位球员？",
+      "fewer": "减少人数",
+      "more": "增加人数"
+    }
   },
   "seo": {
     "orgDescription": "CheapestGo 是一个现代旅行预订平台，帮助旅行者在全球范围内找到最便宜的机票和酒店。",
@@ -2565,6 +2599,24 @@
       "doneRefundFailed": "预订已取消，但退款未成功。请联系客服，我们会为您处理。",
       "failed": "无法取消该预订。请重试，或联系客服。",
       "close": "关闭"
+    },
+    "golfCard": {
+      "date": "日期",
+      "teeTime": "开球时间",
+      "view": "查看预订",
+      "empty": "暂无高尔夫预订",
+      "totalPaid": "已付总额",
+      "chargedOnConfirmation": "球场确认后扣款",
+      "notCharged": "未扣款",
+      "refunded": "已退款 {amount}",
+      "status": {
+        "held": "等待付款",
+        "requested": "等待球场确认",
+        "confirmed": "已确认",
+        "expired": "已过期",
+        "declined": "已拒绝",
+        "cancelled": "已取消"
+      }
     }
   },
   "support": {
@@ -2638,7 +2690,6 @@
     "settings": "设置",
     "primary": "主要",
     "closeSettings": "关闭设置",
-    "scrollToTop": "返回顶部",
     "scrollLeft": "向左滚动",
     "scrollRight": "向右滚动",
     "filter": "筛选",
@@ -2795,6 +2846,177 @@
     "meta": {
       "title": "关于我们 — CheapestGo",
       "description": "CheapestGo 是一家现代化的在线旅行社，帮助东南亚旅客以透明的价格查找并预订机票、酒店和套餐。"
+    }
+  },
+  "golf": {
+    "metaTitle": "高尔夫球场",
+    "metaDescription": "我们团队可为您安排打球的高尔夫球场。查看果岭费参考价，开球时间欢迎咨询。",
+    "courseMetaTitle": "{name} — 高尔夫",
+    "eyebrow": "高尔夫",
+    "title": "高尔夫球场",
+    "subtitle": "我们团队可为您安排打球的球场。选好球场，向我们咨询开球时间。",
+    "allCountries": "所有国家",
+    "filterLabel": "按国家筛选",
+    "holes": "{holes} 洞",
+    "par": "标准杆 {par}",
+    "greenFeesFrom": "果岭费 {price} 起",
+    "fromLabel": "果岭费",
+    "guidePrice": "每位球员的参考价格。咨询开球时间时，我们会确认准确费用。",
+    "amenitiesTitle": "球场设施",
+    "aboutTitle": "球场介绍",
+    "addressTitle": "地址",
+    "askTeeTimes": "咨询开球时间",
+    "askHint": "我们的团队会在客服聊天中回复您。",
+    "askSignIn": "登录后即可通过聊天咨询开球时间。",
+    "photo": "照片 {n}",
+    "breadcrumb": "高尔夫",
+    "emptyTitle": "暂无球场",
+    "emptyBody": "我们正在添加高尔夫球场，请稍后再来看看。",
+    "emptyCountryTitle": "{country}暂无球场",
+    "emptyCountryBody": "试试其他国家，或查看所有球场。",
+    "seeAll": "查看所有球场",
+    "errorTitle": "球场加载失败",
+    "errorBody": "我们这边出了点问题，请重试。",
+    "retry": "重试",
+    "missingTitle": "该球场暂不可见",
+    "missingBody": "它可能已被移除。看看我们可以安排的其他球场。",
+    "amenities": {
+      "caddie": "球童",
+      "cart": "球车",
+      "driving_range": "练习场",
+      "putting_green": "推杆果岭",
+      "clubhouse": "会所",
+      "restaurant": "餐厅",
+      "club_rental": "球杆租赁",
+      "pro_shop": "专卖店",
+      "lessons": "课程",
+      "night_golf": "夜间高尔夫"
+    },
+    "teeTimes": {
+      "title": "预订开球时间",
+      "date": "日期",
+      "players": "人数",
+      "playerCount": "{count} 人",
+      "spotsLeft": "剩 {count} 个位置",
+      "priceNote": "按 {count} 人计算的每人总价，已含服务费，价格随人数变化。",
+      "priceOnRequest": "价格请咨询",
+      "none": "这一天已没有可订的开球时间，请换个日期试试。",
+      "loadError": "开球时间加载失败。",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月",
+      "pickHint": "请选择要预订的时间。",
+      "askThis": "咨询这个开球时间",
+      "draft": "您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？",
+      "earlierDays": "更早的日期",
+      "laterDays": "更晚的日期",
+      "earlierTimes": "更早的时间",
+      "laterTimes": "更晚的时间",
+      "summary": "{date} · {time} · {count} 人",
+      "chargedAfter": "球场确认后才会从您的银行卡扣款。",
+      "total": "合计",
+      "justGone": "该时间刚刚被订走，请选择其他时间。",
+      "book": "预订"
+    },
+    "count": "{count} 个球场",
+    "countIn": "{country}的 {count} 个球场",
+    "back": "返回",
+    "booking": {
+      "metaTitle": "预订开球时间",
+      "title": "预订开球时间",
+      "yourBooking": "您的高尔夫预订",
+      "backToCourse": "返回球场",
+      "leadName": "主要球员",
+      "leadNameRequired": "请输入主要球员的姓名。",
+      "leadNameHint": "球场预订表上显示的姓名。",
+      "continue": "继续付款",
+      "starting": "正在为您保留名额…",
+      "startError": "无法开始付款，请重试。",
+      "tooMany": "尝试次数过多，请稍后再试。",
+      "priceChanged": "此开球时间的价格刚刚发生变化，请在继续之前确认新的合计金额。",
+      "holdTimer": "名额将为您保留 {time}。",
+      "payButton": "申请此开球时间 · {amount}",
+      "paying": "正在授权您的银行卡…",
+      "payFailed": "无法授权您的银行卡，请重试。",
+      "howItWorks": "现在仅授权您的银行卡，球场确认开球时间后（最长 48 小时内）才会扣款。如果球场无法接待，授权将被释放，您无需付款。",
+      "date": "日期",
+      "time": "开球时间",
+      "players": "人数",
+      "greenFee": "果岭费",
+      "serviceFee": "服务费",
+      "total": "合计",
+      "reference": "预订编号",
+      "email": "电子邮箱",
+      "finishPaying": "完成付款",
+      "pickAnother": "选择其他时间",
+      "unavailableTitle": "此开球时间已不可预订",
+      "unavailableBody": "在您选择之后已被订走或关闭。未产生任何费用。",
+      "tooFewSpots": "此开球时间仅剩 {count} 个名额。未产生任何费用。",
+      "holdRanOutTitle": "保留时间已结束",
+      "holdRanOutBody": "15 分钟后我们已释放您的名额。未产生任何费用。",
+      "missingTitle": "找不到此预订",
+      "missingBody": "它可能属于其他账户。请确认您使用预订时的邮箱登录。",
+      "status": {
+        "held": {
+          "title": "等待您付款",
+          "body": "名额保留至 {holdEnds}。完成付款后，您的申请将发送给球场。"
+        },
+        "requested": {
+          "title": "正在与球场确认",
+          "body": "您的银行卡已授权，尚未扣款。我们将在 {deadline} 前给您答复。如果球场无法接待，授权将被释放，您无需付款。"
+        },
+        "confirmed": {
+          "title": "预订成功",
+          "body": "球场已确认您的开球时间，并已从您的银行卡扣款。"
+        },
+        "expired": {
+          "title": "此预订已过期",
+          "body": "未在规定时间内付款，因此未产生费用，名额已释放。"
+        },
+        "declined": {
+          "title": "球场无法接待此开球时间",
+          "body": "您的银行卡未被扣款，授权已释放。请选择其他时间。"
+        },
+        "notAnswered": {
+          "title": "未能及时确认",
+          "body": "您的银行卡未被扣款，授权已释放。非常抱歉，请选择其他时间。"
+        },
+        "cancelled": {
+          "title": "此预订已取消",
+          "body": "未产生任何费用，银行卡授权已释放。"
+        },
+        "cancelledByTeam": {
+          "title": "球场不得不取消此开球时间",
+          "body": "未产生任何费用，银行卡授权已释放。"
+        }
+      },
+      "freeCancelUntil": "{date} 前可免费取消。",
+      "noFreeCancel": "此开球时间的免费取消期限已过，确认后无法在线取消。",
+      "freeCancelEnded": "免费取消已于 {date} 结束。如需更改此预订，请联系我们。",
+      "contactSupport": "联系客服",
+      "extrasHeading": "附加服务",
+      "extrasHint": "可选。我们的团队会在确认开球时间时一并向球场安排。",
+      "extraEach": "每项 {price}",
+      "extraLine": "{name} × {count}",
+      "extrasUnavailable": "可选的附加服务已有变动。请重新查看后再试。",
+      "extraAdd": "增加{name}",
+      "extraRemove": "减少{name}",
+      "extraNames": {
+        "club_rental": "球杆租赁",
+        "caddie": "球童",
+        "cart": "球车",
+        "lessons": "高尔夫课程",
+        "range_balls": "练习球(每筐)"
+      },
+      "supportDraft": "您好！我想咨询更改高尔夫预订 {reference} 的事宜。",
+      "cancelRequest": "取消此申请",
+      "cancelBooking": "取消预订",
+      "cancelRequestNote": "未产生任何费用。取消后，银行卡授权将被释放，这些名额也将放弃。",
+      "refundNote": "您将获得 {amount} 的全额退款，包含服务费。",
+      "confirmCancel": "是的，取消",
+      "keepBooking": "保留预订",
+      "cancelling": "正在取消…",
+      "cancelFailed": "暂时无法取消，预订没有任何变化。请重试。",
+      "refunded": "我们已退款 {amount}。可能需要 5–10 个工作日才会显示在您的账单上。"
     }
   }
 }

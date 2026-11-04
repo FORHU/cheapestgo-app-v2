@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Compass, List, LogIn, Map as MapIcon, Moon, SlidersHorizontal, Sun } from 'lucide-react';
+import { ArrowLeft, List, LogIn, Map as MapIcon, MapPinned, Moon, SlidersHorizontal, Sun } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { useAuthStore } from '@/shared/stores/auth.store';
@@ -155,7 +155,11 @@ export function SearchTopBar({
                     colour of its own. Only ever
                     useful once a stay is picked, since that is what the discs are
                     drawn around, but the toggle stays put so it does not appear and
-                    disappear under the thumb. */}
+                    disappear under the thumb.
+
+                    A pin on a map, not the compass it used to be: a compass reads
+                    as orientation or "locate me", and what this switches is a set
+                    of places pinned around the stay. */}
                 {pois && (
                     <button
                         onClick={pois.onToggle}
@@ -164,7 +168,7 @@ export function SearchTopBar({
                         title={pois.on ? 'Hide nearby places' : 'Show nearby places'}
                         className={cn(ICON_BTN, 'transition-colors')}
                         style={pois.on ? lit : rest}>
-                        <Compass size={13} className="md:size-[17px]" />
+                        <MapPinned size={13} className="md:size-[17px]" />
                     </button>
                 )}
 

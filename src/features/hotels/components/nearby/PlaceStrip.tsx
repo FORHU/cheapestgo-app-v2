@@ -46,12 +46,30 @@ type PlaceCardsProps = Pick<
 
 const SKELETONS = 8;
 
+/** Lifts a plate off the map, so what stands on it holds against a pale street tile or a dark one. */
+const FLOAT_SHADOW = '0 8px 24px rgba(0,0,0,.25)';
+
 function pillStyle(palette: NearbyPalette): React.CSSProperties {
     return {
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999,
         border: `1px solid ${palette.cardBorder}`, background: palette.cardBg, color: palette.title,
         fontSize: 13, fontWeight: 700, cursor: 'pointer',
     };
+}
+
+/**
+ * How tall the category menu may open: the room between its trigger and the top of whatever clips
+ * it — the map, which is as tall as its page draws it, so the room is measured rather than assumed.
+ * Undefined when nothing clips, or when there is nothing to measure (a test renderer lays nothing out).
+ */
+function roomAbove(trigger: HTMLElement | null): number | undefined {
+    for (let el = trigger?.parentElement; trigger && el; el = el.parentElement) {
+        if (getComputedStyle(el).overflow === 'visible') continue;
+        // 6px for the gap to the trigger, 6px of breathing room under the map's top edge.
+        const room = trigger.getBoundingClientRect().top - el.getBoundingClientRect().top - 12;
+        return room > 0 ? room : undefined;
+    }
+    return undefined;
 }
 
 /** The category dropdown, the radius steps and the unit toggle — and a note when the lookup came back incomplete. */
@@ -61,6 +79,7 @@ export function PlaceFilters({
     const t = useTranslations('property.nearby');
     const locale = useLocale();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuMaxH, setMenuMaxH] = useState<number>();
     const menuRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -74,6 +93,11 @@ export function PlaceFilters({
         document.addEventListener('mousedown', onDown);
         return () => document.removeEventListener('mousedown', onDown);
     }, [menuOpen]);
+
+    const toggleMenu = () => {
+        if (!menuOpen) setMenuMaxH(roomAbove(triggerRef.current));
+        setMenuOpen((open) => !open);
+    };
 
     const closeMenu = (refocus: boolean) => {
         setMenuOpen(false);
@@ -97,13 +121,15 @@ export function PlaceFilters({
     const selected = POI_FILTERS.find((f) => f.id === category) ?? POI_FILTERS[0];
     const SelectedIcon = selected.icon;
     const pill = pillStyle(palette);
+    const plate: React.CSSProperties = { background: palette.bg, boxShadow: FLOAT_SHADOW, pointerEvents: 'auto' };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        // Inset like the cards' row above, so the first pill starts under the first card.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 12px', pointerEvents: 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <div
                     ref={menuRef}
-                    style={{ position: 'relative' }}
+                    style={{ position: 'relative', pointerEvents: 'auto' }}
                     onKeyDown={(e) => { if (e.key === 'Escape' && menuOpen) { e.stopPropagation(); closeMenu(true); } }}
                     onBlur={(e) => { if (menuOpen && !menuRef.current?.contains(e.relatedTarget as Node | null)) setMenuOpen(false); }}
                 >
@@ -113,8 +139,8 @@ export function PlaceFilters({
                         aria-haspopup="listbox"
                         aria-expanded={menuOpen}
                         aria-label={`${t('categoryLabel')}: ${t(`categories.${selected.id}`)}`}
-                        onClick={() => setMenuOpen((open) => !open)}
-                        style={pill}
+                        onClick={toggleMenu}
+                        style={{ ...pill, ...plate }}
                     >
                         <SelectedIcon size={14} aria-hidden />
                         <span>{t(`categories.${selected.id}`)}</span>
@@ -125,8 +151,12 @@ export function PlaceFilters({
                             <div
                                 role="listbox"
                                 aria-label={t('categoryLabel')}
+                                // Opens upward, into the map above the row: below it the cards leave
+                                // too little room before the map's edge, which clips anything past it.
+                                // Scrolls when the map is drawn too short to hold every category.
                                 style={{
-                                    position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50, minWidth: 200,
+                                    position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 50, minWidth: 200,
+                                    maxHeight: menuMaxH, overflowY: 'auto',
                                     padding: 6, borderRadius: 14, background: palette.bg,
                                     border: `1px solid ${palette.cardBorder}`, boxShadow: '0 12px 32px rgba(0,0,0,.25)',
                                 }}
@@ -145,7 +175,7 @@ export function PlaceFilters({
                                                 display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 10px',
                                                 borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left',
                                                 fontSize: 14, fontWeight: 600,
-                                                background: active ? BRAND.primaryStrong : 'transparent',
+                                                background: active ? BRAND.gradient : 'transparent',
                                                 color: active ? '#fff' : palette.text,
                                             }}
                                         >
@@ -159,7 +189,7 @@ export function PlaceFilters({
                     )}
                 </div>
 
-                <div role="radiogroup" aria-label={t('radiusLabel')} style={{ ...pill, gap: 2, padding: 2, cursor: 'default' }}>
+                <div role="radiogroup" aria-label={t('radiusLabel')} style={{ ...pill, ...plate, gap: 2, padding: 2, cursor: 'default' }}>
                     {radiusSteps.map((meters, i) => {
                         const active = meters === radius;
                         return (
@@ -175,7 +205,7 @@ export function PlaceFilters({
                                 style={{
                                     padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer',
                                     fontSize: 13, fontWeight: 700,
-                                    background: active ? BRAND.primaryStrong : 'transparent',
+                                    background: active ? BRAND.gradient : 'transparent',
                                     color: active ? '#fff' : palette.muted,
                                 }}
                             >
@@ -185,16 +215,25 @@ export function PlaceFilters({
                     })}
                 </div>
 
-                <DistanceUnitToggle
-                    value={unit}
-                    onChange={onUnitChange}
-                    label={t('unitLabel')}
-                    colors={{ muted: palette.muted, border: palette.cardBorder, activeBg: BRAND.primaryStrong, activeFg: '#fff' }}
-                />
+                {/* The toggle draws only its outline, so the plate goes behind it. */}
+                <div style={{ ...plate, display: 'flex', borderRadius: 999 }}>
+                    <DistanceUnitToggle
+                        value={unit}
+                        onChange={onUnitChange}
+                        label={t('unitLabel')}
+                        colors={{ muted: palette.muted, border: palette.cardBorder, activeBg: BRAND.gradient, activeFg: '#fff' }}
+                    />
+                </div>
             </div>
 
             {error && gems.length > 0 && (
-                <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, color: palette.muted, fontSize: 13 }}>
+                <div
+                    role="status"
+                    style={{
+                        ...plate, display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+                        padding: '6px 6px 6px 12px', borderRadius: 999, color: palette.muted, fontSize: 13,
+                    }}
+                >
                     <span>{t('loadFailed')}</span>
                     <button type="button" onClick={onRetry} style={pill}>{t('retry')}</button>
                 </div>
@@ -224,7 +263,7 @@ export function PlaceCards({
     const notice: React.CSSProperties = {
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14,
         background: palette.bg, color: palette.muted, fontSize: 15,
-        boxShadow: '0 8px 24px rgba(0,0,0,.25)', pointerEvents: 'auto',
+        boxShadow: FLOAT_SHADOW, pointerEvents: 'auto',
     };
 
     let body: React.ReactNode;
@@ -259,7 +298,7 @@ export function PlaceCards({
     return (
         <div className={cn('pointer-events-none relative', className)}>
             {gems.length > 3 && (
-                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left', palette)}>
+                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left')}>
                     <ChevronLeft size={16} aria-hidden />
                 </button>
             )}
@@ -267,7 +306,7 @@ export function PlaceCards({
                 {body}
             </div>
             {gems.length > 3 && (
-                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right', palette)}>
+                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right')}>
                     <ChevronRight size={16} aria-hidden />
                 </button>
             )}
@@ -276,13 +315,13 @@ export function PlaceCards({
 }
 
 /** Inside the row's ends rather than hanging past them — the map clips anything past its edge. */
-function arrowStyle(side: 'left' | 'right', palette: NearbyPalette): React.CSSProperties {
+function arrowStyle(side: 'left' | 'right'): React.CSSProperties {
     return {
         ...(side === 'left' ? { left: 6 } : { right: 6 }),
         position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
-        width: 30, height: 30, borderRadius: '50%', alignItems: 'center', justifyContent: 'center',
-        background: palette.bg, color: palette.title, border: `1px solid ${palette.cardBorder}`,
-        boxShadow: '0 4px 12px rgba(0,0,0,.2)', cursor: 'pointer',
+        width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
+        background: 'transparent', border: 'none', color: '#fff',
+        filter: 'drop-shadow(0 1px 6px rgba(0,0,0,.6))', cursor: 'pointer',
     };
 }
 
@@ -363,7 +402,7 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel, r
                 type="button"
                 aria-label={`${detailsLabel}: ${name}`}
                 onClick={() => onDetails(gem)}
-                className="absolute top-2 right-2 z-10 rounded-lg bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-black/55"
+                className="absolute top-2 right-2 z-10 bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-black/55"
             >
                 {detailsLabel}
             </button>

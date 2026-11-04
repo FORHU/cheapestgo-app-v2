@@ -7,13 +7,14 @@
  * other side, with someone signed in.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import { SupportWidget } from '@/features/support/components/SupportWidget';
 import en from '@/locales/en.json';
 import { useAuthStore } from '@/shared/auth/store';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 
 const conversation = {
     id: 'c1', reference: 'CG-4821', status: 'waiting_human', locale: 'ko',
@@ -32,6 +33,8 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/support/api/support.api', () => api);
+// The button's skin follows the theme and route, neither of which these tests are about.
+vi.mock('@/shared/components/ChromeToneContext', () => ({ useChromeTone: () => 'light' }));
 
 const signedIn = (yes: boolean) =>
     useAuthStore.setState({ user: yes ? ({ id: 'u1', email: 'someone@example.com' } as never) : null });
@@ -65,6 +68,37 @@ describe('SupportWidget', () => {
     it('offers itself to someone signed in', () => {
         renderWidget();
         expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument();
+    });
+
+    it('opens when another part of the page asks it to', async () => {
+        api.fetchConversation.mockResolvedValue(null);
+        renderWidget();
+        expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument();
+        act(() => useSupportWidget.getState().requestOpen());
+        // Open, the toggle and the panel's own X both say "close", so look for "open" going away.
+        await waitFor(() => expect(screen.queryByRole('button', { name: /open support chat/i })).toBeNull());
+    });
+
+    it('puts a draft the page asked with into the empty message box, for the customer to send', async () => {
+        api.fetchConversation.mockResolvedValue(null);
+        renderWidget();
+        act(() => useSupportWidget.getState().requestOpen('Hi! I would like to play Wack Wack at 07:30.'));
+        const box = await screen.findByRole('textbox', { name: en.support.placeholder });
+        await waitFor(() => expect(box).toHaveValue('Hi! I would like to play Wack Wack at 07:30.'));
+        expect(api.sendMessage).not.toHaveBeenCalled();
+        expect(useSupportWidget.getState().draft).toBeNull();
+    });
+
+    it('never overwrites what the customer is already typing', async () => {
+        api.fetchConversation.mockResolvedValue(null);
+        const user = userEvent.setup();
+        renderWidget();
+        await user.click(screen.getByRole('button', { name: /open support chat/i }));
+        const box = await screen.findByRole('textbox', { name: en.support.placeholder });
+        await user.type(box, 'My own words');
+        act(() => useSupportWidget.getState().requestOpen('Hi! I would like to play Wack Wack at 07:30.'));
+        await waitFor(() => expect(useSupportWidget.getState().draft).toBeNull());
+        expect(box).toHaveValue('My own words');
     });
 
     it('creates no chat for someone who only reads, not even on opening the panel', async () => {

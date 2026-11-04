@@ -52,7 +52,7 @@ export function SavedTripsSection() {
         return (
             <div className="space-y-3 animate-pulse">
                 {[1, 2, 3].map(i => (
-                    <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+                    <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700" />
                 ))}
             </div>
         );
@@ -87,7 +87,7 @@ export function SavedTripsSection() {
                     {savedTrips.map(trip => (
                         <div
                             key={trip.id}
-                            className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors group"
+                            className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors group"
                         >
                             {/* Type icon */}
                             <div className={cn(

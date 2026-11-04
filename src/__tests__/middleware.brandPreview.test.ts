@@ -70,6 +70,38 @@ describe('middleware: brand preview', () => {
         expect(cookie?.value ?? '').toBe('');
     });
 
+    it('opens the picked brand in its own language, not the one chosen for the other', () => {
+        // AirangGo opens in Korean, CheapestGo in English: a language prefix or a menu pick made
+        // under one brand would otherwise hold the other in it.
+        process.env.BRAND_PREVIEW = '1';
+        const req = new NextRequest('http://localhost:3002/ja/hotels?brand_preview=airanggo&city=seoul', {
+            headers: { cookie: 'NEXT_LOCALE=ja' },
+        });
+        const res = middleware(req);
+
+        const location = new URL(res.headers.get('location')!);
+        expect(location.pathname).toBe('/hotels');
+        expect(location.searchParams.get('city')).toBe('seoul');
+        expect(res.cookies.get('NEXT_LOCALE')?.value ?? '').toBe('');
+        // Deleted on the path next-intl set it on, or the browser keeps the original.
+        expect(res.headers.get('set-cookie')).toMatch(/NEXT_LOCALE=;[^,]*Path=\//i);
+    });
+
+    it('does the same when the pick is cleared', () => {
+        process.env.BRAND_PREVIEW = '1';
+        const res = call('/ko?brand_preview=default');
+
+        expect(new URL(res.headers.get('location')!).pathname).toBe('/');
+    });
+
+    it('keeps the page\'s language when the value is not a brand', () => {
+        process.env.BRAND_PREVIEW = '1';
+        const res = call('/ja/hotels?brand_preview=nope');
+
+        expect(new URL(res.headers.get('location')!).pathname).toBe('/ja/hotels');
+        expect(res.cookies.get('NEXT_LOCALE')).toBeUndefined();
+    });
+
     it('does nothing at all when the preview is off', () => {
         const res = call('/?brand_preview=airanggo');
 

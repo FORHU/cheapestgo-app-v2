@@ -9,8 +9,10 @@ import { BRAND } from '@/shared/lib/palette';
 import { airportLabel, formatDateTimeLocale, groupSegmentsIntoSlices } from '@/features/flights/lib/flight-utils';
 import type { FlightOffer, NormalizedSegment } from '@/shared/types';
 import { formatMoney } from '@/features/checkout/lib/format-money';
+import { arrivalStay } from '@/features/checkout/lib/trip-next-steps';
 import { CheckoutToolbar } from './checkout-toolbar';
 import { SkeletonBar } from './skeleton-bar';
+import { TripNextSteps } from './trip-next-steps';
 import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
@@ -98,6 +100,9 @@ interface FlightConfirmedScreenProps {
 // e-ticket went) is what the booking itself already knows, so it is never blocked on that fetch.
 //
 // The fare is one figure: the service fee is part of it, as the checkout's summary has it.
+//
+// Beneath it all, the rest of the trip: a hotel where the flight lands and a tee time there. It
+// waits for the offer, the only thing that says which city that is.
 export function FlightConfirmedScreen({
     palette, offer, loadingOffer, bookingId, pnr, origin, destination, departureDate, cabin,
     currency, total, adults, childPassengers, infants, passengers, contactEmail,
@@ -121,8 +126,9 @@ export function FlightConfirmedScreen({
     const slices: NormalizedSegment[][] = offer ? groupSegmentsIntoSlices(offer.segments) : [];
 
     const firstSegment = slices[0]?.[0];
-    const lastSlice = slices[slices.length - 1];
-    const destinationCity = lastSlice?.[lastSlice.length - 1]?.arrival?.city;
+    // Where the outbound lands — not the last slice, which on a round trip lands back home.
+    const stay = arrivalStay(slices);
+    const destinationCity = stay?.city;
 
     const isRefundable = offer ? (offer.farePolicy ? offer.farePolicy.isRefundable : offer.refundable) : false;
     const penalty = offer?.farePolicy?.refundPenaltyAmount;
@@ -182,7 +188,7 @@ export function FlightConfirmedScreen({
                     {tAll('checkout.flight.receipt.confirmedSentTo', { destination: destinationCity ?? destination, email: contactEmail })}
                 </p>
 
-                <div className="receipt-card" style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', marginTop: 'clamp(24px,3vw,40px)' }}>
+                <div className="receipt-card" style={{ background: palette.surface, padding: 'clamp(20px,3vw,36px)', marginTop: 'clamp(24px,3vw,40px)' }}>
                     {/* The airline, its reference, and what the fare includes */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px 24px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
@@ -324,6 +330,8 @@ export function FlightConfirmedScreen({
                         </button>
                     </div>
                 </div>
+
+                {stay && <TripNextSteps palette={palette} stay={stay} adults={adults} childPassengers={childPassengers} />}
             </div>
         </div>
     );

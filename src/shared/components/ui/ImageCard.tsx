@@ -41,7 +41,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
       onClick={onClick}
       className={`group cursor-pointer ${className}`}
     >
-      <div className={`relative ${aspectClasses[aspectRatio]} rounded-xl overflow-hidden mb-2 shadow-sm`}>
+      <div className={`relative ${aspectClasses[aspectRatio]} overflow-hidden mb-2 shadow-sm`}>
         <Image
           src={image}
           alt={title}

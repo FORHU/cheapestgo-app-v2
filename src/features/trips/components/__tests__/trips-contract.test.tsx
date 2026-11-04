@@ -64,7 +64,7 @@ const wrap = (ui: React.ReactElement) =>
 
 beforeEach(() => {
     vi.clearAllMocks();
-    get.mockResolvedValue({ success: true, data: [HOTEL_ROW] });
+    get.mockImplementation(async (path: string) => ({ success: true, data: path.startsWith('/golf/') ? [] : [HOTEL_ROW] }));
 });
 
 describe('the trips list', () => {
@@ -83,7 +83,14 @@ describe('the trips list', () => {
     });
 
     it('can be tried again', async () => {
-        get.mockRejectedValueOnce(Object.assign(new Error('boom'), { status: 500 }));
+        // Only the bookings: golf has its own request, and failing that one shows no error.
+        const answer = get.getMockImplementation()!;
+        let failed = false;
+        get.mockImplementation(async (path: string) => {
+            if (failed || path.startsWith('/golf/')) return answer(path);
+            failed = true;
+            throw Object.assign(new Error('boom'), { status: 500 });
+        });
         wrap(<TripsList />);
 
         fireEvent.click(await screen.findByRole('button', { name: /try again/i }));

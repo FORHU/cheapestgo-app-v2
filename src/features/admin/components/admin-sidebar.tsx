@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -25,8 +26,11 @@ import {
     Globe,
     Smartphone,
     Clock,
+    Flag,
+    CalendarCheck,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { adminGolfApi } from '@/features/golf/api/golf.api';
 
 /**
  * Every back-office page, grouped.
@@ -44,6 +48,7 @@ const NAV_GROUPS = [
         items: [
             { href: '/admin/overview',     label: 'Overview',     icon: LayoutDashboard },
             { href: '/admin/bookings',     label: 'Bookings',     icon: BookOpen },
+            { href: '/admin/golf/bookings', label: 'Golf Bookings', icon: CalendarCheck },
             { href: '/admin/customers',    label: 'Customers',    icon: Users },
             { href: '/admin/users',        label: 'Users',        icon: Shield },
             { href: '/admin/suppliers',    label: 'Suppliers',    icon: Building2 },
@@ -54,6 +59,7 @@ const NAV_GROUPS = [
         title: 'Content',
         items: [
             { href: '/admin/destinations', label: 'Destinations', icon: MapPin },
+            { href: '/admin/golf',         label: 'Golf Courses', icon: Flag },
             { href: '/admin/deals',        label: 'Deals',        icon: Tag },
             { href: '/admin/saved-trips',  label: 'Saved Trips',  icon: Bookmark },
             { href: '/admin/reviews',      label: 'Reviews',      icon: Star },
@@ -81,8 +87,49 @@ const NAV_GROUPS = [
     },
 ] as const;
 
+/** The most specific link wins: on `/admin/golf/bookings`, Golf Bookings is lit and Golf Courses is not. */
+function activeHref(pathname: string): string | undefined {
+    return NAV_GROUPS
+        .flatMap((group) => group.items.map((item): string => item.href))
+        .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+        .sort((a, b) => b.length - a.length)[0];
+}
+
+/** Fired on `window` by whatever has just answered a golf request, so the count comes down at once. */
+export const GOLF_BOOKINGS_CHANGED = 'golf-bookings-changed';
+/** How often an open back office looks for new requests. */
+const GOLF_POLL_MS = 60_000;
+
+/**
+ * How many golf requests are waiting for an answer. A request nobody answers is declined at its
+ * deadline, so this is drawn on the link for anyone in the back office to see. Zero for someone who
+ * may not read them: the list is admin-only, and a support agent has nothing to do about it.
+ */
+function useGolfRequestsWaiting(pathname: string): number {
+    const [waiting, setWaiting] = useState(0);
+    useEffect(() => {
+        let cancelled = false;
+        const ask = () => {
+            adminGolfApi.listBookings('waiting', 1)
+                .then((res) => { if (!cancelled) setWaiting(res.total ?? 0); })
+                .catch(() => { if (!cancelled) setWaiting(0); });
+        };
+        ask();
+        const id = window.setInterval(ask, GOLF_POLL_MS);
+        window.addEventListener(GOLF_BOOKINGS_CHANGED, ask);
+        return () => {
+            cancelled = true;
+            window.clearInterval(id);
+            window.removeEventListener(GOLF_BOOKINGS_CHANGED, ask);
+        };
+    }, [pathname]);
+    return waiting;
+}
+
 export function AdminSidebar() {
     const pathname = usePathname();
+    const active = activeHref(pathname);
+    const golfWaiting = useGolfRequestsWaiting(pathname);
 
     return (
         <aside className="w-60 shrink-0 min-h-screen bg-slate-900 flex flex-col">
@@ -107,7 +154,7 @@ export function AdminSidebar() {
                             {group.title}
                         </p>
                         {group.items.map(({ href, label, icon: Icon }) => {
-                            const isActive = pathname === href || pathname.startsWith(`${href}/`);
+                            const isActive = active === href;
                             return (
                                 <Link
                                     key={href}
@@ -120,7 +167,15 @@ export function AdminSidebar() {
                                     )}
                                 >
                                     <Icon size={16} className="shrink-0" />
-                                    <span className="flex-1">{label}</span>
+                                    <span className="flex-1">{label}</span>{' '}
+                                    {href === '/admin/golf/bookings' && golfWaiting > 0 && (
+                                        <span
+                                            aria-label={`${golfWaiting} waiting`}
+                                            className="min-w-5 rounded-full bg-rose-500 px-1.5 text-center text-[11px] leading-5 font-semibold text-white"
+                                        >
+                                            {golfWaiting}
+                                        </span>
+                                    )}
                                     {isActive && <ChevronRight size={14} className="opacity-60" />}
                                 </Link>
                             );

@@ -696,7 +696,7 @@ function PropertyContent() {
                                 return (
                                     <div
                                         key={i}
-                                        style={{ flex: '1 1 260px', background: palette.cardBg, borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
+                                        style={{ flex: '1 1 260px', background: palette.cardBg, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
                                     >
                                         {score > 0 && (
                                             <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 17, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
