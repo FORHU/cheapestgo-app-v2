@@ -14,7 +14,10 @@ import ko from '@/locales/ko.json';
 const autocompleteDestinations = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
 vi.mock('@/features/search/api/destinations.api', () => ({ autocompleteDestinations }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/i18n/navigation', () => ({
+    useRouter: () => ({ push }),
+    Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => <a href={href} {...rest}>{children}</a>,
+}));
 
 import { ImmersiveSearchBar } from './immersive-search-bar';
 
