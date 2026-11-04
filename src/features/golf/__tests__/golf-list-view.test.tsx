@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithIntl } from '@/shared/testing/renderWithIntl';
+import { renderWithIntl, withIntl } from '@/shared/testing/renderWithIntl';
 import en from '@/locales/en.json';
 import { useSearchStore } from '@/shared/stores/search.store';
 import type { GolfCourse } from '@/features/golf/types';
@@ -17,11 +17,12 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 import { GolfListView } from '@/features/golf/components/golf-list-view';
+import { lastGolfSearch } from '@/features/golf/lib/last-search';
 
-const course = (over: Partial<GolfCourse> = {}): GolfCourse => ({
+const course =(over: Partial<GolfCourse> = {}): GolfCourse => ({
     id: '1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
     description: '', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW', imageUrls: ['https://img.example/a.jpg'],
-    amenities: [], status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, scheduleCount: 1, bookable: true, ...over,
+    amenities: [], status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, freeCancelHours: 48, scheduleCount: 1, bookable: true, ...over,
 });
 
 beforeEach(() => {
@@ -78,6 +79,16 @@ describe('GolfListView', () => {
         expect(await screen.findByText('No courses in Philippines')).toBeInTheDocument();
         expect(screen.getByRole('link', { name: en.golf.seeAll })).toHaveAttribute('href', '/golf');
         expect(api.fetchGolfCatalogue).toHaveBeenCalledWith({ country: 'Philippines', currency: 'KRW' });
+    });
+
+    it('is the search a course page goes back to, with the country it was narrowed to', async () => {
+        api.fetchGolfCatalogue.mockResolvedValue({ courses: [course()], countries: [] });
+        const { rerender } = renderWithIntl(<GolfListView country="South Korea" />);
+        expect(lastGolfSearch()).toBe('/golf?country=South%20Korea');
+
+        rerender(withIntl(<GolfListView />));
+        expect(lastGolfSearch()).toBe('/golf');
+        await screen.findByRole('link', { name: /Wack Wack/ });
     });
 
     it('offers another try when the list fails to load', async () => {

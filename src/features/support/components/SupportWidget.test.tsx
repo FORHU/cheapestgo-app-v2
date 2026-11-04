@@ -33,6 +33,8 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/support/api/support.api', () => api);
+// The button's skin follows the theme and route, neither of which these tests are about.
+vi.mock('@/shared/components/ChromeToneContext', () => ({ useChromeTone: () => 'light' }));
 
 const signedIn = (yes: boolean) =>
     useAuthStore.setState({ user: yes ? ({ id: 'u1', email: 'someone@example.com' } as never) : null });

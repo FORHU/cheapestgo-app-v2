@@ -488,7 +488,15 @@
         "paymentProcessedSecurely": "Payment processed securely by Stripe.",
         "viewBookings": "View Bookings",
         "passengerSectionTitle": "Passengers",
-        "contact": "Contact"
+        "contact": "Contact",
+        "next": {
+          "title": "Complete your trip",
+          "hotel": "Book a hotel",
+          "hotelLine": "Stays in {city} · {dates}",
+          "teeTime": "Book a tee time",
+          "teeTimeLine": "Golf courses in {city}",
+          "teeTimeAnywhere": "Browse our golf courses"
+        }
       }
     },
     "datePicker": {
@@ -2591,6 +2599,24 @@
       "doneRefundFailed": "Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out.",
       "failed": "We couldn't cancel this booking. Please try again, or contact support.",
       "close": "Close"
+    },
+    "golfCard": {
+      "date": "Date",
+      "teeTime": "Tee time",
+      "view": "View booking",
+      "empty": "No golf bookings yet",
+      "totalPaid": "Total paid",
+      "chargedOnConfirmation": "Charged once the course confirms",
+      "notCharged": "Not charged",
+      "refunded": "Refunded {amount}",
+      "status": {
+        "held": "Awaiting payment",
+        "requested": "Waiting for the course",
+        "confirmed": "Confirmed",
+        "expired": "Expired",
+        "declined": "Declined",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "support": {
@@ -2664,7 +2690,6 @@
     "settings": "Settings",
     "primary": "Primary",
     "closeSettings": "Close settings",
-    "scrollToTop": "Scroll to top",
     "scrollLeft": "Scroll left",
     "scrollRight": "Scroll right",
     "filter": "Filter",
@@ -2868,7 +2893,7 @@
       "night_golf": "Night golf"
     },
     "teeTimes": {
-      "title": "Tee times",
+      "title": "Book a tee time",
       "date": "Date",
       "players": "Players",
       "playerCount": "{count, plural, one {# player} other {# players}}",
@@ -2879,7 +2904,7 @@
       "loadError": "Tee times didn't load.",
       "prevMonth": "Previous month",
       "nextMonth": "Next month",
-      "pickHint": "Pick a time to ask us about it.",
+      "pickHint": "Pick a time to book it.",
       "askThis": "Ask about this tee time",
       "draft": "Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available?"
     },

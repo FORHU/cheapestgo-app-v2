@@ -12,15 +12,19 @@ import { useBrandName } from '@/shared/components/BrandProvider';
  *
  * A client component because the brand it names is the one being shown on this request, which a
  * deployment with the brand preview on resolves per visitor and hands down through context.
+ *
+ * `tone` is the wordmark's. The landing page is dark whatever the theme, so `onDark` is the default;
+ * every other page follows the theme and passes `default` (`shared/components/footer.tsx`), or the
+ * near-white head of the wordmark disappears into the light ground.
  */
-export function LandingFooter() {
+export function LandingFooter({ tone = 'onDark' }: { tone?: 'default' | 'onDark' }) {
     const t = useTranslations();
     const brand = useBrandName();
     return (
         <footer>
             <div className="mx-auto max-w-[1240px] px-6 pt-8 pb-10">
                 <div className="flex flex-wrap items-center justify-between gap-6 max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-5">
-                    <LogoWordmark height={36} />
+                    <LogoWordmark height={36} tone={tone} />
 
                     <nav className="flex flex-wrap gap-6 text-[13px]">
                         {FOOTER_LINKS.map(({ key, href }) => (

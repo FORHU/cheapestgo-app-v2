@@ -488,7 +488,15 @@
         "paymentProcessedSecurely": "付款已通过 Stripe 安全处理。",
         "viewBookings": "查看预订",
         "passengerSectionTitle": "乘客",
-        "contact": "联系方式"
+        "contact": "联系方式",
+        "next": {
+          "title": "完善您的行程",
+          "hotel": "预订酒店",
+          "hotelLine": "{city}的住宿 · {dates}",
+          "teeTime": "预订开球时间",
+          "teeTimeLine": "{city}的高尔夫球场",
+          "teeTimeAnywhere": "浏览高尔夫球场"
+        }
       }
     },
     "datePicker": {
@@ -2591,6 +2599,24 @@
       "doneRefundFailed": "预订已取消，但退款未成功。请联系客服，我们会为您处理。",
       "failed": "无法取消该预订。请重试，或联系客服。",
       "close": "关闭"
+    },
+    "golfCard": {
+      "date": "日期",
+      "teeTime": "开球时间",
+      "view": "查看预订",
+      "empty": "暂无高尔夫预订",
+      "totalPaid": "已付总额",
+      "chargedOnConfirmation": "球场确认后扣款",
+      "notCharged": "未扣款",
+      "refunded": "已退款 {amount}",
+      "status": {
+        "held": "等待付款",
+        "requested": "等待球场确认",
+        "confirmed": "已确认",
+        "expired": "已过期",
+        "declined": "已拒绝",
+        "cancelled": "已取消"
+      }
     }
   },
   "support": {
@@ -2664,7 +2690,6 @@
     "settings": "设置",
     "primary": "主要",
     "closeSettings": "关闭设置",
-    "scrollToTop": "返回顶部",
     "scrollLeft": "向左滚动",
     "scrollRight": "向右滚动",
     "filter": "筛选",
@@ -2868,7 +2893,7 @@
       "night_golf": "夜间高尔夫"
     },
     "teeTimes": {
-      "title": "开球时间",
+      "title": "预订开球时间",
       "date": "日期",
       "players": "人数",
       "playerCount": "{count} 人",
@@ -2879,7 +2904,7 @@
       "loadError": "开球时间加载失败。",
       "prevMonth": "上个月",
       "nextMonth": "下个月",
-      "pickHint": "选择时间后即可直接咨询。",
+      "pickHint": "请选择要预订的时间。",
       "askThis": "咨询这个开球时间",
       "draft": "您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？"
     },

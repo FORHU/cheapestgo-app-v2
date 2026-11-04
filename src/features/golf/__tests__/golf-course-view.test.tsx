@@ -20,16 +20,18 @@ vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: '
 vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
 
 import { GolfCourseView } from '@/features/golf/components/golf-course-view';
+import { rememberGolfSearch } from '@/features/golf/lib/last-search';
 
-const course = (over: Partial<GolfCourse> = {}): GolfCourse => ({
+const course =(over: Partial<GolfCourse> = {}): GolfCourse => ({
     id: '1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: '1 Golf Rd',
     description: 'First paragraph.\n\nSecond paragraph.', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW',
     imageUrls: ['https://img.example/a.jpg', 'https://img.example/b.jpg'], amenities: ['caddie', 'night_golf'],
-    status: 'published', createdAt: '', updatedAt: '', timezone: null, bookingWindowDays: 60, scheduleCount: 0, bookable: false, ...over,
+    status: 'published', createdAt: '', updatedAt: '', timezone: null, bookingWindowDays: 60, freeCancelHours: 48, scheduleCount: 0, bookable: false, ...over,
 });
 
 beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     useSearchStore.setState({ userCurrency: 'KRW' });
     useAuthStore.setState({ user: null, isLoading: false });
 });
@@ -116,7 +118,7 @@ describe('GolfCourseView with tee times', () => {
         api.fetchTeeTimes.mockResolvedValue(day);
         renderWithIntl(<GolfCourseView slug="wack-wack" initial={{ date: '2026-11-15', players: 3 }} />);
         expect(await screen.findByRole('heading', { name: en.golf.teeTimes.title })).toBeInTheDocument();
-        expect(await screen.findByRole('button', { name: /^07:30/ })).toBeInTheDocument();
+        expect(await screen.findByRole('button', { name: /^7:30/ })).toBeInTheDocument();
         expect(screen.queryByText(en.golf.fromLabel)).toBeNull();
         expect(api.fetchTeeTimes).toHaveBeenCalledWith('wack-wack', { date: '2026-11-15', players: 3, currency: 'KRW' });
     });

@@ -12,6 +12,7 @@ import { cn } from '@/shared/lib/cn';
 import { useUserCurrency } from '@/shared/stores/search.store';
 import { fetchGolfCatalogue } from '@/features/golf/api/golf.api';
 import { GolfCourseCard } from '@/features/golf/components/golf-course-card';
+import { rememberGolfSearch } from '@/features/golf/lib/last-search';
 import type { GolfCatalogue } from '@/features/golf/types';
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; catalogue: GolfCatalogue };

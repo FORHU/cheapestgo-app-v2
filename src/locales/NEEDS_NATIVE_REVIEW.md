@@ -45,6 +45,12 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `checkout.guestsCount` | {count, plural, one {# guest} other {# guests}} | {count}명 | {count}名 | {count} 位 |
 | `checkout.roomFallback` | Standard Room | 스탠다드 룸 | スタンダードルーム | 标准房 |
 | `checkout.confirmingFinalPrice` | Confirming the final price… | 최종 금액을 확인하고 있습니다… | 最終料金を確認しています… | 正在确认最终价格… |
+| `checkout.flight.receipt.next.title` | Complete your trip | 여행 준비를 마무리하세요 | 旅の準備を整えましょう | 完善您的行程 |
+| `checkout.flight.receipt.next.hotel` | Book a hotel | 호텔 예약하기 | ホテルを予約する | 预订酒店 |
+| `checkout.flight.receipt.next.hotelLine` | Stays in {city} · {dates} | {city} 숙소 · {dates} | {city}の宿泊施設 · {dates} | {city}的住宿 · {dates} |
+| `checkout.flight.receipt.next.teeTime` | Book a tee time | 티타임 예약하기 | ティータイムを予約する | 预订开球时间 |
+| `checkout.flight.receipt.next.teeTimeLine` | Golf courses in {city} | {city} 골프장 | {city}のゴルフ場 | {city}的高尔夫球场 |
+| `checkout.flight.receipt.next.teeTimeAnywhere` | Browse our golf courses | 골프장 둘러보기 | ゴルフ場を探す | 浏览高尔夫球场 |
 
 ## property
 

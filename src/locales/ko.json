@@ -488,7 +488,15 @@
         "paymentProcessedSecurely": "Stripe를 통해 안전하게 결제되었습니다.",
         "viewBookings": "예약 보기",
         "passengerSectionTitle": "탑승객",
-        "contact": "연락처"
+        "contact": "연락처",
+        "next": {
+          "title": "여행 준비를 마무리하세요",
+          "hotel": "호텔 예약하기",
+          "hotelLine": "{city} 숙소 · {dates}",
+          "teeTime": "티타임 예약하기",
+          "teeTimeLine": "{city} 골프장",
+          "teeTimeAnywhere": "골프장 둘러보기"
+        }
       }
     },
     "datePicker": {
@@ -2591,6 +2599,24 @@
       "doneRefundFailed": "예약은 취소되었지만 환불이 처리되지 않았습니다. 고객센터에 문의해 주시면 처리해 드리겠습니다.",
       "failed": "예약을 취소하지 못했습니다. 다시 시도하거나 고객센터에 문의해 주세요.",
       "close": "닫기"
+    },
+    "golfCard": {
+      "date": "날짜",
+      "teeTime": "티타임",
+      "view": "예약 보기",
+      "empty": "아직 골프 예약이 없습니다",
+      "totalPaid": "결제 금액",
+      "chargedOnConfirmation": "골프장 확정 후 청구됩니다",
+      "notCharged": "청구되지 않음",
+      "refunded": "{amount} 환불됨",
+      "status": {
+        "held": "결제 대기",
+        "requested": "골프장 확인 중",
+        "confirmed": "확정",
+        "expired": "만료",
+        "declined": "거절됨",
+        "cancelled": "취소됨"
+      }
     }
   },
   "support": {
@@ -2664,7 +2690,6 @@
     "settings": "설정",
     "primary": "기본",
     "closeSettings": "설정 닫기",
-    "scrollToTop": "맨 위로",
     "scrollLeft": "왼쪽으로 스크롤",
     "scrollRight": "오른쪽으로 스크롤",
     "filter": "필터",
@@ -2868,7 +2893,7 @@
       "night_golf": "야간 골프"
     },
     "teeTimes": {
-      "title": "티타임",
+      "title": "티타임 예약",
       "date": "날짜",
       "players": "인원",
       "playerCount": "{count}명",
@@ -2879,7 +2904,7 @@
       "loadError": "티타임을 불러오지 못했습니다.",
       "prevMonth": "이전 달",
       "nextMonth": "다음 달",
-      "pickHint": "시간을 선택하면 바로 문의하실 수 있습니다.",
+      "pickHint": "예약할 시간을 선택하세요.",
       "askThis": "이 티타임 문의하기",
       "draft": "안녕하세요! {course}에서 {date} {time}({city} 현지 시간)에 {count}명이 라운드하고 싶습니다. 예약 가능할까요?"
     },

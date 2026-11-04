@@ -22,7 +22,8 @@ const progress = vi.hoisted(() => ({ journey: 0, reduced: false }));
 vi.mock('./useJourneyProgress', () => ({
     useJourneyProgress: () => ({ journey: progress.journey, trackPx: 4000, reducedMotion: progress.reduced }),
 }));
-vi.mock('./useSectionSnap', () => ({ useSectionSnap: () => undefined }));
+const snap = vi.hoisted(() => ({ goToStop: vi.fn() }));
+vi.mock('./useSectionSnap', () => ({ useSectionSnap: () => snap.goToStop }));
 vi.mock('./StageShowcase', () => ({ StageShowcase: () => null }));
 vi.mock('./HeroBackdrop', () => ({ HeroBackdrop: () => null }));
 // The search bars are covered by their own tests; here they only need to exist, and to show
@@ -40,6 +41,7 @@ const golfApi = vi.hoisted(() => ({ fetchGolfCatalogue: vi.fn() }));
 vi.mock('@/features/golf/api/golf.api', () => golfApi);
 
 import { Journey } from './Journey';
+import { JOURNEY_STOPS, STAGES, STAGE_DOCK } from './stages';
 
 const stay = {
     hotelCode: 'h1', name: 'Hotel', location: null, city: 'Seoul', countryCode: 'KR', price: 120, currency: 'USD',

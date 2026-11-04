@@ -10,6 +10,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { adminGolfApi } from '@/features/golf/api/golf.api';
 import type { GolfCourse, GolfCourseDraft } from '@/features/golf/types';
 import { GolfCourseForm, type FieldErrors } from '@/features/admin/components/golf-course-form';
+import { GolfExtrasPanel } from '@/features/admin/components/golf-extras-panel';
 import { GolfTeeTimesPanel } from '@/features/admin/components/golf-tee-times-panel';
 
 const message = (err: unknown, fallback: string) => (err instanceof Error && err.message ? err.message : fallback);
@@ -221,7 +222,12 @@ export function GolfCoursesView() {
                         <DialogTitle className="text-lg">{`Tee times — ${teeTimesOf?.name ?? ''}`}</DialogTitle>
                     </DialogHeader>
                     {/* Reloading the list keeps each row's schedule count and bookability current. */}
-                    {teeTimesOf && <GolfTeeTimesPanel key={teeTimesOf.id} course={teeTimesOf} onChanged={() => void load(page, query)} />}
+                    {teeTimesOf && (
+                        <div key={teeTimesOf.id} className="space-y-6">
+                            <GolfTeeTimesPanel course={teeTimesOf} onChanged={() => void load(page, query)} />
+                            <GolfExtrasPanel course={teeTimesOf} />
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>

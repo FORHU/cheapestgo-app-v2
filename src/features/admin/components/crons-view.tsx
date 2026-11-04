@@ -27,6 +27,7 @@ interface CronDef {
 
 const CRONS: CronDef[] = [
     { id: 'poll-pending-tickets',           label: 'Poll Pending Tickets',           description: 'Polls Duffel and Mystifly for pending flight ticket status updates.', schedule: 'Every 5 min' },
+    { id: 'golf-booking-sweep',             label: 'Golf Booking Sweep',             description: 'Expires unpaid holds and declines requests nobody answered; their cards are released, never charged.', schedule: 'Every 5 min' },
     { id: 'check-price-alerts',             label: 'Price Alerts',                   description: 'Emails travellers whose saved routes have dropped in price.',         schedule: 'Hourly' },
     { id: 'refresh-popular-flights',        label: 'Refresh Popular Flights',        description: 'Pre-fetches and caches the most-searched flight routes.',             schedule: 'Hourly' },
     { id: 'sync-flight-deals',              label: 'Sync Flight Deals',              description: 'Syncs curated flight deals from providers into the deals table.',     schedule: 'Hourly' },

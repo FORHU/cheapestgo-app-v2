@@ -33,6 +33,9 @@ import { useSectionSnap } from './useSectionSnap';
 import { StageShowcase } from './StageShowcase';
 import { HeroBackdrop } from './HeroBackdrop';
 
+/** The stop the search docks on, in `JOURNEY_STOPS`: the hero is stop 0, then a stop per stage. */
+const SEARCH_STOP = STAGES.findIndex(s => s.faces?.golf) + 1;
+
 /**
  * The landing page's Journey.
  *
@@ -59,13 +62,29 @@ export function Journey({
 }) {
     const trackRef = useRef<HTMLDivElement>(null);
     const { journey, trackPx, reducedMotion } = useJourneyProgress(trackRef);
-    useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
+    const goToStop = useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
     const tAll = useTranslations();
 
     // What the search stage is searching for. Held here, above the stage, so it survives the
     // visitor scrolling away and back; changing it slides the panel across and changes the
     // backdrop in place — the Stays / Flights / Golf tabs never carry anyone to another section.
     const [mode, setMode] = useState<SearchMode>('stays');
+
+    // Back from a golf course found here: the search itself, Golf face up, not the hero. Read from
+    // the address in the browser so this page stays cached. Once only, because `trackPx` moves on
+    // every resize, and a visitor who has scrolled on must not be carried back.
+    const cameBack = useRef(false);
+    useEffect(() => {
+        if (cameBack.current || !isGolfFace(window.location.search)) return;
+        if (reducedMotion) {
+            cameBack.current = true;
+            document.getElementById('stage-golf')?.scrollIntoView();
+        } else if (trackPx > 0) {
+            cameBack.current = true;
+            setMode('golf');
+            goToStop(SEARCH_STOP);
+        }
+    }, [reducedMotion, trackPx, goToStop]);
 
     // Every stage photograph, fetched once the page is idle. Each is otherwise first requested
     // the moment its stage mounts — partway through a glide — and pops in a beat after the
@@ -98,7 +117,7 @@ export function Journey({
                 <StageShowcase journey={0} mode="stays" reducedMotion />
                 <div className="relative z-[1] mx-auto w-full max-w-5xl space-y-20 px-6 py-24">
                     {STAGES.flatMap(stageFaces).map(face => (
-                        <section key={face.id}>
+                        <section key={face.id} id={`stage-${face.id}`}>
                             <StageHeading stage={face} />
                             <div className="mt-8">
                                 <StageSurface stage={face} trending={trending} stays={showcaseStays} />

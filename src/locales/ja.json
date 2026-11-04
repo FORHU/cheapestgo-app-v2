@@ -488,7 +488,15 @@
         "paymentProcessedSecurely": "お支払いはStripeにより安全に処理されました。",
         "viewBookings": "予約を見る",
         "passengerSectionTitle": "搭乗者",
-        "contact": "連絡先"
+        "contact": "連絡先",
+        "next": {
+          "title": "旅の準備を整えましょう",
+          "hotel": "ホテルを予約する",
+          "hotelLine": "{city}の宿泊施設 · {dates}",
+          "teeTime": "ティータイムを予約する",
+          "teeTimeLine": "{city}のゴルフ場",
+          "teeTimeAnywhere": "ゴルフ場を探す"
+        }
       }
     },
     "datePicker": {
@@ -2591,6 +2599,24 @@
       "doneRefundFailed": "ご予約はキャンセルされましたが、返金が完了しませんでした。サポートまでご連絡ください。対応いたします。",
       "failed": "ご予約をキャンセルできませんでした。もう一度お試しいただくか、サポートまでお問い合わせください。",
       "close": "閉じる"
+    },
+    "golfCard": {
+      "date": "日付",
+      "teeTime": "ティータイム",
+      "view": "予約を見る",
+      "empty": "ゴルフのご予約はまだありません",
+      "totalPaid": "お支払い総額",
+      "chargedOnConfirmation": "ゴルフ場の確定後に請求されます",
+      "notCharged": "請求なし",
+      "refunded": "{amount} 返金済み",
+      "status": {
+        "held": "お支払い待ち",
+        "requested": "ゴルフ場に確認中",
+        "confirmed": "確定",
+        "expired": "期限切れ",
+        "declined": "お断り",
+        "cancelled": "キャンセル済み"
+      }
     }
   },
   "support": {
@@ -2664,7 +2690,6 @@
     "settings": "設定",
     "primary": "メイン",
     "closeSettings": "設定を閉じる",
-    "scrollToTop": "上へ戻る",
     "scrollLeft": "左へスクロール",
     "scrollRight": "右へスクロール",
     "filter": "フィルター",
@@ -2868,7 +2893,7 @@
       "night_golf": "ナイター"
     },
     "teeTimes": {
-      "title": "ティータイム",
+      "title": "ティータイムを予約",
       "date": "日付",
       "players": "人数",
       "playerCount": "{count}名",
@@ -2879,7 +2904,7 @@
       "loadError": "ティータイムを読み込めませんでした。",
       "prevMonth": "前の月",
       "nextMonth": "次の月",
-      "pickHint": "時間を選ぶと、そのままお問い合わせいただけます。",
+      "pickHint": "予約する時間を選んでください。",
       "askThis": "このティータイムを問い合わせる",
       "draft": "こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？"
     },
