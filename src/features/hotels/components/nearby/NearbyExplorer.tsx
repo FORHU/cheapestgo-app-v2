@@ -20,12 +20,6 @@ import { PlaceCards, PlaceFilters } from './PlaceStrip';
 import { PlaceDetailsModal } from './PlaceDetailsModal';
 import type { LatLng, NearbyPalette } from './types';
 
-/**
- * How much of the map's bottom edge the filters and the cards cover: their 32px lift off the
- * Mapbox logo, the filter row and the card row (measured: 210px with the filters on one line).
- */
-const OVERLAY_INSET = 210;
-
 interface NearbyExplorerProps {
     coordinates: LatLng;
     hotelName: string;

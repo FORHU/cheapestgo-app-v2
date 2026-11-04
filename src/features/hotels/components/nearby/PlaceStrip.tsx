@@ -298,7 +298,7 @@ export function PlaceCards({
     return (
         <div className={cn('pointer-events-none relative', className)}>
             {gems.length > 3 && (
-                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left', palette)}>
+                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left')}>
                     <ChevronLeft size={16} aria-hidden />
                 </button>
             )}
@@ -306,7 +306,7 @@ export function PlaceCards({
                 {body}
             </div>
             {gems.length > 3 && (
-                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right', palette)}>
+                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right')}>
                     <ChevronRight size={16} aria-hidden />
                 </button>
             )}
@@ -315,7 +315,7 @@ export function PlaceCards({
 }
 
 /** Inside the row's ends rather than hanging past them — the map clips anything past its edge. */
-function arrowStyle(side: 'left' | 'right', palette: NearbyPalette): React.CSSProperties {
+function arrowStyle(side: 'left' | 'right'): React.CSSProperties {
     return {
         ...(side === 'left' ? { left: 6 } : { right: 6 }),
         position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,

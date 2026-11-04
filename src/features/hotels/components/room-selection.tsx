@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
     AirVent, Bath, Bed, BedDouble, Building2, Check, ChevronLeft, ChevronRight,
-    Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, User, UtensilsCrossed,
+    Coffee, Dog, Maximize2, Refrigerator, Sparkles, Tv, User,
     Users, Wifi, Wind, X, type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';

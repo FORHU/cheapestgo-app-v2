@@ -12,7 +12,7 @@ const seg = (segmentIndex: number, from: [string, string, string], to: [string, 
 const course = (over: Partial<GolfCourse> = {}): GolfCourse => ({
     id: 'c1', slug: 'tokyo-hills', name: 'Tokyo Hills', country: 'Japan', city: 'Tokyo', address: null,
     description: '', holes: 18, par: 72, greenFeeFrom: null, currency: 'JPY', imageUrls: [], amenities: [],
-    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Tokyo', bookingWindowDays: 30,
+    status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Tokyo', bookingWindowDays: 30, freeCancelHours: 48,
     scheduleCount: 1, bookable: true, ...over,
 });
 
