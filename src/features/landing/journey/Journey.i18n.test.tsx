@@ -1,7 +1,8 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithIntl } from '@/shared/testing/renderWithIntl';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderWithIntl, withIntl } from '@/shared/testing/renderWithIntl';
+import { GOLF_FACE } from '@/features/golf/lib/last-search';
 import { formatCurrency } from '@/shared/lib/format';
 import { convertCurrency, getCurrencySymbol } from '@/shared/lib/currency';
 import { useSearchStore } from '@/shared/stores/search.store';
@@ -60,6 +61,7 @@ const OPTIONS_DOCKED = 0.9;
 beforeEach(() => {
     progress.journey = 0;
     progress.reduced = false;
+    snap.goToStop.mockReset();
     golfApi.fetchGolfCatalogue.mockReset();
     golfApi.fetchGolfCatalogue.mockResolvedValue({ courses: [], countries: [] });
 });
@@ -204,7 +206,7 @@ describe('Journey golf face', () => {
     const course = {
         id: 'c1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
         description: '', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW', imageUrls: [], amenities: [],
-        status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, scheduleCount: 1, bookable: true,
+        status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, freeCancelHours: 48, scheduleCount: 1, bookable: true,
     };
     const more = ['b', 'c', 'd', 'e'].map((id) => ({ ...course, id, slug: `course-${id}`, name: `Course ${id.toUpperCase()}`, greenFeeFrom: null }));
 
@@ -254,6 +256,45 @@ describe('Journey golf face', () => {
         await toGolf();
         await waitFor(() => expect(bar.props.golfCourses).toEqual([]));
         expect(screen.queryByRole('link', { name: en.search.golf.allCourses })).toBeNull();
+    });
+});
+
+describe('Journey, coming back from a golf course', () => {
+    const scrollIntoView = vi.fn();
+
+    beforeEach(() => {
+        scrollIntoView.mockReset();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        window.history.replaceState(null, '', GOLF_FACE);
+    });
+    afterEach(() => window.history.replaceState(null, '', '/'));
+
+    it('docks on the search with its Golf face up, once', async () => {
+        const view = renderWithIntl(<Journey showcaseStays={{}} />);
+        expect(snap.goToStop).toHaveBeenCalledTimes(1);
+        // The search stage: the hero is stop 0, and the search is the first stage after it.
+        expect(JOURNEY_STOPS[snap.goToStop.mock.calls[0][0]]).toBe(STAGES[0].from + (STAGES[0].to - STAGES[0].from) * STAGE_DOCK);
+
+        progress.journey = STAYS_DOCKED;
+        view.rerender(withIntl(<Journey showcaseStays={{}} />));
+        expect(await screen.findByText(J_EN.stages.golf.caption)).toBeInTheDocument();
+        expect(bar.props.defaultMode).toBe('golf');
+        expect(snap.goToStop).toHaveBeenCalledTimes(1);
+    });
+
+    it('brings the golf search into view on the stacked page, for a visitor who asked for less motion', () => {
+        progress.reduced = true;
+        renderWithIntl(<Journey showcaseStays={{}} />);
+        expect(scrollIntoView).toHaveBeenCalledTimes(1);
+        expect((scrollIntoView.mock.contexts[0] as HTMLElement).textContent).toContain(J_EN.stages.golf.caption);
+        expect(snap.goToStop).not.toHaveBeenCalled();
+    });
+
+    it('leaves everyone else on the hero', () => {
+        window.history.replaceState(null, '', '/');
+        renderWithIntl(<Journey showcaseStays={{}} />);
+        expect(snap.goToStop).not.toHaveBeenCalled();
+        expect(scrollIntoView).not.toHaveBeenCalled();
     });
 });
 

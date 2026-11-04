@@ -26,6 +26,7 @@ const PARTY = [1, 2, 3, 4];
 
 /** A chosen party size, day or time: the brand's gradient, as every chosen control on v2 is. */
 const CHOSEN = 'border-transparent bg-linear-to-r from-blue-600 to-cyan-500 text-white shadow-[0_8px_20px_-8px_rgba(37,99,235,.6)]';
+const IDLE = 'border-slate-200 text-slate-800 hover:border-slate-400 dark:border-white/10 dark:text-slate-100 dark:hover:border-white/30';
 
 /** A date on the course's clock, which must not move with the visitor's zone; hence UTC. */
 const utcDate = (date: string) => {
@@ -169,24 +170,18 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
     const showIntro = hasTimes || (range !== null && state.status === 'loading');
 
     return (
-        <section aria-labelledby="tee-times-title" className="space-y-4">
-            <h2 id="tee-times-title" className="text-base font-bold text-slate-900 dark:text-slate-50">{t('teeTimes.title')}</h2>
-
-            <div>
-                <p className="mb-1.5 text-xs text-slate-500 dark:text-slate-400">{t('teeTimes.players')}</p>
-                <div className="grid grid-cols-4 gap-1">
+        <section aria-labelledby="tee-times-title" className="rounded-2xl bg-white p-4 shadow-sm sm:p-6 dark:bg-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                <h2 id="tee-times-title" className="text-lg font-bold text-slate-900 md:text-xl dark:text-slate-50">{t('teeTimes.title')}</h2>
+                <div className="flex items-center gap-2.5" role="group" aria-label={t('teeTimes.players')}>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{t('teeTimes.players')}</span>
                     {PARTY.map((n) => (
                         <button
                             key={n}
                             type="button"
                             aria-pressed={players === n}
                             onClick={() => setPlayers(n)}
-                            className={cn(
-                                'h-9 rounded-full border text-sm font-medium transition-colors',
-                                players === n
-                                    ? CHOSEN
-                                    : 'border-slate-200 text-slate-700 hover:border-slate-400 dark:border-white/10 dark:text-slate-200 dark:hover:border-white/30',
-                            )}
+                            className={cn('h-9 w-9 cursor-pointer rounded-full border text-sm font-medium transition-colors', players === n ? CHOSEN : IDLE)}
                         >{n}</button>
                     ))}
                 </div>
@@ -206,11 +201,8 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
                                     aria-label={formats.full.format(utcDate(d))}
                                     onClick={() => { setDate(d); setPicked(undefined); }}
                                     className={cn(
-                                        'h-8 rounded-full text-xs transition-colors',
-                                        !cell.inMonth && 'invisible',
-                                        chosen
-                                            ? `${CHOSEN} font-semibold`
-                                            : 'text-slate-700 hover:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:text-white/20',
+                                        'flex w-16 shrink-0 cursor-pointer snap-start flex-col items-center rounded-xl border py-2 transition-colors',
+                                        chosen ? CHOSEN : IDLE,
                                     )}
                                 >
                                     <span className={cn('text-[11px]', chosen ? 'opacity-90' : 'text-slate-500 dark:text-slate-400')}>{formats.weekday.format(utcDate(d))}</span>
@@ -223,9 +215,25 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
                 </div>
             )}
 
-            {state.status === 'loading' && (
-                <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+            {showIntro && (
+                <div className="mt-3 min-h-14 sm:min-h-10 sm:px-10">
+                    {pickedOffer && shownDate ? (
+                        <>
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
+                                {t('teeTimes.summary', {
+                                    date:  formats.short.format(utcDate(shownDate)),
+                                    time:  clockTime(pickedOffer.localTime, locale),
+                                    count: players,
+                                })}
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{t('teeTimes.chargedAfter')}</p>
+                        </>
+                    ) : !picked && (
+                        <>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">{t('teeTimes.pickHint')}</p>
+                            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{t('teeTimes.priceNote', { count: players })}</p>
+                        </>
+                    )}
                 </div>
             )}
 
@@ -262,10 +270,9 @@ export function TeeTimePicker({ course, initial = {} }: { course: GolfCourse; in
                                     disabled={unavailable}
                                     onClick={() => setPicked(chosen ? undefined : offer.id)}
                                     className={cn(
-                                        'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-colors',
-                                        chosen
-                                            ? CHOSEN
-                                            : 'border-slate-200 text-slate-900 hover:border-slate-400 dark:border-white/10 dark:text-white dark:hover:border-white/30',
+                                        'flex w-28 shrink-0 cursor-pointer snap-start flex-col items-start rounded-xl border px-3 py-2 text-left transition-colors',
+                                        'disabled:cursor-not-allowed disabled:opacity-40',
+                                        chosen ? CHOSEN : IDLE,
                                     )}
                                 >
                                     <span className="text-sm font-semibold">{clockTime(offer.localTime, locale)}</span>

@@ -8,6 +8,7 @@ import { formatCurrency } from '@/shared/lib/format';
 import {
     CalendarGrid, FILL, GRADIENT_TEXT, GoPill, NotePanel, PROSE, SearchMiniIcon, Token, fmtDate, startOfDay, useProseWidth,
 } from '@/features/search/components/prose-parts';
+import { GOLF_FACE, rememberGolfSearch } from '@/features/golf/lib/last-search';
 import { useGolfCourses } from '@/features/golf/lib/use-golf-courses';
 import type { GolfCourse } from '@/features/golf/types';
 
@@ -144,6 +145,7 @@ export function GolfSentence({
         const qs = new URLSearchParams();
         if (date) qs.set('date', isoDay(date));
         qs.set('players', String(players));
+        rememberGolfSearch(GOLF_FACE);
         startSearch(() => router.push(`/golf/${course.slug}?${qs.toString()}`));
     };
 

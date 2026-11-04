@@ -8,6 +8,7 @@ import { useTheme } from '@/shared/components/ThemeContext';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { cn } from '@/shared/lib/cn';
 import { SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
+import { lastGolfSearch } from '@/features/golf/lib/last-search';
 
 /**
  * The course page's column — the property page's: the shared shell with a wider gutter, so a course
@@ -90,13 +91,9 @@ export function CourseHero({
         setIndex(((to % count) + count) % count);
     };
 
-    // Back where the visitor came from on this site; to the catalogue for anyone who arrived on a
-    // shared link, so the button never leaves the site.
-    const back = () => {
-        const fromHere = document.referrer.startsWith(window.location.origin) && window.history.length > 1;
-        if (fromHere) router.back();
-        else router.push('/golf');
-    };
+    // To the search that led here, or the catalogue for anyone who arrived on a shared link. Never
+    // through history: what is behind this page may be the checkout.
+    const back = () => router.push(lastGolfSearch());
 
     return (
         <div className={cn('relative min-h-80 overflow-hidden', compact ? 'h-[42vh]' : 'h-screen')}>

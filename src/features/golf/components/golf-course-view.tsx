@@ -27,8 +27,7 @@ const CHIP = 'rounded-full bg-white px-3.5 py-1.5 text-sm font-medium text-slate
 /**
  * `/golf/[slug]`: one course, its facts and photos, and the way to ask about playing it — in the
  * property page's design: the photographs full-bleed with the name over them, then the page's column
- * on the flat ground, its sections rising in as they are reached, and the tee times in a panel that
- * stays beside them on a wide screen.
+ * on the flat ground, its sections rising in as they are reached, closing on the band that books a tee time.
  *
  * Fetched in the viewer's Display Currency and again when that changes. An unknown or draft slug is
  * already a 404 from the server page; `missing` here covers a course unpublished while the page was open.
@@ -92,61 +91,58 @@ export function GolfCourseView({ slug, initial }: { slug: string; initial?: TeeT
             <CourseHero course={{ name: c.name, place: `${c.city} · ${c.country}`, images: c.imageUrls }} />
 
             <CourseColumn className="pt-[clamp(20px,4vw,40px)] pb-24">
-                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
-                    <div className="space-y-12">
+                <div className="space-y-12">
+                    <Reveal>
+                        <ul className="flex flex-wrap gap-2">
+                            <li className={CHIP}>{t('holes', { holes: c.holes })}</li>
+                            {c.par != null && <li className={CHIP}>{t('par', { par: c.par })}</li>}
+                        </ul>
+                    </Reveal>
+
+                    {c.amenities.length > 0 && (
                         <Reveal>
+                            <h2 className={`${SECTION_HEADING} mb-5 text-slate-900 dark:text-slate-50`}>{t('amenitiesTitle')}</h2>
                             <ul className="flex flex-wrap gap-2">
-                                <li className={CHIP}>{t('holes', { holes: c.holes })}</li>
-                                {c.par != null && <li className={CHIP}>{t('par', { par: c.par })}</li>}
+                                {c.amenities.map((a) => <li key={a} className={CHIP}>{t(`amenities.${a}`)}</li>)}
                             </ul>
                         </Reveal>
+                    )}
 
-                        {c.amenities.length > 0 && (
-                            <Reveal>
-                                <h2 className={`${SECTION_HEADING} mb-5 text-slate-900 dark:text-slate-50`}>{t('amenitiesTitle')}</h2>
-                                <ul className="flex flex-wrap gap-2">
-                                    {c.amenities.map((a) => <li key={a} className={CHIP}>{t(`amenities.${a}`)}</li>)}
-                                </ul>
-                            </Reveal>
-                        )}
+                    {text.length > 0 && (
+                        <Reveal>
+                            <h2 className={`${SECTION_HEADING} mb-5 text-slate-900 dark:text-slate-50`}>{t('aboutTitle')}</h2>
+                            <div className="max-w-3xl space-y-4 text-base leading-relaxed text-slate-700 dark:text-slate-300">
+                                {text.map((p, i) => <p key={i}>{p}</p>)}
+                            </div>
+                        </Reveal>
+                    )}
 
-                        {text.length > 0 && (
-                            <Reveal>
-                                <h2 className={`${SECTION_HEADING} mb-5 text-slate-900 dark:text-slate-50`}>{t('aboutTitle')}</h2>
-                                <div className="max-w-3xl space-y-4 text-base leading-relaxed text-slate-700 dark:text-slate-300">
-                                    {text.map((p, i) => <p key={i}>{p}</p>)}
+                    {c.address && (
+                        <Reveal>
+                            <h2 className="mb-1.5 text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400">{t('addressTitle')}</h2>
+                            <p className="flex items-start gap-1.5 text-base text-slate-700 dark:text-slate-300">
+                                <MapPin size={16} className="mt-1 shrink-0 text-blue-500" aria-hidden /> {c.address}
+                            </p>
+                        </Reveal>
+                    )}
+                </div>
+
+                {/* With tee times the band shows real prices, so the "from" guide would only repeat it. */}
+                <div className="mt-12">
+                    {c.bookable ? (
+                        <TeeTimePicker course={c} initial={initial} />
+                    ) : (
+                        <aside className="flex flex-wrap items-center justify-between gap-6 rounded-2xl bg-white p-5 shadow-sm sm:p-6 dark:bg-slate-900">
+                            {c.greenFeeFrom != null && (
+                                <div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('fromLabel')}</p>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{formatCurrency(c.greenFeeFrom, c.currency)}</p>
+                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('guidePrice')}</p>
                                 </div>
-                            </Reveal>
-                        )}
-
-                        {c.address && (
-                            <Reveal>
-                                <h2 className="mb-1.5 text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400">{t('addressTitle')}</h2>
-                                <p className="flex items-start gap-1.5 text-base text-slate-700 dark:text-slate-300">
-                                    <MapPin size={16} className="mt-1 shrink-0 text-blue-500" aria-hidden /> {c.address}
-                                </p>
-                            </Reveal>
-                        )}
-                    </div>
-
-                    {/* Not inside a Reveal: a transformed ancestor would stop the panel sticking. */}
-                    <aside className="h-fit space-y-4 rounded-2xl bg-white p-5 shadow-sm lg:sticky lg:top-6 dark:bg-slate-900">
-                        {/* With tee times the picker shows real prices, so the "from" guide would only repeat it. */}
-                        {c.bookable ? (
-                            <TeeTimePicker course={c} initial={initial} />
-                        ) : (
-                            <>
-                                {c.greenFeeFrom != null && (
-                                    <div>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('fromLabel')}</p>
-                                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{formatCurrency(c.greenFeeFrom, c.currency)}</p>
-                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('guidePrice')}</p>
-                                    </div>
-                                )}
-                                <AskTeeTimesButton />
-                            </>
-                        )}
-                    </aside>
+                            )}
+                            <div className="w-full sm:w-80"><AskTeeTimesButton /></div>
+                        </aside>
+                    )}
                 </div>
             </CourseColumn>
         </div>

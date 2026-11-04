@@ -2906,10 +2906,117 @@
       "nextMonth": "次の月",
       "pickHint": "予約する時間を選んでください。",
       "askThis": "このティータイムを問い合わせる",
-      "draft": "こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？"
+      "draft": "こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？",
+      "earlierDays": "前の日",
+      "laterDays": "次の日",
+      "earlierTimes": "前の時間",
+      "laterTimes": "次の時間",
+      "summary": "{date} · {time} · {count}名",
+      "chargedAfter": "カードへの請求はゴルフ場の確定後のみです。",
+      "total": "合計",
+      "justGone": "この時間は先ほど埋まりました。別の時間をお選びください。",
+      "book": "予約"
     },
     "count": "ゴルフ場 {count}件",
     "countIn": "{country}のゴルフ場 {count}件",
-    "back": "戻る"
+    "back": "戻る",
+    "booking": {
+      "metaTitle": "ティータイムの予約",
+      "title": "ティータイムの予約",
+      "yourBooking": "ゴルフのご予約",
+      "backToCourse": "ゴルフ場に戻る",
+      "leadName": "代表プレーヤー",
+      "leadNameRequired": "代表プレーヤーのお名前を入力してください。",
+      "leadNameHint": "ゴルフ場の予約表に載るお名前です。",
+      "continue": "お支払いに進む",
+      "starting": "枠を確保しています…",
+      "startError": "お支払いを開始できませんでした。もう一度お試しください。",
+      "tooMany": "試行回数が多すぎます。少し待ってからもう一度お試しください。",
+      "priceChanged": "このティータイムの料金が変更されました。続ける前に新しい合計をご確認ください。",
+      "holdTimer": "枠は {time} の間確保されます。",
+      "payButton": "このティータイムをリクエスト · {amount}",
+      "paying": "カードを承認しています…",
+      "payFailed": "カードを承認できませんでした。もう一度お試しください。",
+      "howItWorks": "今はカードの承認のみで、ゴルフ場がティータイムを確定した後（最長48時間以内）にのみ請求されます。ゴルフ場がお受けできない場合、承認は解除され、料金はかかりません。",
+      "date": "日付",
+      "time": "ティータイム",
+      "players": "人数",
+      "greenFee": "グリーンフィー",
+      "serviceFee": "サービス料",
+      "total": "合計",
+      "reference": "予約番号",
+      "email": "メール",
+      "finishPaying": "お支払いを完了する",
+      "pickAnother": "別の時間を選ぶ",
+      "unavailableTitle": "このティータイムはご利用いただけなくなりました",
+      "unavailableBody": "お選びいただいた後に埋まったか、締め切られました。請求はありません。",
+      "tooFewSpots": "このティータイムの残りは{count}枠のみです。請求はありません。",
+      "holdRanOutTitle": "確保時間が終了しました",
+      "holdRanOutBody": "15分が過ぎたため枠を解放しました。請求はありません。",
+      "missingTitle": "このご予約が見つかりません",
+      "missingBody": "別のアカウントのご予約かもしれません。ご予約時のメールアドレスでログインしているかご確認ください。",
+      "status": {
+        "held": {
+          "title": "お支払いをお待ちしています",
+          "body": "{holdEnds}まで枠を確保しています。お支払いを完了すると、ゴルフ場へリクエストが送られます。"
+        },
+        "requested": {
+          "title": "ゴルフ場に確認しています",
+          "body": "カードは承認のみで、請求はされていません。{deadline}までにご回答します。ゴルフ場がお受けできない場合、承認は解除され、料金はかかりません。"
+        },
+        "confirmed": {
+          "title": "ご予約が確定しました",
+          "body": "ゴルフ場がティータイムを確定し、カードに請求しました。"
+        },
+        "expired": {
+          "title": "このご予約は期限切れです",
+          "body": "時間内にお支払いがなかったため、請求はなく、枠は解放されました。"
+        },
+        "declined": {
+          "title": "ゴルフ場がこのティータイムをお受けできませんでした",
+          "body": "カードへの請求はなく、承認は解除されました。別の時間をお選びください。"
+        },
+        "notAnswered": {
+          "title": "時間内に確定できませんでした",
+          "body": "カードへの請求はなく、承認は解除されました。申し訳ございません。別の時間をお選びください。"
+        },
+        "cancelled": {
+          "title": "このご予約はキャンセルされました",
+          "body": "請求はなく、カードの承認は解除されました。"
+        },
+        "cancelledByTeam": {
+          "title": "ゴルフ場の都合によりティータイムがキャンセルされました",
+          "body": "請求はなく、カードの承認は解除されました。"
+        }
+      },
+      "freeCancelUntil": "{date}まで無料でキャンセルできます。",
+      "noFreeCancel": "このティータイムの無料キャンセル期限はすでに過ぎているため、確定後はオンラインでキャンセルできません。",
+      "freeCancelEnded": "無料キャンセルは{date}に終了しました。ご予約の変更はお問い合わせください。",
+      "contactSupport": "サポートに問い合わせる",
+      "extrasHeading": "オプション",
+      "extrasHint": "任意です。ティータイムの確定時に、当社スタッフがゴルフ場に手配します。",
+      "extraEach": "1点あたり{price}",
+      "extraLine": "{name} × {count}",
+      "extrasUnavailable": "提供されているオプションが変更されました。内容をご確認のうえ、もう一度お試しください。",
+      "extraAdd": "{name}を追加",
+      "extraRemove": "{name}を減らす",
+      "extraNames": {
+        "club_rental": "レンタルクラブ",
+        "caddie": "キャディ",
+        "cart": "ゴルフカート",
+        "lessons": "ゴルフレッスン",
+        "range_balls": "練習ボール(カゴ)"
+      },
+      "supportDraft": "こんにちは。ゴルフのご予約 {reference} の変更について相談したいです。",
+      "cancelRequest": "このリクエストをキャンセル",
+      "cancelBooking": "予約をキャンセル",
+      "cancelRequestNote": "請求はありません。キャンセルするとカードの承認が解除され、この枠は手放すことになります。",
+      "refundNote": "サービス料を含む全額 {amount} をご返金します。",
+      "confirmCancel": "はい、キャンセルします",
+      "keepBooking": "予約を続ける",
+      "cancelling": "キャンセルしています…",
+      "cancelFailed": "今はキャンセルできませんでした。変更はありません。もう一度お試しください。",
+      "refunded": "{amount} を返金しました。明細に反映されるまで 5〜10 営業日かかる場合があります。"
+    }
   }
 }

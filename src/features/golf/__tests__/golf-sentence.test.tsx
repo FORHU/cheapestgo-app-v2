@@ -17,11 +17,12 @@ const api = vi.hoisted(() => ({ fetchGolfCatalogue: vi.fn() }));
 vi.mock('@/features/golf/api/golf.api', () => api);
 
 import { GolfSentence, lastBookableDay } from '@/features/golf/components/golf-sentence';
+import { GOLF_FACE, lastGolfSearch } from '@/features/golf/lib/last-search';
 
 const course = (over: Partial<GolfCourse> = {}): GolfCourse => ({
     id: '1', slug: 'wack-wack', name: 'Wack Wack', country: 'Philippines', city: 'Mandaluyong', address: null,
     description: '', holes: 36, par: 72, greenFeeFrom: 120000, currency: 'KRW', imageUrls: [],
-    amenities: [], status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60,
+    amenities: [], status: 'published', createdAt: '', updatedAt: '', timezone: 'Asia/Manila', bookingWindowDays: 60, freeCancelHours: 48,
     scheduleCount: 1, bookable: true, ...over,
 });
 const sky = course({ id: '2', slug: 'sky72', name: 'Sky72', city: 'Incheon', country: 'South Korea', greenFeeFrom: null, bookingWindowDays: 5 });
@@ -69,6 +70,15 @@ describe('GolfSentence', () => {
         expect(screen.getByText('Wack Wack')).toBeInTheDocument();
         await user.click(screen.getByRole('button', { name: en.landing.search.go }));
         expect(push).toHaveBeenCalledWith('/golf/wack-wack?players=2');
+    });
+
+    it('is the search the course page goes back to', async () => {
+        sessionStorage.clear();
+        renderWithIntl(<GolfSentence courses={[course()]} coursePick={{ slug: 'wack-wack' }} />);
+        expect(lastGolfSearch()).toBe('/golf');
+
+        await userEvent.setup().click(screen.getByRole('button', { name: en.landing.search.go }));
+        expect(lastGolfSearch()).toBe(GOLF_FACE);
     });
 
     it('puts a picked day and party size in the address, as the calendar shows the day', async () => {

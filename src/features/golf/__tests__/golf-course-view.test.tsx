@@ -90,6 +90,19 @@ describe('GolfCourseView', () => {
         expect(router.back).not.toHaveBeenCalled();
     });
 
+    it('goes back to the search that led here, and never through history, where the checkout may be', async () => {
+        // What put a visitor on a dead checkout: a tab opened from this site, so the referrer looked
+        // like a way back, with the checkout as the page behind this one.
+        const referrer = vi.spyOn(document, 'referrer', 'get').mockReturnValue(`${window.location.origin}/`);
+        rememberGolfSearch('/golf?country=Japan');
+        api.fetchGolfCourse.mockResolvedValue(course());
+        renderWithIntl(<GolfCourseView slug="wack-wack" />);
+        await userEvent.setup().click(await screen.findByRole('button', { name: en.golf.back }));
+        expect(router.push).toHaveBeenCalledWith('/golf?country=Japan');
+        expect(router.back).not.toHaveBeenCalled();
+        referrer.mockRestore();
+    });
+
     it('says the course is not available when there is no such course', async () => {
         api.fetchGolfCourse.mockRejectedValue(Object.assign(new Error('Golf course not found'), { status: 404 }));
         renderWithIntl(<GolfCourseView slug="gone" />);

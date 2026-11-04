@@ -41,6 +41,10 @@ export function GolfListView({ country }: { country?: string }) {
         return () => { cancelled = true; };
     }, [country, currency, attempt]);
 
+    useEffect(() => {
+        rememberGolfSearch(country ? `/golf?country=${encodeURIComponent(country)}` : '/golf');
+    }, [country]);
+
     const countries = state.status === 'ready' ? state.catalogue.countries : [];
     const count = state.status === 'ready' ? state.catalogue.courses.length : null;
 

@@ -9,6 +9,7 @@ import { ImmersiveSearchBar } from '@/features/search/components/immersive-searc
 import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
 import type { FeaturedStay } from '@/features/landing/api/featured.api';
 import { formatCurrency } from '@/shared/lib/format';
+import { isGolfFace } from '@/features/golf/lib/last-search';
 import { useGolfCourses } from '@/features/golf/lib/use-golf-courses';
 import type { GolfCourse } from '@/features/golf/types';
 import {
