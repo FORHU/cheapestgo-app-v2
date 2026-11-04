@@ -160,7 +160,8 @@ describe('Journey stages', () => {
         const flights = screen.getByRole('link', { name: new RegExp(ko.landing.search.searchMode.flights) });
         expect(within(flights).getByText(J_KO.options.flightsNote)).toBeInTheDocument();
 
-        expect(screen.getByText(J_KO.options.golf)).toBeInTheDocument();
+        const golf = screen.getByRole('link', { name: new RegExp(J_KO.options.golf) });
+        expect(golf).toHaveAttribute('href', '/golf');
         expect(screen.getByText(J_KO.options.golfNote)).toBeInTheDocument();
         expect(screen.queryByText('Coming soon')).not.toBeInTheDocument();
         expect(screen.queryByText('Hotels & homes')).not.toBeInTheDocument();

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useTransition } from 'react';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
@@ -961,6 +961,16 @@ export function ImmersiveSearchBar({
                                     }}
                                 >{tAll(`landing.search.searchMode.${m}`)}</button>
                             ))}
+                            {/* Golf has no search form yet, so its tab is a way to the catalogue rather than a mode. */}
+                            <Link
+                                href="/golf"
+                                style={{
+                                    padding: '7px 16px', borderRadius: '100px', textDecoration: 'none',
+                                    fontSize: '12px', fontWeight: 700, letterSpacing: '.04em',
+                                    fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,.85)',
+                                    display: 'inline-flex', alignItems: 'center', transition: 'color .2s',
+                                }}
+                            >{tAll('landing.search.searchMode.golf')}</Link>
                         </div>
 
                         {/* ── Prose headline ── */}

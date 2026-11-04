@@ -14,7 +14,10 @@ import ko from '@/locales/ko.json';
 const autocompleteDestinations = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
 vi.mock('@/features/search/api/destinations.api', () => ({ autocompleteDestinations }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/i18n/navigation', () => ({
+    useRouter: () => ({ push }),
+    Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => <a href={href} {...rest}>{children}</a>,
+}));
 
 import { ImmersiveSearchBar } from './immersive-search-bar';
 
@@ -269,5 +272,15 @@ describe('ImmersiveSearchBar — in Korean', () => {
         await user.click(screen.getByText(ko.search.prose.ofUs.replace('{count}', '2')));
         expect(screen.getByText(ko.checkout.flight.whosFlying)).toBeInTheDocument();
         expect(screen.queryByText('Who\'s flying?')).not.toBeInTheDocument();
+    });
+});
+
+describe('ImmersiveSearchBar — golf', () => {
+    it('links to golf from a third tab, which is not a search mode', () => {
+        const onModeSelect = vi.fn();
+        renderWithIntl(<ImmersiveSearchBar onModeSelect={onModeSelect} />);
+        expect(screen.getByRole('link', { name: 'Golf' })).toHaveAttribute('href', '/golf');
+        expect(screen.queryByRole('button', { name: 'Golf' })).toBeNull();
+        expect(onModeSelect).not.toHaveBeenCalled();
     });
 });

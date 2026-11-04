@@ -582,12 +582,10 @@ function AskPanel() {
 /** The last stage: every way in, side by side, for a visitor who skipped the rest. */
 function OptionsPanel() {
     const tAll = useTranslations();
-    // Golf has no page to go to yet, so its card has no `href` and says so rather than
-    // linking somewhere that is not golf. Give it one and it becomes a link like the others.
-    const options: Array<{ href?: string; label: string; note: string }> = [
+    const options: Array<{ href: string; label: string; note: string }> = [
         { href: '/search', label: tAll('landing.search.searchMode.stays'), note: tAll('landing.journey.options.staysNote') },
         { href: '/flights/search', label: tAll('landing.search.searchMode.flights'), note: tAll('landing.journey.options.flightsNote') },
-        { label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
+        { href: '/golf', label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
     ];
 
     const card = 'p-4 backdrop-blur-md';
@@ -602,7 +600,7 @@ function OptionsPanel() {
                         <p className="mt-1 text-xs text-white/60">{o.note}</p>
                     </>
                 );
-                return o.href ? (
+                return (
                     <Link
                         key={o.label}
                         href={o.href}
@@ -611,8 +609,6 @@ function OptionsPanel() {
                     >
                         {body}
                     </Link>
-                ) : (
-                    <div key={o.label} className={card} style={glass}>{body}</div>
                 );
             })}
         </div>
