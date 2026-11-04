@@ -70,7 +70,7 @@ so re-applying it by hand is harmless; `migrate:down` drops the table.
 | `holes` | `integer` NOT NULL | CHECK `holes IN (9, 18, 27, 36)` |
 | `par` | `integer` NULL | CHECK `par BETWEEN 27 AND 144` |
 | `green_fee_from` | `numeric(10,2)` NULL | indicative "from" price, never a quote; CHECK `>= 0` |
-| `currency` | `char(3)` NOT NULL DEFAULT `'USD'` | the course's currency |
+| `currency` | `char(3)` NOT NULL DEFAULT `'USD'` | the course's currency; CHECK `^[A-Z]{3}$` (new in v2) |
 | `image_urls` | `text[]` NOT NULL DEFAULT `'{}'` | first is the cover |
 | `amenities` | `text[]` NOT NULL DEFAULT `'{}'` | codes from the closed list below |
 | `status` | `text` NOT NULL DEFAULT `'draft'` | CHECK `status IN ('draft','published')` |
@@ -110,12 +110,15 @@ Route → Controller → Service → Repository, per the Layer Contract in api-v
 - `create(input)`, `update(id, input)`, `setStatus(id, status)`, `delete(id)` — `update`,
   `setStatus` and `delete` return null / false for an unknown id. A unique violation on `slug`
   throws `SlugTakenError`.
+- Maps rows to the camelCase `GolfCourse` domain type (`greenFeeFrom` as a number or null), as the
+  Layer Contract gives the mapping to the repository.
 
 **`src/services/golf.service.ts`** — `GolfService`:
 
-- "Published only" is decided here, once. `getPublishedCourse(slug)` returns null for a draft.
-- Maps rows to a camelCase `GolfCourse` domain type (`greenFeeFrom` as a number or null).
-- Generates the slug from `slugify(name, city)` when the input leaves it empty.
+- "Published only" is decided here, once. `getPublished(slug)` returns null for a draft.
+- Generates the slug from `slugify(name, city)` when the input leaves it empty. A name and city
+  with no letters a URL can use (all Hangul, say) produce no slug; that is a 422 asking for one.
+- A malformed id is treated as an unknown one (null / false), never sent to Postgres as a uuid.
 - `inCurrency(course, currency)` — converts `greenFeeFrom` into the requested Display Currency
   with `makeStrictConverter` (`src/lib/payments/convertStrict.ts`) over
   `ExchangeRatesService().getLiveRates()`, as `hotels.service.ts` does, rounding to two places.
@@ -123,10 +126,13 @@ Route → Controller → Service → Repository, per the Layer Contract in api-v
   conversion failure the course is returned unchanged.
 
 **`src/controllers/golf.controller.ts`** — request in, service call, response and status code out.
+Bodies are parsed with `golfCourseInputSchema` here rather than by the `validate()` middleware,
+which checks but throws away the parsed (trimmed, defaulted) value.
 
 Responses use the `{ success: true, data }` envelope `hotels.controller.ts` uses.
 
-**Public routes** — `src/routes/golf.route.ts`, mounted at `/golf`, rate-limited:
+**Public routes** — `src/routes/golf.route.ts`, mounted at `/golf`, under the app-wide
+`defaultRateLimit`:
 
 | method | path | response |
 |---|---|---|
@@ -134,8 +140,8 @@ Responses use the `{ success: true, data }` envelope `hotels.controller.ts` uses
 | GET | `/golf/courses/:slug?currency=` | the course, or 404 for an unknown or draft slug |
 
 **Admin routes** — `src/routes/admin-golf.route.ts`, mounted at `/admin/golf` (as `/admin/support`
-is, which keeps them out of `admin.route.ts`), behind `requireAuth, requireRole('admin')`, input
-checked with `validate()`:
+is, which keeps them out of `admin.route.ts`) and **before** `/admin`, so no route in
+`admin.route.ts` can shadow it; behind `requireAuth, requireRole('admin')`:
 
 | method | path | notes |
 |---|---|---|
@@ -143,12 +149,12 @@ checked with `validate()`:
 | POST | `/admin/golf/courses` | create; 201 with the course |
 | PUT | `/admin/golf/courses/:id` | update |
 | PATCH | `/admin/golf/courses/:id/status` | `{ status: 'draft' \| 'published' }` |
-| DELETE | `/admin/golf/courses/:id` | 204 |
+| DELETE | `/admin/golf/courses/:id` | `{ success: true }` — not 204, because app-v2's `http` client parses every response body |
 
 Errors: invalid input is a `ZodError`, which `error.middleware.ts` already answers with 422
-`{ error: 'VALIDATION_ERROR', message, details }` (`details` is the zod field errors); 409 on
-`SlugTakenError`; 404 for an unknown id. Every successful write calls `logAdminAction`
-(`src/lib/admin/audit.ts`).
+`{ error: 'VALIDATION_ERROR', message, details }` (`details` is the zod field errors); 409
+`SLUG_TAKEN` on `SlugTakenError`, with `details.slug` so the form can show it beside the field; 404
+for an unknown id. Every successful write calls `logAdminAction` (`src/lib/admin/audit.ts`).
 
 ## 5. app-v2 storefront
 
@@ -182,6 +188,10 @@ outside the widget can call it. A small zustand store, `features/support/lib/sup
 subscribes and calls its own `open()` when the counter changes. The reducer, the fetch and the
 panel stay where they are, and no message is pre-filled.
 
+The widget exists only for someone signed in (ADR-0032). For a signed-out visitor the button sends
+them to `/login?redirect=<this page>`, as checkout does, with a line saying sign-in is how they reach
+the team.
+
 **Entry points.**
 
 - `features/landing/journey/Journey.tsx` — the Options panel's Golf card gets `href: '/golf'`, which
@@ -207,20 +217,24 @@ like `destinations-view.tsx` with `http`, a search box, pagination, and the shar
   - the slug pre-filled from name + city until an admin edits it by hand;
   - field errors from a 422's `details` shown beside their fields.
 - **Sidebar:** "Golf Courses", lucide `Flag` icon, after Destinations in `admin-sidebar.tsx`.
+- Amenity labels come from the `golf` namespace, which `app/admin/layout.tsx` adds to the English
+  messages it supplies (it passes only the namespaces staff screens read).
 
 ## 7. Localization
 
 A new `golf` namespace in `src/locales/{en,ko,ja,zh}.json`: page titles, the country filter, facts
 (`{holes} holes`, `Par {par}`, `Green fees from {price}`), amenity labels, the button, empty states,
 and `landing.search.searchMode.golf` for the tab. The new non-English strings are added to
-`src/locales/NEEDS_NATIVE_REVIEW.md`. The locale parity test stays green. Course names and
-descriptions are shown as written.
+`src/locales/NEEDS_NATIVE_REVIEW.md`. app-v2 has no locale parity test, so one is added for the
+`golf` namespace: ko, ja and zh carry exactly English's keys, and every amenity code has a label.
+Course names and descriptions are shown as written.
 
 ## 8. Error handling
 
 - **Storefront:** a failed API call shows the page's error state with a retry, never a partial page.
   An unknown or draft slug is a 404.
-- **Admin:** the API's message is shown in a toast, and the dialog stays open with what was typed.
+- **Admin:** the API's message is shown inside the dialog (app-v2 mounts no toaster), field errors
+  beside their fields, and the dialog stays open with what was typed.
 - **Currency:** a conversion that fails falls back to the course's own figure (§4).
 
 ## 9. Testing
@@ -240,10 +254,11 @@ Test-first, per task.
 **app-v2**
 - `golf-course-form.test.tsx` — slug auto-fill stops after a manual edit; submits the parsed payload.
 - List and course views — empty states, the price only when set, the gallery, the 404 path.
-- Ask about tee times calls `requestOpen()`, and the widget opens when the request arrives.
-- The search bar's Golf tab is a link to `/golf` and does not call `onModeSelect`.
+- Ask about tee times calls `requestOpen()` for someone signed in, and the widget opens when the
+  request arrives; a signed-out visitor is sent to sign in.
+- The search bar's Golf tab is a link to `/golf`, not a mode button.
 - The Journey's Golf card links to `/golf`.
-- The locale parity test.
+- The golf locale parity test.
 
 **Manual** — `dbmate up` on 5434, then create and publish a course in admin, and check `/golf` and
 the course page in two locales, in light and dark mode, and at 360px wide.
