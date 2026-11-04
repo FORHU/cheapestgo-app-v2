@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Flag, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Eye, EyeOff, Flag, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
@@ -10,6 +10,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { adminGolfApi } from '@/features/golf/api/golf.api';
 import type { GolfCourse, GolfCourseDraft } from '@/features/golf/types';
 import { GolfCourseForm, type FieldErrors } from '@/features/admin/components/golf-course-form';
+import { GolfTeeTimesPanel } from '@/features/admin/components/golf-tee-times-panel';
 
 const message = (err: unknown, fallback: string) => (err instanceof Error && err.message ? err.message : fallback);
 
@@ -30,6 +31,7 @@ export function GolfCoursesView() {
     const [busyId, setBusyId]         = useState<string | null>(null);
 
     const [editing, setEditing]       = useState<GolfCourse | 'new' | null>(null);
+    const [teeTimesOf, setTeeTimesOf] = useState<GolfCourse | null>(null);
     const [saving, setSaving]         = useState(false);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [formError, setFormError]   = useState<string | null>(null);
@@ -158,6 +160,9 @@ export function GolfCoursesView() {
                                         <td className="px-3 py-1.5 text-slate-600">{c.greenFeeFrom != null ? `${c.currency} ${c.greenFeeFrom.toLocaleString()}` : '—'}</td>
                                         <td className="px-3 py-1.5">
                                             <Badge variant={c.status === 'published' ? 'success' : 'secondary'}>{c.status}</Badge>
+                                            {c.status === 'draft' && !c.bookable && (
+                                                <p className="mt-0.5 text-[11px] text-slate-400">Not bookable: needs a time zone and a schedule</p>
+                                            )}
                                         </td>
                                         <td className="px-3 py-1.5 text-right">
                                             <div className="flex items-center justify-end gap-1">
@@ -168,6 +173,7 @@ export function GolfCoursesView() {
                                                 >
                                                     {c.status === 'published' ? <EyeOff size={14} /> : <Eye size={14} />}
                                                 </Button>
+                                                <Button variant="ghost" size="sm" aria-label={`Tee times for ${c.name}`} onClick={() => setTeeTimesOf(c)} className="h-8 px-2 text-slate-600 hover:bg-slate-100"><Clock size={14} /></Button>
                                                 <Button variant="ghost" size="sm" aria-label={`Edit ${c.name}`} onClick={() => openEditor(c)} className="h-8 px-2 text-blue-600 hover:bg-blue-50"><Pencil size={14} /></Button>
                                                 <Button variant="ghost" size="sm" aria-label={`Delete ${c.name}`} disabled={busyId === c.id} onClick={() => remove(c)} className="h-8 px-2 text-rose-500 hover:bg-rose-50"><Trash2 size={14} /></Button>
                                             </div>

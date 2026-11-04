@@ -119,7 +119,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
             onMouseLeave={() => onHover(null)}
             style={wrapperStyle}
             className={cn(
-                'w-full text-left transition-all duration-200 cursor-pointer overflow-hidden',
+                'w-full text-left transition-all duration-200 cursor-pointer overflow-hidden rounded-xl',
                 'p-2.5 md:px-4 md:py-2.5 lg:px-6 lg:py-3',
                 !immersive && 'hover:bg-slate-50 dark:hover:bg-slate-800/60',
                 !immersive && isSelected && 'bg-blue-50 dark:bg-blue-950/40 md:border-l-[3px] md:border-l-blue-500',
@@ -129,7 +129,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
             {/* ── MOBILE ── */}
             <div className="flex flex-row gap-2 md:hidden">
                 <div
-                    className="relative shrink-0 overflow-hidden"
+                    className="relative shrink-0 overflow-hidden rounded-xl"
                     style={{ width: 76, height: 76, background: immersive ? 'rgba(255,255,255,0.06)' : undefined }}
                 >
                     {!immersive && <div className="absolute inset-0 bg-slate-100 dark:bg-slate-800" />}
@@ -209,7 +209,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
             {/* ── DESKTOP ── */}
             <div className="hidden md:flex gap-3">
                 <div
-                    className={cn('relative w-20 h-16 lg:w-24 lg:h-20 shrink-0 overflow-hidden', !immersive && 'bg-slate-100 dark:bg-slate-800')}
+                    className={cn('relative w-20 h-16 lg:w-24 lg:h-20 shrink-0 overflow-hidden rounded-xl', !immersive && 'bg-slate-100 dark:bg-slate-800')}
                     style={immersive ? { background: 'rgba(255,255,255,0.06)' } : undefined}
                 >
                     {property.image ? (

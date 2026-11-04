@@ -3,7 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import { hreflangAlternates } from '@/shared/lib/seo';
 import { QUICK_QUESTIONS } from '@/features/support/lib/suggestions';
 import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
 import { FlatGround } from '@/shared/components/common/FlatGround';
 
 /**
@@ -57,7 +56,6 @@ export default async function HelpPage() {
                 </section>
             </main>
 
-            <Footer />
         </div>
     );
 }

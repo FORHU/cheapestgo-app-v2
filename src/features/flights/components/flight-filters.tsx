@@ -216,9 +216,7 @@ export function FlightFilters({
 
     return (
         <div className={cn('relative', className)}>
-            {/* Square-cornered, like the hotel filter panel and the result cards
-                beside it; the pills and round buttons inside keep their shapes. */}
-            <aside className={cn('w-full overflow-hidden', palette.panel)}>
+            <aside className={cn('w-full overflow-hidden rounded-[20px]', palette.panel)}>
                 {/* Scrolls once the sections outgrow the viewport, without a bar —
                     on a panel this narrow it was mostly a seam. */}
                 <div className="no-scrollbar max-h-[calc(100dvh-7rem)] overflow-y-auto px-[18px] py-6">

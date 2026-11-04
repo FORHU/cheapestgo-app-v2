@@ -16,7 +16,7 @@ function FlightCardSkeleton({ index = 0 }: { index?: number }) {
     const bar = 'rounded bg-slate-200 dark:bg-white/10';
     return (
         <div
-            className="flex animate-pulse flex-col overflow-hidden bg-white md:min-h-[205px] md:flex-row dark:bg-slate-900"
+            className="flex animate-pulse flex-col overflow-hidden rounded-2xl bg-white md:min-h-[205px] md:flex-row dark:bg-slate-900"
             style={{ animationDelay: `${index * 150}ms` }}
         >
             <div className="flex h-20 shrink-0 items-center justify-center md:h-auto md:w-[240px]">

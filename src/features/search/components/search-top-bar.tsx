@@ -108,12 +108,9 @@ export function SearchTopBar({
             // padding inside it. The phone keeps its own tighter 48px, where the
             // bar is already as small as it goes and the desktop controls step
             // down to fit.
-            //
-            // Square-cornered, like the rail cards and panels around it; the
-            // pills and round buttons inside keep their own shapes.
             className={cn(
-                'flex h-12 items-center gap-1.5 p-8',
-                'md:h-[60px] md:gap-2 md:p-8',
+                'flex h-12 items-center gap-1.5 rounded-[16px] p-8',
+                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
                 className,
             )}
             style={{

@@ -10,7 +10,6 @@
 import { useTranslations } from 'next-intl';
 import React, { useEffect, useState, use } from 'react';
 import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
 import { HotelResults } from '@/features/hotels/components/hotel-results';
 import { http } from '@/shared/lib/http';
 import type { HotelResult } from '@/features/hotels/components/hotel-card';
@@ -135,7 +134,6 @@ export function DestinationView({ params }: Props) {
                 />
             </main>
 
-            <Footer />
         </div>
     );
 }

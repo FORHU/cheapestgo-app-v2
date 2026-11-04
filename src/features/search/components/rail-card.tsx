@@ -89,7 +89,7 @@ export function RailCard({
             className="shrink-0 cursor-pointer"
             style={{
                 position: 'relative',
-                width: CARD_W, overflow: 'hidden',
+                width: CARD_W, borderRadius: px(16), overflow: 'hidden',
                 background: c.surface, border: '', boxShadow: 'none',
                 transform: enlarged ? `scale(${SELECT_SCALE})` : 'scale(1)',
                 transformOrigin: 'center bottom',

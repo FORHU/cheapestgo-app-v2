@@ -9,6 +9,7 @@ import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
 import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import { LoginModal } from '@/features/auth/components/login-modal';
+import { Footer } from '@/shared/components/footer';
 
 /**
  * Everything the visitor sees lives under this segment. /admin does not: it is
@@ -59,6 +60,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
             <HtmlLang />
             {children}
+            <Footer />
             <SupportWidget />
             <ScrollToTop />
             <MobileBottomNav />

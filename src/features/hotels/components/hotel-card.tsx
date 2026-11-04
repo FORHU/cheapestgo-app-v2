@@ -123,14 +123,14 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
     const { saved, toggle } = useSavedHotel(hotel.id);
 
     return (
-        <article className={cn('group relative overflow-hidden transition-shadow hover:shadow-lg dark:hover:shadow-black/40', SURFACE)}>
+        <article className={cn('group relative overflow-hidden rounded-2xl transition-shadow hover:shadow-lg dark:hover:shadow-black/40', SURFACE)}>
             {/* Whole-card link, stretched under the content. The actions that
                 follow sit above it on their own z-index rather than nested
                 inside an anchor. */}
             <Link
                 href={detailHref}
                 aria-label={hotel.name}
-                className="absolute inset-0 z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             />
 
             <div className="flex flex-col md:h-[205px] md:flex-row">
@@ -217,7 +217,7 @@ export function HotelCard({ hotel, index = 0, searchQs = '' }: HotelCardProps) {
 
 export function HotelCardSkeleton() {
     return (
-        <div className={cn('flex animate-pulse flex-col overflow-hidden md:h-[205px] md:flex-row', SURFACE)}>
+        <div className={cn('flex animate-pulse flex-col overflow-hidden rounded-2xl md:h-[205px] md:flex-row', SURFACE)}>
             <div className="h-[190px] w-full shrink-0 bg-slate-200 md:h-full md:w-[240px] lg:w-[305px] dark:bg-white/10" />
             <div className="flex flex-1 flex-col justify-between px-6 py-6 md:py-[30px] md:pr-8 md:pl-10">
                 <div className="space-y-3">

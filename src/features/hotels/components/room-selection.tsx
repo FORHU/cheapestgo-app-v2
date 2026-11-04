@@ -242,7 +242,7 @@ function roomPalette(tone: 'light' | 'dark') {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
          * Each rate's card — slate-900 in dark, matched to the detail modal
-         * below so a card and the modal it opens read as one surface. Square,
+         * below so a card and the modal it opens read as one surface. Rounded,
          * and lifted by a short shadow.
          */
         card:     dark
@@ -897,7 +897,7 @@ function RoomCard({
         : card.roomDetails.map(f => f.label);
 
     return (
-        <article className={cn('@container', palette.card)}>
+        <article className={cn('@container overflow-hidden rounded-xl', palette.card)}>
             <div className="flex flex-col @lg:flex-row">
                 {/* Square-cornered, and flush with the card's edges — the
                     padding belongs to the text beside it, not to the card, so

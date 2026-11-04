@@ -5,7 +5,6 @@ import { AlertCircle, Flag } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
 import { StateScreen, stateActionClass } from '@/shared/components/StateScreen';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { cn } from '@/shared/lib/cn';
@@ -86,7 +85,6 @@ export function GolfListView({ country }: { country?: string }) {
                     )}
                 </div>
             </main>
-            <Footer />
         </div>
     );
 }
