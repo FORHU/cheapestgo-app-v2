@@ -34,6 +34,11 @@ Piece 2 of the golf port is split in two, each with its own spec, plan and build
   function, `quoteGolf`, which 2b's checkout will charge from, so the price on the course page is
   the price on the card. The service fee has a flat part, so the per-player price depends on the
   party size.
+- **Every tee-time price is shown in the visitor's currency.** A course prices its tee times in its
+  own currency; the visitor sees them in the currency they picked in the header (KRW, USD, PHP, …).
+  When they switch, the picker asks api-v2 again and every price on it changes to the new currency,
+  converted on the server at the rate it quotes from (CONTEXT.md, "Display Currency"). The browser
+  never converts. The course page's "green fee from" already behaves this way (the catalogue).
 - **The booking window is per course** (v1 ADR-0047): `booking_window_days`, 1–90, default 60, limits
   generating and listing. The 24-hour minimum lead stays global: it is the time the team needs to
   check with the course.
@@ -185,8 +190,11 @@ above the button:
   `firstDate` otherwise. (Before the first answer arrives the range is unknown, so the first request
   is made for the URL's date, or for no date, which the API answers for `firstDate`.)
 - **Players:** 1–4, default 2.
-- **Times:** a grid of buttons, "07:30 · 3 left · ₩57,400", or "price on request" when unpriced.
-  Selected time highlighted.
+- **Times:** a grid of buttons, "07:30 · 3 left · ₩57,400", priced in the visitor's currency from
+  the header (`useUserCurrency()`, sent as `?currency=`). Switching the header currency re-fetches,
+  and every price, the note and the draft message follow it. Selected time highlighted; the
+  selection survives the switch. "Price on request" appears only if api-v2 has no exchange rate at
+  all for that currency, never as a price in a currency the visitor did not choose.
 - **Note:** "All-in price per player for {n} players, service fee included", and that the per-player
   price changes with the party size.
 - **Empty day:** "No tee times left on this day — try another date." **Error:** a retry.
@@ -235,13 +243,15 @@ test covers them.
   `golfServiceFee`, `roundToCurrency`, both schemas.
 - Repository SQL shape with mocked Prisma, as in the catalogue.
 - Service with fakes: R1, R2 (both fields), R3, generation after add and after a window change,
-  availability clamped to lead and window, an unpriced tee time when the converter throws.
+  availability clamped to lead and window, a USD course's tee times quoted in KRW (whole won), an
+  unpriced tee time only when the converter throws.
 - Routes over HTTP: the public tee-times answer, 404 and 422, admin schedules with role checks, cron
   auth.
 - A real-database smoke run: add a schedule, see tee times generated on the course's clock, delete it.
 
 **app-v2**
-- The picker: refetches on date, players and currency; writes and reads URL state; picking a time
+- The picker: refetches on date, players and currency; switching the header currency from USD to KRW
+  shows every tee time in won and keeps the selected time; writes and reads URL state; picking a time
   gives the button its draft; empty day and error states.
 - The store carries a draft into the panel's message box only when it is empty.
 - The schedules dialog: list, add (reports the count), delete with R3's message; the form locks.
