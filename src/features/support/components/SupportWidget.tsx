@@ -6,6 +6,7 @@ import { MessageCircle, X, Send, Loader2, Paperclip, FileText } from 'lucide-rea
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/components/ui/button';
 import { useSupportChat } from '@/features/support/lib/useSupportChat';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 import { readerView } from '@/features/support/lib/translationView';
 import { formatReopen } from '@/features/support/lib/reopenTime';
 import type { SupportAttachmentView, SupportMessageView } from '@/features/support/types';
@@ -27,6 +28,16 @@ export function SupportWidget() {
         availability, sending, failed, open, close, send,
         staged, attaching, canAttach, attach, unstage,
     } = useSupportChat();
+
+    // A page asking for the chat (useSupportWidget). Requests made before this mounted are not
+    // replayed: the widget is on every page, so there is no "before".
+    const openRequests = useSupportWidget((s) => s.openRequests);
+    const answered = useRef(openRequests);
+    useEffect(() => {
+        if (openRequests === answered.current) return;
+        answered.current = openRequests;
+        if (available && !panelOpen) void open();
+    }, [openRequests, available, panelOpen, open]);
 
     if (!available) return null;
 

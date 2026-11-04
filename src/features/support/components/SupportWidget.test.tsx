@@ -7,13 +7,14 @@
  * other side, with someone signed in.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import { SupportWidget } from '@/features/support/components/SupportWidget';
 import en from '@/locales/en.json';
 import { useAuthStore } from '@/shared/auth/store';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 
 const conversation = {
     id: 'c1', reference: 'CG-4821', status: 'waiting_human', locale: 'ko',
@@ -65,6 +66,15 @@ describe('SupportWidget', () => {
     it('offers itself to someone signed in', () => {
         renderWidget();
         expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument();
+    });
+
+    it('opens when another part of the page asks it to', async () => {
+        api.fetchConversation.mockResolvedValue(null);
+        renderWidget();
+        expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument();
+        act(() => useSupportWidget.getState().requestOpen());
+        // Open, the toggle and the panel's own X both say "close", so look for "open" going away.
+        await waitFor(() => expect(screen.queryByRole('button', { name: /open support chat/i })).toBeNull());
     });
 
     it('creates no chat for someone who only reads, not even on opening the panel', async () => {

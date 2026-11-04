@@ -1715,7 +1715,8 @@ git commit -m "feat(golf): types, api client and messages for the golf catalogue
         renderWidget();
         expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument();
         act(() => useSupportWidget.getState().requestOpen());
-        expect(await screen.findByRole('button', { name: /close support chat/i })).toBeInTheDocument();
+        // Open, the toggle and the panel's own X both say "close", so look for "open" going away.
+        await waitFor(() => expect(screen.queryByRole('button', { name: /open support chat/i })).toBeNull());
     });
 ```
 
