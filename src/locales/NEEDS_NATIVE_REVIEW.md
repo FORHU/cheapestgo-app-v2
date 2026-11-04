@@ -388,3 +388,17 @@ the first golf slice (2026-11-04).
 | `golf.amenities.lessons` | Lessons | 레슨 | レッスン | 课程 |
 | `golf.amenities.night_golf` | Night golf | 야간 골프 | ナイター | 夜间高尔夫 |
 | `landing.search.searchMode.golf` | Golf | 골프 | ゴルフ | 高尔夫 |
+| `golf.teeTimes.title` | Tee times | 티타임 | ティータイム | 开球时间 |
+| `golf.teeTimes.date` | Date | 날짜 | 日付 | 日期 |
+| `golf.teeTimes.players` | Players | 인원 | 人数 | 人数 |
+| `golf.teeTimes.playerCount` | {count, plural, one {# player} other {# players}} | {count}명 | {count}名 | {count} 人 |
+| `golf.teeTimes.spotsLeft` | {count} left | {count}자리 남음 | 残り{count}枠 | 剩 {count} 个位置 |
+| `golf.teeTimes.priceNote` | All-in price per player for {count, plural, one {# player} other {# players}}, service fee included. It changes with the size of the party. | {count}명 기준 1인당 총액이며 서비스 수수료가 포함되어 있습니다. 인원에 따라 달라집니다. | {count}名でご利用の場合の1名あたりの総額（サービス料込み）です。人数によって変わります。 | 按 {count} 人计算的每人总价，已含服务费，价格随人数变化。 |
+| `golf.teeTimes.priceOnRequest` | Price on request | 요금 문의 | 料金はお問い合わせ | 价格请咨询 |
+| `golf.teeTimes.none` | No tee times left on this day. Try another date. | 이 날은 남은 티타임이 없습니다. 다른 날짜를 선택해 보세요. | この日は空いているティータイムがありません。別の日をお選びください。 | 这一天已没有可订的开球时间，请换个日期试试。 |
+| `golf.teeTimes.loadError` | Tee times didn't load. | 티타임을 불러오지 못했습니다. | ティータイムを読み込めませんでした。 | 开球时间加载失败。 |
+| `golf.teeTimes.prevMonth` | Previous month | 이전 달 | 前の月 | 上个月 |
+| `golf.teeTimes.nextMonth` | Next month | 다음 달 | 次の月 | 下个月 |
+| `golf.teeTimes.pickHint` | Pick a time to ask us about it. | 시간을 선택하면 바로 문의하실 수 있습니다. | 時間を選ぶと、そのままお問い合わせいただけます。 | 选择时间后即可直接咨询。 |
+| `golf.teeTimes.askThis` | Ask about this tee time | 이 티타임 문의하기 | このティータイムを問い合わせる | 咨询这个开球时间 |
+| `golf.teeTimes.draft` | Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available? | 안녕하세요! {course}에서 {date} {time}({city} 현지 시간)에 {count}명이 라운드하고 싶습니다. 예약 가능할까요? | こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？ | 您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？ |

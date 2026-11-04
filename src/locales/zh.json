@@ -2841,6 +2841,22 @@
       "pro_shop": "专卖店",
       "lessons": "课程",
       "night_golf": "夜间高尔夫"
+    },
+    "teeTimes": {
+      "title": "开球时间",
+      "date": "日期",
+      "players": "人数",
+      "playerCount": "{count} 人",
+      "spotsLeft": "剩 {count} 个位置",
+      "priceNote": "按 {count} 人计算的每人总价，已含服务费，价格随人数变化。",
+      "priceOnRequest": "价格请咨询",
+      "none": "这一天已没有可订的开球时间，请换个日期试试。",
+      "loadError": "开球时间加载失败。",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月",
+      "pickHint": "选择时间后即可直接咨询。",
+      "askThis": "咨询这个开球时间",
+      "draft": "您好！我想在 {date} {time}（{city}时间）到 {course} 打球，共 {count} 人。请问可以预订吗？"
     }
   }
 }

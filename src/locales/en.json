@@ -2841,6 +2841,22 @@
       "pro_shop": "Pro shop",
       "lessons": "Lessons",
       "night_golf": "Night golf"
+    },
+    "teeTimes": {
+      "title": "Tee times",
+      "date": "Date",
+      "players": "Players",
+      "playerCount": "{count, plural, one {# player} other {# players}}",
+      "spotsLeft": "{count} left",
+      "priceNote": "All-in price per player for {count, plural, one {# player} other {# players}}, service fee included. It changes with the size of the party.",
+      "priceOnRequest": "Price on request",
+      "none": "No tee times left on this day. Try another date.",
+      "loadError": "Tee times didn't load.",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "pickHint": "Pick a time to ask us about it.",
+      "askThis": "Ask about this tee time",
+      "draft": "Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available?"
     }
   }
 }

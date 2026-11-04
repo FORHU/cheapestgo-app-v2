@@ -2841,6 +2841,22 @@
       "pro_shop": "プロショップ",
       "lessons": "レッスン",
       "night_golf": "ナイター"
+    },
+    "teeTimes": {
+      "title": "ティータイム",
+      "date": "日付",
+      "players": "人数",
+      "playerCount": "{count}名",
+      "spotsLeft": "残り{count}枠",
+      "priceNote": "{count}名でご利用の場合の1名あたりの総額（サービス料込み）です。人数によって変わります。",
+      "priceOnRequest": "料金はお問い合わせ",
+      "none": "この日は空いているティータイムがありません。別の日をお選びください。",
+      "loadError": "ティータイムを読み込めませんでした。",
+      "prevMonth": "前の月",
+      "nextMonth": "次の月",
+      "pickHint": "時間を選ぶと、そのままお問い合わせいただけます。",
+      "askThis": "このティータイムを問い合わせる",
+      "draft": "こんにちは。{course}で{date} {time}（{city}時間）に{count}名でプレーしたいです。予約できますか？"
     }
   }
 }
