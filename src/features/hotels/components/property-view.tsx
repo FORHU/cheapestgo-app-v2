@@ -20,7 +20,7 @@ import { NearbyExplorer } from '@/features/hotels/components/nearby/NearbyExplor
 import { PropertyDescription } from '@/features/hotels/components/property-description';
 import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
-import { RoomSelection, ratesOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
+import { RoomSelection, ratesOf, roomPhotosOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
 import { StaysMaintenanceNotice } from '@/features/hotels/components/stays-maintenance-notice';
 import { useUserCurrency } from '@/stores/searchStore';
 import { checkoutMoney, checkoutExpectedTotal } from '@/features/hotels/lib/checkout-money';
@@ -270,7 +270,11 @@ function PropertyContent() {
      * it as both the hotel's and the room's.
      */
     const heroImages = useMemo<string[]>(() => {
-        const roomShots = rooms.flatMap(r => r.roomPhotos ?? []);
+        // Through `roomPhotosOf`, the same reader the cards use: api-v2 sends the matched ETG
+        // room group's pictures as `content.gallery` and leaves `roomPhotos` unset, so reading
+        // only the latter left the banner with the hotel's shots while the cards below it
+        // showed the rooms.
+        const roomShots = rooms.flatMap(roomPhotosOf);
         return Array.from(new Set([...allImages, ...roomShots])).filter(Boolean);
     }, [allImages, rooms]);
     const heroCount = heroImages.length;
@@ -613,15 +617,10 @@ function PropertyContent() {
                     `lg` where neither half has the width to be half of anything.
 
                     Each side spans the same three rows as a subgrid: headings,
-                    then the cards and the map, then the pager (the map's side
-                    leaves that row empty). Sharing the middle row is what puts the map's top
-                    on the first card's top and its bottom on the card list's
-                    bottom, however tall the filter row above them wraps.
-
-                    The list holds that row at the tallest it has been (see
-                    `listMaxH` in room-selection), so the map is as long as a
-                    full page of cards and stays that long when a filter or a
-                    short last page leaves fewer of them. */}
+                    then the cards and the map, then the pager and the place
+                    strip. Sharing the middle row is what puts the map's top on
+                    the first card's top and its bottom on the last card's
+                    bottom, however tall the filter row above them wraps. */}
                 <Reveal className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-x-9 lg:gap-y-4">
 
                 {/* ── Room selection ─────────────────────────────────────────
@@ -649,6 +648,7 @@ function PropertyContent() {
                     tone={theme}
                     rooms={rooms}
                     image={heroImage}
+                    images={allImages}
                     hotelAmenities={amenities}
                     nights={nights}
                     checkIn={checkIn}
@@ -664,24 +664,18 @@ function PropertyContent() {
                 )}
 
                 {/* ── Nearby places ────────────────────────────────────────── */}
-                {/* Only beside rooms that can be booked. The map's length is the
-                    room list's (see the comment on this grid), so with no rooms
-                    there is nothing to measure it by — and a map of the area
-                    around a hotel that cannot be booked is no help either. */}
-                {coordinates && rooms.length > 0 && !maintenance && (
+                {coordinates && (
                     <section className="flex min-w-0 flex-col gap-4 lg:row-span-3 lg:grid lg:grid-cols-1 lg:grid-rows-subgrid">
                         {/* `grid-cols-1` is a `minmax(0, 1fr)` column: left `auto`,
                             the column would size itself to the place strip's whole
                             scrolling row and push the map off the page. */}
                         <h2 className={SECTION_HEADING} style={{ color: palette.title }}>{t('v2.nearbyPlaces')}</h2>
-                        {/* The map fills the cards' row, which the list holds at
-                            its fullest height. `min-h-96` is the floor for a hotel
-                            with one or two rates: the place filters and the cards
-                            under them ride the map's bottom edge and need room above
-                            them, and so does the category menu, which opens upward. */}
+                        {/* The map fills the cards' row, but no taller than the
+                            window: beside a long page of rooms it holds still
+                            under the top edge while the rooms scroll past. */}
                         <NearbyExplorer
                             className="contents"
-                            mapClassName="lg:h-full lg:min-h-96"
+                            mapClassName="lg:sticky lg:top-6 lg:h-[min(100%,calc(100vh_-_3rem))] lg:min-h-80 lg:self-start"
                             coordinates={coordinates}
                             hotelName={content?.name ?? ''}
                             palette={palette}

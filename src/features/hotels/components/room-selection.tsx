@@ -6,9 +6,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
-    AirVent, Bath, Bed, BedDouble, Building2, Check, ChevronLeft, ChevronRight,
-    Coffee, Dog, Maximize2, Refrigerator, Sparkles, Tv,
-    User, Users, Wifi, Wind, X, type LucideIcon,
+    AirVent, Bath, Bed, Building2, Check, ChevronLeft, ChevronRight,
+    Coffee, Dog, Maximize2, Refrigerator, ShieldCheck, Sparkles, Tv, UtensilsCrossed,
+    Users, Wifi, Wind, X, type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -197,6 +197,16 @@ interface RoomSelectionProps {
      */
     image?: string | null;
     /**
+     * The hotel's whole photo set, so cards falling back can take a different one each.
+     *
+     * Plenty of properties have room groups with no pictures in them — ETG files 56k that way —
+     * and every card then drew the same building shot. Three rooms at three prices under one
+     * identical photo reads as a broken page rather than as missing data. Taking a different
+     * property photo per card claims nothing new (the card never says the photo is of that room,
+     * and the expanded panel labels it) and the list stops looking faulty.
+     */
+    images?: string[];
+    /**
      * The hotel's amenity list, as a fallback for rates that carry none of
      * their own — see `amenityFeatures`.
      */
@@ -242,7 +252,7 @@ function roomPalette(tone: 'light' | 'dark') {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
          * Each rate's card — slate-900 in dark, matched to the detail modal
-         * below so a card and the modal it opens read as one surface. Rounded,
+         * below so a card and the modal it opens read as one surface. Square,
          * and lifted by a short shadow.
          */
         card:     dark
@@ -290,6 +300,9 @@ function roomPalette(tone: 'light' | 'dark') {
         filterIdle: dark
             ? 'border border-white/25 bg-transparent text-white/70 hover:bg-white/[0.06]'
             : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
+        /** The recessive status pills in the detail modal — a translucent fill,
+         *  not the bright CTA treatment of the filter pills. */
+        tag:      dark ? 'bg-white/[0.08] text-slate-300' : 'bg-slate-100 text-slate-600',
         /** The detail modal — the same slate-900 as the room card that opens it. */
         modalBg:      dark ? 'bg-slate-900' : 'bg-white',
         modalTitle:   dark ? 'text-white' : 'text-slate-900',
@@ -342,14 +355,71 @@ function featureIcon(label: string): LucideIcon {
 interface Feature { label: string; icon: LucideIcon }
 
 /**
+ * A heading this short is a supplier code rather than a room type: "U (Superior Double room)"
+ * files the identity inside the parentheses, and taking them off leaves a card titled "U".
+ * Mirrors `MIN_MEANINGFUL_ROOM_NAME` in api-v2's `roomNames.ts`.
+ */
+const MIN_MEANINGFUL_ROOM_NAME = 3;
+
+/**
+ * Parentheticals that describe the **Offer** rather than the Room — see ADR-0007.
+ *
+ * TGX hangs variant text on the room name instead of putting it in a field, and sends more
+ * than one: `Deluxe Twin room (twin beds) (bed type is subject to availability)`. Almost all
+ * of what arrives that way *is* the room — bed configuration, `shared bathroom`, `smoking`,
+ * `kitchen` — and stripping it wholesale merges rooms that are different products. Only the
+ * entries below are terms, so only these come off the name.
+ *
+ * `chip` is what the reader sees, because the supplier's own wording is too long to sit in a
+ * chip beside a price.
+ *
+ * **Widen this list when a supplier words the same promise differently.** The symptom is a
+ * pair of cards a reader cannot tell apart, which is how this was found on 2026-11-04.
+ */
+const OFFER_QUALIFIERS: readonly { match: RegExp; chip: string }[] = [
+    { match: /^bed\s+type\s+is\s+subject\s+to\s+availability$/i, chip: 'bed not guaranteed' },
+];
+
+function offerQualifier(qualifier: string): string | null {
+    const q = qualifier.trim();
+    return OFFER_QUALIFIERS.find(o => o.match.test(q))?.chip ?? null;
+}
+
+/**
  * Suppliers hang the bed in a parenthetical on the room name — "Standard Double
  * room (full double bed)" — so the card splits it: the heading takes the name
  * without it, the rows take what was inside.
+ *
+ * Offer qualifiers come off first and separately. They are not the room and must not title
+ * it — a card headed "Deluxe Twin room (twin beds)" whose own bullet read "Bed Type Is
+ * Subject To Availability" contradicted itself on screen — but they do tell one Offer from
+ * another, so they are returned rather than dropped. ADR-0007.
  */
-function splitRoomName(name: string): { name: string; bed: string | null } {
-    const match = /\(([^)]+)\)\s*$/.exec(name);
-    if (!match) return { name, bed: null };
-    return { name: name.replace(/\s*\([^)]+\)\s*$/, '').trim(), bed: match[1].trim() };
+function splitRoomName(name: string): { name: string; bed: string | null; offerTerms: string[] } {
+    const offerTerms: string[] = [];
+    const withoutTerms = name
+        .replace(/\s*\(([^)]*)\)/g, (match, inner: string) => {
+            // Comma-separated, because a supplier packs several into one parenthetical:
+            // "(bed type is subject to availability, lounge access)". Classifying the whole
+            // parenthetical matched neither, and left those cards split.
+            const kept: string[] = [];
+            for (const part of inner.split(',')) {
+                const chip = offerQualifier(part);
+                if (chip) offerTerms.push(chip);
+                else if (part.trim()) kept.push(part.trim());
+            }
+            return kept.length ? ` (${kept.join(', ')})` : '';
+        })
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const match = /\(([^)]+)\)\s*$/.exec(withoutTerms);
+    if (!match) return { name: withoutTerms, bed: null, offerTerms };
+
+    const heading = withoutTerms.replace(/\s*\([^)]+\)\s*$/, '').trim();
+    return heading.length >= MIN_MEANINGFUL_ROOM_NAME
+        ? { name: heading, bed: match[1].trim(), offerTerms }
+        : { name: withoutTerms, bed: null, offerTerms };
 }
 
 /**
@@ -455,16 +525,53 @@ function FeatureRow({ feature, palette }: { feature: Feature; palette: Palette }
  * One rate of one room, worded for its card — one card each; see `ordered` in
  * `RoomSelection` for the order they are drawn in.
  */
+
+/** Offer qualifiers in a stable order, so two Offers carrying the same ones compare equal. */
+function offerTermsKey(card: RateCard): string {
+    return [...card.offerTerms].sort().join('+');
+}
+
+/**
+ * What makes one Offer different from another within a Room: the terms, never the price.
+ * Two Offers with the same signature are the same promise, and only the cheaper is worth
+ * showing — see the de-duplication in `ordered` and ADR-0007.
+ */
+function termSignature(card: RateCard): string {
+    return [card.boardName ?? '', card.refundable ? 'RFN' : 'NRFN', card.cancellation,
+        card.bed ?? '', offerTermsKey(card)].join('|');
+}
+
+/**
+ * The cancellation in as few words as a chip can hold.
+ *
+ * `cancellationSummary` writes a sentence for the card body — "Non-refundable — this rate
+ * cannot be cancelled or amended." A chip sits beside a price in a wrapping row and has room
+ * for two or three words, so it gets its own wording rather than a truncation.
+ */
+function cancellationChip(card: RateCard): string {
+    if (!card.refundable) return 'non-refundable';
+    const raw = card.rate.cancellationDeadline;
+    if (!raw) return 'free cancellation';
+    const deadline = new Date(raw);
+    if (Number.isNaN(deadline.getTime())) return 'free cancellation';
+    return `free to ${deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}
 interface RateCard {
     room: RoomOption;
     rate: RateRow;
     heading: string;
+    /** What this rate is sold with — the bed, or whatever else the supplier left in the
+     *  parenthetical. It differs between rates on one card, so a chip must be able to say so. */
+    bed: string | null;
+    /** Offer qualifiers lifted off the room name — see `OFFER_QUALIFIERS`. Empty is the
+     *  common case and means the supplier promised nothing beyond the room itself. */
+    offerTerms: string[];
     /** The structural facts bulleted under the name — see `structuralDetails`. */
     roomDetails: Feature[];
     /** The refundable rate's cancellation line; `null` for a non-refundable one. */
     terms: string | null;
-    /** The in-room amenities the modal lists when ETG matched no content — see `amenityFeatures`. */
-    amenities: Feature[];
+    /** Everything the modal's "Room" section lists — structural rows plus amenities. */
+    allFeatures: Feature[];
     boardPill?: string;
     boardName?: string;
     refundable: boolean;
@@ -846,14 +953,19 @@ function RoomDetailDialog({
 }
 
 /**
- * One rate, drawn as one whole card, as the design lays it out: the photo, then
+ * One room, drawn as one whole card, as the design lays it out: the photo, then
  * the name, a bulleted line of facts ending in the board, the cancellation terms,
  * and a last line with "Room details" on the left and Select on the right. The
- * price, which the design leaves off, sits just before Select on that line:
- * eight cards for one room differ by little else.
+ * price, which the design leaves off, sits just before Select on that line.
  *
- * Every card states its room in full, so a room sold eight ways is eight cards
- * that each read on their own; `RoomSelection` keeps them next to each other.
+ * A room sold several ways carries its rates as a row of chips under that line, and the
+ * card reads as whichever chip is picked — price, board, bed and cancellation all follow it.
+ * One card per rate put the same room on screen twice differing only in price, which reads
+ * as a listing fault; the chips put the difference beside the thing that differs.
+ *
+ * `cards` is one `RateCard` per rate, cheapest first, all sharing a heading. The bed can
+ * still differ between them ("(twin beds)" against nothing at all), so every rate-specific
+ * fact is read off the picked card rather than the first.
  *
  * The photo sits beside the text and fills the card's height, so the card is as
  * tall as its text and no taller. On a card narrower than `@lg` — a phone, or the
@@ -862,10 +974,10 @@ function RoomDetailDialog({
  * the price and Select on one line.
  */
 function RoomCard({
-    card, image, selectedOfferId, palette, currency, nights, onSelect,
+    cards, image, selectedOfferId, palette, currency, nights, onSelect,
     propertySections, additionalInfo,
 }: {
-    card: RateCard;
+    cards: RateCard[];
     image?: string | null;
     selectedOfferId?: string | null;
     palette: Palette; currency: string; nights?: number | null;
@@ -875,6 +987,42 @@ function RoomCard({
 }) {
     const tAll = useTranslations();
     const [modalOpen, setModalOpen] = useState(false);
+    /** The chip the reader picked. Null until they pick one — see `card` below. */
+    const [pickedOfferId, setPickedOfferId] = useState<string | null>(null);
+
+    /**
+     * The rate the card is currently showing: the one picked, else the one already selected
+     * for checkout, else the cheapest. Resolved by id rather than index so a re-filter that
+     * drops a rate cannot leave the card reading off a different one than it highlights.
+     */
+    const pickedIdx = cards.findIndex(c => c.rate.offerId === (pickedOfferId ?? selectedOfferId));
+
+    /**
+     * What a chip prints besides its price: whichever of board, cancellation and offer terms
+     * actually differs inside this card, computed per card rather than fixed.
+     *
+     * Fixed to price-and-board, two chips could both read `Room only` at different prices and
+     * refuse to say why — the same complaint as two identical-looking cards, one level down.
+     * Anything that differs is displayed, so no two chips in a card can read alike. ADR-0007.
+     */
+    const chipParts = useMemo(() => {
+        const varies = (of: (c: RateCard) => string) => new Set(cards.map(of)).size > 1;
+        const board  = varies(c => c.boardName ?? '');
+        const cancel = varies(c => cancellationChip(c));
+        const terms  = varies(c => offerTermsKey(c));
+        // One heading can cover rooms the supplier separates only in the parenthetical —
+        // ROYAL Hotel Seoul files "no window" and "2 full double beds" under one "Standard
+        // room". Unnamed on the chip, a reader picks on price and gets the other one.
+        const bed    = varies(c => c.bed ?? '');
+        return (c: RateCard) => [
+            board  ? c.boardName            : null,
+            cancel ? cancellationChip(c)     : null,
+            bed    ? c.bed                   : null,
+            terms  ? c.offerTerms.join(', ') : null,
+        ].filter((part): part is string => Boolean(part));
+    }, [cards]);
+
+    const card = cards[pickedIdx >= 0 ? pickedIdx : 0];
     const selected = card.rate.offerId === selectedOfferId;
 
     // The room's own photo where there is one, the hotel's where there is not.
@@ -897,12 +1045,9 @@ function RoomCard({
         : card.roomDetails.map(f => f.label);
 
     return (
-        <article className={cn('@container overflow-hidden rounded-xl', palette.card)}>
-            <div className="flex flex-col @lg:flex-row">
-                {/* Square-cornered, and flush with the card's edges — the
-                    padding belongs to the text beside it, not to the card, so
-                    the photo runs to the top, left and bottom (or across the
-                    top, stacked). Beside the text it takes a third of the
+        <article className={cn('@container px-5 py-5 sm:px-7 sm:py-8', palette.card)}>
+            <div className="flex flex-col gap-4 @lg:flex-row @lg:gap-6">
+                {/* Square-cornered. Beside the text it takes a third of the
                     card's width and stretches to the text's height, so it fills
                     the space the text leaves rather than setting a size of its
                     own — a fixed proportion left a band of white under a short
@@ -921,7 +1066,7 @@ function RoomCard({
                     )}
                 </div>
 
-                <div className="flex min-w-0 flex-1 flex-col px-5 py-5 sm:px-7 sm:py-8">
+                <div className="flex min-w-0 flex-1 flex-col">
                     <h4 className={cn('text-[20px] leading-[1.2] font-bold tracking-[-0.01em] @md:text-[24px]', palette.name)}>
                         {card.heading}
                     </h4>
@@ -977,6 +1122,38 @@ function RoomCard({
                             </button>
                         </div>
                     </div>
+
+                    {/* The room's other rates. Only when there is a choice to make — a room
+                        sold one way shows nothing here rather than a single inert chip.
+                        Each chip is the price and the board, which is what separates two
+                        rates a reader can act on; picking one re-reads the whole card. */}
+                    {cards.length > 1 && (
+                        <div
+                            role="radiogroup"
+                            aria-label={tAll('hotels.rooms.roomDetails')}
+                            className="mt-3 flex flex-wrap gap-2"
+                        >
+                            {cards.map((option) => {
+                                const active = option.rate.offerId === card.rate.offerId;
+                                return (
+                                    <button
+                                        key={option.rate.offerId}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={active}
+                                        onClick={() => setPickedOfferId(option.rate.offerId)}
+                                        className={cn(
+                                            'cursor-pointer rounded-full px-3 py-1 text-[12px] font-bold whitespace-nowrap transition-[filter,color]',
+                                            active ? palette.selectOn : palette.selectIdle,
+                                        )}
+                                    >
+                                        {symbol}{Math.round(option.nightly).toLocaleString()}
+                                        {chipParts(option).map(p => ` · ${p}`).join('')}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -1014,7 +1191,7 @@ const PAGE_EASE = [0.37, 0, 0.63, 1] as [number, number, number, number];
 const PAGE_SLIDE_SECONDS = 1;
 
 export function RoomSelection({
-    rooms, image, hotelAmenities, nights, checkIn, occupancy, currency,
+    rooms, image, images, hotelAmenities, nights, checkIn, occupancy, currency,
     selectedOfferId, onSelect, tone, propertySections, additionalInfo, className, id,
 }: RoomSelectionProps) {
     const tAll = useTranslations();
@@ -1044,9 +1221,11 @@ export function RoomSelection({
             room,
             rate,
             heading: split.name,
+            offerTerms: split.offerTerms,
+            bed: room.bedType ?? split.bed ?? bedFromName(room.name),
             roomDetails: structural,
             terms: cancellationTerms(rate, checkIn),
-            amenities,
+            allFeatures: [...structural, ...amenities],
             boardPill: boardPillLabel(rate),
             boardName: boardLabel(rate),
             refundable: isRefundable(rate),
@@ -1073,16 +1252,20 @@ export function RoomSelection({
     }, [cards, filter]);
 
     /**
-     * The cards in reading order: one per rate, a room's rates kept together.
+     * The rooms in reading order, each with every rate it is sold at.
      *
-     * Every rate is a card of its own, the room drawn in full on each. Sorted by price
-     * alone, a room sold eight ways would scatter its eight cards between other rooms', so
-     * they are grouped by room first — cheapest room first, each room's rates cheapest
-     * first — and a reader compares one room's terms side by side before moving on.
+     * One card per *room*, not per rate. Drawn per rate, a room sold two ways was two cards
+     * identical but for the price — "Standard Family room" twice over at ₱5,409 and ₱5,506 —
+     * which reads as a listing fault rather than as a choice of terms. The rates ride inside
+     * the card as chips instead, so the difference between them is next to the thing that
+     * differs rather than a card away.
      *
-     * Grouped *after* filtering, so only rates that survived the chips are placed. Keyed on
-     * the heading because that is what a reader distinguishes rooms by — two supplier room
-     * codes with one display name are one room to the person choosing.
+     * Grouped *after* filtering, so only rates that survived the chips are placed and a card
+     * never offers one the filter excluded. Keyed on the heading because that is what a reader
+     * distinguishes rooms by — two supplier room codes with one display name are one room to
+     * the person choosing, and `splitRoomName` has already taken the bed off the end.
+     *
+     * Cheapest room first, and each room's rates cheapest first: the card headlines its first.
      */
     const ordered = useMemo(() => {
         const byRoom = new Map<string, RateCard[]>();
@@ -1092,8 +1275,19 @@ export function RoomSelection({
             if (existing) existing.push(card);
             else byRoom.set(key, [card]);
         }
-        const groups = [...byRoom.values()].map(rates => [...rates].sort((a, b) => a.nightly - b.nightly));
-        return groups.sort((a, b) => a[0].nightly - b[0].nightly).flat();
+        const groups = [...byRoom.values()].map((rates) => {
+            const cheapestFirst = [...rates].sort((a, b) => a.nightly - b.nightly);
+            // One Offer per term-signature. Two that promise the same thing at different
+            // prices are not a choice — the dearer is strictly worse, and showing both
+            // reproduces the look-alike pair this grouping exists to remove. ADR-0007.
+            const bySignature = new Map<string, RateCard>();
+            for (const rate of cheapestFirst) {
+                const signature = termSignature(rate);
+                if (!bySignature.has(signature)) bySignature.set(signature, rate);
+            }
+            return [...bySignature.values()];
+        });
+        return groups.sort((a, b) => a[0].nightly - b[0].nightly);
     }, [filtered]);
 
     const pageCount = Math.max(1, Math.ceil(ordered.length / CARDS_PER_PAGE));
@@ -1101,44 +1295,6 @@ export function RoomSelection({
     // that has already been moved past the new end.
     const safePage = Math.min(page, pageCount - 1);
     const paged = ordered.slice(safePage * CARDS_PER_PAGE, safePage * CARDS_PER_PAGE + CARDS_PER_PAGE);
-
-    /**
-     * The card list's height as drawn right now, in px.
-     *
-     * Measured off an inner box that wraps the cards and nothing else — the
-     * outer one carries the minimum below, so it could only ever report that
-     * back. Layout boxes, not `getBoundingClientRect`: the page turn slides the
-     * list sideways with a transform, which must not read as a resize. Re-run
-     * on `rooms` because the box does not exist while there are none.
-     */
-    const listRef = useRef<HTMLDivElement>(null);
-    const [listH, setListH] = useState(0);
-    useEffect(() => {
-        const el = listRef.current;
-        if (!el) return;
-        const measure = () => setListH(el.offsetHeight);
-        measure();
-        const ro = new ResizeObserver(measure);
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, [rooms]);
-
-    /**
-     * The list's height at its fullest — the first page under "All", which
-     * holds the most cards any page can — held as the list's minimum height in
-     * the two-column layout.
-     *
-     * The map beside the list is drawn to the height of the row they share, so
-     * without this a filter that leaves one card, or a short last page, would
-     * pull the map up with it. While the fullest page is on screen this simply
-     * is its height, so a resize re-measures it at the new width; while anything
-     * shorter is, the last full height is held.
-     */
-    const showingFullest = filter === 'all' && safePage === 0;
-    const [listMaxH, setListMaxH] = useState(0);
-    useEffect(() => {
-        setListMaxH(held => (showingFullest ? listH : Math.max(held, listH)));
-    }, [showingFullest, listH]);
 
     /** Turn to a page, recording the direction so the incoming column slides
      *  in from that side. The scroll position is left where it is — the pager
@@ -1186,50 +1342,46 @@ export function RoomSelection({
             {/* No clip on this wrapper: `body` is already `overflow-x: clip`
                 (globals.css), so the page turn's off-screen start cannot flash
                 a scrollbar — and leaving this open lets each card's drop shadow
-                render in full instead of being cropped at a tight edge.
+                render in full instead of being cropped at a tight edge. */}
+            <div>
+                <motion.div
+                    // Keyed by the page, so each turn is a fresh mount that
+                    // runs `initial`. `pageDir === 0` on the very first render —
+                    // no slide then, the section's own reveal handles that.
+                    // Next page enters from the left and travels right; prev
+                    // page comes the other way.
+                    key={safePage}
+                    initial={pageDir === 0 ? false : { x: pageDir > 0 ? -64 : 64, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: PAGE_SLIDE_SECONDS, ease: PAGE_EASE }}
+                    className="flex flex-col gap-4"
+                >
+                    {paged.map((group, i) => (
+                        <RoomCard
+                            key={group[0].rate.offerId}
+                            cards={group}
+                            // Indexed across the whole list, not the page, so a card keeps its
+                            // photo when the pager moves. Only reaches the card at all when the
+                            // room has none of its own — see `photo` in `RoomCard`.
+                            image={images?.length
+                                ? images[(safePage * CARDS_PER_PAGE + i) % images.length]
+                                : image}
+                            currency={currency}
+                            nights={nights}
+                            selectedOfferId={selectedOfferId}
+                            palette={palette}
+                            onSelect={onSelect}
+                            propertySections={propertySections}
+                            additionalInfo={additionalInfo}
+                        />
+                    ))}
 
-                Its minimum height is the list's tallest (see `listMaxH`), from
-                `lg` up only: that is where the map stands beside it. Stacked,
-                a short list just ends and the pager follows it. */}
-            <div
-                className="lg:min-h-(--cards-max-h)"
-                style={{ '--cards-max-h': `${listMaxH}px` } as React.CSSProperties}
-            >
-                <div ref={listRef}>
-                    <motion.div
-                        // Keyed by the page, so each turn is a fresh mount that
-                        // runs `initial`. `pageDir === 0` on the very first render —
-                        // no slide then, the section's own reveal handles that.
-                        // Next page enters from the left and travels right; prev
-                        // page comes the other way.
-                        key={safePage}
-                        initial={pageDir === 0 ? false : { x: pageDir > 0 ? -64 : 64, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: PAGE_SLIDE_SECONDS, ease: PAGE_EASE }}
-                        className="flex flex-col gap-4"
-                    >
-                        {paged.map((card) => (
-                            <RoomCard
-                                key={card.rate.offerId}
-                                card={card}
-                                image={image}
-                                currency={currency}
-                                nights={nights}
-                                selectedOfferId={selectedOfferId}
-                                palette={palette}
-                                onSelect={onSelect}
-                                propertySections={propertySections}
-                                additionalInfo={additionalInfo}
-                            />
-                        ))}
-
-                        {filtered.length === 0 && (
-                            <p className={cn('py-8 text-center text-[18px]', palette.empty)}>
-                                {tAll('hotels.rooms.noMatch')}
-                            </p>
-                        )}
-                    </motion.div>
-                </div>
+                    {filtered.length === 0 && (
+                        <p className={cn('py-8 text-center text-[18px]', palette.empty)}>
+                            {tAll('hotels.rooms.noMatch')}
+                        </p>
+                    )}
+                </motion.div>
             </div>
 
             {pageCount > 1 && (

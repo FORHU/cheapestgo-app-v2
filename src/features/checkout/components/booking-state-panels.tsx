@@ -167,15 +167,29 @@ export function RoomUnavailablePanel({
 
 // ─── Supplier did not answer ──────────────────────────────────────────────────
 
+/**
+ * Retry first, but always a way out beside it.
+ *
+ * Retrying is right when the supplier is briefly unwell, which is the common case. It is not
+ * always brief: OTV lists HOTEL NOBLE Yongsan at ₱2,073 and then answers "No available rates"
+ * to every quote for it, round after round. With only a retry on the panel a traveller in that
+ * position has nowhere to go but the back button, which is a worse dead end than the "this room
+ * is gone" screen this replaced — that one at least offered another room.
+ */
 export function SupplierDownPanel({
-    palette, onRetry, busy,
-}: { palette: Palette; onRetry: () => void; busy?: boolean }) {
+    palette, onRetry, onChooseAnother, busy,
+}: { palette: Palette; onRetry: () => void; onChooseAnother?: () => void; busy?: boolean }) {
     const t = useTranslations('checkout');
     return (
         <Panel palette={palette} tone={ACCENT} role="alert" icon={Info} title={t('supplierDown.title')}>
             <Body palette={palette}>{t('supplierDown.description')}</Body>
             <Actions>
                 <Button palette={palette} onClick={onRetry} disabled={busy}>{t('supplierDown.retry')}</Button>
+                {onChooseAnother && (
+                    <Button palette={palette} kind="quiet" onClick={onChooseAnother}>
+                        {t('unavailable.chooseAnother')}
+                    </Button>
+                )}
             </Actions>
         </Panel>
     );

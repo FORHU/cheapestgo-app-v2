@@ -54,11 +54,9 @@ export function NearbyMap({
     );
 
     return (
-        // Square, and lifted by the same short shadow as the room cards beside it —
-        // plus a hairline ring drawn in the shadow itself (the leading `0 0 0 1px`),
-        // so the map's edge stays visible where a pale street tile meets a pale page.
+        // Square, and lifted by the same short shadow as the room cards beside it.
         <div
-            className="shadow-[0_0_0_1px_rgba(15,23,42,0.12),0_4px_10px_-2px_rgba(15,23,42,0.18),0_1px_3px_rgba(15,23,42,0.08)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_6px_18px_-6px_rgba(0,0,0,0.85),0_1px_3px_rgba(0,0,0,0.6)]"
+            className="shadow-[0_4px_10px_-2px_rgba(15,23,42,0.18),0_1px_3px_rgba(15,23,42,0.08)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.85),0_1px_3px_rgba(0,0,0,0.6)]"
             style={{ position: 'relative', width: '100%', height, overflow: 'hidden', background: '#1e293b' }}
         >
             <MapView

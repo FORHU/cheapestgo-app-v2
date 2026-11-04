@@ -52,7 +52,7 @@ function TotalPaidRows({ amount, currency }: { amount: number; currency: string 
 /** The cancel control: its own panel at the foot of the side column, and the softest red the page has. */
 function CancelPanel({ label, onClick, note }: { label: string; onClick: () => void; note?: string }) {
     return (
-        <section className="bg-white p-5 shadow-sm dark:bg-slate-900">
+        <section className="rounded-[20px] bg-white p-5 shadow-sm dark:bg-slate-900">
             <button
                 type="button"
                 onClick={onClick}
@@ -350,8 +350,8 @@ export function BookingDetail({ id }: BookingDetailProps) {
                 <div className="space-y-5">
                     <BookingCardSkeleton />
                     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-                        <div className="h-48 animate-pulse bg-white shadow-sm dark:bg-slate-900" />
-                        <div className="h-48 animate-pulse bg-white shadow-sm dark:bg-slate-900" />
+                        <div className="h-48 animate-pulse rounded-[20px] bg-white shadow-sm dark:bg-slate-900" />
+                        <div className="h-48 animate-pulse rounded-[20px] bg-white shadow-sm dark:bg-slate-900" />
                     </div>
                 </div>
             )}

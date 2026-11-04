@@ -117,26 +117,148 @@ describe('RoomSelection', () => {
         }));
     });
 
-    it('renders a whole card for each rate', () => {
-        const room = makeRoom({
-            rates: [
-                { offerId: 'a', price: 200, currency: 'USD', boardCode: 'RO', refundable: true,  refundableTag: 'REFUNDABLE' },
-                { offerId: 'b', price: 240, currency: 'USD', boardCode: 'BB', refundable: false, refundableTag: 'NON_REFUNDABLE' },
-            ],
-        });
-        render(<RoomSelection {...baseProps} rooms={[room]} />);
-        // A whole card per rate, each naming the room and carrying its own Select.
-        expect(screen.getAllByRole('article')).toHaveLength(2);
+    /**
+     * One room is one card however many ways it is sold. Drawn per rate, "Standard Family
+     * room" appeared twice over at ₱5,409 and ₱5,506 — identical but for the price, which
+     * reads as a listing fault rather than as a choice of terms.
+     */
+    const twoRateRoom = () => makeRoom({
+        rates: [
+            { offerId: 'a', price: 200, currency: 'USD', boardCode: 'RO', refundable: true,  refundableTag: 'REFUNDABLE' },
+            { offerId: 'b', price: 240, currency: 'USD', boardCode: 'BB', refundable: false, refundableTag: 'NON_REFUNDABLE' },
+        ],
+    });
+
+    it('draws one card for a room sold at several rates', () => {
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        expect(screen.getAllByRole('article')).toHaveLength(1);
         expect(screen.getAllByRole('heading', { level: 4 }).map(h => h.textContent))
-            .toEqual(['Comfort Leisure Room', 'Comfort Leisure Room']);
-        expect(screen.getAllByRole('button', { name: /^(Select|Selected)$/ })).toHaveLength(2);
+            .toEqual(['Comfort Leisure Room']);
+        // One Select — it books whichever rate is showing.
+        expect(screen.getAllByRole('button', { name: /^(Select|Selected)$/ })).toHaveLength(1);
+    });
+
+    it('offers every rate as a chip, cheapest showing first', () => {
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.textContent))
+            .toEqual(['$200 · Room Only · free cancellation', '$240 · Breakfast Included · non-refundable']);
+        expect(chips[0]).toHaveAttribute('aria-checked', 'true');
         expect(screen.getByText('$200')).toBeInTheDocument();
+    });
+
+    it('re-reads the card from the chip that is picked', () => {
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        fireEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
         expect(screen.getByText('$240')).toBeInTheDocument();
+        expect(screen.queryByText('$200')).not.toBeInTheDocument();
+    });
+
+    it('books the picked rate, not the cheapest', () => {
+        const onSelect = vi.fn();
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} onSelect={onSelect} />);
+        fireEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
+        fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+        expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({
+            rate: expect.objectContaining({ offerId: 'b' }),
+        }));
+    });
+
+    it('shows no chip row for a room sold one way', () => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom()]} />);
+        expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    });
+
+    const rate = (o: Record<string, unknown>) => ({
+        offerId: 'offer-x',
+        price: 200, currency: 'USD', boardCode: 'RO',
+        refundable: true, refundableTag: 'REFUNDABLE',
+        cancellationDeadline: '2026-09-09T00:00:00Z', ...o,
+    });
+
+    /**
+     * ADR-0007. TGX hangs variant text in parentheses and sends more than one, so one room
+     * arrived as two cards — same photograph, same beds — differing only in whether
+     * "(twin beds)" had survived into the title. Reported as a rendering fault on 2026-11-04.
+     */
+    it('draws one card when two rooms differ only by the bed-guarantee qualifier', () => {
+        render(<RoomSelection {...baseProps} rooms={[
+            makeRoom({ id: 'r1', name: 'Deluxe Twin room (twin beds) (bed type is subject to availability)',
+                       rates: [rate({ offerId: 'a', price: 200 })] }),
+            makeRoom({ id: 'r2', name: 'Deluxe Twin room (twin beds)',
+                       rates: [rate({ offerId: 'b', price: 240, cancellationDeadline: '2026-09-11T00:00:00Z' })] }),
+        ]} />);
+        expect(screen.getAllByRole('article')).toHaveLength(1);
+        expect(screen.getAllByRole('heading', { level: 4 }).map(h => h.textContent))
+            .toEqual(['Deluxe Twin room']);
+    });
+
+    /**
+     * One heading covers several rooms where the supplier separates them only in the
+     * parenthetical — ROYAL Hotel Seoul files "no window" under the same "Standard room" as
+     * a normal one. They share a card, so the chip must name what each is; unnamed, a reader
+     * picks on price and gets the other.
+     */
+    it('names the room difference on the chip when one heading covers several', () => {
+        render(<RoomSelection {...baseProps} rooms={[
+            makeRoom({ id: 'r1', name: 'Standard Double room (shared bathroom)',
+                       rates: [rate({ offerId: 'a' })] }),
+            makeRoom({ id: 'r2', name: 'Standard Double room (full double bed)',
+                       rates: [rate({ offerId: 'b', price: 240 })] }),
+        ]} />);
+        expect(screen.getAllByRole('article')).toHaveLength(1);
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.textContent))
+            .toEqual(['$200 · shared bathroom', '$240 · full double bed']);
+    });
+
+    /**
+     * ROYAL HOTEL SEOUL Myeongdong packs the guarantee in with another qualifier:
+     * "(bed type is subject to availability, lounge access)" against "(lounge access)".
+     * Matching the parenthetical whole missed every case like it and left the cards split.
+     */
+    it('merges when the guarantee is packed in with another qualifier', () => {
+        render(<RoomSelection {...baseProps} rooms={[
+            makeRoom({ id: 'r1', rates: [rate({ offerId: 'a' })],
+                       name: 'Premier Twin room (twin beds) (bed type is subject to availability, lounge access)' }),
+            makeRoom({ id: 'r2', rates: [rate({ offerId: 'b', price: 240 })],
+                       name: 'Premier Twin room (twin beds) (lounge access)' }),
+        ]} />);
+        expect(screen.getAllByRole('article')).toHaveLength(1);
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.textContent)).toEqual(['$200 · bed not guaranteed', '$240']);
+    });
+
+    /**
+     * ROYAL HOTEL SEOUL Myeongdong sells its premier twin as "Room only, non-refundable" at
+     * both ₩40,406 and ₩41,759. Identical terms, ₩1,353 apart: the dearer is strictly worse,
+     * and showing both is the look-alike pair this grouping exists to remove.
+     */
+    it('drops an offer whose terms match a cheaper one', () => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom({
+            rates: [rate({ offerId: 'a', price: 200 }), rate({ offerId: 'b', price: 240 })],
+        })]} />);
+        expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+        expect(screen.getByText('$200')).toBeInTheDocument();
+    });
+
+    /** A chip carries only what differs — a board every offer shares tells the reader nothing. */
+    it('leaves a board shared by every offer off the chips', () => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom({
+            rates: [
+                rate({ offerId: 'a', price: 200 }),
+                rate({ offerId: 'b', price: 240, refundable: false, refundableTag: 'NON_REFUNDABLE' }),
+            ],
+        })]} />);
+        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(chips.map(c => c.textContent))
+            .toEqual(['$200 · free to Sep 9', '$240 · non-refundable']);
     });
 });
 
 describe('RoomSelection — categorised modal', () => {
-    const content: RoomContent = {        keyFacts: [{ label: 'Non-smoking' }, { label: 'Private bathroom' }],
+    const content: RoomContent = {
+        keyFacts: [{ label: 'Non-smoking' }, { label: 'Private bathroom' }],
         bedLine: 'Double bed',
         bedsExtraSummary: 'Extra beds and cribs are unavailable for this room type',
         sections: [
@@ -277,6 +399,44 @@ describe('RoomSelection — room photography', () => {
 
         const leads = screen.getAllByRole('article').map(card => card.querySelector('img')?.getAttribute('src'));
         expect(leads).toEqual(['/twin-room.jpg', '/twin-room.jpg']);
+    });
+
+    /**
+     * ETG files tens of thousands of properties with room groups that carry no pictures —
+     * Sangbong May has three groups and zero photos between them. Every card then drew the same
+     * building shot, and three rooms at three prices under one identical photo reads as a broken
+     * page rather than as missing data.
+     */
+    it('gives each photo-less room a different property shot', () => {
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard room', price: 100, rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }] }),
+            makeRoom({ id: 'b', name: 'Suite',         price: 200, rates: [{ ...makeRoom().rates![0], offerId: 'b', price: 200 }] }),
+            makeRoom({ id: 'c', name: 'Royal Suite',   price: 300, rates: [{ ...makeRoom().rates![0], offerId: 'c', price: 300 }] }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} images={['/p1.jpg', '/p2.jpg', '/p3.jpg']} />);
+
+        const leads = screen.getAllByRole('article').map(card => card.querySelector('img')?.getAttribute('src'));
+        expect(leads).toEqual(['/p1.jpg', '/p2.jpg', '/p3.jpg']);
+    });
+
+    it('cycles when the property has fewer photos than rooms', () => {
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard room', price: 100, rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }] }),
+            makeRoom({ id: 'b', name: 'Suite',         price: 200, rates: [{ ...makeRoom().rates![0], offerId: 'b', price: 200 }] }),
+            makeRoom({ id: 'c', name: 'Royal Suite',   price: 300, rates: [{ ...makeRoom().rates![0], offerId: 'c', price: 300 }] }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} images={['/p1.jpg', '/p2.jpg']} />);
+
+        const leads = screen.getAllByRole('article').map(card => card.querySelector('img')?.getAttribute('src'));
+        expect(leads).toEqual(['/p1.jpg', '/p2.jpg', '/p1.jpg']);
+    });
+
+    it('still prefers the room’s own photo over the property set', () => {
+        const rooms = [
+            makeRoom({ id: 'a', name: 'Standard room', roomPhotos: ['/actual-room.jpg'], rates: [{ ...makeRoom().rates![0], offerId: 'a', price: 100 }] }),
+        ];
+        render(<RoomSelection {...baseProps} rooms={rooms} image={HOTEL_SHOT} images={['/p1.jpg', '/p2.jpg']} />);
+        expect(screen.getByRole('article').querySelector('img')?.getAttribute('src')).toBe('/actual-room.jpg');
     });
 
     it('shows every room photo in the detail panel, with no ETG content alongside', () => {

@@ -149,7 +149,7 @@ export function BookingCardShell({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03, duration: 0.25 }}
             className={cn(
-                'group relative w-full overflow-hidden transition-shadow duration-150 hover:shadow-lg dark:hover:shadow-black/40',
+                'group relative w-full overflow-hidden rounded-2xl transition-shadow duration-150 hover:shadow-lg dark:hover:shadow-black/40',
                 SURFACE,
             )}
         >
@@ -206,7 +206,7 @@ export function BookingCardShell({
 export function BookingCardSkeleton() {
     const bar = 'rounded bg-slate-200 dark:bg-white/10';
     return (
-        <div className={cn('flex animate-pulse flex-col overflow-hidden md:min-h-[205px] md:flex-row', SURFACE)}>
+        <div className={cn('flex animate-pulse flex-col overflow-hidden rounded-2xl md:min-h-[205px] md:flex-row', SURFACE)}>
             <div className="flex h-20 shrink-0 items-center justify-center md:h-auto md:w-[240px]">
                 <div className="size-14 rounded-full bg-slate-200 md:size-[120px] dark:bg-white/10" />
             </div>
@@ -243,7 +243,7 @@ export function DetailPanel({ title, icon: Icon, children, className }: {
     className?: string;
 }) {
     return (
-        <section className={cn('bg-white shadow-sm dark:bg-slate-900', className)}>
+        <section className={cn('rounded-[20px] bg-white shadow-sm dark:bg-slate-900', className)}>
             <div className="flex items-center gap-2.5 px-6 pt-6">
                 <Icon size={17} strokeWidth={1.75} className="shrink-0 text-slate-700 dark:text-white" aria-hidden />
                 <h2 className="text-[17px] text-slate-900 dark:text-white">{title}</h2>

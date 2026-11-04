@@ -12,8 +12,8 @@ import { cn } from '@/shared/lib/cn';
 import type { LatLng, NearbyPalette } from './types';
 
 /**
- * Everything the nearby strip works from. It is drawn as two pieces over the map's bottom edge —
- * `PlaceFilters`, then `PlaceCards` just under them — and each takes the slice it needs.
+ * Everything the nearby strip works from. It is drawn as two pieces — `PlaceFilters` under the
+ * map and `PlaceCards` over the map's bottom edge — and each takes the slice it needs.
  */
 export interface PlaceStripProps {
     gems: NearbyGem[];
@@ -46,9 +46,6 @@ type PlaceCardsProps = Pick<
 
 const SKELETONS = 8;
 
-/** Lifts a plate off the map, so what stands on it holds against a pale street tile or a dark one. */
-const FLOAT_SHADOW = '0 8px 24px rgba(0,0,0,.25)';
-
 function pillStyle(palette: NearbyPalette): React.CSSProperties {
     return {
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999,
@@ -57,29 +54,7 @@ function pillStyle(palette: NearbyPalette): React.CSSProperties {
     };
 }
 
-/**
- * How tall the category menu may open: the room between its trigger and the top of whatever clips
- * it — the map, which is as tall as its page draws it, so the room is measured rather than assumed.
- * Undefined when nothing clips, or when there is nothing to measure (a test renderer lays nothing out).
- */
-function roomAbove(trigger: HTMLElement | null): number | undefined {
-    for (let el = trigger?.parentElement; trigger && el; el = el.parentElement) {
-        if (getComputedStyle(el).overflow === 'visible') continue;
-        // 6px for the gap to the trigger, 6px of breathing room under the map's top edge.
-        const room = trigger.getBoundingClientRect().top - el.getBoundingClientRect().top - 12;
-        return room > 0 ? room : undefined;
-    }
-    return undefined;
-}
-
-/**
- * The category dropdown, the radius steps and the unit toggle — and a note when the lookup came back
- * incomplete.
- *
- * Drawn over the map above the cards, so each control stands on a plate of the page's own ground:
- * the card tint the pills wear elsewhere is all but transparent over a street map. The row takes no
- * pointer events outside its controls, and the selected step of each wears the brand gradient.
- */
+/** The category dropdown, the radius steps and the unit toggle — and a note when the lookup came back incomplete. */
 export function PlaceFilters({
     gems, error, onRetry, category, onCategoryChange, radius, onRadiusChange, unit, onUnitChange, palette,
 }: PlaceFiltersProps) {
@@ -128,7 +103,6 @@ export function PlaceFilters({
     const selected = POI_FILTERS.find((f) => f.id === category) ?? POI_FILTERS[0];
     const SelectedIcon = selected.icon;
     const pill = pillStyle(palette);
-    const plate: React.CSSProperties = { background: palette.bg, boxShadow: FLOAT_SHADOW, pointerEvents: 'auto' };
 
     return (
         // Inset like the cards' row above, so the first pill starts under the first card.
@@ -270,7 +244,7 @@ export function PlaceCards({
     const notice: React.CSSProperties = {
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14,
         background: palette.bg, color: palette.muted, fontSize: 15,
-        boxShadow: FLOAT_SHADOW, pointerEvents: 'auto',
+        boxShadow: '0 8px 24px rgba(0,0,0,.25)', pointerEvents: 'auto',
     };
 
     let body: React.ReactNode;
@@ -305,32 +279,26 @@ export function PlaceCards({
     return (
         <div className={cn('pointer-events-none relative', className)}>
             {gems.length > 3 && (
-                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left')}>
-                    <ChevronLeft size={30} strokeWidth={2.25} aria-hidden />
+                <button type="button" aria-label={t('scrollLeft')} onClick={() => scroll(-1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('left', palette)}>
+                    <ChevronLeft size={16} aria-hidden />
                 </button>
             )}
             <div ref={scrollRef} className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollBehavior: 'smooth', padding: '8px 12px' }}>
                 {body}
             </div>
             {gems.length > 3 && (
-                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right')}>
-                    <ChevronRight size={30} strokeWidth={2.25} aria-hidden />
+                <button type="button" aria-label={t('scrollRight')} onClick={() => scroll(1)} className="pointer-events-auto hidden lg:flex" style={arrowStyle('right', palette)}>
+                    <ChevronRight size={16} aria-hidden />
                 </button>
             )}
         </div>
     );
 }
 
-/**
- * Inside the row's ends rather than hanging past them — the map clips anything past its edge.
- *
- * A bare chevron, like the banner's arrows at the top of the page: no circular plate behind it,
- * just a drop-shadow that keeps the white glyph legible over a pale street tile or a bright photo.
- * The button stays 44px square so the target is as easy to hit as before, only invisibly.
- */
-function arrowStyle(side: 'left' | 'right'): React.CSSProperties {
+/** Inside the row's ends rather than hanging past them — the map clips anything past its edge. */
+function arrowStyle(side: 'left' | 'right', palette: NearbyPalette): React.CSSProperties {
     return {
-        ...(side === 'left' ? { left: 0 } : { right: 0 }),
+        ...(side === 'left' ? { left: 6 } : { right: 6 }),
         position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
         width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
         background: 'transparent', border: 'none', color: '#fff',
