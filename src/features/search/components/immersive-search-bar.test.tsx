@@ -14,7 +14,12 @@ import ko from '@/locales/ko.json';
 const autocompleteDestinations = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
 vi.mock('@/features/search/api/destinations.api', () => ({ autocompleteDestinations }));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
+const fetchGolfCatalogue = vi.hoisted(() => vi.fn());
+vi.mock('@/features/golf/api/golf.api', () => ({ fetchGolfCatalogue }));
+vi.mock('@/i18n/navigation', () => ({
+    useRouter: () => ({ push }),
+    Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => <a href={href} {...rest}>{children}</a>,
+}));
 
 import { ImmersiveSearchBar } from './immersive-search-bar';
 
@@ -269,5 +274,35 @@ describe('ImmersiveSearchBar — in Korean', () => {
         await user.click(screen.getByText(ko.search.prose.ofUs.replace('{count}', '2')));
         expect(screen.getByText(ko.checkout.flight.whosFlying)).toBeInTheDocument();
         expect(screen.queryByText('Who\'s flying?')).not.toBeInTheDocument();
+    });
+});
+
+describe('ImmersiveSearchBar — golf', () => {
+    beforeEach(() => {
+        fetchGolfCatalogue.mockReset();
+        fetchGolfCatalogue.mockResolvedValue({ courses: [], countries: [] });
+    });
+
+    it('makes Golf a third tab like the others, reported to the Journey rather than followed', async () => {
+        const onModeSelect = vi.fn();
+        renderWithIntl(<ImmersiveSearchBar onModeSelect={onModeSelect} />);
+        expect(screen.queryByRole('link', { name: 'Golf' })).toBeNull();
+        await userEvent.setup().click(screen.getByRole('button', { name: 'Golf' }));
+        expect(onModeSelect).toHaveBeenCalledWith('golf');
+    });
+
+    it('opens on the golf sentence, with the courses it is handed', () => {
+        renderWithIntl(<ImmersiveSearchBar defaultMode="golf" golfCourses={[]} />);
+        expect(screen.getByText(/Tee off at/)).toBeInTheDocument();
+        expect(screen.getByText('the course')).toBeInTheDocument();
+        expect(screen.queryByText(/Find me a stay in/)).not.toBeInTheDocument();
+        expect(fetchGolfCatalogue).not.toHaveBeenCalled();
+    });
+
+    it('switched to golf in place, asks for the catalogue itself, since nobody handed it one', async () => {
+        renderWithIntl(<ImmersiveSearchBar />);
+        await userEvent.setup().click(screen.getByRole('button', { name: 'Golf' }));
+        expect(screen.getByText('the course')).toBeInTheDocument();
+        await waitFor(() => expect(fetchGolfCatalogue).toHaveBeenCalledTimes(1));
     });
 });

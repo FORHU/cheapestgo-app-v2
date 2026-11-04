@@ -22,6 +22,8 @@ export interface NearbyMapProps {
     /** Where a "directions to the hotel" route starts. */
     origin?: (LatLng & { name: string }) | null;
     height: number | string;
+    /** Pixels of the map's bottom edge that `children` cover. The camera centres in the map above them. */
+    bottomInset?: number;
     /** Drawn over the map: the callout, the controls, the weather. */
     children?: React.ReactNode;
 }
@@ -38,7 +40,7 @@ function toPlace(gem: NearbyGem): NearbyPlace {
 }
 
 export function NearbyMap({
-    mapRef, hotel, hotelLabel, places, activeId, onSelect, mapStyle, standardConfig, route, origin, height, children,
+    mapRef, hotel, hotelLabel, places, activeId, onSelect, mapStyle, standardConfig, route, origin, height, bottomInset = 0, children,
 }: NearbyMapProps) {
     const byId = useMemo(() => new globalThis.Map(places.map((g) => [g.id, g])), [places]);
     const handleMarker = useCallback((place: NearbyPlace) => {
@@ -61,9 +63,16 @@ export function NearbyMap({
                 ref={mapRef as React.RefObject<MapRef>}
                 mapStyle={mapStyle}
                 standardConfig={standardConfig}
-                initialViewState={{ longitude: hotel.lng, latitude: hotel.lat, zoom: 14 }}
+                // The padding outlives the first frame: every later flyTo centres in the same
+                // uncovered part of the map, so a picked place does not land under the cards.
+                initialViewState={{
+                    longitude: hotel.lng, latitude: hotel.lat, zoom: 14,
+                    padding: { top: 0, right: 0, left: 0, bottom: bottomInset },
+                }}
                 scrollZoom={false}
-                className="h-full w-full"
+                // `isolate` keeps every marker's z-index inside the map, so a selected place
+                // or the hotel's own pin never draws over the controls laid on top of it.
+                className="isolate h-full w-full"
             >
                 {routeData && (
                     <Source id="nearby-route" type="geojson" data={routeData}>

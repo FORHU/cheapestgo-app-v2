@@ -52,7 +52,7 @@ function formatDate(dateStr: string): string {
 }
 
 const CARD =
-    'rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm';
+    'border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm';
 
 const ROW = 'flex items-center justify-between text-sm';
 

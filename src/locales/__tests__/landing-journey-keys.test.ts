@@ -47,6 +47,10 @@ const SEARCH_BAR = [
     'search.prose.aDate',
     'search.prose.yourDates',
     'search.prose.flexibleTrip',
+    // Golf's sentence, its panels, and the strip under it.
+    'landing.search.searchingGolf',
+    ...leaves(read(en, 'search.golf'), 'search.golf'),
+    ...['teeOffAt', 'onDay', 'forPlayers', 'theCourse', 'firstOpenDay', 'players'].map((k) => `search.prose.${k}`),
 ];
 
 const JOURNEY = [...leaves(read(en, 'landing.journey'), 'landing.journey'), ...SEARCH_BAR];
@@ -55,6 +59,9 @@ const JOURNEY = [...leaves(read(en, 'landing.journey'), 'landing.journey'), ...S
 const REUSED = [
     'landing.search.searchMode.stays',
     'landing.search.searchMode.flights',
+    'landing.search.searchMode.golf',
+    'golf.teeTimes.players',
+    'search.clear',
     'landing.search.adults',
     'landing.search.children',
     'checkout.flight.whosFlying',

@@ -10,7 +10,6 @@
 import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
 import { HotelCard, HotelCardSkeleton, type HotelResult } from '@/features/hotels/components/hotel-card';
 import { http } from '@/shared/lib/http';
 import { Tag, Hotel } from 'lucide-react';
@@ -104,7 +103,6 @@ export function DealsView() {
                 )}
             </main>
 
-            <Footer />
         </div>
     );
 }

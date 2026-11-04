@@ -6,9 +6,9 @@ import { routing, isLocale } from '@/i18n/routing';
 import { HtmlLang } from '@/i18n/HtmlLang';
 import { SupportWidget } from '@/features/support/components/SupportWidget';
 import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
-import { ScrollToTop } from '@/shared/components/common/ScrollToTop';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import { LoginModal } from '@/features/auth/components/login-modal';
+import { Footer } from '@/shared/components/footer';
 
 /**
  * Everything the visitor sees lives under this segment. /admin does not: it is
@@ -59,8 +59,8 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
             <HtmlLang />
             {children}
+            <Footer />
             <SupportWidget />
-            <ScrollToTop />
             <MobileBottomNav />
             <InstallPWAPrompt />
             <LoginModal />

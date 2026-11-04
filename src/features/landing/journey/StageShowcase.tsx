@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { BRAND } from '@/shared/lib/palette';
 import {
     STAGES,
@@ -85,7 +86,7 @@ function Mosaic({ t, images }: { t: number; images: string[] }) {
 }
 
 /** One place, held. The descent has stopped moving; the choice is the only thing left. */
-function Still({ t, image, strength = 0.6 }: { t: number; image: string; strength?: number }) {
+function Still({ t, image, strength = 0.6, onError }: { t: number; image: string; strength?: number; onError?: () => void }) {
     return (
         <img
             src={image}
@@ -97,6 +98,7 @@ function Still({ t, image, strength = 0.6 }: { t: number; image: string; strengt
             loading="lazy"
             decoding="async"
             draggable={false}
+            onError={onError}
         />
     );
 }
@@ -227,14 +229,23 @@ function Scrim({ side }: { side: keyof typeof SCRIMS }) {
     );
 }
 
-/** One face's showcase, drawn at `t` through its stage. */
+/**
+ * One face's showcase, drawn at `t` through its stage.
+ *
+ * A held photograph that will not load gives way to the face's own ground. Without that, a face
+ * whose photograph is missing showed the stage's ground — the stays dusk under the golf
+ * sentence — which reads as the tab not having changed anything.
+ */
 function FaceLayer({ face, t }: { face: StageFace; t: number }) {
     const s = face.showcase;
+    const [failed, setFailed] = useState(false);
     return (
         <>
             {s.kind === 'sequence' && <Destinations t={t} images={s.images} />}
             {s.kind === 'mosaic' && <Mosaic t={t} images={s.images} />}
-            {s.kind === 'still' && <Still t={t} image={s.image} strength={s.strength} />}
+            {s.kind === 'still' && (failed
+                ? <div data-testid={`ground-${face.id}`} className="absolute inset-0" style={{ background: face.ground }} />
+                : <Still t={t} image={s.image} strength={s.strength} onError={() => setFailed(true)} />)}
 
             {/* Motion layered over the photography rather than instead of it:
                 the network is drawn over the places the AI stage is choosing from. */}

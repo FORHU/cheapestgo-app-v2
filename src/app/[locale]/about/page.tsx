@@ -80,7 +80,7 @@ export default async function AboutUsPage() {
                         {whatWeDo.map(({ icon: Icon, title, body }) => (
                             <div
                                 key={title}
-                                className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6"
+                                className="border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6"
                             >
                                 <div className="size-11 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center mb-4">
                                     <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -105,7 +105,7 @@ export default async function AboutUsPage() {
                         {values.map(({ icon: Icon, title, body }) => (
                             <div
                                 key={title}
-                                className="flex gap-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6"
+                                className="flex gap-4 border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6"
                             >
                                 <div className="size-11 shrink-0 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
                                     <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -144,7 +144,7 @@ export default async function AboutUsPage() {
                 </section>
 
                 {/* Company + CTA */}
-                <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-6 sm:p-8">
+                <section className="border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-6 sm:p-8">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display mb-4">
                         {t('whoTitle')}
                     </h2>

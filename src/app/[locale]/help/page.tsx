@@ -3,7 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import { hreflangAlternates } from '@/shared/lib/seo';
 import { QUICK_QUESTIONS } from '@/features/support/lib/suggestions';
 import { Header } from '@/shared/components/header';
-import { Footer } from '@/shared/components/footer';
 import { FlatGround } from '@/shared/components/common/FlatGround';
 
 /**
@@ -51,13 +50,12 @@ export default async function HelpPage() {
                     ))}
                 </div>
 
-                <section className="mt-12 rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                <section className="mt-12 border border-slate-200 p-5 dark:border-slate-700">
                     <h2 className="text-base font-medium text-slate-900 dark:text-white">{t('chatCta')}</h2>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t('chatNote')}</p>
                 </section>
             </main>
 
-            <Footer />
         </div>
     );
 }

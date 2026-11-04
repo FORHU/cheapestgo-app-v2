@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import React, { useState, useRef, useEffect } from 'react';
 import {  AnimatePresence } from 'framer-motion';
-import { Plane, Search, AlertTriangle } from 'lucide-react';
+import { Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { StateScreen, stateActionClass } from '@/shared/components/StateScreen';
 import type { FlightOffer } from '@/shared/types';
@@ -105,18 +105,18 @@ export function FlightResults({
     if (loading) {
         return (
             <div className={cn('space-y-3', className)}>
-                {/* Animated header */}
-                <div className="flex items-center justify-center gap-2 lg:gap-3 py-2 lg:py-4">
-                    <div className="relative">
-                        <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                            <Plane className="w-4 h-4 lg:w-6 lg:h-6 text-indigo-500 animate-pulse" />
-                        </div>
-                        <div className="absolute inset-0 w-8 h-8 lg:w-12 lg:h-12 border-2 lg:border-[3px] border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] lg:text-sm font-medium text-slate-700 dark:text-slate-200">{tAll('flights.results.findingFares')}</p>
-                        <p className="text-[9px] lg:text-xs text-slate-400 dark:text-slate-500">{tAll('flights.results.checkingProviders')}</p>
-                    </div>
+                {/* Searching: a plain blue ring and one line saying what it is
+                    doing. It replaces a plane badge orbited by an indigo ring
+                    with a second line under it — two colours of its own and
+                    twice the words for the one fact the skeletons below already
+                    show. Announced politely, and the ring holds still for
+                    anyone who has asked for less motion. */}
+                <div role="status" aria-live="polite" className="flex items-center justify-center gap-2.5 py-3 lg:py-4">
+                    <span
+                        aria-hidden="true"
+                        className="size-5 shrink-0 animate-spin rounded-full border-2 border-blue-600/20 border-t-blue-600 motion-reduce:animate-none dark:border-blue-400/20 dark:border-t-blue-400"
+                    />
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{tAll('flights.results.findingFares')}</p>
                 </div>
 
                 {/* Skeleton cards */}

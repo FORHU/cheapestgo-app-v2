@@ -93,7 +93,7 @@ export const asDay = (d: Date) =>
  * for **flights**, where the cheapest departure is weeks out, not next weekend.
  */
 /** Friday to Sunday. Also how long a stay is given when the link's checkout is unusable. */
-const DEFAULT_NIGHTS = 2;
+export const DEFAULT_NIGHTS = 2;
 
 /**
  * The last arrival date the supplier has nothing for.

@@ -317,6 +317,11 @@ describe('stage showcases', () => {
     // The paths are built with a template literal. A previous edit lost the interpolation
     // and shipped "/manila.webp" instead of "/images/destinations/manila.webp" — every
     // showcase silently rendered nothing, which looks exactly like a styling bug.
+    // Photographs a face is wired to but that have not been delivered yet. Each face listed here
+    // shows its own ground until its file lands (`StageShowcase`), so nothing looks broken — but
+    // this list is the reminder: delete the entry when the file is added.
+    const AWAITING_PHOTO = new Set(['/images/destinations/golf-dusk.webp']);
+
     it('points only at files that exist in public/', async () => {
         const { existsSync } = await import('node:fs');
         const { join } = await import('node:path');
@@ -324,9 +329,18 @@ describe('stage showcases', () => {
             for (const face of stageFaces(stage)) {
                 for (const src of imagesOf(face.showcase)) {
                     expect(src.startsWith('/images/destinations/')).toBe(true);
-                    expect(existsSync(join(process.cwd(), 'public', src))).toBe(true);
+                    if (AWAITING_PHOTO.has(src)) continue;
+                    expect(existsSync(join(process.cwd(), 'public', src)), src).toBe(true);
                 }
             }
+        }
+    });
+
+    it('waits only on photographs that are actually missing', async () => {
+        const { existsSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        for (const src of AWAITING_PHOTO) {
+            expect(existsSync(join(process.cwd(), 'public', src)), `${src} has arrived: drop it from AWAITING_PHOTO`).toBe(false);
         }
     });
 
@@ -396,46 +410,54 @@ describe('snapTargets', () => {
 });
 
 /**
- * Hotels and Flights are two faces of one stage, not two stages. Choosing the other tab used to
- * glide the visitor to a separate section further down the track; now the panel slides across
- * to the other side in place and the backdrop changes under it.
+ * Hotels, Flights and Golf are three faces of one stage, not three stages. Choosing another tab
+ * used to glide the visitor to a separate section further down the track (or, for Golf, off the
+ * page); now the panel slides across in place and the backdrop changes under it.
  */
-describe('the search stage and its two faces', () => {
+describe('the search stage and its faces', () => {
     const search = STAGES[0];
 
-    it('is one stage with Flights as a face of it, not a stage of its own', () => {
-        expect(STAGES.some(s => s.id === 'flights')).toBe(false);
+    it('is one stage with Flights and Golf as faces of it, not stages of their own', () => {
+        expect(STAGES.some(s => s.id === 'flights' || s.id === 'golf')).toBe(false);
         expect(search.id).toBe('stays');
         expect(search.faces?.flights?.id).toBe('flights');
+        expect(search.faces?.golf?.id).toBe('golf');
     });
 
-    it('shows the hotels face by default and the flights face when asked', () => {
+    it('shows the hotels face by default and the others when asked', () => {
         expect(faceOf(search, 'stays').id).toBe('stays');
         expect(faceOf(search, 'flights').id).toBe('flights');
+        expect(faceOf(search, 'golf').id).toBe('golf');
     });
 
     it('has nothing to switch on a stage with a single face', () => {
         const options = STAGES[STAGES.length - 1];
         expect(faceOf(options, 'flights')).toBe(options);
+        expect(faceOf(options, 'golf')).toBe(options);
         expect(stageFaces(options)).toEqual([options]);
     });
 
     it('lists the faces in the order the tabs are', () => {
-        expect(stageFaces(search).map(f => f.id)).toEqual(['stays', 'flights']);
+        expect(stageFaces(search).map(f => f.id)).toEqual(['stays', 'flights', 'golf']);
     });
 
-    it('docks the two on opposite sides, so changing tab moves the panel', () => {
+    it('docks each on a side of its own, so every change of tab moves the panel', () => {
         expect(faceOf(search, 'stays').side).toBe('left');
         expect(faceOf(search, 'flights').side).toBe('right');
+        expect(faceOf(search, 'golf').side).toBe('center');
     });
 
     it('gives each its own wording and its own backdrop, so the change is seen', () => {
-        const [stays, flights] = stageFaces(search);
-        // The wording is in the message files, keyed by face id: two faces, two sets of words.
-        const words = (id: 'stays' | 'flights') => JSON.stringify(en.landing.journey.stages[id]);
-        expect(flights.id).not.toBe(stays.id);
-        expect(words('flights')).not.toBe(words('stays'));
-        expect(JSON.stringify(flights.showcase)).not.toBe(JSON.stringify(stays.showcase));
+        const faces = stageFaces(search);
+        // The wording is in the message files, keyed by face id: a set of words per face.
+        const words = (id: 'stays' | 'flights' | 'golf') => JSON.stringify(en.landing.journey.stages[id]);
+        expect(new Set(faces.map(f => f.id)).size).toBe(faces.length);
+        expect(new Set(faces.map(f => words(f.id as 'stays' | 'flights' | 'golf'))).size).toBe(faces.length);
+        expect(new Set(faces.map(f => JSON.stringify(f.showcase))).size).toBe(faces.length);
+    });
+
+    it('gives golf a ground of its own, for when its photograph will not load', () => {
+        expect(faceOf(search, 'golf').ground).not.toBe(search.ground);
     });
 });
 

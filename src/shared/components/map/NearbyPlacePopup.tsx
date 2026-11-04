@@ -120,17 +120,14 @@ const NearbyPlacePopup = React.memo(function NearbyPlacePopup({
             <div style={{
                 position: 'relative',
                 display: 'flex', width: CARD_W, minHeight: CARD_MIN_H,
-                borderRadius: 15,
-                // The photo runs to the card's edges and is clipped to its
-                // corners here, rather than carrying a radius of its own — that
-                // way the two curves cannot drift apart, and the photo's square
-                // right edge needs no special-casing.
+                // Square, like the place cards on the map beside it. The photo runs to
+                // the card's edges and is clipped here rather than shaped on its own.
                 overflow: 'hidden',
                 background: 'var(--map-card-bg)',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.32)',
             }}>
                 {/* Mapbox's own close button is off (`closeButton={false}`) — it
-                    paints outside the card's rounded corner and takes the popup
+                    paints outside the card's corner and takes the popup
                     ground with it. This one sits on the card, in the design's
                     tones. */}
                 <button

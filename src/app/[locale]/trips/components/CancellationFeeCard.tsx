@@ -24,7 +24,7 @@ export function CancellationFeeCard({
     const isNonRefundable = refundAmount === 0;
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/60 dark:border-white/10 p-5 space-y-4">
+        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200/60 dark:border-white/10 p-5 space-y-4">
             <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {tAll('trips.refund.summary')}

@@ -1,7 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 // Named imports rather than the whole file: webpack gives JSON named exports and drops the
 // rest, so the staff bundle carries ~1.4 KB of en.json instead of all 102 KB.
-import { common, support } from '@/locales/en.json';
+import { common, support, golf } from '@/locales/en.json';
 
 /**
  * English for the staff routes.
@@ -23,7 +23,7 @@ import { common, support } from '@/locales/en.json';
  */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
-        <NextIntlClientProvider locale="en" messages={{ common, support }}>
+        <NextIntlClientProvider locale="en" messages={{ common, support, golf }}>
             {children}
         </NextIntlClientProvider>
     );

@@ -32,7 +32,7 @@ describe('PlaceDetailsModal', () => {
         const dialog = screen.getByRole('dialog', { name: 'Cafe Onion' });
         expect(dialog).toBeInTheDocument();
         expect(screen.getByText('1,200 reviews')).toBeInTheDocument();
-        expect(screen.getByText(/360 m away/)).toBeInTheDocument();
+        expect(screen.getByText(/0.36 km away/)).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /Call/ })).toHaveAttribute('href', 'tel:02-1234-5678');
         expect(screen.getByRole('link', { name: /Website/ })).toHaveAttribute('href', 'https://onion.example');
         expect(screen.getByRole('link', { name: /Google Maps/ }).getAttribute('href')).toContain('query_place_id=g-1');
@@ -130,7 +130,7 @@ describe('PlaceDetailsModal', () => {
 
     it('shows no stray separator for an unrated place', () => {
         open(gem({ rating: null }));
-        expect(screen.getByText(/360 m away/).textContent).not.toContain('·');
+        expect(screen.getByText(/0.36 km away/).textContent).not.toContain('·');
     });
 
     it('falls back to the initial when a reviewer photo fails', () => {

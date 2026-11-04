@@ -129,7 +129,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
             {/* ── MOBILE ── */}
             <div className="flex flex-row gap-2 md:hidden">
                 <div
-                    className="relative shrink-0 rounded-xl overflow-hidden"
+                    className="relative shrink-0 overflow-hidden rounded-xl"
                     style={{ width: 76, height: 76, background: immersive ? 'rgba(255,255,255,0.06)' : undefined }}
                 >
                     {!immersive && <div className="absolute inset-0 bg-slate-100 dark:bg-slate-800" />}
@@ -209,7 +209,7 @@ export const MapPropertyCard = React.memo(function MapPropertyCard({
             {/* ── DESKTOP ── */}
             <div className="hidden md:flex gap-3">
                 <div
-                    className={cn('relative w-20 h-16 lg:w-24 lg:h-20 shrink-0 rounded-xl overflow-hidden', !immersive && 'bg-slate-100 dark:bg-slate-800')}
+                    className={cn('relative w-20 h-16 lg:w-24 lg:h-20 shrink-0 overflow-hidden rounded-xl', !immersive && 'bg-slate-100 dark:bg-slate-800')}
                     style={immersive ? { background: 'rgba(255,255,255,0.06)' } : undefined}
                 >
                     {property.image ? (

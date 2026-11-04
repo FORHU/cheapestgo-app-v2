@@ -5,7 +5,10 @@ import { useLocale, useTranslations } from 'next-intl';
 import { MessageCircle, X, Send, Loader2, Paperclip, FileText } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/components/ui/button';
+import { NAV_SKIN } from '@/shared/components/common/MobileBottomNav';
+import { useChromeTone } from '@/shared/components/ChromeToneContext';
 import { useSupportChat } from '@/features/support/lib/useSupportChat';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 import { readerView } from '@/features/support/lib/translationView';
 import { formatReopen } from '@/features/support/lib/reopenTime';
 import type { SupportAttachmentView, SupportMessageView } from '@/features/support/types';
@@ -27,6 +30,19 @@ export function SupportWidget() {
         availability, sending, failed, open, close, send,
         staged, attaching, canAttach, attach, unstage,
     } = useSupportChat();
+    // The bottom nav's skin rather than the brand blue: both float over the page, so both
+    // take the screen's chrome tone, and invert together on the search map.
+    const skin = NAV_SKIN[useChromeTone()];
+
+    // A page asking for the chat (useSupportWidget). Requests made before this mounted are not
+    // replayed: the widget is on every page, so there is no "before".
+    const openRequests = useSupportWidget((s) => s.openRequests);
+    const answered = useRef(openRequests);
+    useEffect(() => {
+        if (openRequests === answered.current) return;
+        answered.current = openRequests;
+        if (available && !panelOpen) void open();
+    }, [openRequests, available, panelOpen, open]);
 
     if (!available) return null;
 
@@ -50,11 +66,16 @@ export function SupportWidget() {
                 />
             )}
 
-            <Button
+            <button
                 type="button"
                 onClick={panelOpen ? close : open}
                 aria-label={panelOpen ? t('close') : t('open')}
-                className="relative h-14 w-14 rounded-full shadow-lg"
+                className={cn(
+                    'relative grid h-14 w-14 place-items-center rounded-full outline-none transition-all',
+                    'focus-visible:ring-2 active:scale-[0.98]',
+                    skin.ring,
+                )}
+                style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow, color: skin.on }}
             >
                 {panelOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
                 {!panelOpen && unread > 0 && (
@@ -63,7 +84,7 @@ export function SupportWidget() {
                         {unread > 9 ? '9+' : unread}
                     </span>
                 )}
-            </Button>
+            </button>
         </div>
     );
 }
@@ -91,6 +112,18 @@ function SupportPanel({
     const [draft, setDraft] = useState('');
     const [answer, setAnswer] = useState<SuggestionId | null>(null);
     const endRef = useRef<HTMLDivElement>(null);
+    const boxRef = useRef<HTMLTextAreaElement>(null);
+
+    // A draft a page asked with (useSupportWidget) goes into an empty box, never over the
+    // customer's own words; it is taken either way, so it cannot turn up later by surprise.
+    const pendingDraft = useSupportWidget((s) => s.draft);
+    useEffect(() => {
+        if (pendingDraft === null) return;
+        const offered = useSupportWidget.getState().takeDraft();
+        if (!offered) return;
+        setDraft((typed) => (typed.trim() ? typed : offered));
+        requestAnimationFrame(() => boxRef.current?.focus());
+    }, [pendingDraft]);
 
     /**
      * A tapped question (ADR-0044).
@@ -206,6 +239,7 @@ function SupportPanel({
                 onSubmit={e => { e.preventDefault(); onSend(draft); setDraft(''); }}
             >
                 <textarea
+                    ref={boxRef}
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
                     onKeyDown={e => {
