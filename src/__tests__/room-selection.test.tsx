@@ -303,7 +303,12 @@ describe('RoomSelection', () => {
         render(
             <RoomSelection
                 {...base}
-                rooms={[room({ rates: [rate({ offerId: 'a' }), rate({ offerId: 'b', price: 200 })] })]}
+                // Two Offers that differ only in price are de-duplicated as one promise sold
+                // twice (ADR-0007), so the dearer needs terms of its own to still be offered.
+                rooms={[room({ rates: [
+                    rate({ offerId: 'a', boardCode: 'RO' }),
+                    rate({ offerId: 'b', price: 200, boardCode: 'BB' }),
+                ] })]}
                 selectedOfferId="b"
             />,
         );

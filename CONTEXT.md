@@ -79,6 +79,31 @@ screen can forget and none can do it twice.
 _Avoid_: dividing again in a component; the wire already carries this. _Avoid_: sending it to
 checkout as though it were the stay — a summary prices a stay, so it is multiplied back up there.
 
+## Room
+The thing a traveller sleeps in — one physical product, whatever it costs. Its identity is the
+supplier's room name with the rate suffix and the **offer qualifiers** taken out wherever they
+appear, and the last remaining parenthetical lifted off onto the room's own detail line. TGX hangs
+variant text in parentheses rather than putting it in a field, and sends more than one, so
+`Standard Double room (full double bed) (bed type is subject to availability)` and `Standard
+Double room (full double bed)` are the same Room. One Room is one card.
+_Avoid_: reading a parenthetical as identity. On 2026-11-04 a Seoul hotel showed two "Deluxe Twin
+room" cards, same photograph, same beds, differing only by whether `(twin beds)` had survived into
+the title — which looked like a rendering fault and was reported as one.
+_Avoid_: letting one card cover rooms that differ without saying so. ROYAL Hotel Seoul files `no
+window` and `2 full double beds` under a single "Standard room"; unless that reaches the **Offer**
+chips, a reader picks on price and gets the other one.
+
+## Offer
+One bookable price for a **Room**, on stated terms: board, refundability, cancellation deadline,
+and the money. Several Offers for one Room is the normal case and each is separately buyable — at
+Seoul Dalbit Dongdaemun the same double room sells at ₱2,425 non-refundable or ₱3,173 refundable
+until the 18th. The traveller is choosing the terms, not the room.
+_Avoid_: keeping only the cheapest Offer per Room. It reads as tidy and silently withdraws the
+refundable one from sale.
+_Avoid_: labelling an Offer by board alone. Two chips reading `Room only` at different prices tell
+the traveller there is a difference and refuse to say what it is; whichever attributes vary within
+a Room are the ones its Offers must show.
+
 ## Display Currency
 What a price is *shown* in across the storefront — the one the viewer picked, and the one every
 screen from search to the payment button must agree on. The picker offers only currencies that

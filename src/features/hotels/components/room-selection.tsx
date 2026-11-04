@@ -345,14 +345,71 @@ function featureIcon(label: string): LucideIcon {
 interface Feature { label: string; icon: LucideIcon }
 
 /**
+ * A heading this short is a supplier code rather than a room type: "U (Superior Double room)"
+ * files the identity inside the parentheses, and taking them off leaves a card titled "U".
+ * Mirrors `MIN_MEANINGFUL_ROOM_NAME` in api-v2's `roomNames.ts`.
+ */
+const MIN_MEANINGFUL_ROOM_NAME = 3;
+
+/**
+ * Parentheticals that describe the **Offer** rather than the Room — see ADR-0007.
+ *
+ * TGX hangs variant text on the room name instead of putting it in a field, and sends more
+ * than one: `Deluxe Twin room (twin beds) (bed type is subject to availability)`. Almost all
+ * of what arrives that way *is* the room — bed configuration, `shared bathroom`, `smoking`,
+ * `kitchen` — and stripping it wholesale merges rooms that are different products. Only the
+ * entries below are terms, so only these come off the name.
+ *
+ * `chip` is what the reader sees, because the supplier's own wording is too long to sit in a
+ * chip beside a price.
+ *
+ * **Widen this list when a supplier words the same promise differently.** The symptom is a
+ * pair of cards a reader cannot tell apart, which is how this was found on 2026-11-04.
+ */
+const OFFER_QUALIFIERS: readonly { match: RegExp; chip: string }[] = [
+    { match: /^bed\s+type\s+is\s+subject\s+to\s+availability$/i, chip: 'bed not guaranteed' },
+];
+
+function offerQualifier(qualifier: string): string | null {
+    const q = qualifier.trim();
+    return OFFER_QUALIFIERS.find(o => o.match.test(q))?.chip ?? null;
+}
+
+/**
  * Suppliers hang the bed in a parenthetical on the room name — "Standard Double
  * room (full double bed)" — so the card splits it: the heading takes the name
  * without it, the rows take what was inside.
+ *
+ * Offer qualifiers come off first and separately. They are not the room and must not title
+ * it — a card headed "Deluxe Twin room (twin beds)" whose own bullet read "Bed Type Is
+ * Subject To Availability" contradicted itself on screen — but they do tell one Offer from
+ * another, so they are returned rather than dropped. ADR-0007.
  */
-function splitRoomName(name: string): { name: string; bed: string | null } {
-    const match = /\(([^)]+)\)\s*$/.exec(name);
-    if (!match) return { name, bed: null };
-    return { name: name.replace(/\s*\([^)]+\)\s*$/, '').trim(), bed: match[1].trim() };
+function splitRoomName(name: string): { name: string; bed: string | null; offerTerms: string[] } {
+    const offerTerms: string[] = [];
+    const withoutTerms = name
+        .replace(/\s*\(([^)]*)\)/g, (match, inner: string) => {
+            // Comma-separated, because a supplier packs several into one parenthetical:
+            // "(bed type is subject to availability, lounge access)". Classifying the whole
+            // parenthetical matched neither, and left those cards split.
+            const kept: string[] = [];
+            for (const part of inner.split(',')) {
+                const chip = offerQualifier(part);
+                if (chip) offerTerms.push(chip);
+                else if (part.trim()) kept.push(part.trim());
+            }
+            return kept.length ? ` (${kept.join(', ')})` : '';
+        })
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const match = /\(([^)]+)\)\s*$/.exec(withoutTerms);
+    if (!match) return { name: withoutTerms, bed: null, offerTerms };
+
+    const heading = withoutTerms.replace(/\s*\([^)]+\)\s*$/, '').trim();
+    return heading.length >= MIN_MEANINGFUL_ROOM_NAME
+        ? { name: heading, bed: match[1].trim(), offerTerms }
+        : { name: withoutTerms, bed: null, offerTerms };
 }
 
 /**
@@ -469,10 +526,47 @@ function FeatureRow({ feature, palette }: { feature: Feature; palette: Palette }
  * One rate of one room, worded for its card — one card each; see `ordered` in
  * `RoomSelection` for the order they are drawn in.
  */
+
+/** Offer qualifiers in a stable order, so two Offers carrying the same ones compare equal. */
+function offerTermsKey(card: RateCard): string {
+    return [...card.offerTerms].sort().join('+');
+}
+
+/**
+ * What makes one Offer different from another within a Room: the terms, never the price.
+ * Two Offers with the same signature are the same promise, and only the cheaper is worth
+ * showing — see the de-duplication in `ordered` and ADR-0007.
+ */
+function termSignature(card: RateCard): string {
+    return [card.boardName ?? '', card.refundable ? 'RFN' : 'NRFN', card.cancellation,
+        card.bed ?? '', offerTermsKey(card)].join('|');
+}
+
+/**
+ * The cancellation in as few words as a chip can hold.
+ *
+ * `cancellationSummary` writes a sentence for the card body — "Non-refundable — this rate
+ * cannot be cancelled or amended." A chip sits beside a price in a wrapping row and has room
+ * for two or three words, so it gets its own wording rather than a truncation.
+ */
+function cancellationChip(card: RateCard): string {
+    if (!card.refundable) return 'non-refundable';
+    const raw = card.rate.cancellationDeadline;
+    if (!raw) return 'free cancellation';
+    const deadline = new Date(raw);
+    if (Number.isNaN(deadline.getTime())) return 'free cancellation';
+    return `free to ${deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}
 interface RateCard {
     room: RoomOption;
     rate: RateRow;
     heading: string;
+    /** What this rate is sold with — the bed, or whatever else the supplier left in the
+     *  parenthetical. It differs between rates on one card, so a chip must be able to say so. */
+    bed: string | null;
+    /** Offer qualifiers lifted off the room name — see `OFFER_QUALIFIERS`. Empty is the
+     *  common case and means the supplier promised nothing beyond the room itself. */
+    offerTerms: string[];
     /** The structural facts bulleted under the name — see `structuralDetails`. */
     roomDetails: Feature[];
     /** The refundable rate's cancellation line; `null` for a non-refundable one. */
@@ -769,6 +863,32 @@ function RoomCard({
      * drops a rate cannot leave the card reading off a different one than it highlights.
      */
     const pickedIdx = cards.findIndex(c => c.rate.offerId === (pickedOfferId ?? selectedOfferId));
+
+    /**
+     * What a chip prints besides its price: whichever of board, cancellation and offer terms
+     * actually differs inside this card, computed per card rather than fixed.
+     *
+     * Fixed to price-and-board, two chips could both read `Room only` at different prices and
+     * refuse to say why — the same complaint as two identical-looking cards, one level down.
+     * Anything that differs is displayed, so no two chips in a card can read alike. ADR-0007.
+     */
+    const chipParts = useMemo(() => {
+        const varies = (of: (c: RateCard) => string) => new Set(cards.map(of)).size > 1;
+        const board  = varies(c => c.boardName ?? '');
+        const cancel = varies(c => cancellationChip(c));
+        const terms  = varies(c => offerTermsKey(c));
+        // One heading can cover rooms the supplier separates only in the parenthetical —
+        // ROYAL Hotel Seoul files "no window" and "2 full double beds" under one "Standard
+        // room". Unnamed on the chip, a reader picks on price and gets the other one.
+        const bed    = varies(c => c.bed ?? '');
+        return (c: RateCard) => [
+            board  ? c.boardName            : null,
+            cancel ? cancellationChip(c)     : null,
+            bed    ? c.bed                   : null,
+            terms  ? c.offerTerms.join(', ') : null,
+        ].filter((part): part is string => Boolean(part));
+    }, [cards]);
+
     const card = cards[pickedIdx >= 0 ? pickedIdx : 0];
     const selected = card.rate.offerId === selectedOfferId;
 
@@ -895,7 +1015,7 @@ function RoomCard({
                                         )}
                                     >
                                         {symbol}{Math.round(option.nightly).toLocaleString()}
-                                        {option.boardName ? ` · ${option.boardName}` : ''}
+                                        {chipParts(option).map(p => ` · ${p}`).join('')}
                                     </button>
                                 );
                             })}
@@ -968,6 +1088,8 @@ export function RoomSelection({
             room,
             rate,
             heading: split.name,
+            offerTerms: split.offerTerms,
+            bed: room.bedType ?? split.bed ?? bedFromName(room.name),
             roomDetails: structural,
             terms: cancellationTerms(rate, checkIn),
             allFeatures: [...structural, ...amenities],
@@ -1020,7 +1142,18 @@ export function RoomSelection({
             if (existing) existing.push(card);
             else byRoom.set(key, [card]);
         }
-        const groups = [...byRoom.values()].map(rates => [...rates].sort((a, b) => a.nightly - b.nightly));
+        const groups = [...byRoom.values()].map((rates) => {
+            const cheapestFirst = [...rates].sort((a, b) => a.nightly - b.nightly);
+            // One Offer per term-signature. Two that promise the same thing at different
+            // prices are not a choice — the dearer is strictly worse, and showing both
+            // reproduces the look-alike pair this grouping exists to remove. ADR-0007.
+            const bySignature = new Map<string, RateCard>();
+            for (const rate of cheapestFirst) {
+                const signature = termSignature(rate);
+                if (!bySignature.has(signature)) bySignature.set(signature, rate);
+            }
+            return [...bySignature.values()];
+        });
         return groups.sort((a, b) => a[0].nightly - b[0].nightly);
     }, [filtered]);
 
