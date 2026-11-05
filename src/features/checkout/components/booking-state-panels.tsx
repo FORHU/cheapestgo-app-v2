@@ -53,7 +53,7 @@ function Panel({
         <section
             role={role}
             style={{
-                background: palette.surface, padding: 'clamp(18px,2.6vw,28px)',
+                background: palette.surface, borderRadius: 12, padding: 'clamp(18px,2.6vw,28px)',
                 border: `1.5px solid ${tone}`, marginBottom: 20, color: palette.text,
             }}
         >

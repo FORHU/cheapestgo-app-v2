@@ -121,7 +121,7 @@ export function PoiDiscovery({ coordinates }: PoiDiscoveryProps) {
                             return (
                                 <div
                                     key={`${gem.id}-${idx}`}
-                                    className={`group/card relative shrink-0 w-36 h-24 sm:w-44 sm:h-28 overflow-hidden cursor-default bg-linear-to-br ${bg} shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300`}
+                                    className={`group/card relative shrink-0 w-36 h-24 sm:w-44 sm:h-28 rounded-2xl overflow-hidden cursor-default bg-linear-to-br ${bg} shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300`}
                                 >
                                     {/* Photo */}
                                     <img

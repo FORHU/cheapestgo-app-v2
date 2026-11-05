@@ -555,15 +555,18 @@ function PropertyContent() {
                         </div>
                     </PageColumn>
 
-                    {/* Dots — one per photograph, however many there are. */}
+                    {/* Dots — one per photograph, however many there are. An 8px dot is
+                        drawn and a 24px square is tapped (the `before:` box); on a phone
+                        the gap opens to 16px so neighbouring targets meet, not overlap. */}
                     {heroCount > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, zIndex: 2 }}>
+                        <div className="gap-4 md:gap-2" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', zIndex: 2 }}>
                             {heroImages.map((src, i) => (
                                 <button
                                     key={src}
                                     onClick={() => { setHeroDir(i >= heroIndex ? 1 : -1); setHeroIndex(i); }}
                                     aria-label={`Photo ${i + 1} of ${heroCount}`}
                                     aria-current={i === heroIndex || undefined}
+                                    className="relative before:absolute before:-inset-2 before:content-['']"
                                     style={{
                                         width: 8, height: 8, borderRadius: '50%',
                                         border: 'none', padding: 0, cursor: 'pointer',
@@ -696,7 +699,7 @@ function PropertyContent() {
                                 return (
                                     <div
                                         key={i}
-                                        style={{ flex: '1 1 260px', background: palette.cardBg, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
+                                        style={{ flex: '1 1 260px', background: palette.cardBg, borderRadius: 18, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
                                     >
                                         {score > 0 && (
                                             <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 17, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
@@ -731,11 +734,15 @@ function PropertyContent() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 24 }}
                         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="fixed right-5 bottom-20 z-40 sm:right-8 lg:right-12 lg:bottom-8"
+                        // Below `lg`: on the left, clear of the bottom nav — `bottom-20` sat
+                        // 2px under it — and of the support launcher, which rides above the
+                        // nav on the right. From `lg`: in the corner, but inset past the
+                        // launcher, which held the arrow end of this button under it.
+                        className="fixed left-4 bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] z-40 px-5 py-3.5 text-base sm:px-[26px] sm:py-[15px] sm:text-lg lg:left-auto lg:right-24 lg:bottom-8"
                         style={{
                             display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '15px 26px', borderRadius: 100, border: 'none',
-                            background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 18,
+                            borderRadius: 100, border: 'none',
+                            background: ACCENT, color: '#fff', fontWeight: 700,
                             cursor: 'pointer', whiteSpace: 'nowrap',
                             boxShadow: '0 20px 46px -12px rgba(37,99,235,.55)',
                         }}

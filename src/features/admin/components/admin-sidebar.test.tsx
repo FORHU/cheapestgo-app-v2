@@ -8,7 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { AdminSidebar, GOLF_BOOKINGS_CHANGED } from '@/features/admin/components/admin-sidebar';
 
@@ -122,6 +122,60 @@ describe('AdminSidebar', () => {
             } finally {
                 vi.useRealTimers();
             }
+        });
+    });
+
+    /**
+     * Below `lg` the column is a drawer: a fixed 240px column left a phone's page about 120px.
+     * jsdom applies no media queries, so these read the state the classes are chosen from —
+     * the drawer's own position class and the menu button's `aria-expanded`.
+     */
+    describe('as a drawer below lg', () => {
+        const drawer = () => document.getElementById('admin-sidebar')!;
+        const menu = () => screen.getByRole('button', { name: 'Open menu' });
+
+        it('starts closed, off-screen', () => {
+            render(<AdminSidebar />);
+            expect(menu()).toHaveAttribute('aria-expanded', 'false');
+            expect(drawer().className).toContain('-translate-x-full');
+            expect(screen.queryByTestId('admin-sidebar-scrim')).not.toBeInTheDocument();
+        });
+
+        it('opens from the menu button and takes focus to its close button', () => {
+            render(<AdminSidebar />);
+            fireEvent.click(menu());
+            expect(menu()).toHaveAttribute('aria-expanded', 'true');
+            // Not `toContain('translate-x-0')`: the closed drawer carries `lg:translate-x-0` too.
+            expect(drawer().className).not.toContain('-translate-x-full');
+            expect(screen.getByRole('button', { name: 'Close menu' })).toHaveFocus();
+        });
+
+        it('closes on Escape and hands focus back to the menu button', () => {
+            render(<AdminSidebar />);
+            fireEvent.click(menu());
+            fireEvent.keyDown(document, { key: 'Escape' });
+            expect(menu()).toHaveAttribute('aria-expanded', 'false');
+            expect(menu()).toHaveFocus();
+        });
+
+        it('closes from the scrim and from its own close button', () => {
+            render(<AdminSidebar />);
+            fireEvent.click(menu());
+            fireEvent.click(screen.getByTestId('admin-sidebar-scrim'));
+            expect(menu()).toHaveAttribute('aria-expanded', 'false');
+
+            fireEvent.click(menu());
+            fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+            expect(menu()).toHaveAttribute('aria-expanded', 'false');
+        });
+
+        it('closes once a link has taken the page somewhere', () => {
+            const { rerender } = render(<AdminSidebar />);
+            fireEvent.click(menu());
+            nav.pathname = '/admin/customers';
+            rerender(<AdminSidebar />);
+            expect(menu()).toHaveAttribute('aria-expanded', 'false');
+            nav.pathname = '/admin/overview';
         });
     });
 });

@@ -30,7 +30,7 @@ import { DetailPanel, MUTED, SOFT, TEXT } from './booking-card-parts';
 
 // ─── Shared shell ─────────────────────────────────────────────────────────────
 
-const CARD    = 'max-w-3xl mx-auto bg-white dark:bg-slate-900 shadow-lg print:shadow-none';
+const CARD    = 'max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-lg print:shadow-none print:rounded-none';
 const SECTION = 'px-8 py-5 border-b border-slate-100 dark:border-slate-800';
 const LABEL   = 'text-[10px] font-semibold text-slate-400 uppercase tracking-wide';
 const VALUE   = 'text-sm font-semibold text-slate-800 dark:text-white';

@@ -134,7 +134,7 @@ export function SearchTopBar({
                 aria-label={tAll('common.goBack')}
                 className={ICON_BTN}
                 style={rest}>
-                <ArrowLeft size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
+                <ArrowLeft size={16} className="md:size-[17px]" style={{ color: chrome.text }} />
             </button>
 
             {/* Search */}
@@ -184,7 +184,7 @@ export function SearchTopBar({
                         title={pois.on ? 'Hide nearby places' : 'Show nearby places'}
                         className={cn(ICON_BTN, 'transition-colors')}
                         style={pois.on ? lit : rest}>
-                        <MapPinned size={13} className="md:size-[17px]" />
+                        <MapPinned size={16} className="md:size-[17px]" />
                     </button>
                 )}
 
@@ -221,11 +221,11 @@ export function SearchTopBar({
                 <button
                     onClick={() => onViewChange(view === 'map' ? 'list' : 'map')}
                     aria-label={view === 'map' ? 'List view' : 'Map view'}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-auto md:px-4"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full cursor-pointer transition-opacity hover:opacity-80 md:h-10 md:w-auto md:px-4"
                     style={{ ...rest, fontSize: 13, fontWeight: 600 }}>
                     {view === 'map'
-                        ? <List size={13} className="md:size-[15px]" />
-                        : <MapIcon size={13} className="md:size-[15px]" />}
+                        ? <List size={15} className="md:size-[15px]" />
+                        : <MapIcon size={15} className="md:size-[15px]" />}
                     <span className="hidden md:inline">{view === 'map' ? tAll('search.listView') : tAll('search.mapView')}</span>
                 </button>
 
@@ -269,7 +269,7 @@ export function BarFiltersButton({
             title={tAll('flights.results.filters')}
             className={cn(ICON_BTN, 'relative transition-colors', mobileOnly && 'lg:hidden')}
             style={open || (activeCount ?? 0) > 0 ? lit : rest}>
-            <SlidersHorizontal size={13} className="md:size-[17px]" />
+            <SlidersHorizontal size={16} className="md:size-[17px]" />
             {(activeCount ?? 0) > 0 && !open && (
                 <span
                     aria-hidden="true"
@@ -294,8 +294,8 @@ export function BarThemeButton({ tone, theme, onToggle }: { tone: 'light' | 'dar
             className={ICON_BTN}
             style={rest}>
             {theme === 'dark'
-                ? <Sun size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
-                : <Moon size={13} className="md:size-[17px]" style={{ color: chrome.text }} />}
+                ? <Sun size={16} className="md:size-[17px]" style={{ color: chrome.text }} />
+                : <Moon size={16} className="md:size-[17px]" style={{ color: chrome.text }} />}
         </button>
     );
 }

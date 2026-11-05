@@ -40,13 +40,16 @@ export function ProfileSection() {
             </div>
 
             {/* Avatar + Name */}
-            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-white/5">
+            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-white/5">
                 <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold shrink-0">
                     {initials}
                 </div>
-                <div>
-                    <p className="text-base font-semibold text-slate-900 dark:text-white">{displayName}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+                {/* `min-w-0` and `break-all`: an address has no break of its own, so a long one
+                    held this card wider than a 320px screen. It wraps rather than truncates,
+                    because the address is what the reader is checking. */}
+                <div className="min-w-0">
+                    <p className="text-base font-semibold break-words text-slate-900 dark:text-white">{displayName}</p>
+                    <p className="text-sm break-all text-slate-500 dark:text-slate-400">{user.email}</p>
                     {user.role === 'admin' && (
                         <span className="inline-flex items-center mt-1 px-2 py-0.5 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full uppercase tracking-wide">
                             {tAll('account.profile.admin')}
@@ -63,8 +66,8 @@ export function ProfileSection() {
                     </label>
                     <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-900 dark:text-white">
                         <Mail size={14} className="text-slate-400 shrink-0" />
-                        {user.email}
-                        <span className="ml-auto text-[10px] font-medium text-slate-400">(read-only)</span>
+                        <span className="min-w-0 break-all">{user.email}</span>
+                        <span className="ml-auto shrink-0 text-[10px] font-medium text-slate-400">(read-only)</span>
                     </div>
                 </div>
 

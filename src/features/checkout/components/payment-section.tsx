@@ -74,7 +74,7 @@ export function PaymentSection({ card, errors, onChange }: PaymentSectionProps) 
     };
 
     return (
-        <div className="border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm">
+        <div className="rounded-xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-sm">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

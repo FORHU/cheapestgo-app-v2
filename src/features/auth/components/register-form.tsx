@@ -126,7 +126,10 @@ export function RegisterForm() {
                 <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 transition-colors"
+                    aria-label={showPassword ? tAll('auth.hidePassword') : tAll('auth.showPassword')}
+                    // A 36px target around the 16px eye, centred where the eye always sat
+                    // (top 34px, 12px in from the right) — the bare icon was a 16px target.
+                    className="absolute right-0.5 top-6 flex size-9 items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
                     tabIndex={-1}
                 >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

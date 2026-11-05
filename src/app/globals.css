@@ -503,6 +503,24 @@ body {
   max-width: 100vw;
 }
 
+/* Text fields at 16px or more on touch screens.
+   iOS Safari zooms the whole page into any field whose text is under 16px the
+   moment it is focused, and leaves it zoomed after — the search bars (12px) and
+   every form (14px) did that. `max(16px, 1em)` only ever raises a field: 1em is
+   the size it would inherit, so one that sits in larger type keeps it.
+   `!important` because checkout draws its fields with an inline `fontSize: 14`,
+   which no stylesheet rule outranks otherwise; no field anywhere is set above
+   16px, so the rule has nothing to shrink. Scoped to a coarse pointer because
+   the zoom is a touch-browser behaviour, and a narrow desktop window keeps the
+   design's smaller type. */
+@media (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file'], [type='hidden']),
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
 .blur-transition {
   transition: backdrop-filter 800ms ease;
 }

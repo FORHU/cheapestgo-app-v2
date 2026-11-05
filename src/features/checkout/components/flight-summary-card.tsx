@@ -53,7 +53,7 @@ export function FlightSummaryCard({ offer, fallback, total, currency, palette }:
         </div>
     );
 
-    const plate: React.CSSProperties = { background: palette.surface, padding: '18px 30px 22px' };
+    const plate: React.CSSProperties = { background: palette.surface, borderRadius: 12, padding: '18px 30px 22px' };
 
     // The offer is not in hand (still loading, or it could not be read): what the link said.
     if (!offer || !first || !last) {

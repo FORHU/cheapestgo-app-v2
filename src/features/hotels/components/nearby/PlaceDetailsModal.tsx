@@ -49,7 +49,7 @@ function modalChrome(dark: boolean) {
 /**
  * v1's place popup — photo, rating, call / website / map, hours, Google's reviews.
  *
- * Drawn as the room details modal is: square, on the same deep scrim, a bottom sheet on a phone and
+ * Drawn as the room details modal is: rounded, on the same deep scrim, a bottom sheet on a phone and
  * a centred dialog from `md`, with small uppercase labels over each section and the open / closed
  * state as the same badge the room modal uses for its cancellation terms.
  *
@@ -131,9 +131,10 @@ export function PlaceDetailsModal({ gem, hotel, unit, palette, onClose }: PlaceD
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className={cn(
-                    // Square, like the room details modal and the cards on the page.
-                    'relative flex max-h-[92vh] w-full flex-col overflow-hidden shadow-[0_20px_25px_-5px_rgba(0,0,0,0.15)]',
-                    'md:max-h-[88vh] md:max-w-[520px]',
+                    // Rounded, like the room details modal and the cards on the page — the top
+                    // corners only while it is a sheet on the bottom edge.
+                    'relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[20px] shadow-[0_20px_25px_-5px_rgba(0,0,0,0.15)]',
+                    'md:max-h-[88vh] md:max-w-[520px] md:rounded-[20px]',
                     c.sheet,
                 )}
             >

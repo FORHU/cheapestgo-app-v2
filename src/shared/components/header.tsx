@@ -30,6 +30,7 @@ const HeaderContent = () => {
   const { user: _user } = useAuthStore();
   const { triggerInstall } = usePWAInstall();
   const t = useTranslations('nav');
+  const tTheme = useTranslations('theme');
 
   useEffect(() => {
     setMounted(true);
@@ -67,7 +68,7 @@ const HeaderContent = () => {
             {showInstallButton && (
               <button
                 onClick={triggerInstall}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-normal text-blue-600 dark:text-blue-400 border border-blue-600/20 dark:border-blue-400/20 rounded-full hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shrink-0"
+                className="flex min-h-9 min-w-9 items-center justify-center gap-1 px-2 sm:px-2.5 py-1 text-xs font-normal text-blue-600 dark:text-blue-400 border border-blue-600/20 dark:border-blue-400/20 rounded-full hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shrink-0"
               >
                 <Download size={12} />
                 <span className="hidden sm:inline">{t('openApp')}</span>
@@ -80,22 +81,25 @@ const HeaderContent = () => {
             {/* Currency selector */}
             <CurrencySelector className="shrink-0" />
 
-            {/* Trips */}
-            <Link href="/trips" className="flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
+            {/* Trips — from `sm` only. A phone has Trips in the bottom nav already, and with
+                this row's controls at a thumb's size there was no width left for it beside the
+                wordmark: the row ran 19px past a 360px screen. */}
+            <Link href="/trips" className="hidden sm:flex min-h-9 items-center gap-1 px-2 py-1 text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
               {t('trips')}
             </Link>
 
             {/* Support */}
-            <a href="mailto:support@cheapestgo.com" className="hidden xs:flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
+            <a href="mailto:support@cheapestgo.com" className="hidden xs:flex min-h-9 items-center gap-1 px-2 py-1 text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
               {t('support')}
             </a>
 
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-1 sm:p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0"
+              aria-label={theme === 'dark' ? tTheme('switchToLight') : tTheme('switchToDark')}
+              className="flex size-9 items-center justify-center rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0"
             >
-              {mounted && (theme === 'dark' ? <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" /> : <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />)}
+              {mounted && (theme === 'dark' ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-slate-700" />)}
             </button>
 
             {/* Sign in */}

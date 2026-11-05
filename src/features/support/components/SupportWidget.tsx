@@ -47,7 +47,11 @@ export function SupportWidget() {
     if (!available) return null;
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 print:hidden">
+        // Below `lg` the bottom nav (z-100) owns the foot of the screen, and at bottom-4 the
+        // launcher sat entirely under its Settings button — on a phone there was no way to
+        // open the chat. So it rides above the nav there, at the offset the brand switcher
+        // keeps on the other side, and drops to the corner where the nav is gone.
+        <div className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] z-50 flex flex-col items-end gap-3 print:hidden lg:bottom-4">
             {panelOpen && (
                 <SupportPanel
                     reference={conversation?.reference ?? null}
@@ -170,7 +174,9 @@ function SupportPanel({
     return (
         <section
             aria-label={t('title')}
-            className="flex h-[32rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl
+            // Capped to the screen it opens on: above the launcher and, on a phone, the nav
+            // under it, 32rem ran off the top of a short screen and took the header with it.
+            className="flex h-[32rem] max-h-[calc(100dvh-11rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl lg:max-h-[calc(100dvh-7rem)]
                        border border-slate-200 bg-white shadow-2xl
                        dark:border-white/10 dark:bg-slate-900"
         >

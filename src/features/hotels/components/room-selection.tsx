@@ -252,7 +252,7 @@ function roomPalette(tone: 'light' | 'dark') {
         heading: dark ? 'text-white' : 'text-slate-900',
         /**
          * Each rate's card — slate-900 in dark, matched to the detail modal
-         * below so a card and the modal it opens read as one surface. Square,
+         * below so a card and the modal it opens read as one surface. Rounded,
          * and lifted by a short shadow.
          */
         card:     dark
@@ -709,8 +709,9 @@ function RoomDetailDialog({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className={cn(
-                    // Square, like the room cards that open it.
-                    'relative flex max-h-[92vh] w-full flex-col overflow-hidden shadow-[0_20px_25px_-5px_rgba(0,0,0,0.15)]',
+                    // Rounded, like the room cards that open it — the top corners only while it
+                    // is a sheet on the bottom edge.
+                    'relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[18px] shadow-[0_20px_25px_-5px_rgba(0,0,0,0.15)] md:rounded-[18px]',
                     'md:grid md:h-[min(680px,calc(100vh-2rem))] md:w-[min(1080px,calc(100vw-2rem))] md:grid-cols-[minmax(0,1.2fr)_minmax(380px,1fr)] md:grid-rows-[minmax(0,1fr)_auto]',
                     palette.modalBg,
                 )}
@@ -1045,7 +1046,7 @@ function RoomCard({
         : card.roomDetails.map(f => f.label);
 
     return (
-        <article className={cn('@container px-5 py-5 sm:px-7 sm:py-8', palette.card)}>
+        <article className={cn('@container overflow-hidden rounded-xl px-5 py-5 sm:px-7 sm:py-8', palette.card)}>
             <div className="flex flex-col gap-4 @lg:flex-row @lg:gap-6">
                 {/* Square-cornered. Beside the text it takes a third of the
                     card's width and stretches to the text's height, so it fills

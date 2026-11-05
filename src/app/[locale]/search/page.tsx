@@ -353,7 +353,7 @@ function RailCard({
             style={{
                 position: 'relative',
                 width: width ? `${width}px` : g.width, minHeight: g.minH,
-                overflow: 'hidden',
+                borderRadius: px(16), overflow: 'hidden',
                 display: 'flex', alignItems: 'stretch',
                 background: c.surface,
                 border: '',
@@ -426,7 +426,7 @@ function RailCard({
                     {/* Price / rating stack */}
                     <div style={{ minWidth: 0 }}>
                         {property.priceLoading ? (
-                            <div className="animate-pulse rounded" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
+                            <div className="animate-pulse rounded-full" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
                         ) : (
                             <p style={{
                                 fontSize: g.priceFs, fontWeight: 700, color: c.title, lineHeight: 1.3,
@@ -1953,6 +1953,10 @@ function HotelSearchContent() {
                                             onClick={() => goToRailPage(i)}
                                             aria-label={`Page ${i + 1} of ${railPageCount}`}
                                             aria-current={i === railPage || undefined}
+                                            // A 6px dot, a 24px-tall target: the `before:` box reaches 9px
+                                            // above and below, and sideways only half the 6px gap, so the
+                                            // targets meet without overlapping however many pages there are.
+                                            className="relative before:absolute before:-inset-x-[3px] before:-inset-y-[9px] before:content-['']"
                                             style={{
                                                 width: i === railPage ? 20 : 6, height: 6, borderRadius: 3,
                                                 border: 'none', padding: 0, cursor: 'pointer',
