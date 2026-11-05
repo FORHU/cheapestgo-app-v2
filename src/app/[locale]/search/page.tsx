@@ -1575,21 +1575,34 @@ function HotelSearchContent() {
                 below already covers the map and says the same thing.
 
                 Pointer-transparent — it is a notice, not a control, and it sits
-                over the part of the map people drag from. */}
+                over the part of the map people drag from.
+
+                On a phone it sits in the middle of the map, where the pins will
+                land, rather than under the toolbar: up there it crowded the bar
+                and the dates line, and on an empty map the centre is where the
+                eye goes. It steps aside while a hotel is picked from the rail,
+                since a phone centres the map on the picked pin (see the
+                `easeTo` in SearchMapContainer) and the notice would cover it. */}
             <AnimatePresence>
-                {isStreaming && (
+                {isStreaming && !(isMobile && selectedId) && (
                     <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
+                        key={isMobile ? 'searching-centre' : 'searching-top'}
+                        initial={isMobile ? { opacity: 0, scale: 0.96 } : { opacity: 0, y: -6 }}
+                        animate={isMobile ? { opacity: 1, scale: 1 } : { opacity: 1, y: 0 }}
+                        exit={isMobile ? { opacity: 0, scale: 0.96 } : { opacity: 0, y: -6 }}
                         transition={{ duration: 0.18 }}
-                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        className={cn(
+                            'absolute left-1/2 -translate-x-1/2 z-30',
+                            isMobile
+                                ? 'top-1/2 -translate-y-1/2 max-w-[calc(100vw-32px)]'
+                                : 'top-[80px]',
+                        )}
                         style={{ pointerEvents: 'none' }}
                         role="status"
                         aria-live="polite"
                     >
                         <div
-                            className="flex items-center gap-2.5 rounded-full px-4 py-2"
+                            className="flex min-w-0 items-center gap-2.5 rounded-full px-4 py-2"
                             style={{
                                 background: chrome.surface,
                                 border: `1px solid ${chrome.border}`,
@@ -1607,7 +1620,9 @@ function HotelSearchContent() {
                                     borderTopColor: chrome.text,
                                 }}
                             />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                            {/* Truncated rather than wrapped: a long destination
+                                would otherwise run the pill off a phone's edge. */}
+                            <span className="min-w-0 truncate" style={{ fontSize: 12, fontWeight: 600, color: chrome.text }}>
                                 {destination ? `Searching for stays in ${destination}…` : 'Searching for stays…'}
                             </span>
                         </div>
