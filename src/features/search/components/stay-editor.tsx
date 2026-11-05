@@ -91,7 +91,10 @@ export function StayEditor({ tone, onApply, ...stay }: Stay & {
                 style={{ background: p.field, border: `1px solid ${p.border}`, color: p.text, fontSize: 13, fontWeight: 600 }}
             >
                 <CalendarDays size={15} className="shrink-0" />
-                <span className="hidden whitespace-nowrap lg:inline">{label}</span>
+                {/* Spelled out wherever the toolbar has the width: from `sm`, where
+                    the field's row still has room beside it, but not at `lg`, where
+                    the bar goes back to one row and the label would crush the field. */}
+                <span className="hidden whitespace-nowrap sm:inline lg:hidden xl:inline">{label}</span>
             </button>
 
             <AnimatePresence>

@@ -282,3 +282,7 @@ const SignInDropdown: React.FC<SignInDropdownProps> = (props) => (
 );
 
 export default SignInDropdown;
+
+/** The panel's material and avatar, for the landing header's mobile menu, which holds the same
+ *  account controls behind a hamburger and should read as the same panel. */
+export { SKIN as ACCOUNT_PANEL_SKIN, Avatar as AccountAvatar, FILL_BUTTON, getInitials };

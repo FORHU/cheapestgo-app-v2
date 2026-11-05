@@ -564,3 +564,12 @@ v1; these did not. Written by Claude (2026-11-04).
 | `golf.booking.extraRemove` | Remove one: {name} | {name} 빼기 | {name}を減らす | 减少{name} |
 | `golf.booking.extraNames.lessons` | Golf lesson | 골프 레슨 | ゴルフレッスン | 高尔夫课程 |
 | `golf.booking.extraNames.range_balls` | Bucket of range balls | 연습볼 바구니 | 練習ボール(カゴ) | 练习球(每筐) |
+
+## Landing header — mobile menu
+
+The hamburger's accessible name, read out by a screen reader; not printed. Written by Claude
+(2026-11-05).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `nav.menu` | Menu | 메뉴 | メニュー | 菜单 |

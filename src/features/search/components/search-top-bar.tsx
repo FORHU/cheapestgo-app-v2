@@ -103,14 +103,24 @@ export function SearchTopBar({
 
     return (
         <div
-            // Desktop holds the bar at a fixed 60px — the size it was before the
-            // map and list toolbars were merged into this component — with 8px of
-            // padding inside it. The phone keeps its own tighter 48px, where the
-            // bar is already as small as it goes and the desktop controls step
-            // down to fit.
+            // Two rows below `lg`, one from there up.
+            //
+            // A phone has no width for all of it on one line: back, the field,
+            // dates and six controls left the field at 0px, with the controls
+            // running out past the bar's own right edge. So under `lg` the bar
+            // wraps — the field gets the first row to itself, between back and
+            // dates, and the controls take the second (see the cluster below).
+            // A tablet wraps too: its 40px controls plus the labelled view and
+            // sign-in pills still crushed the field to under 120px on one row.
+            //
+            // From `lg` it is one row at a fixed 60px with 8px of padding. `xl`
+            // keeps the 32px inset the desktop bar has been drawn with — wider
+            // than the 60px leaves room for, so the bar renders at 64px there.
             className={cn(
-                'flex h-12 items-center gap-1.5 rounded-[16px] p-8',
-                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
+                'flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-[16px] p-2',
+                'md:gap-x-2 md:rounded-[20px]',
+                'lg:h-[60px] lg:flex-nowrap',
+                'xl:p-8',
                 className,
             )}
             style={{
@@ -146,8 +156,14 @@ export function SearchTopBar({
                 that left off, mid-bar, with the count badge alone holding
                 the corner. The badge now sits over the card rail it counts
                 (see the search page), so the controls take the end of the
-                bar and the slack falls between them and the field. */}
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
+                bar and the slack falls between them and the field.
+
+                Below `lg` the cluster is the bar's whole second row
+                (`basis-full` is what wraps it there). The spacer splits that
+                row in two: the map's own tools — filters, nearby places — on
+                the left under back, and what the session is set to — currency,
+                language, theme, view — on the right under dates. */}
+            <div className="flex basis-full items-center gap-1.5 md:gap-2 lg:ml-auto lg:basis-auto lg:shrink-0">
                 {filters && <BarFiltersButton tone={tone} barBackground={barBackground} {...filters} />}
 
                 {/* Nearby places. Takes the blue chip while on — the same "this one
@@ -171,6 +187,8 @@ export function SearchTopBar({
                         <MapPinned size={13} className="md:size-[17px]" />
                     </button>
                 )}
+
+                <span aria-hidden="true" className="flex-1 lg:hidden" />
 
                 {/* Currency and language.
 
