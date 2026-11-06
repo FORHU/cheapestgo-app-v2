@@ -647,6 +647,15 @@ function StagePanel({
 const FOOTER_CLEARANCE_PX = 24;
 
 /**
+ * The header's foot: the panel's own `pt-20`, the line a stage never starts above while it
+ * rests. A lifted stage fades out over the `HEADER_FADE_PX` above it, so on a phone too short
+ * to show the stage and the footer together, the stage's top goes out under the transparent
+ * header instead of printing over the wordmark.
+ */
+const HEADER_FOOT_PX = 80;
+const HEADER_FADE_PX = 24;
+
+/**
  * Keeps the last stage clear of the page's footer.
  *
  * The stage is a fixed layer and the footer is in flow under the scroll track, so scrolling
@@ -656,6 +665,11 @@ const FOOTER_CLEARANCE_PX = 24;
  * so from then on it scrolls with the page as if it had been in flow above the footer. Before
  * that, the footer rises into the empty band below the stage (the room a phone keeps for its
  * bottom nav) and nothing moves.
+ *
+ * A lifted stage is also masked out under the header (`HEADER_FOOT_PX`). The mask is drawn in
+ * the panel's own coordinates, which the lift has moved up, so its stops are pushed down by the
+ * same amount to stay put on screen. At rest nothing sits above the header's foot, so the mask
+ * is only ever added once there is something for it to hide.
  *
  * The transform is written straight to the element on scroll rather than through state:
  * this runs every frame of a scroll, and re-rendering the stage's search for it would be waste.
@@ -684,6 +698,11 @@ function useFooterClearance(
             const contentBottom = content.offsetTop + content.offsetHeight;
             const lift = Math.max(0, contentBottom + FOOTER_CLEARANCE_PX - footerTop);
             panel.style.transform = lift > 0 ? `translateY(${-lift}px)` : '';
+            const mask = lift > 0
+                ? `linear-gradient(to bottom, transparent ${HEADER_FOOT_PX - HEADER_FADE_PX + lift}px, #000 ${HEADER_FOOT_PX + lift}px)`
+                : '';
+            panel.style.setProperty('mask-image', mask);
+            panel.style.setProperty('-webkit-mask-image', mask);
         };
         const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
 
@@ -700,6 +719,8 @@ function useFooterClearance(
             window.removeEventListener('resize', schedule);
             observer.disconnect();
             panel.style.transform = '';
+            panel.style.removeProperty('mask-image');
+            panel.style.removeProperty('-webkit-mask-image');
         };
     }, [enabled, journeyRef, panelRef, contentRef]);
 }

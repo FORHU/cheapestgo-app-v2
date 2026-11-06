@@ -576,3 +576,16 @@ The hamburger's accessible name, read out by a screen reader; not printed. Writt
 | Key | English | 한국어 | 日本語 | 中文 |
 |-----|---------|--------|--------|------|
 | `nav.menu` | Menu | 메뉴 | メニュー | 菜单 |
+
+## Flight checkout — a flight already booked that day
+
+The dialog shown when a traveller already holds a flight leaving the same airport on the same day.
+`{route}` is an airport code (MNL), `{date}` a short date in the reader's language. Written by
+Claude (2026-11-06).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `checkout.flight.duplicateTitle` | You already have a flight that day | 같은 날 이미 예약된 항공편이 있습니다 | 同じ日にご予約済みのフライトがあります | 您当天已有航班预订 |
+| `checkout.flight.duplicateBody` | Your booking departing {route} on {date} is still active. | {date} {route} 출발 예약이 아직 유효합니다. | {date}に{route}を出発するご予約がまだ有効です。 | 您{date}从{route}出发的预订仍然有效。 |
+| `checkout.flight.duplicateHint` | Check it before you book another flight on the same date. | 같은 날 다른 항공편을 예약하기 전에 기존 예약을 확인해 주세요. | 同じ日に別のフライトを予約する前に、ご予約内容をご確認ください。 | 在同一天预订其他航班之前，请先查看现有预订。 |
+| `checkout.flight.duplicateClose` | Close | 닫기 | 閉じる | 关闭 |

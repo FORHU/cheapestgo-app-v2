@@ -444,6 +444,10 @@
       "countryNoResults": "No countries found",
       "passportPlaceholder": "e.g. P1234567A",
       "whosFlying": "Who's flying?",
+      "duplicateTitle": "You already have a flight that day",
+      "duplicateBody": "Your booking departing {route} on {date} is still active.",
+      "duplicateHint": "Check it before you book another flight on the same date.",
+      "duplicateClose": "Close",
       "settling": {
         "description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued."
       },

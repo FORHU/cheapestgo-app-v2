@@ -444,6 +444,10 @@
       "countryNoResults": "未找到国家/地区",
       "passportPlaceholder": "例如：P1234567A",
       "whosFlying": "谁将乘机？",
+      "duplicateTitle": "您当天已有航班预订",
+      "duplicateBody": "您{date}从{route}出发的预订仍然有效。",
+      "duplicateHint": "在同一天预订其他航班之前，请先查看现有预订。",
+      "duplicateClose": "关闭",
       "settling": {
         "description": "航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。"
       },

@@ -444,6 +444,10 @@
       "countryNoResults": "該当する国がありません",
       "passportPlaceholder": "例：P1234567A",
       "whosFlying": "ご搭乗者はどなたですか？",
+      "duplicateTitle": "同じ日にご予約済みのフライトがあります",
+      "duplicateBody": "{date}に{route}を出発するご予約がまだ有効です。",
+      "duplicateHint": "同じ日に別のフライトを予約する前に、ご予約内容をご確認ください。",
+      "duplicateClose": "閉じる",
       "settling": {
         "description": "航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。"
       },

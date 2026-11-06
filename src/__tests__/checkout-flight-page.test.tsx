@@ -926,3 +926,69 @@ describe('after the card', () => {
         expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
     });
 });
+
+describe('a flight already booked from the same airport that day', () => {
+    /** What `book` answers when the traveller holds a flight leaving MNL on the same day (ADR-0011). */
+    const DUPLICATE = {
+        error: 'DUPLICATE_BOOKING',
+        message: 'You already have an active flight booking departing MNL on 2026-12-01.',
+        existingBookingId: 'fb-9', route: 'MNL', departureDate: '2026-12-01', canProceed: true,
+    };
+
+    function refuseAsDuplicate(body: Record<string, unknown> = DUPLICATE) {
+        post.mockImplementation(async (path: string) => {
+            if (path === '/flights/book') throw httpError(409, body);
+            throw new Error(`unexpected POST ${path}`);
+        });
+    }
+
+    async function submitDetails() {
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        return screen.findByRole('alertdialog', { name: 'You already have a flight that day' });
+    }
+
+    it('says so in a dialog, naming the airport and the day, rather than in the error box', async () => {
+        refuseAsDuplicate();
+        const dialog = await submitDetails();
+
+        expect(within(dialog).getByText('Your booking departing MNL on Tue, Dec 1, 2026 is still active.')).toBeInTheDocument();
+        expect(within(dialog).getByRole('link', { name: 'View existing booking' })).toHaveAttribute('href', '/trips/fb-9');
+        // Not the red box's sentence as well: one place says it.
+        expect(screen.queryByText(DUPLICATE.message)).not.toBeInTheDocument();
+        expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
+    });
+
+    it('goes away when the traveller closes it, leaving them on their details', async () => {
+        refuseAsDuplicate();
+        const dialog = await submitDetails();
+
+        // The main action has focus, so Enter or a tap closes it straight away.
+        expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        // Back where they were, focus included: on the button they pressed.
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toHaveFocus();
+        expect(screen.queryByText(DUPLICATE.message)).not.toBeInTheDocument();
+    });
+
+    it('closes on Escape too', async () => {
+        refuseAsDuplicate();
+        await submitDetails();
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+
+    it('falls back to the search\'s own airport and day, and offers no link, when the server names neither', async () => {
+        refuseAsDuplicate({ error: 'DUPLICATE_BOOKING', message: 'x' });
+        const dialog = await submitDetails();
+
+        // FLIGHT_QUERY: MNL, 2026-12-01.
+        expect(within(dialog).getByText('Your booking departing MNL on Tue, Dec 1, 2026 is still active.')).toBeInTheDocument();
+        expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
+    });
+});

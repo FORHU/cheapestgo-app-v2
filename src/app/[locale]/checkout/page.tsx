@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -17,6 +17,7 @@ import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/h
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
+import { DuplicateFlightModal, type DuplicateFlight } from '@/features/checkout/components/duplicate-flight-modal';
 import { CheckoutToolbar } from '@/features/checkout/components/checkout-toolbar';
 import { SkeletonBar } from '@/features/checkout/components/skeleton-bar';
 import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
@@ -205,13 +206,16 @@ function Spinner({ color = '#fff' }: { color?: string }) {
  * The same in both themes.
  */
 function PrimaryBtn({
-    onClick, loading, disabled, children,
+    onClick, loading, disabled, children, buttonRef,
 }: {
     onClick?: () => void; loading: boolean; disabled?: boolean; children: React.ReactNode;
+    /** For handing focus back to it, as the same-day flight dialog does once it closes. */
+    buttonRef?: React.Ref<HTMLButtonElement>;
 }) {
     const dead = loading || disabled;
     return (
         <button
+            ref={buttonRef}
             onClick={onClick}
             disabled={dead}
             style={{
@@ -756,6 +760,12 @@ function CheckoutContent() {
     const [flightStep, setStep]     = useState<Step>('form');
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+    /** A flight from the same airport on the same day is already booked: shown as a dialog the
+     *  traveller closes, not in the error box. */
+    const [duplicateFlight, setDuplicateFlight] = useState<DuplicateFlight | null>(null);
+    /** Where focus goes when that dialog closes. The button disables itself while the request
+     *  runs, so it has already lost focus by the time the dialog opens and could notice it. */
+    const flightSubmitRef = useRef<HTMLButtonElement>(null);
 
     // Flight booking state. The hotel's lives in `useHotelCheckout`.
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
@@ -1003,11 +1013,24 @@ function CheckoutContent() {
                 : null);
             setStep('payment');
         } catch (err) {
+            // The same-day warning (ADR-0011) gets a dialog rather than the error box: nothing
+            // the traveller typed is wrong, and the box kept saying so until the next submit.
+            const e = err as { code?: string; body?: Record<string, unknown> };
+            if (e?.code === 'DUPLICATE_BOOKING') {
+                const text = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+                setDuplicateFlight({
+                    route:             text(e.body?.route) ?? origin,
+                    departureDate:     text(e.body?.departureDate) ?? departureDate,
+                    existingBookingId: text(e.body?.existingBookingId),
+                });
+                return;
+            }
             setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate]);
+    const closeDuplicateFlight = useCallback(() => setDuplicateFlight(null), []);
 
     // ── Price helpers ──
     //
@@ -1401,6 +1424,10 @@ function CheckoutContent() {
                                 </div>
                             )}
 
+                            {duplicateFlight && (
+                                <DuplicateFlightModal duplicate={duplicateFlight} palette={palette} onClose={closeDuplicateFlight} returnFocusRef={flightSubmitRef} />
+                            )}
+
                             <AuthBanner />
 
                             {step === 'form' && <>
@@ -1500,7 +1527,7 @@ function CheckoutContent() {
                                 })}
 
                                 <div style={{ marginTop: 40 }}>
-                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting}>
+                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} buttonRef={flightSubmitRef}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
                                 </div>
