@@ -844,6 +844,51 @@ body {
     transition: color 0.3s ease 0.1s;
 }
 
+/*
+ * Checkout form sizes. A phone or a touch screen gets 48px fields (a 44px tap target with room to
+ * spare) and 16px in every field, so the date, gender and country pickers, which are buttons, read
+ * the same size as the text inputs the touch-screen rule above raises to 16px. The picker panels'
+ * rows, day cells and arrows grow with them. A mouse on a wide screen keeps the design's 40px
+ * fields and 14px text.
+ */
+:root {
+    --cg-field-h: 40px;
+    --cg-field-fs: 14px;
+    --cg-label-fs: 13px;
+    --cg-note-fs: 12px;
+    --cg-small-fs: 11px;
+    --cg-option-py: 9px;
+    --cg-pick-fs: 13px;
+    --cg-day: 36px;
+    --cg-cell-h: 40px;
+    --cg-nav: 32px;
+    --cg-picker-min: 0px;
+}
+
+@media (max-width: 639px), (pointer: coarse) {
+    :root {
+        --cg-field-h: 48px;
+        --cg-field-fs: 16px;
+        --cg-label-fs: 14px;
+        --cg-note-fs: 13px;
+        --cg-small-fs: 12px;
+        --cg-option-py: 12px;
+        --cg-pick-fs: 15px;
+        --cg-day: 44px;
+        --cg-cell-h: 44px;
+        --cg-nav: 40px;
+    }
+}
+
+/* On a phone every picker field spans the form, so its panel can open as wide as the screen
+   allows, which is what lets the calendar's seven day cells reach 44px. Not on a wider touch
+   screen, where a field in the right-hand column would push a wide panel off the edge. */
+@media (max-width: 639px) {
+    :root {
+        --cg-picker-min: 360px;
+    }
+}
+
 @keyframes cg-slide-forward {
     from { opacity: 0; transform: translateX(40px); }
     to   { opacity: 1; transform: none; }

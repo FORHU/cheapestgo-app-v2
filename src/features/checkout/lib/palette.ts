@@ -34,9 +34,14 @@ export function checkoutPalette(theme: 'light' | 'dark') {
         muted:         brand.muted,
         faint:         dark ? '#64748b' : '#94a3b8',   // slate-500 / slate-400
         hairline:      brand.hairline,
-        /** An input's fill: slate-800 on the dark ground, white on the light. Its edge is the
-         *  brand gradient, drawn by the page around this fill. */
+        /** An input's fill: slate-800 on the dark ground, white on the light. */
         fieldBg:       dark ? '#1e293b' : '#ffffff',
+        /** An input's edge at rest: slate-700 / slate-300, a hairline rather than the accent, so
+         *  a form of ten fields does not read as ten glowing outlines. The brand gradient rings
+         *  only the field being typed in. */
+        fieldLine:      dark ? '#334155' : '#cbd5e1',
+        /** The same edge under the pointer: slate-500 / slate-400. */
+        fieldLineHover: dark ? '#64748b' : '#94a3b8',
         /** An icon beside a label — the search form's blue-400 / blue-600. */
         icon:          brand.link,
         summaryBg:     dark ? 'rgba(255,255,255,.04)' : 'rgba(15,23,42,.03)',

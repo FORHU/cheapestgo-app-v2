@@ -54,7 +54,7 @@ export function OptionList({
                             tabIndex={i === active ? 0 : -1}
                             onClick={() => onPick(o.value)} className="cg-pick"
                             style={{ ...pickStyle(palette, { selected }), display: 'flex', alignItems: 'center', gap: 8,
-                                width: '100%', padding: '9px 14px', textAlign: 'left', fontSize: 14 }}>
+                                width: '100%', padding: 'var(--cg-option-py) 14px', textAlign: 'left', fontSize: 'var(--cg-field-fs)' }}>
                             {o.content ?? o.label}
                         </button>
                     );
