@@ -20,6 +20,8 @@ import { toast } from 'sonner';
 const FLIGHT_STATUS_MAP: Record<string, { label: string; color: string }> = {
     booked:                    { label: 'Processing',          color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
     pnr_created:               { label: 'Booked',              color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    // An order the airline holds whose e-tickets are not issued yet.
+    confirmed:                 { label: 'Booked',              color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
     awaiting_ticket:           { label: 'Ticketing',           color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
     ticketed:                  { label: 'Confirmed',           color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
     failed:                    { label: 'Failed',              color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },

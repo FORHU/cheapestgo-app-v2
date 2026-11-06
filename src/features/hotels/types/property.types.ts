@@ -120,12 +120,18 @@ export interface PropertyReview {
 }
 
 export interface ReviewItem {
+    /** The row's id, stringified by api-v2 (it is a Postgres bigint). */
+    id?: string;
     reviewer_name: string | null;
     score: number | string | null;
     pros: string | null;
     cons: string | null;
     headline: string | null;
     country: string | null;
+    /** As the supplier sent it — usually ISO, but free text; parsed only when it parses. */
+    review_date?: string | null;
+    /** The supplier's word for who stayed — "couple", "family", … — shown as given. */
+    traveler_type?: string | null;
 }
 
 export interface PropertyApiResponse {

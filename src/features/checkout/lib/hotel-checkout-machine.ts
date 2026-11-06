@@ -95,6 +95,8 @@ export type HotelCheckoutEvent =
     | { type: 'PAYMENT_AUTHORISED' }
     | { type: 'CONFIRM_RESULT'; outcome: ConfirmOutcome }
     | { type: 'BACK_TO_DETAILS' }
+    /** The traveller closed the dialog a warning was shown in. */
+    | { type: 'NOTICE_DISMISSED' }
     | { type: 'RESET' };
 
 export const INITIAL_HOTEL_CHECKOUT: HotelCheckoutState = { phase: 'idle' };
@@ -236,6 +238,18 @@ export function hotelCheckoutReducer(state: HotelCheckoutState, event: HotelChec
                 paymentIntentId: undefined,
                 message: undefined,
             };
+        }
+
+        // A warning shown as a dialog is gone once closed, and the page behind it is where the
+        // traveller carries on: the details form after a refusal or a duplicate, the card form
+        // after a decline. A booking that failed after payment is a panel, and stays.
+        case 'NOTICE_DISMISSED': {
+            if (state.phase === 'quoted' && state.failure) return { ...state, failure: undefined };
+            if (state.phase === 'awaiting_payment' && state.message) return { ...state, message: undefined };
+            if (state.phase === 'failed' && state.failure?.kind === 'duplicate' && state.quote) {
+                return { ...state, phase: 'quoted', failure: undefined };
+            }
+            return state;
         }
 
         case 'RESET':

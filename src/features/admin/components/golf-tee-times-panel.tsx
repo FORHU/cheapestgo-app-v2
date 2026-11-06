@@ -115,27 +115,31 @@ export function GolfTeeTimesPanel({ course, onChanged }: { course: GolfCourse; o
             ) : schedules && schedules.length === 0 ? (
                 <p className="text-sm text-slate-600">No schedules yet. Add one below to make tee times.</p>
             ) : schedules && (
-                <table className="w-full text-[13px]">
-                    <thead className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wider text-slate-400">
-                        <tr><th className="py-1.5">Name</th><th>Days</th><th>Times</th><th>Spots</th><th>Price</th><th /></tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {schedules.map((s) => (
-                            <tr key={s.id}>
-                                <td className="py-1.5 font-semibold text-slate-900">{s.name}</td>
-                                <td className="text-slate-600">{s.daysOfWeek.map((d) => DAYS[d]).join(', ')}</td>
-                                <td className="text-slate-600">{`${clockTime(s.firstTee, 'en')}–${clockTime(s.lastTee, 'en')} every ${s.intervalMinutes} min`}</td>
-                                <td className="text-slate-600">{s.spots}</td>
-                                <td className="text-slate-600">{`${course.currency} ${s.pricePerPlayer.toLocaleString()}`}</td>
-                                <td className="text-right">
-                                    <Button variant="ghost" size="sm" aria-label={`Delete ${s.name}`} onClick={() => remove(s)} className="h-8 px-2 text-rose-500 hover:bg-rose-50">
-                                        <Trash2 size={14} />
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                    {/* Six columns do not fit a phone: the table scrolls inside the panel rather
+                        than crushing every column to a word a line. */}
+                    <table className="w-full min-w-[520px] text-[13px]">
+                        <thead className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wider text-slate-400">
+                            <tr><th className="py-1.5">Name</th><th>Days</th><th>Times</th><th>Spots</th><th>Price</th><th /></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {schedules.map((s) => (
+                                <tr key={s.id}>
+                                    <td className="py-1.5 font-semibold text-slate-900">{s.name}</td>
+                                    <td className="text-slate-600">{s.daysOfWeek.map((d) => DAYS[d]).join(', ')}</td>
+                                    <td className="text-slate-600">{`${clockTime(s.firstTee, 'en')}–${clockTime(s.lastTee, 'en')} every ${s.intervalMinutes} min`}</td>
+                                    <td className="text-slate-600">{s.spots}</td>
+                                    <td className="text-slate-600">{`${course.currency} ${s.pricePerPlayer.toLocaleString()}`}</td>
+                                    <td className="text-right">
+                                        <Button variant="ghost" size="sm" aria-label={`Delete ${s.name}`} onClick={() => remove(s)} className="h-8 px-2 text-rose-500 hover:bg-rose-50">
+                                            <Trash2 size={14} />
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
             <form noValidate onSubmit={add} className="space-y-3 border-t border-slate-200 pt-4">

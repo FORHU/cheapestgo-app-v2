@@ -444,6 +444,10 @@
       "countryNoResults": "No countries found",
       "passportPlaceholder": "e.g. P1234567A",
       "whosFlying": "Who's flying?",
+      "duplicateTitle": "You already have a flight that day",
+      "duplicateBody": "Your booking departing {route} on {date} is still active.",
+      "duplicateHint": "Check it before you book another flight on the same date.",
+      "duplicateClose": "Close",
       "settling": {
         "description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued."
       },
@@ -522,6 +526,13 @@
       "refresh": "Refresh status",
       "viewTrips": "View my trips",
       "stillWorking": "Still working on it — this page updates by itself."
+    },
+    "alert": {
+      "close": "Close",
+      "fareChangedTitle": "The fare changed",
+      "fareGoneTitle": "This fare is no longer available",
+      "searchAgain": "Search again",
+      "paymentTitle": "Your payment didn't go through"
     }
   },
   "currencyPicker": {
@@ -1663,6 +1674,7 @@
     "trips": "Trips",
     "createAccount": "Create an account",
     "accountSettings": "Account Settings",
+    "menu": "Menu",
     "membersSave": "Members save 10% or more",
     "membersSaveSubtitle": "on select stays when signed in",
     "accountWorks": "Your account works across CheapestGo and all partner sites"
@@ -1901,7 +1913,9 @@
       "switchToDark": "Switch to dark mode",
       "mealPlan": "Meal plan",
       "cancellationPolicy": "Cancellation policy",
-      "price": "Price"
+      "price": "Price",
+      "roomPhotoCount": "{count, plural, one {# photo} other {# photos}}",
+      "rateOptionsFor": "Rates for {room}"
     },
     "metaDescription": "Rates, rooms and photos for {name}. Compare prices and book with free cancellation where available."
   },
@@ -2107,7 +2121,8 @@
       "staysCount": "{count} Stays",
       "clusterChecking": "checking {count}…",
       "clusterHotels": "{count} hotels",
-      "clusterFrom": "from {price}"
+      "clusterFrom": "from {price}",
+      "mapLoading": "Loading map…"
     },
     "freeCancel": "Free cancel",
     "recent": "Recent",

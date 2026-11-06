@@ -41,18 +41,24 @@ export function FlightSearchTopBar({
 
     return (
         <div
-            // The phone bar takes less padding than the hotel bar's: it carries a
-            // route — two airports and a swap — where that one has a single field,
-            // and at the hotel bar's padding there was no width left to print them.
+            // Two rows below `lg`, one from there up — the hotel bar's layout.
+            //
+            // On one row a phone had back, the route, the trip and five controls
+            // across 360px, which left the route about 96px: two airport fields of
+            // 30px each and a swap, with nothing legible in either. So under `lg`
+            // the bar wraps — back, the route and the trip take the first row, and
+            // the controls the second (see the cluster below).
             className={cn(
-                'flex h-12 items-center gap-1.5 rounded-[16px] p-3',
-                'md:h-[60px] md:gap-2 md:rounded-[20px] md:p-8',
+                'flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-[16px] p-2',
+                'md:gap-x-2 md:rounded-[20px]',
+                'lg:h-[60px] lg:flex-nowrap',
+                'xl:p-8',
                 className,
             )}
             style={{ background: barBackground ?? chrome.bar, boxShadow: chrome.shadow }}
         >
             <button onClick={onBack} aria-label={tAll('common.goBack')} className={ICON_BTN} style={rest}>
-                <ArrowLeft size={13} className="md:size-[17px]" style={{ color: chrome.text }} />
+                <ArrowLeft size={16} className="md:size-[17px]" style={{ color: chrome.text }} />
             </button>
 
             <RouteEditor
@@ -66,8 +72,13 @@ export function FlightSearchTopBar({
             {/* Dates, travellers and cabin, beside the route they belong to. */}
             <TripEditor tone={tone} {...trip} />
 
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
+            {/* Below `lg` the bar's whole second row (`basis-full` wraps it there):
+                filters on the left under back, the session's currency, language,
+                theme and account on the right — split by the spacer, as the hotel
+                bar splits its own. */}
+            <div className="flex basis-full items-center gap-1.5 md:gap-2 lg:ml-auto lg:basis-auto lg:shrink-0">
                 {filters && <BarFiltersButton tone={tone} barBackground={barBackground} {...filters} />}
+                <span aria-hidden="true" className="flex-1 lg:hidden" />
                 <CurrencySelector chrome={chrome} iconOnly />
                 <LocaleSelector chrome={chrome} iconOnly />
                 <BarThemeButton tone={tone} theme={theme} onToggle={onToggleTheme} />

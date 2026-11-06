@@ -209,6 +209,9 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
 
 // ─── Flight Detail ────────────────────────────────────────────────────────────
 
+/** A flight still going ahead — what the API's `cancel-booking` accepts, bar its retries. */
+const FLIGHT_CANCELLABLE = new Set(['confirmed', 'ticketed', 'booked', 'pnr_created', 'awaiting_ticket', 'cancel_failed']);
+
 interface FlightDetailProps {
     booking: FlightBooking;
     onSuccess: () => void;
@@ -221,8 +224,20 @@ function FlightDetail({ booking, onSuccess }: FlightDetailProps) {
 
     const passengers = booking.passengers ?? [];
 
-    const CANCELLABLE = new Set(['ticketed', 'booked', 'pnr_created', 'awaiting_ticket', 'cancel_failed']);
-    const canCancel = CANCELLABLE.has(booking.status);
+    // `confirmed` is an order whose tickets are not issued yet — the API cancels it like any other.
+    const canCancel = FLIGHT_CANCELLABLE.has(booking.status);
+
+    // A flight can be cancelled at Duffel — from its dashboard, or by the airline — and the
+    // webhook that tells us may be late, or never reach this environment. So the page asks the
+    // API to check while it is open, and reloads if the booking turned out to be cancelled.
+    useEffect(() => {
+        if (!FLIGHT_CANCELLABLE.has(booking.status)) return;
+        let cancelled = false;
+        http.post<{ status: string; changed: boolean }>('/flights/refresh-status', { bookingId: booking.id })
+            .then((res) => { if (!cancelled && res?.changed) onSuccess(); })
+            .catch(() => { /* the stored status stands */ });
+        return () => { cancelled = true; };
+    }, [booking.id, booking.status, onSuccess]);
 
     return (
         <div className="space-y-5">

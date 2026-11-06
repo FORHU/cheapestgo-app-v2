@@ -21,7 +21,7 @@ export function ReviewSection({ hotelId, reviewScore, reviewCount, reviewItems }
 
             {/* Overall score summary */}
             {rinfo && reviewScore > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,.05)', padding: '16px 20px', marginBottom: 20, border: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,.05)', borderRadius: 14, padding: '16px 20px', marginBottom: 20, border: '1px solid rgba(255,255,255,.07)' }}>
                     <div style={{ width: 64, height: 64, borderRadius: '50%', background: rinfo.color, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{reviewScore.toFixed(1)}</div>
                     </div>
@@ -38,7 +38,7 @@ export function ReviewSection({ hotelId, reviewScore, reviewCount, reviewItems }
             {reviewItems.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
                     {reviewItems.map((item, i) => (
-                        <div key={i} style={{ background: 'rgba(255,255,255,.04)', padding: '14px 16px', border: '1px solid rgba(255,255,255,.07)' }}>
+                        <div key={i} style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: '14px 16px', border: '1px solid rgba(255,255,255,.07)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,107,75,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: HOTEL_TOKENS.ACCENT }}>
