@@ -1637,9 +1637,10 @@ function HotelSearchContent() {
             <AnimatePresence>
                 {isStreaming && !isMobile && (
                     <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
+                        key={isMobile ? 'searching-centre' : 'searching-top'}
+                        initial={isMobile ? { opacity: 0, scale: 0.96 } : { opacity: 0, y: -6 }}
+                        animate={isMobile ? { opacity: 1, scale: 1 } : { opacity: 1, y: 0 }}
+                        exit={isMobile ? { opacity: 0, scale: 0.96 } : { opacity: 0, y: -6 }}
                         transition={{ duration: 0.18 }}
                         className="absolute left-1/2 top-[calc(100%+16px)] z-30 w-max max-w-full -translate-x-1/2"
                         style={{ pointerEvents: 'none' }}
