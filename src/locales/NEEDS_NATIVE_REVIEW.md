@@ -285,6 +285,10 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.receipt.confirmedSentTo` | Your flight to {destination} is confirmed, flight details and receipt has been sent to {email} | {destination}행 항공편이 확정되었으며, 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다 | {destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました | 您飞往{destination}的航班已确认，航班详情和收据已发送至 {email} |
 | `checkout.flight.receipt.approxTotal` | Approx. in {currency} | {currency} 환산 금액(약) | {currency}換算（概算） | 约合 {currency} |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
+| `checkout.example` | e.g. {value} | 예: {value} | 例：{value} | 例如：{value} |
+| `checkout.flight.contactTitle` | Contact details | 연락처 정보 | 連絡先 | 联系方式 |
+| `checkout.flight.passportTitle` | Passport details | 여권 정보 | パスポート情報 | 护照信息 |
+| `checkout.flight.genderPlaceholder` | Select gender | 성별 선택 | 性別を選択 | 选择性别 |
 | `checkout.flight.whosFlying` | Who's flying? | 누가 탑승하시나요? | ご搭乗者はどなたですか？ | 谁将乘机？ |
 | `checkout.flight.summary.fareDetails` | Fare details | 요금 세부 정보 | 運賃の詳細 | 票价详情 |
 | `checkout.flight.summary.showItineraries` | Show flight itineraries | 항공편 일정 보기 | フライト日程を表示 | 显示航班行程 |

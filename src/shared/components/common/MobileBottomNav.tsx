@@ -75,7 +75,9 @@ export const MobileBottomNav = () => {
         return 0;
     }, [pathname, isSheetOpen]);
 
-    if (pathname === '/ai-chat') return null;
+    // Not on the checkout either: a form someone is paying through keeps the screen to itself,
+    // with its own way back (the toolbar's back button) and its own button pinned to the foot.
+    if (pathname === '/ai-chat' || pathname === '/checkout') return null;
 
     return (
         <>

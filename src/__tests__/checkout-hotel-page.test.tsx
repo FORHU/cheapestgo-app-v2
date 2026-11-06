@@ -95,13 +95,13 @@ const payments = () => post.mock.calls.filter((c) => String(c[0]).endsWith('/cre
 // Every guest's name fields carry the same example name, so the lead guest is the first pair
 // on the form and the co-guest the second.
 function fillHolder() {
-    fireEvent.change(screen.getAllByPlaceholderText('John')[0], { target: { value: 'Juan' } });
-    fireEvent.change(screen.getAllByPlaceholderText('Doe')[0], { target: { value: 'dela Cruz' } });
-    fireEvent.change(screen.getByPlaceholderText('eg.johndoe@gmail.com'), { target: { value: 'juan@example.com' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. John')[0], { target: { value: 'Juan' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. Doe')[0], { target: { value: 'dela Cruz' } });
+    fireEvent.change(screen.getByPlaceholderText('e.g. johndoe@gmail.com'), { target: { value: 'juan@example.com' } });
 }
 function fillCoGuest() {
-    fireEvent.change(screen.getAllByPlaceholderText('John')[1], { target: { value: 'Maria' } });
-    fireEvent.change(screen.getAllByPlaceholderText('Doe')[1], { target: { value: 'dela Cruz' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. John')[1], { target: { value: 'Maria' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. Doe')[1], { target: { value: 'dela Cruz' } });
 }
 const proceed = () => fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
@@ -191,7 +191,7 @@ describe('a room that has gone', () => {
         renderPage();
 
         expect(await screen.findByRole('alert')).toHaveTextContent(/no longer available/i);
-        expect(screen.queryByPlaceholderText('John')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('e.g. John')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
     });
 
@@ -236,8 +236,8 @@ describe('the details form', () => {
         renderPage();
         await screen.findByText(/USD 254/);
 
-        expect(screen.getAllByPlaceholderText('John')).toHaveLength(2);
-        expect(screen.getAllByPlaceholderText('Doe')).toHaveLength(2);
+        expect(screen.getAllByPlaceholderText('e.g. John')).toHaveLength(2);
+        expect(screen.getAllByPlaceholderText('e.g. Doe')).toHaveLength(2);
     });
 });
 
@@ -333,28 +333,33 @@ describe('paying and confirming', () => {
 describe('the form, in the brand\'s look', () => {
     const ringed = (el: Element | null) => el?.getAttribute('style') ?? '';
 
-    it('rings every field in the brand gradient before anything is typed', async () => {
+    it('keeps every field quiet before anything is typed, and rings only the one being typed in', async () => {
         visit({ adults: '2', children: '1' });
         renderPage();
 
-        // blue-600 → cyan-500, as jsdom writes them back.
-        const gradientRing = /linear-gradient\(90deg, rgb\(37, 99, 235\) 0%, rgb\(6, 182, 212\) 100%\) border-box/;
-        for (const placeholder of ['John', 'Doe', 'eg.johndoe@gmail.com']) {
+        // At rest, a hairline: no field carries the gradient, so ten fields are not ten glowing
+        // outlines.
+        for (const placeholder of ['e.g. John', 'e.g. Doe', 'e.g. johndoe@gmail.com']) {
             for (const field of await screen.findAllByPlaceholderText(placeholder)) {
-                expect(ringed(field)).toMatch(gradientRing);
+                expect(ringed(field)).not.toMatch(/linear-gradient/);
             }
         }
-        expect(ringed(document.querySelector('.cg-phone'))).toMatch(gradientRing);
-        expect(ringed(document.querySelector('textarea'))).toMatch(gradientRing);
+        expect(ringed(document.querySelector('.cg-phone'))).not.toMatch(/linear-gradient/);
+        expect(ringed(document.querySelector('textarea'))).not.toMatch(/linear-gradient/);
+
+        // The gradient, blue-600 → cyan-500, is the focused field's ring — a rule jsdom keeps but
+        // does not apply, so it is read from the page's stylesheet.
+        const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
+        expect(css).toMatch(/\.cg-field:focus,\.cg-phone:focus-within\{[^}]*linear-gradient\(90deg,#2563eb 0%,#06b6d4 100%\)\) border-box/);
     });
 
-    it('trades the ring for a red edge on a field that is wrong', async () => {
+    it('keeps a red edge on a field that is wrong', async () => {
         renderPage();
-        await screen.findAllByPlaceholderText('John');
+        await screen.findAllByPlaceholderText('e.g. John');
         proceed();
 
         // The lead guest's first name — the first of the form's name fields.
-        const [first] = await screen.findAllByPlaceholderText('John');
+        const [first] = await screen.findAllByPlaceholderText('e.g. John');
         await waitFor(() => expect(ringed(first)).not.toMatch(/linear-gradient/));
         expect(first).toHaveStyle({ borderColor: '#E4685A' });
     });
