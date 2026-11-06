@@ -526,6 +526,13 @@
       "refresh": "状況を更新",
       "viewTrips": "マイトリップを見る",
       "stillWorking": "処理中です。このページは自動的に更新されます。"
+    },
+    "alert": {
+      "close": "閉じる",
+      "fareChangedTitle": "運賃が変更されました",
+      "fareGoneTitle": "この運賃はご利用いただけなくなりました",
+      "searchAgain": "もう一度検索",
+      "paymentTitle": "お支払いが完了しませんでした"
     }
   },
   "currencyPicker": {

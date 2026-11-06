@@ -526,6 +526,13 @@
       "refresh": "Refresh status",
       "viewTrips": "View my trips",
       "stillWorking": "Still working on it — this page updates by itself."
+    },
+    "alert": {
+      "close": "Close",
+      "fareChangedTitle": "The fare changed",
+      "fareGoneTitle": "This fare is no longer available",
+      "searchAgain": "Search again",
+      "paymentTitle": "Your payment didn't go through"
     }
   },
   "currencyPicker": {

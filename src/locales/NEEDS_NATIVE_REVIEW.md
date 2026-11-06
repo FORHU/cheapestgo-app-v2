@@ -589,3 +589,17 @@ Claude (2026-11-06).
 | `checkout.flight.duplicateBody` | Your booking departing {route} on {date} is still active. | {date} {route} 출발 예약이 아직 유효합니다. | {date}に{route}を出発するご予約がまだ有効です。 | 您{date}从{route}出发的预订仍然有效。 |
 | `checkout.flight.duplicateHint` | Check it before you book another flight on the same date. | 같은 날 다른 항공편을 예약하기 전에 기존 예약을 확인해 주세요. | 同じ日に別のフライトを予約する前に、ご予約内容をご確認ください。 | 在同一天预订其他航班之前，请先查看现有预订。 |
 | `checkout.flight.duplicateClose` | Close | 닫기 | 閉じる | 关闭 |
+
+## Checkout — warnings shown as dialogs
+
+The titles and buttons of the dialogs the checkout's warnings are shown in (a fare that sold out
+or changed, a declined card). The messages under them are the existing `checkout.flight.*` and
+`checkout.failed.*` strings. Written by Claude (2026-11-06).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `checkout.alert.close` | Close | 닫기 | 閉じる | 关闭 |
+| `checkout.alert.fareChangedTitle` | The fare changed | 요금이 변경되었습니다 | 運賃が変更されました | 票价已变动 |
+| `checkout.alert.fareGoneTitle` | This fare is no longer available | 이 요금은 더 이상 이용할 수 없습니다 | この運賃はご利用いただけなくなりました | 该票价已不可用 |
+| `checkout.alert.searchAgain` | Search again | 다시 검색 | もう一度検索 | 重新搜索 |
+| `checkout.alert.paymentTitle` | Your payment didn't go through | 결제가 완료되지 않았습니다 | お支払いが完了しませんでした | 付款未成功 |

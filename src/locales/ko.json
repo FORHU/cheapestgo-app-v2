@@ -526,6 +526,13 @@
       "refresh": "상태 새로고침",
       "viewTrips": "내 여행 보기",
       "stillWorking": "아직 처리 중입니다. 이 페이지는 자동으로 업데이트됩니다."
+    },
+    "alert": {
+      "close": "닫기",
+      "fareChangedTitle": "요금이 변경되었습니다",
+      "fareGoneTitle": "이 요금은 더 이상 이용할 수 없습니다",
+      "searchAgain": "다시 검색",
+      "paymentTitle": "결제가 완료되지 않았습니다"
     }
   },
   "currencyPicker": {

@@ -129,6 +129,11 @@ const USED = [
     'checkout.validation.emailInvalid',
     'checkout.validation.ageInvalid',
     'checkout.validation.specialRequestsTooLong',
+    'checkout.alert.close',
+    'checkout.alert.fareChangedTitle',
+    'checkout.alert.fareGoneTitle',
+    'checkout.alert.searchAgain',
+    'checkout.alert.paymentTitle',
 ];
 
 describe('checkout messages', () => {

@@ -992,3 +992,69 @@ describe('a flight already booked from the same airport that day', () => {
         expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
     });
 });
+
+describe('a warning, in a dialog rather than the red box', () => {
+    /** The dialog by its title, and that no inline red box says the same thing as well. */
+    async function warning(title: string | RegExp) {
+        const dialog = await screen.findByRole('alertdialog', { name: title });
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        return dialog;
+    }
+
+    it('says the fare sold out, offers a new search, and leaves the details behind it', async () => {
+        api(() => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
+        await payForFlight();
+
+        const dialog = await warning('This fare is no longer available');
+        expect(within(dialog).getByText(/sold out before the airline could confirm it/i)).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Search again' }));
+        expect(back).toHaveBeenCalledTimes(1);
+    });
+
+    it('says the fare changed, and closing leaves the details to submit again', async () => {
+        api(() => { throw httpError(409, { error: 'PRICE_CHANGED', message: 'x', oldPrice: 100, newPrice: 140, currency: 'USD' }); });
+        await payForFlight();
+
+        const dialog = await warning('The fare changed');
+        expect(within(dialog).getByText(/changed from USD 100 to USD 140/i)).toBeInTheDocument();
+        expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
+    });
+
+    it('relays any other refusal in the server\'s words', async () => {
+        api(() => { throw httpError(400, { error: 'DUFFEL_ORDER_FAILED', message: 'Passenger name is invalid. Your card has not been charged.' }); });
+        await payForFlight();
+
+        const dialog = await warning("We couldn't complete your booking");
+        expect(within(dialog).getByText('Passenger name is invalid. Your card has not been charged.')).toBeInTheDocument();
+    });
+
+    it('says a card was declined, and closing leaves the card form to try again', async () => {
+        stripeMock.confirmPayment.mockResolvedValueOnce({ error: { message: 'Your card was declined.' } });
+        await payForFlight();
+
+        const dialog = await warning("Your payment didn't go through");
+        expect(within(dialog).getByText('Your card was declined.')).toBeInTheDocument();
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /pay usd 272\.40/i })).toBeEnabled();
+    });
+
+    it('says when the booking could not be started', async () => {
+        post.mockImplementation(async (path: string) => {
+            if (path === '/flights/book') throw httpError(400, { error: 'INVALID_PASSENGERS', message: 'Each passenger needs a date of birth.' });
+            throw new Error(`unexpected POST ${path}`);
+        });
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        const dialog = await warning("We couldn't complete your booking");
+        expect(within(dialog).getByText('Each passenger needs a date of birth.')).toBeInTheDocument();
+    });
+});

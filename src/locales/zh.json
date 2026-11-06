@@ -526,6 +526,13 @@
       "refresh": "刷新状态",
       "viewTrips": "查看我的行程",
       "stillWorking": "仍在处理中，此页面会自动更新。"
+    },
+    "alert": {
+      "close": "关闭",
+      "fareChangedTitle": "票价已变动",
+      "fareGoneTitle": "该票价已不可用",
+      "searchAgain": "重新搜索",
+      "paymentTitle": "付款未成功"
     }
   },
   "currencyPicker": {

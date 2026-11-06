@@ -18,6 +18,7 @@ import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } f
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
 import { DuplicateFlightModal, type DuplicateFlight } from '@/features/checkout/components/duplicate-flight-modal';
+import { CheckoutAlertDialog, type CheckoutAlert } from '@/features/checkout/components/checkout-alert-dialog';
 import { CheckoutToolbar } from '@/features/checkout/components/checkout-toolbar';
 import { SkeletonBar } from '@/features/checkout/components/skeleton-bar';
 import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
@@ -759,7 +760,9 @@ function CheckoutContent() {
     // The flight checkout's step. The hotel's comes from its state machine (`step` below).
     const [flightStep, setStep]     = useState<Step>('form');
     const [submitting, setSubmitting] = useState(false);
-    const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+    /** A warning that stops the flight checkout — shown as a dialog, gone once closed. */
+    const [flightAlert, setFlightAlert] = useState<CheckoutAlert | null>(null);
+    const closeFlightAlert = useCallback(() => setFlightAlert(null), []);
     /** A flight from the same airport on the same day is already booked: shown as a dialog the
      *  traveller closes, not in the error box. */
     const [duplicateFlight, setDuplicateFlight] = useState<DuplicateFlight | null>(null);
@@ -915,7 +918,7 @@ function CheckoutContent() {
     // the money only once the airline has said yes; when it says no, the hold is released
     // and the payment form behind this step has nothing left to pay with.
     const handleFlightPaid = useCallback(async (stripePaymentIntentId: string) => {
-        setSubmitting(true); setErrorMsg(null);
+        setSubmitting(true); setFlightAlert(null);
         const backToDetails = () => { setClientSecret(null); setFlightSessionId(''); setHeld(null); setStep('form'); };
         try {
             const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
@@ -932,31 +935,44 @@ function CheckoutContent() {
                     setFlightSettling(failure.needsReview ? 'needs_review' : 'pending');
                     break;
                 case 'price_changed':
-                    setErrorMsg(t('flight.priceChanged', {
-                        was: `${failure.currency} ${failure.was.toLocaleString()}`,
-                        now: `${failure.currency} ${failure.now.toLocaleString()}`,
-                    }));
+                    setFlightAlert({
+                        title: t('alert.fareChangedTitle'),
+                        message: t('flight.priceChanged', {
+                            was: `${failure.currency} ${failure.was.toLocaleString()}`,
+                            now: `${failure.currency} ${failure.now.toLocaleString()}`,
+                        }),
+                    });
                     backToDetails();
                     break;
                 case 'offer_expired':
-                    setErrorMsg(t('flight.offerExpired'));
+                    // Nothing on this page can book it now: the way on is a new search.
+                    setFlightAlert({
+                        title: t('alert.fareGoneTitle'),
+                        message: t('flight.offerExpired'),
+                        action: { label: t('alert.searchAgain'), onClick: () => router.back() },
+                    });
                     backToDetails();
                     break;
                 case 'refused':
-                    setErrorMsg(failure.message || t('failed.released'));
+                    setFlightAlert({ title: t('failed.title'), message: failure.message || t('failed.released') });
                     backToDetails();
                     break;
                 default:
-                    setErrorMsg(failure.message || 'Booking confirmation failed. Contact support with your payment reference.');
+                    setFlightAlert({
+                        title: t('failed.title'),
+                        message: failure.message || 'Booking confirmation failed. Contact support with your payment reference.',
+                    });
             }
         } finally {
             setSubmitting(false);
         }
-    }, [flightSessionId, t]);
+    }, [flightSessionId, t, router]);
 
     // The same Stripe form serves both; what happens after a card is authorised does not.
     const handleStripeSuccess = mode === 'flight' ? handleFlightPaid : hotel.onCardAuthorised;
-    const handleStripeError = (msg: string) => (mode === 'flight' ? setErrorMsg(msg) : hotel.onCardError(msg));
+    const handleStripeError = (msg: string) => (mode === 'flight'
+        ? setFlightAlert({ title: t('alert.paymentTitle'), message: msg })
+        : hotel.onCardError(msg));
     const hotelSubmitting = submitting || hotel.busy;
 
     // ── Flight submit ──
@@ -969,7 +985,7 @@ function CheckoutContent() {
             return;
         }
 
-        setSubmitting(true); setErrorMsg(null);
+        setSubmitting(true); setFlightAlert(null);
         try {
             // `/flights/book` opens a PaymentIntent that holds the card; it orders nothing
             // and takes nothing. The airline is asked once the card is authorised, by
@@ -1025,11 +1041,14 @@ function CheckoutContent() {
                 });
                 return;
             }
-            setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
+            setFlightAlert({
+                title: t('failed.title'),
+                message: err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
+            });
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t]);
     const closeDuplicateFlight = useCallback(() => setDuplicateFlight(null), []);
 
     // ── Price helpers ──
@@ -1418,10 +1437,14 @@ function CheckoutContent() {
                         </div>
 
                         <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
-                            {errorMsg && (
-                                <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                    {errorMsg}
-                                </div>
+                            {flightAlert && (
+                                <CheckoutAlertDialog
+                                    alert={flightAlert}
+                                    palette={palette}
+                                    onClose={closeFlightAlert}
+                                    // Back on the details, focus goes to the button that submits them.
+                                    returnFocusRef={step === 'form' ? flightSubmitRef : undefined}
+                                />
                             )}
 
                             {duplicateFlight && (
@@ -1567,6 +1590,25 @@ function CheckoutContent() {
     }
 
     // ── Hotel checkout ────────────────────────────────────────────────────────
+    // The warnings the traveller answers by closing them — shown as a dialog, and gone with
+    // `dismissNotice`, leaving the step they carry on from. The bigger turns (a price that
+    // moved, a room that went, a booking that failed after payment) stay panels on the page.
+    const hotelFailure = hotelState.failure;
+    const hotelAlert: CheckoutAlert | null =
+        hotelState.phase === 'failed' && hotelFailure?.kind === 'duplicate'
+            ? {
+                title: t('duplicateBookingTitle', { hotel: hotelName }),
+                message: t('duplicateBookingDesc'),
+                ...(hotelFailure.existingBookingId && {
+                    action: { label: t('viewExistingBooking'), href: `/trips/${hotelFailure.existingBookingId}` },
+                }),
+            }
+        : hotelState.phase === 'quoted' && hotelFailure
+            ? { title: t('failed.title'), message: hotelFailure.message }
+        : hotelState.phase === 'awaiting_payment' && hotelState.message
+            ? { title: t('alert.paymentTitle'), message: hotelState.message }
+        : null;
+
     const backLabel = step === 'payment' ? t('backToBookingDetails') : tAll('property.v2.goBack');
     const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 18 };
 
@@ -1598,10 +1640,8 @@ function CheckoutContent() {
                     </div>
 
                     <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
-                        {errorMsg && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                {errorMsg}
-                            </div>
+                        {hotelAlert && (
+                            <CheckoutAlertDialog alert={hotelAlert} palette={palette} onClose={hotel.dismissNotice} />
                         )}
 
                         {roomsRequested > 1 && <MultiRoomNotice palette={palette} />}
@@ -1630,17 +1670,6 @@ function CheckoutContent() {
                                 onChooseAnother={() => router.back()}
                             />
                         )}
-                        {hotelState.phase === 'failed' && hotelState.failure?.kind === 'duplicate' && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                <div>{t('duplicateBookingTitle', { hotel: hotelName })}</div>
-                                <div style={{ marginTop: 4, color: palette.soft }}>{t('duplicateBookingDesc')}</div>
-                                {hotelState.failure.existingBookingId && (
-                                    <Link href={`/trips/${hotelState.failure.existingBookingId}`} style={{ color: ACCENT, fontWeight: 700 }}>
-                                        {t('viewExistingBooking')}
-                                    </Link>
-                                )}
-                            </div>
-                        )}
                         {hotelState.phase === 'failed' && hotelState.failure?.kind !== 'duplicate' && (
                             <BookingFailedPanel
                                 released={hotelState.outcome?.kind === 'failed' ? hotelState.outcome.released : false}
@@ -1648,18 +1677,6 @@ function CheckoutContent() {
                                 palette={palette}
                                 onTryAgain={hotel.restart}
                             />
-                        )}
-                        {/* A refusal the traveller can act on in place: the form stays, with the reason. */}
-                        {hotelState.phase === 'quoted' && hotelState.failure && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                {hotelState.failure.message}
-                            </div>
-                        )}
-                        {/* A declined card is retried on the same payment. */}
-                        {hotelState.phase === 'awaiting_payment' && hotelState.message && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                {hotelState.message}
-                            </div>
                         )}
 
                         <AuthBanner />
