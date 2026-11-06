@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { BRAND } from '@/shared/lib/palette';
 
 /**
@@ -24,11 +25,36 @@ export const GRADIENT_TEXT: React.CSSProperties = {
     background: BRAND.gradient, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
 };
 
-/** The sentence itself: large, white, shadowed enough to hold over a photograph. */
+/**
+ * The sentence itself: large, white, shadowed enough to hold over a photograph.
+ *
+ * 23px is its floor from 410px wide up, as it always was; narrower than that it keeps shrinking
+ * with the screen (21px on a 375px phone), so a sentence does not run to five lines there.
+ */
 export const PROSE: React.CSSProperties = {
-    fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'clamp(23px,3.4vw,42px)', lineHeight: 1.42,
+    fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'max(min(5.6vw,23px), min(3.4vw,42px))', lineHeight: 1.42,
     color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,.35)', maxWidth: '680px',
 };
+
+/**
+ * Splits off the punctuation a connective opens with — `", from "` → `[",", " from "]`, and the
+ * `、` / `，` the Japanese and Chinese sentences use — so it can go inside the slot before it.
+ */
+export function leadingMark(text: string): [string, string] {
+    const m = /^[^\s\p{L}\p{N}]+/u.exec(text);
+    return m ? [m[0], text.slice(m[0].length)] : ['', text];
+}
+
+/**
+ * A token, the punctuation that follows it, and the panel it opens.
+ *
+ * One unbreakable box: a token is an atomic inline, and a line may break on either side of one,
+ * so on a phone the comma after it used to wrap to the start of the next line on its own
+ * (", from"). The panel is positioned against this box.
+ */
+export function Slot({ children }: { children: React.ReactNode }) {
+    return <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>{children}</span>;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,11 +157,11 @@ export function CalendarGrid({ checkIn, checkOut, onSelect, accent, maxDate = nu
         <div style={{ userSelect: 'none' }}>
             {/* Month nav */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
+                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: 'var(--imm-month-btn,30px)', height: 'var(--imm-month-btn,30px)', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                 </button>
                 <span style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{monthLabel}</span>
-                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
+                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: 'var(--imm-month-btn,30px)', height: 'var(--imm-month-btn,30px)', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                 </button>
             </div>
@@ -174,8 +200,9 @@ export function CalendarGrid({ checkIn, checkOut, onSelect, accent, maxDate = nu
                             aria-disabled={isPast || undefined}
                             onClick={isPast ? undefined : e => { e.stopPropagation(); onSelect(d); }}
                             style={{
-                                textAlign: 'center', padding: '5px 0', borderRadius: '8px',
-                                fontSize: '13px', fontWeight: isToday ? 700 : 500,
+                                // Roomier in the phone sheet (SHEET_VARS), where a day is pressed with a thumb.
+                                textAlign: 'center', padding: 'var(--imm-day-pad,5px) 0', borderRadius: '8px',
+                                fontSize: 'var(--imm-day-size,13px)', fontWeight: isToday ? 700 : 500,
                                 background: bg, color: fg,
                                 cursor: isPast ? 'default' : 'pointer',
                                 outline: isToday && !isStart && !isEnd ? `1.5px solid rgba(241,245,249,0.3)` : 'none',
@@ -248,7 +275,8 @@ export function Token({ filled, hint, order, onClick, children }: TokenProps) {
                 className="imm-token-caret"
                 style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: '1.45rem', height: '1.45rem', flexShrink: 0, borderRadius: '9999px',
+                    // Smaller on a phone, where the sentence's own type is (`--imm-caret`, set by the bar).
+                    width: 'var(--imm-caret,1.45rem)', height: 'var(--imm-caret,1.45rem)', flexShrink: 0, borderRadius: '9999px',
                     color: '#fff', background: BRAND.gradient, boxShadow: BRAND.gradientShadow,
                     transition: 'transform .2s',
                     animationDelay: `${order * CARET_STAGGER}s`,
@@ -270,13 +298,81 @@ const NOTE_MIN_ROOM = 240;
 const NOTE_TOP_CLEARANCE = 92;
 const NOTE_EDGE = 12;
 
+/** Where a panel stops hanging off its token and becomes a sheet along the bottom of the screen. */
+const SHEET_QUERY = '(max-width: 760px)';
+
+/** Above the bottom nav (z-100), its settings sheet and every floating button. */
+const SHEET_Z = 130;
+
+/**
+ * Bigger targets inside the sheet, where everything is pressed with a thumb: the calendar's days
+ * and month arrows, and the − / + steppers. Read by those pieces through their own fallbacks, so
+ * the desktop panel keeps its sizes.
+ */
+const SHEET_VARS = {
+    '--imm-day-pad': '10px', '--imm-day-size': '15px', '--imm-month-btn': '38px', '--imm-step': '44px',
+} as React.CSSProperties;
+
 /**
  * The dropdown under a token. Sized and placed against the viewport when it opens: it used to
  * hang a fixed 380px below the token whatever the room, so on a short screen its last rows ran
  * off the bottom and on the right-hand stage its side ran off the edge — rows the visitor
  * could not reach, since the page behind a docked stage does not scroll.
+ *
+ * On a phone it is a bottom sheet instead, rendered into `<body>`. It used to dock itself to the
+ * bottom of the screen from inside the stage, and the stage is a layer under the bottom nav, so
+ * the nav covered the calendar's last week and the travellers' second stepper. Out of the stage
+ * it can sit above the nav. The bar's outside-press handlers know a press in `.imm-note` is not
+ * outside, and a press on the backdrop is.
  */
-export function NotePanel({ children, width = 'min(360px,88vw)', extra = {} }: {
+export function NotePanel(props: {
+    children: React.ReactNode;
+    width?: string;
+    extra?: React.CSSProperties;
+}) {
+    // Decided once, when the panel opens: a panel's life is a few seconds, and no panel is
+    // rendered on the server (they all open on a press), so there is no hydration to match.
+    const [sheet] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(SHEET_QUERY).matches);
+    return sheet ? <NoteSheet {...props} /> : <NoteFloat {...props} />;
+}
+
+function NoteSheet({ children, extra = {} }: { children: React.ReactNode; extra?: React.CSSProperties }) {
+    // The desktop panel's height cap does not apply to a sheet, which sets its own.
+    const { maxHeight: _maxHeight, ...rest } = extra;
+    return createPortal(
+        <>
+            {/* `touch-action: none`: a drag on the dimmed page would otherwise scroll the
+                landing journey underneath to another stage. */}
+            <div
+                aria-hidden
+                className="imm-sheet-backdrop"
+                style={{ position: 'fixed', inset: 0, zIndex: SHEET_Z - 1, background: 'rgba(2,6,23,.55)', touchAction: 'none' }}
+            />
+            <div
+                className="imm-note imm-sheet"
+                style={{
+                    position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: SHEET_Z,
+                    maxHeight: 'min(82dvh, calc(100dvh - 64px))',
+                    overflowY: 'auto', overscrollBehavior: 'contain',
+                    background: '#0f172a',
+                    borderRadius: '24px 24px 0 0',
+                    border: '1px solid rgba(255,255,255,0.10)', borderBottom: 'none',
+                    boxShadow: '0 -24px 50px -12px rgba(0,0,0,0.65)',
+                    padding: '10px 20px calc(22px + env(safe-area-inset-bottom, 0px))',
+                    fontFamily: 'var(--font-sans)', fontSize: '15px', lineHeight: '1.4', color: '#f1f5f9',
+                    ...SHEET_VARS,
+                    ...rest,
+                }}
+            >
+                <div aria-hidden style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.22)', margin: '0 auto 16px' }} />
+                {children}
+            </div>
+        </>,
+        document.body,
+    );
+}
+
+function NoteFloat({ children, width = 'min(360px,88vw)', extra = {} }: {
     children: React.ReactNode;
     width?: string;
     extra?: React.CSSProperties;
@@ -386,7 +482,7 @@ export function GoPill({ onClick, searching, shake, width, label, searchingLabel
                 position: 'relative', overflow: 'hidden',
                 alignSelf: 'flex-start', flexShrink: 0,
                 width: width ? `${width}px` : '100%', maxWidth: '680px',
-                height: '56px', borderRadius: '9999px',
+                height: 'var(--imm-go-h,56px)', borderRadius: '9999px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                 color: '#fff', fontFamily: 'var(--font-sans)', fontWeight: 700,
                 cursor: searching ? 'progress' : 'pointer', zIndex: 20,

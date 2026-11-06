@@ -75,6 +75,8 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `property.v2.mealPlan` | Meal plan | 식사 조건 | 食事プラン | 餐食安排 |
 | `property.v2.cancellationPolicy` | Cancellation policy | 취소 정책 | キャンセルポリシー | 取消政策 |
 | `property.v2.price` | Price | 요금 | 料金 | 价格 |
+| `property.v2.roomPhotoCount` | 6 photos | 사진 6장 | 写真6枚 | 6 张照片 |
+| `property.v2.rateOptionsFor` | Rates for {room} | {room} 요금 옵션 | {room}の料金プラン | {room} 的价格方案 |
 | `hotels.rooms.roomDetails` | Room details | 객실 상세 정보 | 客室の詳細 | 房型详情 |
 
 ## trips
@@ -100,6 +102,7 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `search.v2.clusterChecking` | checking {count}… | {count}곳 확인 중… | {count}件を確認中… | 正在确认 {count} 处… |
 | `search.v2.clusterHotels` | {count} hotels | 호텔 {count}곳 | ホテル{count}軒 | {count} 家酒店 |
 | `search.v2.clusterFrom` | from {price} | {price}부터 | {price}〜 | {price} 起 |
+| `search.v2.mapLoading` | Loading map… | 지도를 불러오는 중… | 地図を読み込み中… | 正在加载地图… |
 
 ## flights
 

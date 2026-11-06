@@ -163,8 +163,11 @@ function amenityIcon(name: string): LucideIcon | null {
  * Suppliers send either the 24-hour clock or an already-worded string, and
  * there is no telling which until it arrives, so anything that is not `HH:mm`
  * is passed straight through rather than mangled into a guess.
+ *
+ * Exported for the FAQ, whose check-in answer has to name the same hour this
+ * section shows.
  */
-function formatStayTime(raw?: string | null): string | null {
+export function formatStayTime(raw?: string | null): string | null {
     const value = raw?.trim();
     if (!value) return null;
 

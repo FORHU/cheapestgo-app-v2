@@ -1902,7 +1902,9 @@
       "switchToDark": "ダークモードに切り替える",
       "mealPlan": "食事プラン",
       "cancellationPolicy": "キャンセルポリシー",
-      "price": "料金"
+      "price": "料金",
+      "roomPhotoCount": "写真{count}枚",
+      "rateOptionsFor": "{room}の料金プラン"
     },
     "metaDescription": "{name}の料金・客室・写真をご覧いただけます。価格を比較し、可能な場合は無料キャンセルでご予約いただけます。"
   },
@@ -2108,7 +2110,8 @@
       "staysCount": "{count}件の宿泊施設",
       "clusterChecking": "{count}件を確認中…",
       "clusterHotels": "ホテル{count}軒",
-      "clusterFrom": "{price}〜"
+      "clusterFrom": "{price}〜",
+      "mapLoading": "地図を読み込み中…"
     },
     "freeCancel": "無料キャンセル",
     "recent": "最近",

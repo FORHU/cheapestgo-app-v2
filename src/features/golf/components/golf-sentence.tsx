@@ -6,7 +6,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { BRAND } from '@/shared/lib/palette';
 import { formatCurrency } from '@/shared/lib/format';
 import {
-    CalendarGrid, FILL, GRADIENT_TEXT, GoPill, NotePanel, PROSE, SearchMiniIcon, Token, fmtDate, startOfDay, useProseWidth,
+    CalendarGrid, FILL, GRADIENT_TEXT, GoPill, NotePanel, PROSE, SearchMiniIcon, Slot, Token, fmtDate, leadingMark, startOfDay, useProseWidth,
 } from '@/features/search/components/prose-parts';
 import { GOLF_FACE, rememberGolfSearch } from '@/features/golf/lib/last-search';
 import { useGolfCourses } from '@/features/golf/lib/use-golf-courses';
@@ -81,6 +81,9 @@ export function GolfSentence({
     // A press anywhere outside the sentence closes its panel; the hint stops nagging after a while.
     useEffect(() => {
         const close = (e: MouseEvent) => {
+            // On a phone the open panel is a sheet in <body>, outside the sentence; a press in it
+            // is still a press in the sentence.
+            if ((e.target as Element).closest?.('.imm-note')) return;
             if (proseRef.current && !proseRef.current.contains(e.target as Node)) setPanel(null);
         };
         document.addEventListener('mousedown', close);
@@ -154,25 +157,31 @@ export function GolfSentence({
     const playersValue = tAll('search.prose.players', { count: players });
     const width = useProseWidth(proseRef, [courseValue, dateValue, playersValue]);
 
+    // Each connective's leading comma rides in the slot before it, so it never starts a line.
+    const [dayMark, dayLead] = leadingMark(tAll('search.prose.onDay'));
+    const [playersMark, playersLead] = leadingMark(tAll('search.prose.forPlayers'));
+
     return (
         <>
             <div ref={proseRef} style={PROSE}>
                 {tAll('search.prose.teeOffAt')}
                 {' '}
 
-                <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                <Slot>
                     <Token filled={!!course} hint={hint} order={0} onClick={open('course')}>{courseValue}</Token>
+                    {dayMark}
                     {panel === 'course' && (
                         <NotePanel>
                             <CoursePanel courses={courses} query={query} onQueryChange={setQuery} onPick={pickCourse} />
                         </NotePanel>
                     )}
-                </span>
+                </Slot>
 
-                {tAll('search.prose.onDay')}
+                {dayLead}
 
-                <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                <Slot>
                     <Token filled={!!date} hint={hint} order={1} onClick={open('date')}>{dateValue}</Token>
+                    {playersMark}
                     {panel === 'date' && (
                         <NotePanel width="min(400px,92vw)" extra={{ textAlign: 'left', maxHeight: 'none' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', gap: '12px' }}>
@@ -190,12 +199,13 @@ export function GolfSentence({
                             </div>
                         </NotePanel>
                     )}
-                </span>
+                </Slot>
 
-                {tAll('search.prose.forPlayers')}
+                {playersLead}
 
-                <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                <Slot>
                     <Token filled hint={false} order={2} onClick={open('players')}>{playersValue}</Token>
+                    {'.'}
                     {panel === 'players' && (
                         <NotePanel width="280px" extra={{ maxHeight: 'none' }}>
                             <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '18px' }}>
@@ -214,8 +224,7 @@ export function GolfSentence({
                             </div>
                         </NotePanel>
                     )}
-                </span>
-                {'.'}
+                </Slot>
             </div>
 
             <GoPill
@@ -238,7 +247,7 @@ function Stepper({ label, aria, disabled, onClick }: { label: string; aria: stri
             onClick={(e) => { e.stopPropagation(); onClick(); }}
             disabled={disabled}
             style={{
-                width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow,
+                width: 'var(--imm-step,36px)', height: 'var(--imm-step,36px)', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow,
                 fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.3 : 1,
             }}

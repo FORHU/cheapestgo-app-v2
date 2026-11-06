@@ -1902,7 +1902,9 @@
       "switchToDark": "切换到深色模式",
       "mealPlan": "餐食安排",
       "cancellationPolicy": "取消政策",
-      "price": "价格"
+      "price": "价格",
+      "roomPhotoCount": "{count} 张照片",
+      "rateOptionsFor": "{room} 的价格方案"
     },
     "metaDescription": "查看{name}的价格、房型和照片。比较价格，并在可选时享受免费取消预订。"
   },
@@ -2108,7 +2110,8 @@
       "staysCount": "{count} 处住宿",
       "clusterChecking": "正在确认 {count} 处…",
       "clusterHotels": "{count} 家酒店",
-      "clusterFrom": "{price} 起"
+      "clusterFrom": "{price} 起",
+      "mapLoading": "正在加载地图…"
     },
     "freeCancel": "免费取消",
     "recent": "最近",

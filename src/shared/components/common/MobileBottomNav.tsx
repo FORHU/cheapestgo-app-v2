@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import React from 'react';
 import { Link } from '@/i18n/navigation';
 import { usePathname } from '@/i18n/navigation';
-import { Home, List, Settings, X } from 'lucide-react';
+import { Home, List, Settings2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
 import { useChromeTone } from '@/shared/components/ChromeToneContext';
@@ -22,27 +22,34 @@ import { useChromeTone } from '@/shared/components/ChromeToneContext';
  * hardcodes `dark` on its own root — a Tailwind variant would resolve to the
  * dark skin there no matter what.
  *
- * The support chat button wears the same skin, so the two pieces of floating
- * furniture read as one set.
+ * The support chat button wears the same skin, so the two pieces of chrome read
+ * as one set. It floats, so it takes `shadow`; the docked bar only casts upward
+ * (`dockShadow`).
  */
 export const NAV_SKIN = {
     dark: {
-        bar:    '#1C1C1E',
-        border: '1px solid rgba(255,255,255,0.06)',
-        shadow: '0 8px 30px rgba(0,0,0,0.28)',
-        on:     '#FFFFFF',
-        off:    'rgba(255,255,255,0.45)',
-        ring:   'focus-visible:ring-white/40',
+        bar:        '#181C24',
+        border:     '1px solid rgba(255,255,255,0.06)',
+        shadow:     '0 8px 30px rgba(0,0,0,0.28)',
+        dockShadow: '0 -10px 30px rgba(0,0,0,0.22)',
+        icon:       '#FFFFFF',
+        active:     '#BB8E5E',
+        divider:    'rgba(255,255,255,0.2)',
+        ring:       'focus-visible:ring-white/40',
     },
     light: {
-        bar:    '#FFFFFF',
+        bar:        '#FFFFFF',
         // A white bar on a light page has no contrast of its own to sit on, so
         // it takes a hairline the dark one does not need.
-        border: '1px solid rgba(17,17,17,0.08)',
-        shadow: '0 8px 30px rgba(15,23,42,0.16)',
-        on:     '#111111',
-        off:    'rgba(17,17,17,0.42)',
-        ring:   'focus-visible:ring-black/25',
+        border:     '1px solid rgba(17,17,17,0.08)',
+        shadow:     '0 8px 30px rgba(15,23,42,0.16)',
+        dockShadow: '0 -10px 30px rgba(15,23,42,0.10)',
+        icon:       '#181C24',
+        // The dark bar's bronze is 2.9:1 on white, under the 3:1 an icon needs,
+        // so the light bar takes it a shade deeper.
+        active:     '#9A6E3F',
+        divider:    'rgba(24,28,36,0.14)',
+        ring:       'focus-visible:ring-black/25',
     },
 } as const;
 
@@ -52,7 +59,7 @@ const navItems = [
     // No `/settings` route exists. The sheet this opens is already the account
     // surface — it carries Account settings and sign in/out — so the gear opens
     // it rather than linking somewhere that would 404.
-    { label: 'Settings', icon: Settings, href: null },
+    { label: 'Settings', icon: Settings2, href: null },
 ] as const;
 
 export const MobileBottomNav = () => {
@@ -72,63 +79,73 @@ export const MobileBottomNav = () => {
 
     return (
         <>
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-[calc(env(safe-area-inset-bottom,0px)+10px)]">
-                <nav
-                    aria-label={tAll('common.primary')}
-                    className="flex items-stretch rounded-full"
-                    style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow }}
-                >
+            {/* Docked to the foot of the screen: flat bottom, rounded shoulders.
+                The bar's own colour runs down under the home indicator, and the
+                68px row above it stays clear of the 92px offset the support
+                launcher and the other floating buttons keep. */}
+            <nav
+                aria-label={tAll('common.primary')}
+                className="lg:hidden fixed bottom-0 inset-x-0 z-[100] rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)]"
+                // Three longhands, not `border` plus `borderBottom: none`: React
+                // warns on mixing a shorthand with its own longhand across rerenders,
+                // and the search page rerenders this when the tone flips.
+                style={{ background: skin.bar, borderTop: skin.border, borderLeft: skin.border, borderRight: skin.border, boxShadow: skin.dockShadow }}
+            >
+                <div className="flex h-[68px] items-center px-2">
                     {navItems.map((item, index) => {
                         const isActive = index === activeIndex;
                         const Icon = item.icon;
 
-                        // Icon and label share one colour and change together —
-                        // the design carries the state in tone alone, with no
-                        // pill, underline or indicator behind the active item.
+                        // Icons only, no labels: the active one turns bronze,
+                        // the rest stay at full strength. The name is still
+                        // there for screen readers, on the slot's aria-label.
                         const content = (
                             <span
-                                className="flex w-full flex-col items-center justify-center gap-1.5 py-3.5 transition-colors duration-200"
-                                style={{ color: isActive ? skin.on : skin.off }}
+                                className="transition-[color,transform] duration-200 group-active:scale-90 motion-reduce:transition-none motion-reduce:group-active:scale-100"
+                                style={{ color: isActive ? skin.active : skin.icon }}
                             >
-                                <Icon size={24} strokeWidth={2} aria-hidden="true" />
-                                <span className="text-[12px] font-medium leading-none">{item.label}</span>
+                                <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
                             </span>
                         );
 
                         // Thirds rather than `justify-around`: the tap target is
-                        // the whole third, not just the glyph inside it.
-                        // `rounded-full` so the focus ring follows the pill's own
-                        // curve at the two ends rather than cutting across it.
-                        const slot = `flex-1 outline-none rounded-full focus-visible:ring-2 ${skin.ring}`;
+                        // the whole third, not just the glyph inside it. The ring
+                        // is inset so it stays inside the bar's curved shoulders.
+                        const slot = `group flex h-full flex-1 items-center justify-center rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-inset ${skin.ring}`;
 
-                        if (item.href === null) {
-                            return (
-                                <button
-                                    key={item.label}
-                                    type="button"
-                                    onClick={() => setIsSheetOpen(v => !v)}
-                                    aria-expanded={isSheetOpen}
-                                    className={slot}
-                                >
-                                    {content}
-                                </button>
-                            );
-                        }
-
-                        return (
+                        const control = item.href === null ? (
+                            <button
+                                type="button"
+                                onClick={() => setIsSheetOpen(v => !v)}
+                                aria-expanded={isSheetOpen}
+                                aria-label={item.label}
+                                className={slot}
+                            >
+                                {content}
+                            </button>
+                        ) : (
                             <Link
-                                key={item.label}
                                 href={item.href}
                                 onClick={() => setIsSheetOpen(false)}
                                 aria-current={isActive ? 'page' : undefined}
+                                aria-label={item.label}
                                 className={slot}
                             >
                                 {content}
                             </Link>
                         );
+
+                        return (
+                            <React.Fragment key={item.label}>
+                                {index > 0 && (
+                                    <span aria-hidden="true" className="h-4 w-px shrink-0" style={{ background: skin.divider }} />
+                                )}
+                                {control}
+                            </React.Fragment>
+                        );
                     })}
-                </nav>
-            </div>
+                </div>
+            </nav>
 
             <AnimatePresence>
                 {isSheetOpen && (

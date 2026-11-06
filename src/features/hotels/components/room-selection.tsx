@@ -2,12 +2,12 @@
 
 import { useTranslations } from 'next-intl';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
     AirVent, Bath, Bed, BedDouble, Building2, Check, ChevronLeft, ChevronRight,
-    Coffee, Dog, Maximize2, Refrigerator, Sparkles, Tv, User,
+    Coffee, Dog, Images, Maximize2, Refrigerator, Sparkles, Tv, User,
     Users, Wifi, Wind, X, type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
@@ -260,17 +260,34 @@ function roomPalette(tone: 'light' | 'dark') {
             : 'bg-white shadow-[0_4px_10px_-2px_rgba(15,23,42,0.18),0_1px_3px_rgba(15,23,42,0.08)]',
         name:     dark ? 'text-white' : 'text-slate-900',
         feature:  dark ? 'text-slate-400' : 'text-slate-500',
-        /** The bulleted facts line — in the design's full ink, not the muted grey. */
-        fact:     dark ? 'text-slate-200' : 'text-slate-900',
-        /** The cancellation line under the facts. */
-        terms:    dark ? 'text-slate-500' : 'text-slate-400',
+        /** The icon facts under the name — bed, party, size. Secondary ink, as 2a sets them. */
+        fact:     dark ? 'text-slate-400' : 'text-slate-600',
+        /**
+         * The rate rows. The picked one is outlined twice as heavy in the accent and tinted
+         * with it; the 1px border plus a 1px inset ring makes the 2px without the row's
+         * contents moving when the pick changes. The accent is V2's: blue-600 in light,
+         * sky-400 in dark, as the links and the taken Select already are.
+         */
+        rateOn:   dark
+            ? 'border-sky-400 bg-sky-400/10 ring-1 ring-inset ring-sky-400'
+            : 'border-blue-600 bg-blue-50 ring-1 ring-inset ring-blue-600',
+        rateOff:  dark
+            ? 'border-white/10 hover:border-white/20 hover:bg-white/[0.03]'
+            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+        /** A room sold one way: the same box, with nothing to pick. */
+        rateOnly: dark ? 'border-white/10' : 'border-slate-200',
+        /** The radio dot — a thick accent ring round a hole when on, a hairline when off. */
+        dotOn:    dark ? 'border-[5px] border-sky-400 bg-slate-900' : 'border-[5px] border-blue-600 bg-white',
+        dotOff:   dark ? 'border-[1.5px] border-slate-600' : 'border-[1.5px] border-slate-300',
+        /** Free cancellation — green is kept for terms in the guest's favour. */
+        positive: dark ? 'text-green-400' : 'text-green-600',
         /** "Room details" — a plain text link, the one blue on the row. */
         link:     dark ? 'text-sky-400 hover:text-sky-300' : 'text-blue-600 hover:text-blue-700',
         price:    dark ? 'text-white' : 'text-slate-900',
         unit:     dark ? 'text-slate-500' : 'text-slate-400',
         imageBg:  dark ? 'bg-white/[0.06]' : 'bg-slate-200',
         /**
-         * The card's "Select" — the design's flat block, filled with the brand
+         * The card's "Select" — a pill, as every other button on the page is, filled with the brand
          * gradient the filter chips and pager use. Filled while it can be
          * pressed, an outline once this rate is the one picked, so the fill
          * still reads as "you can press this".
@@ -371,7 +388,7 @@ const MIN_MEANINGFUL_ROOM_NAME = 3;
  * entries below are terms, so only these come off the name.
  *
  * `chip` is what the reader sees, because the supplier's own wording is too long to sit in a
- * chip beside a price.
+ * rate row's title beside a price.
  *
  * **Widen this list when a supplier words the same promise differently.** The symptom is a
  * pair of cards a reader cannot tell apart, which is how this was found on 2026-11-04.
@@ -541,34 +558,20 @@ function termSignature(card: RateCard): string {
         card.bed ?? '', offerTermsKey(card)].join('|');
 }
 
-/**
- * The cancellation in as few words as a chip can hold.
- *
- * `cancellationSummary` writes a sentence for the card body — "Non-refundable — this rate
- * cannot be cancelled or amended." A chip sits beside a price in a wrapping row and has room
- * for two or three words, so it gets its own wording rather than a truncation.
- */
-function cancellationChip(card: RateCard): string {
-    if (!card.refundable) return 'non-refundable';
-    const raw = card.rate.cancellationDeadline;
-    if (!raw) return 'free cancellation';
-    const deadline = new Date(raw);
-    if (Number.isNaN(deadline.getTime())) return 'free cancellation';
-    return `free to ${deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-}
 interface RateCard {
     room: RoomOption;
     rate: RateRow;
     heading: string;
     /** What this rate is sold with — the bed, or whatever else the supplier left in the
-     *  parenthetical. It differs between rates on one card, so a chip must be able to say so. */
+     *  parenthetical. It differs between rates on one card, so a rate row must be able to say so. */
     bed: string | null;
     /** Offer qualifiers lifted off the room name — see `OFFER_QUALIFIERS`. Empty is the
      *  common case and means the supplier promised nothing beyond the room itself. */
     offerTerms: string[];
     /** The structural facts bulleted under the name — see `structuralDetails`. */
     roomDetails: Feature[];
-    /** The refundable rate's cancellation line; `null` for a non-refundable one. */
+    /** The refundable rate's cancellation line, under its row's title; `null` for a
+     *  non-refundable one, which the row words from the messages instead. */
     terms: string | null;
     /** The in-room amenities the modal lists when ETG matched no content — see `amenityFeatures`. */
     amenities: Feature[];
@@ -929,8 +932,8 @@ function RoomDetailDialog({
                         type="button"
                         onClick={() => { onSelect({ room: card.room, rate: card.rate }); onClose(); }}
                         aria-pressed={selected}
-                        // The card's own Select corner, so the two read as the same button.
-                        className={cn('shrink-0 cursor-pointer rounded-[2px]', selected ? cn(palette.selectOn, 'shadow-none') : palette.selectIdle)}
+                        // The card's own Select pill, so the two read as the same button.
+                        className={cn('shrink-0 cursor-pointer rounded-full', selected ? cn(palette.selectOn, 'shadow-none') : palette.selectIdle)}
                     >
                         {selected ? 'Selected' : 'Select room'}
                     </Button>
@@ -954,25 +957,23 @@ function RoomDetailDialog({
 }
 
 /**
- * One room, drawn as one whole card, as the design lays it out: the photo, then
- * the name, a bulleted line of facts ending in the board, the cancellation terms,
- * and a last line with "Room details" on the left and Select on the right. The
- * price, which the design leaves off, sits just before Select on that line.
+ * One room, as the 2a design lays it out: the photo on the left with its count on it, then
+ * the name and its facts with "Room details" across from them, the room's rates as a list of
+ * radio rows, and the price with Select at the foot.
  *
- * A room sold several ways carries its rates as a row of chips under that line, and the
- * card reads as whichever chip is picked — price, board, bed and cancellation all follow it.
- * One card per rate put the same room on screen twice differing only in price, which reads
- * as a listing fault; the chips put the difference beside the thing that differs.
+ * The rows are the whole point of 2a. Each one is a rate in full — what it comes with, what
+ * cancelling costs, what it costs a night — so a reader compares the terms side by side
+ * rather than one at a time. Picking a row re-reads the card: the facts, the price at the
+ * foot and what Select books all follow it, so the price beside Select is always the price of
+ * the row that is lit. Nothing is booked until Select is pressed.
  *
  * `cards` is one `RateCard` per rate, cheapest first, all sharing a heading. The bed can
  * still differ between them ("(twin beds)" against nothing at all), so every rate-specific
  * fact is read off the picked card rather than the first.
  *
- * The photo sits beside the text and fills the card's height, so the card is as
- * tall as its text and no taller. On a card narrower than `@lg` — a phone, or the
- * half-width column on a small laptop — it moves above the text at a fixed,
- * modest height: beside it, the text would be too narrow to keep "Room details",
- * the price and Select on one line.
+ * The photo sits beside the text and fills the card's height. On a card narrower than `@lg`
+ * — a phone, or the half-width column on a small laptop — it moves above the text at a fixed,
+ * modest height: beside it, the rows would be too narrow for a title, its terms and a price.
  */
 function RoomCard({
     cards, image, selectedOfferId, palette, currency, nights, onSelect,
@@ -987,8 +988,11 @@ function RoomCard({
     additionalInfo?: string;
 }) {
     const tAll = useTranslations();
+    const t = useTranslations('property');
+    /** One radio group per card, so the arrow keys move within this room's rates only. */
+    const radioName = useId();
     const [modalOpen, setModalOpen] = useState(false);
-    /** The chip the reader picked. Null until they pick one — see `card` below. */
+    /** The row the reader picked. Null until they pick one — see `card` below. */
     const [pickedOfferId, setPickedOfferId] = useState<string | null>(null);
 
     /**
@@ -999,32 +1003,28 @@ function RoomCard({
     const pickedIdx = cards.findIndex(c => c.rate.offerId === (pickedOfferId ?? selectedOfferId));
 
     /**
-     * What a chip prints besides its price: whichever of board, cancellation and offer terms
-     * actually differs inside this card, computed per card rather than fixed.
+     * A row's title: the board, and then whatever else tells this rate from the others in the
+     * card — the bed, the offer terms — when, and only when, it differs between them.
      *
-     * Fixed to price-and-board, two chips could both read `Room only` at different prices and
-     * refuse to say why — the same complaint as two identical-looking cards, one level down.
-     * Anything that differs is displayed, so no two chips in a card can read alike. ADR-0007.
+     * One heading can cover rooms the supplier separates only in the parenthetical — ROYAL
+     * Hotel Seoul files "no window" and "2 full double beds" under one "Standard room" — and
+     * untitled, a reader picks on price and gets the other one. A rate with no board and
+     * nothing that differs gets no title; its row leads with its terms instead. ADR-0007.
      */
-    const chipParts = useMemo(() => {
+    const rowTitle = useMemo(() => {
         const varies = (of: (c: RateCard) => string) => new Set(cards.map(of)).size > 1;
-        const board  = varies(c => c.boardName ?? '');
-        const cancel = varies(c => cancellationChip(c));
-        const terms  = varies(c => offerTermsKey(c));
-        // One heading can cover rooms the supplier separates only in the parenthetical —
-        // ROYAL Hotel Seoul files "no window" and "2 full double beds" under one "Standard
-        // room". Unnamed on the chip, a reader picks on price and gets the other one.
-        const bed    = varies(c => c.bed ?? '');
+        const bed   = varies(c => c.bed ?? '');
+        const terms = varies(c => offerTermsKey(c));
         return (c: RateCard) => [
-            board  ? c.boardName            : null,
-            cancel ? cancellationChip(c)     : null,
-            bed    ? c.bed                   : null,
-            terms  ? c.offerTerms.join(', ') : null,
-        ].filter((part): part is string => Boolean(part));
+            c.boardName,
+            bed   ? c.bed                   : null,
+            terms ? c.offerTerms.join(', ') : null,
+        ].filter((part): part is string => Boolean(part)).join(' · ') || null;
     }, [cards]);
 
     const card = cards[pickedIdx >= 0 ? pickedIdx : 0];
     const selected = card.rate.offerId === selectedOfferId;
+    const choosable = cards.length > 1;
 
     // The room's own photo where there is one, the hotel's where there is not.
     //
@@ -1039,122 +1039,169 @@ function RoomCard({
     // building, the toiletries, the bathroom), so reaching past it to tell the two apart would
     // put a picture on the card that is not the room at all.
     const photo = card.photos[0] ?? image;
+    const photoCount = card.photos.length;
     const symbol = currencySymbol(currency) || currency;
-    /** The bulleted line: what the room is, then the board this rate comes with. */
-    const facts = card.boardName
-        ? [...card.roomDetails.map(f => f.label), card.boardName]
-        : card.roomDetails.map(f => f.label);
+    const price = (c: RateCard) => `${symbol}${Math.round(c.nightly).toLocaleString()}`;
+
+    /** A rate row's inside: the dot (only where there is a choice), the title over its terms,
+     *  and the price (only where it is not already the one at the foot). */
+    const rowBody = (option: RateCard, on: boolean) => {
+        const title = rowTitle(option);
+        const terms = option.terms ?? tAll('hotels.rooms.nonRefundable');
+        const termsClass = cn('text-[12px]', option.refundable ? palette.positive : palette.feature);
+        return (
+            <>
+                {choosable && (
+                    <span aria-hidden className={cn('size-4 shrink-0 rounded-full transition-colors', on ? palette.dotOn : palette.dotOff)} />
+                )}
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    {title ? (
+                        <>
+                            <span className={cn('text-[14px] font-semibold', palette.name)}>{title}</span>
+                            <span className={termsClass}>{terms}</span>
+                        </>
+                    ) : (
+                        <span className={cn(termsClass, 'text-[14px] font-semibold')}>{terms}</span>
+                    )}
+                </span>
+                {choosable && (
+                    <span className={cn('shrink-0 font-mono text-[15px] font-bold', palette.price)}>{price(option)}</span>
+                )}
+            </>
+        );
+    };
+
+    const rowClass = 'flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-colors';
 
     return (
-        <article className={cn('@container overflow-hidden rounded-xl px-5 py-5 sm:px-7 sm:py-8', palette.card)}>
-            <div className="flex flex-col gap-4 @lg:flex-row @lg:gap-6">
-                {/* Square-cornered. Beside the text it takes a third of the
-                    card's width and stretches to the text's height, so it fills
-                    the space the text leaves rather than setting a size of its
-                    own — a fixed proportion left a band of white under a short
-                    photo, and a full-width one stacked on top was oversized. The
-                    image is absolutely placed so it cannot push the card taller;
-                    `min-h-36` keeps it from becoming a sliver beside short text. */}
-                <div
-                    className={cn(
-                        'relative h-44 w-full shrink-0 overflow-hidden @lg:h-auto @lg:min-h-36 @lg:w-[34%] @lg:max-w-[260px] @lg:self-stretch',
-                        palette.imageBg,
-                    )}
-                >
+        <article className={cn('@container overflow-hidden rounded-xl', palette.card)}>
+            <div className="flex flex-col @lg:grid @lg:grid-cols-[260px_minmax(0,1fr)]">
+                {/* Full bleed: no radius and no inset, running to the card's own edges — the top
+                    and both sides on a phone, the top, left and bottom beside the text — where it
+                    used to sit in the card's padding as a rounded tile. The card's rounded corners
+                    and `overflow-hidden` are what round its outer corners now.
+
+                    Beside the text it stretches to the text's height, never past it: the image
+                    is absolutely placed, so it cannot push the card taller, and `min-h-60`
+                    keeps it from going thin beside a room with one rate. Pressing it opens the
+                    room's details, where the gallery is. */}
+                <div className={cn('relative h-48 w-full overflow-hidden @lg:h-auto @lg:min-h-60', palette.imageBg)}>
                     {photo && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     )}
-                </div>
-
-                <div className="flex min-w-0 flex-1 flex-col">
-                    <h4 className={cn('text-[20px] leading-[1.2] font-bold tracking-[-0.01em] @md:text-[24px]', palette.name)}>
-                        {card.heading}
-                    </h4>
-
-                    {facts.length > 0 && (
-                        <ul className={cn('mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px] font-semibold', palette.fact)}>
-                            {facts.map((fact, i) => (
-                                <li key={`${fact}-${i}`} className="flex items-center gap-2 capitalize">
-                                    <span aria-hidden className="size-[5px] shrink-0 rounded-full bg-current" />
-                                    {fact}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-
-                    <p className={cn('mt-2 text-[14px]', palette.terms)}>
-                        {card.terms ?? tAll('hotels.rooms.nonRefundable')}
-                    </p>
-
-                    {/* "Room details", the price and Select on one line, the pair
-                        held to the right edge. A currency with long figures can
-                        still run out of room on a narrow card; then the pair
-                        wraps under the link, on the right. */}
-                    <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    {photoCount > 0 && (
                         <button
                             type="button"
                             aria-haspopup="dialog"
                             onClick={() => setModalOpen(true)}
-                            className={cn('cursor-pointer text-[14px] font-bold whitespace-nowrap underline-offset-2 transition-colors hover:underline', palette.link)}
+                            aria-label={t('rooms.viewRoomPhotos')}
+                            className="absolute inset-0 cursor-zoom-in"
+                        >
+                            <span className="absolute bottom-2.5 left-2.5 flex items-center gap-[5px] rounded-full bg-slate-900/75 px-[9px] py-1 text-[11px] text-white">
+                                <Images size={12} aria-hidden className="shrink-0" />
+                                {t('v2.roomPhotoCount', { count: photoCount })}
+                            </span>
+                        </button>
+                    )}
+                </div>
+
+                {/* The card's padding is the text's alone now. 24px beside the 260px photo puts
+                    the text where it started when the photo was 240px inside 20px of padding. */}
+                <div className="flex min-w-0 flex-col gap-3.5 p-4 sm:p-5 @lg:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                            <h4 className={cn('font-display text-[20px] leading-[1.2] font-bold tracking-[-0.02em] @md:text-[22px]', palette.name)}>
+                                {card.heading}
+                            </h4>
+                            {card.roomDetails.length > 0 && (
+                                <ul className={cn('flex flex-wrap gap-x-3.5 gap-y-1 text-[13px]', palette.fact)}>
+                                    {card.roomDetails.map((fact, i) => {
+                                        const Icon = fact.icon;
+                                        return (
+                                            <li key={`${fact.label}-${i}`} className="flex items-center gap-1.5 capitalize">
+                                                <Icon size={16} strokeWidth={1.75} aria-hidden className="shrink-0" />
+                                                {fact.label}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </div>
+                        {/* The hit area reaches past the 13px text so a thumb can find it. */}
+                        <button
+                            type="button"
+                            aria-haspopup="dialog"
+                            onClick={() => setModalOpen(true)}
+                            className={cn(
+                                "relative shrink-0 cursor-pointer text-[13px] font-semibold whitespace-nowrap underline-offset-2 transition-colors before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline",
+                                palette.link,
+                            )}
                         >
                             {tAll('hotels.rooms.roomDetails')}
                         </button>
-
-                        <div className="ml-auto flex items-center gap-3">
-                            <p className="whitespace-nowrap">
-                                <span className={cn('text-[18px] font-bold', palette.price)}>
-                                    {symbol}{Math.round(card.nightly).toLocaleString()}
-                                </span>
-                                <span className={cn('text-[12px]', palette.unit)}>{tAll('hotels.perNight')}</span>
-                            </p>
-                            {/* Only this button picks the rate — the card is not
-                                clickable — and the selected state lives on it. */}
-                            <button
-                                type="button"
-                                onClick={() => onSelect({ room: card.room, rate: card.rate })}
-                                aria-pressed={selected}
-                                className={cn(
-                                    'shrink-0 cursor-pointer rounded-[2px] px-5 py-1.5 text-[14px] font-bold whitespace-nowrap transition-[filter,color]',
-                                    selected ? palette.selectOn : palette.selectIdle,
-                                )}
-                            >
-                                {selected ? 'Selected' : 'Select'}
-                            </button>
-                        </div>
                     </div>
 
-                    {/* The room's other rates. Only when there is a choice to make — a room
-                        sold one way shows nothing here rather than a single inert chip.
-                        Each chip is the price and the board, which is what separates two
-                        rates a reader can act on; picking one re-reads the whole card. */}
-                    {cards.length > 1 && (
+                    {/* Native radios under the drawn dots, so the arrow keys walk the rates and
+                        a screen reader hears "radio, 2 of 3" without anything rebuilt by hand. A
+                        room sold one way is one plain row: there is no choice to offer. */}
+                    {choosable ? (
                         <div
                             role="radiogroup"
-                            aria-label={tAll('hotels.rooms.roomDetails')}
-                            className="mt-3 flex flex-wrap gap-2"
+                            aria-label={t('v2.rateOptionsFor', { room: card.heading })}
+                            className="flex flex-col gap-2"
                         >
                             {cards.map((option) => {
-                                const active = option.rate.offerId === card.rate.offerId;
+                                const on = option.rate.offerId === card.rate.offerId;
                                 return (
-                                    <button
+                                    <label
                                         key={option.rate.offerId}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={active}
-                                        onClick={() => setPickedOfferId(option.rate.offerId)}
                                         className={cn(
-                                            'cursor-pointer rounded-full px-3 py-1 text-[12px] font-bold whitespace-nowrap transition-[filter,color]',
-                                            active ? palette.selectOn : palette.selectIdle,
+                                            rowClass,
+                                            'cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue-500',
+                                            on ? palette.rateOn : palette.rateOff,
                                         )}
                                     >
-                                        {symbol}{Math.round(option.nightly).toLocaleString()}
-                                        {chipParts(option).map(p => ` · ${p}`).join('')}
-                                    </button>
+                                        <input
+                                            type="radio"
+                                            name={radioName}
+                                            value={option.rate.offerId}
+                                            checked={on}
+                                            onChange={() => setPickedOfferId(option.rate.offerId)}
+                                            className="sr-only"
+                                        />
+                                        {rowBody(option, on)}
+                                    </label>
                                 );
                             })}
                         </div>
+                    ) : (
+                        <div data-testid="room-rate" className={cn(rowClass, palette.rateOnly)}>
+                            {rowBody(card, true)}
+                        </div>
                     )}
+
+                    {/* Pinned to the foot, so beside a tall photo the price and Select line up with
+                        its bottom edge. Announced when it changes: picking a row reprices the card. */}
+                    <div className="mt-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+                        <p data-testid="room-card-price" aria-live="polite" className="whitespace-nowrap">
+                            <span className={cn('font-mono text-[22px] font-bold', palette.price)}>{price(card)}</span>
+                            <span className={cn('text-[12px]', palette.unit)}>{tAll('hotels.perNight')}</span>
+                        </p>
+                        {/* Only this button picks the rate — the card is not clickable — and the
+                            selected state lives on it. */}
+                        <button
+                            type="button"
+                            onClick={() => onSelect({ room: card.room, rate: card.rate })}
+                            aria-pressed={selected}
+                            className={cn(
+                                'h-11 shrink-0 cursor-pointer rounded-full px-7 text-[14px] font-bold whitespace-nowrap transition-[filter,color]',
+                                selected ? palette.selectOn : palette.selectIdle,
+                            )}
+                        >
+                            {selected ? 'Selected' : 'Select'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1258,10 +1305,10 @@ export function RoomSelection({
      * One card per *room*, not per rate. Drawn per rate, a room sold two ways was two cards
      * identical but for the price — "Standard Family room" twice over at ₱5,409 and ₱5,506 —
      * which reads as a listing fault rather than as a choice of terms. The rates ride inside
-     * the card as chips instead, so the difference between them is next to the thing that
+     * the card as radio rows instead, so the difference between them is next to the thing that
      * differs rather than a card away.
      *
-     * Grouped *after* filtering, so only rates that survived the chips are placed and a card
+     * Grouped *after* filtering, so only rates that survived the filters are placed and a card
      * never offers one the filter excluded. Keyed on the heading because that is what a reader
      * distinguishes rooms by — two supplier room codes with one display name are one room to
      * the person choosing, and `splitRoomName` has already taken the bed off the end.

@@ -54,9 +54,19 @@ const EMPTY_FILTERS: HotelFiltersState = {
 };
 
 
+/**
+ * Holds the map's place while its code downloads, in the colour of the cover
+ * the map then loads under (see SearchMapContainer), so the two read as one
+ * surface until the finished map fades in.
+ */
+function MapChunkPlaceholder() {
+    const { theme } = useTheme();
+    return <div className="w-full h-full" style={{ background: brandTheme(theme).surface }} />;
+}
+
 const SearchMapContainer = dynamic(
     () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
-    { ssr: false, loading: () => <div className="w-full h-full" style={{ background: BRAND.surface }} /> }
+    { ssr: false, loading: () => <MapChunkPlaceholder /> }
 );
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1745,7 +1755,11 @@ function HotelSearchContent() {
                 line, and on an empty map the centre is where the eye goes. It
                 steps aside while a hotel is picked from the rail, since a phone
                 centres the map on the picked pin (see the `easeTo` in
-                SearchMapContainer) and the notice would cover it. */}
+                SearchMapContainer) and the notice would cover it.
+
+                Hangs just below the centre rather than on it: the map's loaders
+                (its spinner, then the one loading pin) stand above the centre
+                point, and the pill is their caption. */}
             <AnimatePresence>
                 {isStreaming && isMobile && !selectedId && (
                     <motion.div
@@ -1753,7 +1767,7 @@ function HotelSearchContent() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.96 }}
                         transition={{ duration: 0.18 }}
-                        className="absolute left-1/2 top-1/2 z-30 w-max max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2"
+                        className="absolute left-1/2 top-[calc(50%+14px)] z-30 w-max max-w-[calc(100vw-32px)] -translate-x-1/2"
                         style={{ pointerEvents: 'none' }}
                         role="status"
                         aria-live="polite"
@@ -1944,7 +1958,13 @@ function HotelSearchContent() {
                                 scroll past the visual right edge, while this row
                                 needs both edges to land where the bar's do. Only
                                 drawn once there's more than one page to move
-                                between. */}
+                                between.
+
+                                Ink on the bare map: near-black in light, white in
+                                dark, the inactive pages a strong tint of the same.
+                                They were the hairline colour (slate-200 / 10%
+                                white), which the day map's pale streets and the
+                                night map's dark ones both swallowed. */}
                             {railPageCount > 1 && (
                                 <div className={cn('mt-3 flex justify-center gap-1.5', MAP_CHROME_GUTTER)}>
                                     {Array.from({ length: railPageCount }).map((_, i) => (
@@ -1960,7 +1980,9 @@ function HotelSearchContent() {
                                             style={{
                                                 width: i === railPage ? 20 : 6, height: 6, borderRadius: 3,
                                                 border: 'none', padding: 0, cursor: 'pointer',
-                                                background: i === railPage ? chrome.text : chrome.border,
+                                                background: i === railPage
+                                                    ? chrome.text
+                                                    : (uiTone === 'dark' ? 'rgba(248,250,252,0.6)' : 'rgba(15,23,42,0.5)'),
                                                 transition: 'width .2s ease, background .2s ease',
                                                 pointerEvents: 'auto',
                                             }}

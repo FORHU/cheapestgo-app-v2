@@ -79,7 +79,7 @@ export function SupportWidget() {
                     'focus-visible:ring-2 active:scale-[0.98]',
                     skin.ring,
                 )}
-                style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow, color: skin.on }}
+                style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow, color: skin.icon }}
             >
                 {panelOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
                 {!panelOpen && unread > 0 && (

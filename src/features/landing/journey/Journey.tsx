@@ -62,6 +62,9 @@ export function Journey({
     showcaseStays: Record<string, FeaturedStay>;
 }) {
     const trackRef = useRef<HTMLDivElement>(null);
+    // The Journey's own box. Only the track is in flow, so its bottom edge is where the page's
+    // footer begins — which is what the last stage reads to get out of the footer's way.
+    const rootRef = useRef<HTMLDivElement>(null);
     const { journey, trackPx, reducedMotion } = useJourneyProgress(trackRef);
     const goToStop = useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
     const tAll = useTranslations();
@@ -134,10 +137,11 @@ export function Journey({
     const heroOut = ramp(journey, 0, HERO_FADE_END);
     const active = currentStage(journey);
 
-    // The journey ends on its last stage and the page ends with it: the footer rises over the
-    // fixed layers, so nothing is faded out or taken down at the end of the track.
+    // The journey ends on its last stage and the page ends with it: nothing is faded out or
+    // taken down at the end of the track. The footer comes up under the fixed layers, and the
+    // last stage rides up ahead of it once the two would meet — see `useFooterClearance`.
     return (
-        <div>
+        <div ref={rootRef}>
             <StageShowcase journey={journey} mode={mode} reducedMotion={false} />
 
             {/* Hero. Fades rather than scrolls away, so the page's first movement is the
@@ -221,6 +225,7 @@ export function Journey({
                     trending={trending}
                     stays={showcaseStays}
                     onModeSelect={setMode}
+                    journeyRef={rootRef}
                 />
             )}
 
@@ -313,7 +318,14 @@ function drift(shift: number, x: number, y: number): React.CSSProperties | undef
 /** Pixels each part of a stage travels per unit of `shift`. Later lines travel further. */
 const DRIFT = { eyebrow: [0, 36], lead: [64, 70], rest: [-64, 110], caption: [0, 150], surface: [0, 190] } as const;
 
-function StageHeading({ stage, t, shift = 0 }: { stage: StageFace; t?: number; shift?: number }) {
+function StageHeading({ stage, t, shift = 0, docked = false }: {
+    stage: StageFace;
+    t?: number;
+    shift?: number;
+    /** On the docked stage, whose whole search has to fit one screen: the caption is the first
+     *  thing a short phone (under 700px tall) gives up so the pills stay clear of the bottom nav. */
+    docked?: boolean;
+}) {
     const tAll = useTranslations();
     // A stage's wording is in the message files, keyed by its id (see `StageFace.id`).
     const key = (field: 'eyebrow' | 'titleLead' | 'titleRest' | 'caption') =>
@@ -339,7 +351,9 @@ function StageHeading({ stage, t, shift = 0 }: { stage: StageFace; t?: number; s
             {/* The hero's own treatment — bold, uppercase, tight tracking — rather than
                 the semibold mixed-case it used to carry, so every heading in the Journey
                 reads in one voice instead of the hero sounding like a different page. */}
-            <h2 className="text-4xl leading-[0.9] font-bold tracking-tight text-white uppercase sm:text-5xl">
+            {/* 36px from a 375px phone up, as before; narrower than that it shrinks with the
+                screen, so "FIND YOUR STAY." stays one line on a 320px phone. */}
+            <h2 className="text-[clamp(1.75rem,9.6vw,2.25rem)] leading-[0.9] font-bold tracking-tight text-white uppercase sm:text-5xl">
                 <span className="inline-block" style={drift(shift, ...DRIFT.lead)}>
                     <RevealChars text={lead} t={t} totalChars={totalChars} />
                 </span>{' '}
@@ -347,7 +361,10 @@ function StageHeading({ stage, t, shift = 0 }: { stage: StageFace; t?: number; s
                     <RevealChars text={rest} t={t} startIndex={leadChars} totalChars={totalChars} />
                 </span>
             </h2>
-            <p className="mt-3 max-w-md text-sm text-white/65" style={drift(shift, ...DRIFT.caption)}>
+            <p
+                className={`mt-3 max-w-md text-sm text-white/65 ${docked ? 'max-lg:[@media(max-height:700px)]:hidden' : ''}`}
+                style={drift(shift, ...DRIFT.caption)}
+            >
                 {copy('caption')}
             </p>
         </div>
@@ -406,7 +423,11 @@ function StaysSurface({
     const [pick, setPick] = useState<{ name: string } | null>(null);
     const [destination, setDestination] = useState<string | null>(null);
     return (
-        <div className="space-y-5">
+        // A flex gap, not `space-y-*`: that spaces by margin, and the bar's root carries an
+        // inline `margin: 0 auto` that outranks it, so GO and the pills ended up touching.
+        // Only up to 640px, where the bar drops its own padding (`--imm-pad:0px` in
+        // immersive-search-bar): above that, the padding under GO is already the gap.
+        <div className="flex flex-col gap-4 min-[641px]:gap-0">
             <ImmersiveSearchBar
                 trendingDestinations={trending}
                 defaultMode="stays"
@@ -430,7 +451,8 @@ function GolfSurface({ onModeSelect }: { onModeSelect?: (mode: SearchMode) => vo
     const [pick, setPick] = useState<{ slug: string } | null>(null);
     const [chosen, setChosen] = useState<string | null>(null);
     return (
-        <div className="space-y-5">
+        // A flex gap, sized as StaysSurface's is and for the same reasons.
+        <div className="flex flex-col gap-4 min-[641px]:gap-0">
             <ImmersiveSearchBar
                 defaultMode="golf"
                 onModeSelect={onModeSelect}
@@ -465,16 +487,13 @@ function CourseStrip({
     onPick: (slug: string) => void;
 }) {
     const tAll = useTranslations();
-    // Narrower on a phone, where a course name is longer than a city's: two to a row, as the stay
-    // pills sit, rather than one each running down under the bottom bar.
-    const pill = 'min-w-36 rounded-full px-5 py-2.5 text-center sm:px-7';
     const glass = { background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` };
 
     if (courses === null) {
         return (
-            <div className="flex flex-wrap gap-2" aria-hidden>
+            <div className={STRIP} aria-hidden>
                 {Array.from({ length: STRIP_COURSES }, (_, i) => (
-                    <span key={i} className={`${pill} h-10 animate-pulse`} style={glass} />
+                    <span key={i} className={`${STRIP_PILL} h-11 animate-pulse sm:h-10 ${i >= PHONE_COURSES ? 'max-sm:hidden' : ''}`} style={glass} />
                 ))}
             </div>
         );
@@ -482,7 +501,7 @@ function CourseStrip({
     if (courses.length === 0) return null;
 
     return (
-        <div className="flex flex-wrap gap-2">
+        <div className={STRIP}>
             {courses.slice(0, STRIP_COURSES).map((c, i) => {
                 const isChosen = chosen === c.slug;
                 return (
@@ -492,24 +511,25 @@ function CourseStrip({
                         aria-pressed={isChosen}
                         onClick={() => onPick(c.slug)}
                         // A phone names two; the rest are a tap away in the sentence's own list.
-                        className={`${pill} ${i >= PHONE_COURSES ? 'hidden sm:inline-block' : ''} cursor-pointer transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95`}
+                        className={`${STRIP_PILL} ${i >= PHONE_COURSES ? 'max-sm:hidden' : ''} cursor-pointer transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95`}
                         style={{
                             background: isChosen ? BRAND.primaryWash : BRAND.glass,
                             border: `1px solid ${isChosen ? BRAND.accent : BRAND.glassBorder}`,
                         }}
                     >
-                        <span className="text-sm font-medium text-white">{c.name}</span>
+                        <span className="truncate text-sm font-medium text-white">{c.name}</span>
                         {c.greenFeeFrom != null && (
-                            <span className="ml-2 hidden text-xs text-white/55 sm:inline">
+                            <span className="truncate text-[11px] text-white/55 sm:ml-2 sm:text-xs">
                                 {tAll('landing.journey.strip.from', { price: formatCurrency(c.greenFeeFrom, c.currency) })}
                             </span>
                         )}
                     </button>
                 );
             })}
+            {/* The grid's whole second row on a phone, under the two courses. */}
             <Link
                 href="/golf"
-                className={`${pill} text-sm font-medium text-white/80 transition-[filter] duration-150 hover:brightness-125`}
+                className={`${STRIP_PILL} col-span-2 items-center text-center text-sm font-medium text-white/80 transition-[filter] duration-150 hover:brightness-125`}
                 style={glass}
             >
                 {tAll('search.golf.allCourses')}
@@ -517,6 +537,17 @@ function CourseStrip({
         </div>
     );
 }
+
+/**
+ * The pills under the stays and golf searches. On a phone they are a two-column grid, each pill a
+ * cell with its price under its name: as one-line capsules they ran one or two to a row, four rows
+ * deep, down under the bottom bar. From `sm` up they are the capsules in a wrapping row they were.
+ * `min-h-11` keeps a phone's pill a full 44px target even with no price under the name.
+ */
+const STRIP = 'grid grid-cols-2 gap-2 sm:flex sm:flex-wrap';
+const STRIP_PILL =
+    'flex min-h-11 min-w-0 flex-col justify-center rounded-2xl px-3.5 py-1.5 text-left ' +
+    'sm:block sm:min-h-0 sm:min-w-36 sm:rounded-full sm:px-7 sm:py-2.5 sm:text-center';
 
 /** How long the old wording takes to fade out before the new is put in its place, in ms. */
 const FACE_SWAP_MS = 240;
@@ -539,6 +570,7 @@ function StagePanel({
     trending,
     stays,
     onModeSelect,
+    journeyRef,
 }: {
     stage: Stage;
     mode: SearchMode;
@@ -546,10 +578,17 @@ function StagePanel({
     trending?: TrendingDest[];
     stays: Record<string, FeaturedStay>;
     onModeSelect: (mode: SearchMode) => void;
+    /** The Journey's root, whose bottom edge is the top of the page's footer. */
+    journeyRef: React.RefObject<HTMLDivElement | null>;
 }) {
     const t = stageProgress(stage, journey) ?? 0;
+    const isLast = stage === STAGES[STAGES.length - 1];
     // The last stage stays where it lands; every other one moves off as the next arrives.
-    const { shift, opacity } = stageMotion(t, stage === STAGES[STAGES.length - 1]);
+    const { shift, opacity } = stageMotion(t, isLast);
+
+    const panelRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    useFooterClearance(isLast, journeyRef, panelRef, contentRef);
 
     const [shown, setShown] = useState(mode);
     useEffect(() => {
@@ -565,15 +604,21 @@ function StagePanel({
     const side = faceOf(stage, mode).side;
     const width = stage.side === 'center' ? 'min(100%, 56rem)' : 'min(100%, 42rem)';
 
+    // Below `lg` the band the stage is centred in stops 152px above the foot of the screen: clear of
+    // the bottom nav and of the floating buttons that ride above it at +92px (support chat, brand
+    // preview), so neither lands on a pill. `items-center-safe`: a stage taller than its band on a
+    // short phone starts under the header and runs down, rather than off the top.
     return (
         <div
-            className="pointer-events-none fixed inset-0 z-[3] flex items-center px-[max(1.5rem,6vw)] pt-20"
+            ref={panelRef}
+            className="pointer-events-none fixed inset-0 z-[3] flex items-center-safe px-[max(1.5rem,6vw)] pt-20 pb-[calc(env(safe-area-inset-bottom,0px)+152px)] lg:pb-0"
             style={{ opacity }}
         >
             {/* Positioned by its left margin, as a share of the room the panel leaves — 0 flush
                 left, 1 flush right — because a margin can be transitioned and `left`/`right`
                 cannot. The share is of the row's own width, so no measuring is needed. */}
             <div
+                ref={contentRef}
                 className="pointer-events-auto"
                 style={{
                     width,
@@ -588,14 +633,75 @@ function StagePanel({
                         pointerEvents: swapping ? 'none' : undefined,
                     }}
                 >
-                    <StageHeading stage={face} t={t} shift={shift} />
-                    <div className="mt-8" style={drift(shift, ...DRIFT.surface)}>
+                    <StageHeading stage={face} t={t} shift={shift} docked />
+                    <div className="mt-5 sm:mt-8" style={drift(shift, ...DRIFT.surface)}>
                         <StageSurface key={face.id} stage={face} trending={trending} stays={stays} onModeSelect={onModeSelect} />
                     </div>
                 </div>
             </div>
         </div>
     );
+}
+
+/** Room kept between the last stage and the footer once the footer starts pushing it up. */
+const FOOTER_CLEARANCE_PX = 24;
+
+/**
+ * Keeps the last stage clear of the page's footer.
+ *
+ * The stage is a fixed layer and the footer is in flow under the scroll track, so scrolling
+ * past the end of the journey brought the footer up underneath the stage's cards, with both
+ * readable through each other. Once the footer's top edge comes within
+ * `FOOTER_CLEARANCE_PX` of the stage's content, the stage moves up by exactly the overlap,
+ * so from then on it scrolls with the page as if it had been in flow above the footer. Before
+ * that, the footer rises into the empty band below the stage (the room a phone keeps for its
+ * bottom nav) and nothing moves.
+ *
+ * The transform is written straight to the element on scroll rather than through state:
+ * this runs every frame of a scroll, and re-rendering the stage's search for it would be waste.
+ * The content's resting position is read from `offsetTop`/`offsetHeight`, which the transform
+ * does not change, so the measurement never chases its own correction.
+ */
+function useFooterClearance(
+    enabled: boolean,
+    journeyRef: React.RefObject<HTMLDivElement | null>,
+    panelRef: React.RefObject<HTMLDivElement | null>,
+    contentRef: React.RefObject<HTMLDivElement | null>,
+) {
+    useEffect(() => {
+        const panel = panelRef.current;
+        const content = contentRef.current;
+        if (!enabled || !panel || !content) return;
+
+        let frame = 0;
+        const update = () => {
+            frame = 0;
+            const end = journeyRef.current;
+            if (!end) return;
+            const footerTop = end.getBoundingClientRect().bottom;
+            // The panel is fixed at the top of the viewport and is the content's offset parent,
+            // so these offsets are viewport coordinates of where the content rests.
+            const contentBottom = content.offsetTop + content.offsetHeight;
+            const lift = Math.max(0, contentBottom + FOOTER_CLEARANCE_PX - footerTop);
+            panel.style.transform = lift > 0 ? `translateY(${-lift}px)` : '';
+        };
+        const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+
+        update();
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule);
+        // The stage changes height as its face swaps or a phone rotates.
+        const observer = new ResizeObserver(schedule);
+        observer.observe(content);
+
+        return () => {
+            cancelAnimationFrame(frame);
+            window.removeEventListener('scroll', schedule);
+            window.removeEventListener('resize', schedule);
+            observer.disconnect();
+            panel.style.transform = '';
+        };
+    }, [enabled, journeyRef, panelRef, contentRef]);
 }
 
 /**
@@ -625,7 +731,7 @@ function ShowcaseStrip({
     const money = useMoney();
 
     return (
-        <div className="flex flex-wrap gap-2">
+        <div className={STRIP}>
             {SHOWCASE_DESTINATIONS.map(d => {
                 const stay = stays[d.city];
                 const isChosen = chosen === d.city;
@@ -637,15 +743,15 @@ function ShowcaseStrip({
                         onClick={() => onPick(d.city)}
                         // `cursor-pointer` spelled out: Tailwind 4 leaves buttons on the
                         // default arrow, which made the pills look like labels.
-                        className="min-w-36 cursor-pointer rounded-full px-7 py-2.5 text-center transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95"
+                        className={`${STRIP_PILL} cursor-pointer transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95`}
                         style={{
                             background: isChosen ? BRAND.primaryWash : BRAND.glass,
                             border: `1px solid ${isChosen ? BRAND.accent : BRAND.glassBorder}`,
                         }}
                     >
-                        <span className="text-sm font-medium text-white">{d.city}</span>
+                        <span className="truncate text-sm font-medium text-white">{d.city}</span>
                         {stay && (
-                            <span className="ml-2 text-xs text-white/55">
+                            <span className="truncate text-[11px] text-white/55 sm:ml-2 sm:text-xs">
                                 {tAll('landing.journey.strip.from', { price: money(stay.price, stay.currency) })}
                             </span>
                         )}

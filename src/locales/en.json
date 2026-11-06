@@ -1902,7 +1902,9 @@
       "switchToDark": "Switch to dark mode",
       "mealPlan": "Meal plan",
       "cancellationPolicy": "Cancellation policy",
-      "price": "Price"
+      "price": "Price",
+      "roomPhotoCount": "{count, plural, one {# photo} other {# photos}}",
+      "rateOptionsFor": "Rates for {room}"
     },
     "metaDescription": "Rates, rooms and photos for {name}. Compare prices and book with free cancellation where available."
   },
@@ -2108,7 +2110,8 @@
       "staysCount": "{count} Stays",
       "clusterChecking": "checking {count}…",
       "clusterHotels": "{count} hotels",
-      "clusterFrom": "from {price}"
+      "clusterFrom": "from {price}",
+      "mapLoading": "Loading map…"
     },
     "freeCancel": "Free cancel",
     "recent": "Recent",

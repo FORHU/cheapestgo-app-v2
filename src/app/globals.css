@@ -416,6 +416,23 @@ html.dark body.flat-ground .flat-ground-strip {
 }
 
 /*
+ * The search map's loading spinner, on the cover the map loads under
+ * (SearchMapContainer). Held back a beat, so a map that is ready almost at once
+ * fades in without a spinner flashing on the way.
+ *
+ * Opacity only: the spinner is centred with a translate, and a transform here
+ * would throw that away for the length of the animation.
+ */
+@keyframes map-loader-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.map-loader-in {
+  animation: map-loader-in 240ms ease-out 250ms backwards;
+}
+
+/*
  * The flight card's route line: a plane flying it from departure to arrival,
  * trailing a streak of the brand gradient (flight-card.tsx, `RouteLine`).
  *
