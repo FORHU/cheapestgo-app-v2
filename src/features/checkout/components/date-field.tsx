@@ -107,7 +107,7 @@ export function DateField({
 
     const navBtn = (label: string, disabled: boolean, onClick: () => void, Icon: typeof ChevronLeft) => (
         <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="cg-pick-nav"
-            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            style={{ width: 'var(--cg-nav)', height: 'var(--cg-nav)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: palette.surface, color: palette.text, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.3 : 1 }}>
             <Icon size={15} />
         </button>
@@ -168,7 +168,8 @@ export function DateField({
                                             aria-current={day === today ? 'date' : undefined}
                                             tabIndex={isCursor ? 0 : -1} disabled={disabled}
                                             onClick={() => pick(day)} className="cg-pick"
-                                            style={{ ...cell(selected, disabled, day === today), width: 36, height: 36, margin: '0 auto', display: 'block' }}>
+                                            // `--cg-day` (44px on a phone), or the column's width when the panel is too narrow for it.
+                                            style={{ ...cell(selected, disabled, day === today), width: 'min(var(--cg-day), 100%)', aspectRatio: '1', margin: '0 auto', display: 'block' }}>
                                             {date}
                                         </button>
                                     </span>
@@ -195,7 +196,7 @@ export function DateField({
                             <button key={i} type="button" disabled={disabled} data-cursor={i === m}
                                 aria-label={fmt.title.format(new Date(y, i, 1))} aria-pressed={selected}
                                 onClick={() => { move(iso(y, i, 1)); setView('day'); }} className="cg-pick"
-                                style={{ ...cell(selected, disabled, false), height: 40 }}>
+                                style={{ ...cell(selected, disabled, false), height: 'var(--cg-cell-h)' }}>
                                 {fmt.short.format(new Date(y, i, 1))}
                             </button>
                         );
@@ -221,7 +222,7 @@ export function DateField({
                             <button key={year} type="button" disabled={disabled} data-cursor={year === y}
                                 aria-pressed={!!chosen && chosen.y === year}
                                 onClick={() => { move(iso(year, m, 1)); setView('month'); }} className="cg-pick"
-                                style={{ ...cell(!!chosen && chosen.y === year, disabled, false), height: 40 }}>
+                                style={{ ...cell(!!chosen && chosen.y === year, disabled, false), height: 'var(--cg-cell-h)' }}>
                                 {year}
                             </button>
                         );

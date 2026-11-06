@@ -33,7 +33,8 @@ export function PickerPanel({
                 onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
                 style={{
                     position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 41,
-                    width: `min(${width}px, calc(100vw - 32px))`, padding: 14, borderRadius: 18,
+                    // At least `--cg-picker-min` wide (360px on a phone, see globals.css), never wider than the screen.
+                    width: `min(max(${width}px, var(--cg-picker-min, 0px)), calc(100vw - 32px))`, padding: 14, borderRadius: 18,
                     background: palette.menuBg, border: `1px solid ${palette.summaryBorder}`,
                     boxShadow: '0 18px 44px rgba(2,6,23,.45)', color: palette.text,
                 }}
@@ -47,7 +48,7 @@ export function PickerPanel({
 /** How an option looks: a pill, the chosen one filled with the brand gradient. */
 export function pickStyle(palette: Palette, { selected = false, disabled = false, ring = false } = {}): React.CSSProperties {
     return {
-        border: 'none', borderRadius: 999, fontFamily: 'inherit', fontSize: 13,
+        border: 'none', borderRadius: 999, fontFamily: 'inherit', fontSize: 'var(--cg-pick-fs)',
         fontWeight: selected ? 700 : 500,
         color: selected ? '#fff' : palette.text,
         background: selected ? ACCENT_FILL : 'transparent',

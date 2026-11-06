@@ -213,18 +213,18 @@ describe('the page, in the checkout\'s own design', () => {
         expect(container.querySelector('.cg-steps-thumb')?.getAttribute('style')).toMatch(/linear-gradient/);
     });
 
-    it('rings the fields in the brand gradient, and haloes the one being typed in', () => {
+    it('keeps the fields to a hairline at rest, and rings and haloes only the one being typed in', () => {
         const { container } = renderPage();
         const field = container.querySelector('input.cg-field');
-        // blue-600 → cyan-500, as jsdom writes them back.
-        expect(field?.getAttribute('style')).toMatch(/linear-gradient\(90deg, rgb\(37, 99, 235\) 0%, rgb\(6, 182, 212\) 100%\) border-box/);
+        expect(field?.getAttribute('style')).not.toMatch(/linear-gradient/);
+        // The brand gradient, blue-600 → cyan-500, and the blue halo belong to the focused field.
         const css = Array.from(container.querySelectorAll('style')).map((s) => s.textContent).join('\n');
-        expect(css).toMatch(/\.cg-field:focus,\.cg-phone:focus-within\{box-shadow:0 0 0 4px rgba\(59,130,246,0\.18\)\}/);
+        expect(css).toMatch(/\.cg-field:focus,\.cg-phone:focus-within\{[^}]*linear-gradient\(90deg,#2563eb 0%,#06b6d4 100%\)\) border-box !important;[^}]*box-shadow:0 0 0 4px rgba\(59,130,246,0\.18\)/);
     });
 
     it('keeps a field\'s edge and fill when the browser autofills it', () => {
-        // Chrome sets `background-image: none !important` on an autofilled input, and the ring
-        // and the white fill are both background images — so an autofilled field lost its pill.
+        // Chrome sets `background-image: none !important` on an autofilled input, and the focused
+        // ring and the fill under it are background images — so an autofilled field lost them.
         // Border colour and an inset shadow are not touched by that rule, so they put it back.
         const { container } = renderPage();
         const css = Array.from(container.querySelectorAll('style')).map((s) => s.textContent).join('\n');
@@ -282,16 +282,16 @@ describe('the passenger form', () => {
 
     it('shows the email and phone fields with an example too, like the names', () => {
         renderPage();
-        expect(screen.getByLabelText(/^email/i)).toHaveAttribute('placeholder', 'eg.johndoe@gmail.com');
-        expect(screen.getByLabelText(/^phone number/i)).toHaveAttribute('placeholder', '912 345 6789');
+        expect(screen.getByLabelText(/^email/i)).toHaveAttribute('placeholder', 'e.g. johndoe@gmail.com');
+        expect(screen.getByLabelText(/^phone number/i)).toHaveAttribute('placeholder', 'e.g. 912 345 6789');
     });
 
     it('shows the name fields with an example name, not their own labels again', () => {
         // The one example person every booking form uses, split across the two fields so the
         // first-name box is not read as asking for a full name.
         renderPage();
-        expect(screen.getByLabelText(/^first name/i)).toHaveAttribute('placeholder', 'John');
-        expect(screen.getByLabelText(/^last name/i)).toHaveAttribute('placeholder', 'Doe');
+        expect(screen.getByLabelText(/^first name/i)).toHaveAttribute('placeholder', 'e.g. John');
+        expect(screen.getByLabelText(/^last name/i)).toHaveAttribute('placeholder', 'e.g. Doe');
     });
 
     it('opens every picker — date, gender, country autocomplete and dial code — in the same panel', () => {
