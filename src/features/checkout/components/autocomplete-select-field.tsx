@@ -110,7 +110,7 @@ export function AutocompleteSelectField({
                                 style={{ ...pickStyle(palette, {
                                     selected: option.value === value,
                                     ring: index === active && option.value !== value,
-                                }), width: '100%', padding: '9px 14px', textAlign: 'left', fontSize: 14 }}
+                                }), width: '100%', padding: 'var(--cg-option-py) 14px', textAlign: 'left', fontSize: 'var(--cg-field-fs)' }}
                             >
                                 {option.label}
                             </button>

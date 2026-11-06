@@ -167,10 +167,12 @@ function fieldEdge(palette: Palette, hasError = false): React.CSSProperties {
 
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
-        width: '100%', height: 40, padding: '0 16px', borderRadius: 999,
+        // Sizes from `--cg-field-*` in globals.css: 40px and 14px with a mouse, 48px and 16px on a
+        // phone or a touch screen.
+        width: '100%', height: 'var(--cg-field-h)', padding: '0 16px', borderRadius: 999,
         ...fieldEdge(palette, hasError),
         color: palette.text,
-        fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+        fontSize: 'var(--cg-field-fs)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
     };
 }
 
@@ -180,8 +182,9 @@ function mkField(palette: Palette, hasError = false): React.CSSProperties {
  * caption whose text does not.
  */
 function Label({ children, palette, icon: Icon, htmlFor, required }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon; htmlFor?: string; required?: boolean }) {
-    const style: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 };
-    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} color={palette.icon} style={{ flexShrink: 0 }} />}{children}{required && <span aria-hidden> *</span>}</>;
+    const style: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--cg-label-fs)', fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 };
+    // The icon is drawn at the caption's own size (1em), so it grows with it on a phone.
+    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} color={palette.icon} style={{ flexShrink: 0, width: '1em', height: '1em' }} />}{children}{required && <span aria-hidden> *</span>}</>;
     return htmlFor
         ? <label htmlFor={htmlFor} style={style}>{content}</label>
         : <div style={style}>{content}</div>;
@@ -189,7 +192,7 @@ function Label({ children, palette, icon: Icon, htmlFor, required }: { children:
 
 function ErrText({ msg }: { msg?: string }) {
     if (!msg) return null;
-    return <div style={{ fontSize: 11, color: DANGER, marginTop: 5, fontWeight: 600 }}>{msg}</div>;
+    return <div style={{ fontSize: 'var(--cg-small-fs)', color: DANGER, marginTop: 5, fontWeight: 600 }}>{msg}</div>;
 }
 
 function Spinner({ color = '#fff' }: { color?: string }) {
@@ -265,7 +268,7 @@ function PhoneField({
             <div
                 className="cg-phone"
                 style={{
-                    display: 'flex', alignItems: 'center', width: '100%', height: 40,
+                    display: 'flex', alignItems: 'center', width: '100%', height: 'var(--cg-field-h)',
                     borderRadius: 999, ...fieldEdge(palette, !!error), boxSizing: 'border-box',
                 }}
             >
@@ -278,7 +281,7 @@ function PhoneField({
                     onClick={() => (open ? close() : setOpen(true))}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px', height: '100%',
-                        background: 'none', border: 'none', color: palette.text, fontSize: 14,
+                        background: 'none', border: 'none', color: palette.text, fontSize: 'var(--cg-field-fs)',
                         cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
                     }}
                 >
@@ -298,7 +301,7 @@ function PhoneField({
                     className="cg-field"
                     style={{
                         flex: 1, minWidth: 0, height: '100%', background: 'none', border: 'none',
-                        outline: 'none', color: palette.text, fontSize: 14, padding: '0 14px', fontFamily: 'inherit',
+                        outline: 'none', color: palette.text, fontSize: 'var(--cg-field-fs)', padding: '0 14px', fontFamily: 'inherit',
                     }}
                 />
             </div>
@@ -1426,7 +1429,7 @@ function CheckoutContent() {
                         </div>
 
                         <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
-                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                                 {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
                             </h1>
                             {step === 'form' && (
@@ -1465,7 +1468,7 @@ function CheckoutContent() {
                                     return (
                                         <section key={i} style={{ marginBottom: 28 }}>
                                             <div style={{ ...sectionLabelStyle, marginBottom: 6 }}>{heading}</div>
-                                            <p style={{ fontSize: 12, color: palette.muted, margin: '0 0 16px' }}>{t('flight.nameHint')}</p>
+                                            <p style={{ fontSize: 'var(--cg-note-fs)', color: palette.muted, margin: '0 0 16px' }}>{t('flight.nameHint')}</p>
                                             <div style={fieldGrid}>
                                                 <div>
                                                     <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
@@ -1501,7 +1504,7 @@ function CheckoutContent() {
                                                         />
                                                         <ErrText msg={err('phone')} />
                                                     </div>
-                                                    <p className="col-span-2" style={{ fontSize: 12, color: palette.muted, margin: '-8px 4px 0' }}>{t('flight.contactHint')}</p>
+                                                    <p className="col-span-2" style={{ fontSize: 'var(--cg-note-fs)', color: palette.muted, margin: '-8px 4px 0' }}>{t('flight.contactHint')}</p>
                                                 </>}
 
                                                 <div className={half}>
@@ -1574,7 +1577,7 @@ function CheckoutContent() {
                                 </>
                             )}
 
-                            <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                            <p style={{ fontSize: 'var(--cg-small-fs)', color: palette.faint, textAlign: 'center', marginTop: 14 }}>
                                 {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                             </p>
                         </div>
@@ -1629,7 +1632,7 @@ function CheckoutContent() {
                     <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
                         {/* One line from `lg` up, as drawn — it may run past the form column into
                             the gutter, which the steps never reach. Sized so it always fits there. */}
-                        <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                        <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                             {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
                         </h1>
                         {step === 'form' && (
@@ -1798,7 +1801,7 @@ function CheckoutContent() {
                             </Elements>
                         )}
 
-                        <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                        <p style={{ fontSize: 'var(--cg-small-fs)', color: palette.faint, textAlign: 'center', marginTop: 14 }}>
                             {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                         </p>
                     </div>
