@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Send, Undo2, CheckCircle2, Paperclip, FileText, X } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Send, Undo2, CheckCircle2, Paperclip, FileText, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -102,9 +102,27 @@ export function SupportDeskView() {
         }
     };
 
+    // Inbox and chat side by side from `md`. Below it a 320px inbox beside the chat left the chat
+    // nothing, so a phone shows one at a time: the inbox until a chat is picked, then the chat at
+    // full width with a way back — drawn while the chat loads too, so a chat that fails to load
+    // is not a dead end.
+    const backToInbox = (
+        <button
+            type="button"
+            onClick={() => { setSelected(null); setOpen(null); }}
+            aria-label="Back to inbox"
+            className="-ml-2 flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 md:hidden dark:hover:bg-slate-800 dark:hover:text-white"
+        >
+            <ArrowLeft className="h-4 w-4" />
+        </button>
+    );
+
     return (
         <div className="flex h-[calc(100vh-8rem)] gap-4">
-            <section className="flex w-80 shrink-0 flex-col rounded-lg border border-slate-200 dark:border-slate-700">
+            <section className={cn(
+                'w-full shrink-0 flex-col rounded-lg border border-slate-200 md:flex md:w-80 dark:border-slate-700',
+                selectedId ? 'hidden' : 'flex',
+            )}>
                 <div className="flex items-center gap-1 border-b border-slate-200 p-2 dark:border-slate-700">
                     {FILTERS.map(f => (
                         <button
@@ -155,14 +173,19 @@ export function SupportDeskView() {
                 </ul>
             </section>
 
-            <section className="flex min-w-0 flex-1 flex-col rounded-lg border border-slate-200 dark:border-slate-700">
+            <section className={cn(
+                'min-w-0 flex-1 flex-col rounded-lg border border-slate-200 md:flex dark:border-slate-700',
+                selectedId ? 'flex' : 'hidden',
+            )}>
                 {error && <p role="alert" className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</p>}
 
+                {!open && selectedId && <div className="px-4 pt-3 md:hidden">{backToInbox}</div>}
                 {!open && <p className="p-6 text-sm text-slate-500">Pick a chat to read it.</p>}
 
                 {open && (
                     <>
                         <header className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+                            {backToInbox}
                             <div className="mr-auto">
                                 <h2 className="text-sm font-semibold text-slate-900 dark:text-white">{open.conversation.reference}</h2>
                                 <p className="text-xs text-slate-500">{open.conversation.status.replace(/_/g, ' ')} · {open.conversation.locale}</p>

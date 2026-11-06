@@ -19,7 +19,7 @@ export const parseDay = (s: string) => new Date(`${s}T00:00:00`);
  * rule, since a stay and a trip end theirs differently. Past days are disabled.
  */
 export function RangeCalendar({
-    tone, month, onMonth, start, end, onPick,
+    tone, month, onMonth, start, end, onPick, roomy = false,
 }: {
     tone: 'light' | 'dark';
     /** The first of the month on show. */
@@ -29,6 +29,11 @@ export function RangeCalendar({
     /** Empty while a range is half picked, or for a single day. */
     end: string;
     onPick: (day: string) => void;
+    /**
+     * Thumb-sized, for a phone's sheet: each day fills its column up to 44px, square, and the
+     * month arrows are 40px. The popover's 36px days are a mouse's size.
+     */
+    roomy?: boolean;
 }) {
     const locale = useLocale();
     const p = sortPalette(tone);
@@ -44,6 +49,8 @@ export function RangeCalendar({
     const weekdays = Array.from({ length: 7 }, (_, i) =>
         new Date(2026, 1, i + 1).toLocaleDateString(locale, { weekday: 'narrow' }));   // Feb 1 2026 is a Sunday
 
+    const arrow = roomy ? 'h-10 w-10' : 'h-8 w-8';
+
     return (
         <>
             {/* Month header */}
@@ -53,7 +60,7 @@ export function RangeCalendar({
                     aria-label="previous month"
                     disabled={month <= thisMonth}
                     onClick={() => onMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-                    className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer disabled:cursor-default disabled:opacity-30"
+                    className={`flex ${arrow} items-center justify-center rounded-full cursor-pointer disabled:cursor-default disabled:opacity-30`}
                     style={{ background: p.hover }}>
                     <ChevronLeft size={15} />
                 </button>
@@ -64,7 +71,7 @@ export function RangeCalendar({
                     type="button"
                     aria-label="next month"
                     onClick={() => onMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-                    className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
+                    className={`flex ${arrow} items-center justify-center rounded-full cursor-pointer`}
                     style={{ background: p.hover }}>
                     <ChevronRight size={15} />
                 </button>
@@ -73,7 +80,7 @@ export function RangeCalendar({
             {/* Calendar */}
             <div className="grid grid-cols-7 gap-y-1 text-center">
                 {weekdays.map((w, i) => (
-                    <span key={i} style={{ fontSize: 11, opacity: 0.5, padding: '4px 0' }}>{w}</span>
+                    <span key={i} style={{ fontSize: roomy ? 12 : 11, opacity: 0.5, padding: '4px 0' }}>{w}</span>
                 ))}
                 {cells.map((d, i) => {
                     if (!d) return <span key={`e${i}`} />;
@@ -89,9 +96,9 @@ export function RangeCalendar({
                             onClick={() => onPick(day)}
                             aria-label={d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             aria-pressed={edge}
-                            className="mx-auto flex h-9 w-9 items-center justify-center rounded-full cursor-pointer disabled:cursor-default"
+                            className={`mx-auto flex ${roomy ? 'aspect-square w-full max-w-11' : 'h-9 w-9'} items-center justify-center rounded-full cursor-pointer disabled:cursor-default`}
                             style={{
-                                fontSize: 13,
+                                fontSize: roomy ? 15 : 13,
                                 fontWeight: edge ? 700 : 500,
                                 opacity: past ? 0.3 : 1,
                                 color: edge ? '#FFFFFF' : p.text,

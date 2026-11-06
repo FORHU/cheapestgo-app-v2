@@ -132,6 +132,49 @@ describe('paying', () => {
         expect(declined.clientSecret).toBe('cs_1');
     });
 
+    describe('closing the dialog a warning is shown in', () => {
+        const payingFrom = (failure: Parameters<typeof hotelCheckoutReducer>[1] & { type: 'PAYMENT_FAILED' }) => run(
+            { type: 'QUOTE_REQUESTED' }, { type: 'QUOTE_RECEIVED', quote: QUOTE }, { type: 'PAYMENT_REQUESTED' }, failure,
+        );
+
+        it('forgets a refusal the form stayed open for, and keeps the form', () => {
+            const s = payingFrom({ type: 'PAYMENT_FAILED', failure: { kind: 'unknown', message: 'Something went wrong' } });
+            const closed = hotelCheckoutReducer(s, { type: 'NOTICE_DISMISSED' });
+            expect(closed.phase).toBe('quoted');
+            expect(closed.failure).toBeUndefined();
+            expect(closed.quote).toEqual(QUOTE);
+        });
+
+        it('forgets a declined card, and keeps the card form to try again', () => {
+            const declined = run(
+                { type: 'QUOTE_REQUESTED' }, { type: 'QUOTE_RECEIVED', quote: QUOTE }, { type: 'PAYMENT_REQUESTED' },
+                { type: 'PAYMENT_READY', clientSecret: 'cs_1', paymentIntentId: 'pi_1' },
+                { type: 'CARD_FAILED', message: 'Your card was declined.' },
+            );
+            const closed = hotelCheckoutReducer(declined, { type: 'NOTICE_DISMISSED' });
+            expect(closed.phase).toBe('awaiting_payment');
+            expect(closed.message).toBeUndefined();
+            expect(closed.clientSecret).toBe('cs_1');
+        });
+
+        it('returns from a duplicate booking to the details, as the flight\'s does', () => {
+            const s = payingFrom({ type: 'PAYMENT_FAILED', failure: { kind: 'duplicate', message: 'dup', existingBookingId: 'CG-1' } });
+            expect(s.phase).toBe('failed');
+            const closed = hotelCheckoutReducer(s, { type: 'NOTICE_DISMISSED' });
+            expect(closed.phase).toBe('quoted');
+            expect(closed.failure).toBeUndefined();
+        });
+
+        it('leaves a booking that failed after payment where it is: that is a panel, not a dialog', () => {
+            const confirmed = run(
+                { type: 'QUOTE_REQUESTED' }, { type: 'QUOTE_RECEIVED', quote: QUOTE }, { type: 'PAYMENT_REQUESTED' },
+                { type: 'PAYMENT_READY', clientSecret: 'cs_1', paymentIntentId: 'pi_1' }, { type: 'PAYMENT_AUTHORISED' },
+                { type: 'CONFIRM_RESULT', outcome: { kind: 'failed', message: 'gone', released: true } },
+            );
+            expect(hotelCheckoutReducer(confirmed, { type: 'NOTICE_DISMISSED' })).toBe(confirmed);
+        });
+    });
+
     it('clears the intent when the traveller steps back to the form', () => {
         const awaiting = run(
             { type: 'QUOTE_REQUESTED' }, { type: 'QUOTE_RECEIVED', quote: QUOTE }, { type: 'PAYMENT_REQUESTED' },

@@ -95,8 +95,14 @@ export function SearchBar({
 
     return (
         // Grows into the toolbar's free space but stops short of hogging it —
-        // the design keeps the controls that follow close to the field.
-        <div ref={wrapRef} className="relative min-w-0" style={{ flex: '1 1 auto', maxWidth: 470 }}>
+        // the design keeps the controls that follow close to the field. The cap
+        // only applies once the bar is one row (`lg`); below that the field has
+        // a row of its own and fills it, so dates sit at the row's end.
+        //
+        // A zero basis, so it is only ever the leftover width: with `auto` the
+        // input's own default width counted, and on a phone narrower than about
+        // 340px that pushed dates off the field's row onto one of its own.
+        <div ref={wrapRef} className="relative min-w-0 lg:max-w-[470px]" style={{ flex: '1 1 0%' }}>
             <form
                 onSubmit={(e) => {
                     e.preventDefault();

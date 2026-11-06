@@ -282,7 +282,7 @@ export function PlaceCards({
         ));
     } else if (loading) {
         body = Array.from({ length: SKELETONS }, (_, i) => (
-            <div key={i} data-testid="place-skeleton" className="shrink-0 animate-pulse" style={{ width: 192, height: 128, background: palette.iconBg }} />
+            <div key={i} data-testid="place-skeleton" className="shrink-0 animate-pulse rounded-2xl" style={{ width: 192, height: 128, background: palette.iconBg }} />
         ));
     } else if (error) {
         body = (
@@ -340,7 +340,7 @@ interface PlaceCardProps {
  * A photo card. The whole card selects the place; "Details" sits above it as a separate button, so
  * the two are siblings rather than a button inside a button.
  *
- * Square, like the room cards and the map it sits on. The rating is the place popup's own mark —
+ * Rounded, like the room cards and the map it sits on. The rating is the place popup's own mark —
  * an amber star and the score — set in line with the distance, not a white pill of its own over the
  * photo.
  */
@@ -351,7 +351,7 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel, r
 
     return (
         <div
-            className={`pointer-events-auto relative shrink-0 overflow-hidden bg-linear-to-br shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)] has-[button[data-select]:focus-visible]:outline-2 has-[button[data-select]:focus-visible]:outline-offset-2 ${categoryToBg(gem.category)}`}
+            className={`pointer-events-auto relative shrink-0 overflow-hidden rounded-2xl bg-linear-to-br shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)] has-[button[data-select]:focus-visible]:outline-2 has-[button[data-select]:focus-visible]:outline-offset-2 ${categoryToBg(gem.category)}`}
             style={{ width: 192, height: 128, ...(active ? { outline: `3px solid ${BRAND.primary}`, outlineOffset: 2 } : {}), outlineColor: BRAND.primary }}
         >
             {/* eslint-disable-next-line @next/next/no-img-element -- photos come from the api-v2 proxy with an SVG fallback; next/image would need remotePatterns for that host */}
@@ -402,7 +402,7 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel, r
                 type="button"
                 aria-label={`${detailsLabel}: ${name}`}
                 onClick={() => onDetails(gem)}
-                className="absolute top-2 right-2 z-10 bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-black/55"
+                className="absolute top-2 right-2 z-10 rounded-lg bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur hover:bg-black/55"
             >
                 {detailsLabel}
             </button>

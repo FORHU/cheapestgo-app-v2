@@ -15,6 +15,11 @@ interface HotelPinProps {
      * out, swallowing the view it was meant to point into.
      */
     selected?: boolean;
+    /**
+     * Standing in for hotels that have not arrived yet (`LoadingPin`): a ring
+     * orbits inside the thumbnail, the search page's loading badge at pin size.
+     */
+    busy?: boolean;
 }
 
 const THUMB = 28;
@@ -47,7 +52,7 @@ export function pinPhotoUrl(image: string): string {
  * Pill and pointer are one solid shape in one colour — no outline, nothing for
  * a seam to show through.
  */
-export function HotelPin({ image, priceLabel, active = false, selected = false }: HotelPinProps) {
+export function HotelPin({ image, priceLabel, active = false, selected = false, busy = false }: HotelPinProps) {
     const lifted = active || selected;
     const scale = active ? 2 : selected ? 1.2 : 1;
     const shadow = lifted ? '0 6px 18px rgba(0,0,0,0.34)' : '0 2px 9px rgba(0,0,0,0.22)';
@@ -81,6 +86,7 @@ export function HotelPin({ image, priceLabel, active = false, selected = false }
             >
                 <span
                     style={{
+                        position: 'relative',
                         display: 'block',
                         width: THUMB,
                         height: THUMB,
@@ -92,6 +98,20 @@ export function HotelPin({ image, priceLabel, active = false, selected = false }
                         boxShadow: 'inset 0 0 0 1px var(--pin-line)',
                     }}
                 >
+                    {/* The faint track is what makes the bright head read as
+                        travel around a circle rather than a lone arc. */}
+                    {busy && (
+                        <span
+                            aria-hidden="true"
+                            className="absolute animate-spin rounded-full motion-reduce:animate-none"
+                            style={{
+                                inset: 4,
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderTopColor: '#FFFFFF',
+                                animationDuration: '0.9s',
+                            }}
+                        />
+                    )}
                     {image && (
                         <img
                             src={pinPhotoUrl(image)}

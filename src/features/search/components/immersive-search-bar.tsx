@@ -12,7 +12,7 @@ import { BRAND } from '@/shared/lib/palette';
 import { GolfSentence } from '@/features/golf/components/golf-sentence';
 import type { GolfCourse } from '@/features/golf/types';
 import {
-    CalendarGrid, FILL, GRADIENT_TEXT, GoPill, NotePanel, PROSE, SearchMiniIcon, Token, fmtDate, useProseWidth,
+    CalendarGrid, FILL, GRADIENT_TEXT, GoPill, NotePanel, PROSE, SearchMiniIcon, Slot, Token, fmtDate, leadingMark, useProseWidth,
 } from './prose-parts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -320,6 +320,9 @@ export function ImmersiveSearchBar({
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
+            // On a phone the open panel is a sheet in <body>, outside this wrapper; a press in it
+            // is still a press in the bar.
+            if ((e.target as Element).closest?.('.imm-note')) return;
             if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
                 setPanelOpen(null);
             }
@@ -583,6 +586,10 @@ export function ImmersiveSearchBar({
 
     const searchingLabel = mode === 'stays' ? tAll('landing.search.searchingStays') : tAll('landing.search.searchingFlights');
 
+    // Each connective's leading comma rides in the slot before it, so it never starts a line.
+    const [datesMark, datesLead] = leadingMark(mode === 'flights' ? tAll('search.prose.onDates') : tAll('search.prose.fromDates'));
+    const [travelersMark, travelersLead] = leadingMark(tAll('search.prose.withTravelers'));
+
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
@@ -609,19 +616,25 @@ export function ImmersiveSearchBar({
                 @media (prefers-reduced-motion:reduce) { .imm-stamp[aria-busy="true"]::after { animation:none; opacity:0 } }
                 .imm-dest-card:hover { opacity:.85 }
                 .imm-row:hover    { background:rgba(255,255,255,.07);border-radius:14px }
-                /* A panel centred on its token runs off the side of a phone screen,
-                   so below the card's breakpoint it docks to the bottom instead.
-                   !important because NotePanel positions itself with inline styles. */
-                @media (max-width:760px) {
-                  .imm-note {
-                    position:fixed !important; inset:auto 16px 16px 16px !important;
-                    width:auto !important; transform:none !important;
-                    max-height:62vh !important;
+                /* Below 760px a panel is a bottom sheet (NotePanel); it rises rather than appears. */
+                @keyframes immSbSheetIn { from{transform:translateY(100%)} to{transform:none} }
+                @keyframes immSbFadeIn  { from{opacity:0} to{opacity:1} }
+                .imm-sheet          { animation:immSbSheetIn .28s cubic-bezier(.2,.8,.2,1) }
+                .imm-sheet-backdrop { animation:immSbFadeIn .2s ease }
+                @media (prefers-reduced-motion:reduce) { .imm-sheet, .imm-sheet-backdrop { animation:none } }
+                /* A phone. The sentence lines up with the stage heading above it (the panel's
+                   own gutter is enough), sits closer together, and its pieces shrink with it.
+                   Read by the inline styles below and in prose-parts through their fallbacks. */
+                @media (max-width:640px) {
+                  .imm-bar {
+                    --imm-pad:0px; --imm-gap:14px; --imm-min-h:0px;
+                    --imm-tab-pad:9px 18px; --imm-tab-size:13px;
+                    --imm-caret:1.2rem; --imm-go-h:50px;
                   }
                 }
             `}</style>
 
-            <div ref={wrapRef} style={{ width: '100%', maxWidth: '900px', position: 'relative', margin: '0 auto' }}>
+            <div ref={wrapRef} className="imm-bar" style={{ width: '100%', maxWidth: '900px', position: 'relative', margin: '0 auto' }}>
 
                 {/* ── Container ─────────────────────────────────────────── */}
                 {/* Transparent: the prose sits straight on the page canvas, with no
@@ -631,11 +644,11 @@ export function ImmersiveSearchBar({
                     // rewraps between modes — with the card gone there is nothing
                     // left to fill, and a taller box just pushed the prose down.
                     position: 'relative', width: '100%',
-                    minHeight: 'clamp(220px,26vw,320px)',
+                    minHeight: 'var(--imm-min-h,clamp(220px,26vw,320px))',
                     color: '#fff',
                 }}>
                     {/* Content */}
-                    <div style={{ position: 'relative', minHeight: 'inherit', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(28px,4.5vw,48px)', gap: '18px', boxSizing: 'border-box' }}>
+                    <div style={{ position: 'relative', minHeight: 'inherit', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'var(--imm-pad,clamp(28px,4.5vw,48px))', gap: 'var(--imm-gap,18px)', boxSizing: 'border-box' }}>
 
                         {/* ── Mode tabs ── */}
                         <div style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(2,6,23,.35)', border: `1px solid ${BRAND.glassBorder}`, backdropFilter: 'blur(24px)', borderRadius: '100px', padding: '4px', gap: '2px' }}>
@@ -644,8 +657,8 @@ export function ImmersiveSearchBar({
                                     key={m}
                                     onClick={handleSetMode(m)}
                                     style={{
-                                        padding: '7px 16px', borderRadius: '100px', border: 'none',
-                                        fontSize: '12px', fontWeight: 700, letterSpacing: '.04em',
+                                        padding: 'var(--imm-tab-pad,7px 16px)', borderRadius: '100px', border: 'none',
+                                        fontSize: 'var(--imm-tab-size,12px)', fontWeight: 700, letterSpacing: '.04em',
                                         cursor: 'pointer', fontFamily: 'var(--font-sans)',
                                         background: mode === m ? BRAND.gradient : 'transparent',
                                         color:      mode === m ? '#fff' : 'rgba(255,255,255,.85)',
@@ -671,7 +684,7 @@ export function ImmersiveSearchBar({
                                 <>
                                     {tAll('search.prose.flyFrom')}
                                     {/* Origin token */}
-                                    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                                    <Slot>
                                         <Token filled={!!pickedOrigin} hint={hint} order={0} onClick={openPanel('origin')}>
                                             {originValue}
                                         </Token>
@@ -690,7 +703,7 @@ export function ImmersiveSearchBar({
                                                 />
                                             </NotePanel>
                                         )}
-                                    </span>
+                                    </Slot>
                                     {tAll('search.prose.to')}
                                 </>
                             )}
@@ -701,10 +714,11 @@ export function ImmersiveSearchBar({
                             {' '}
 
                             {/* Destination token */}
-                            <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                            <Slot>
                                 <Token filled={!!pickedDest} hint={hint} order={firstToken} onClick={openPanel('destination')}>
                                     {destValue}
                                 </Token>
+                                {datesMark}
                                 {panelOpen === 'destination' && (
                                     <NotePanel>
                                         <DestPanel
@@ -730,15 +744,16 @@ export function ImmersiveSearchBar({
                                         />
                                     </NotePanel>
                                 )}
-                            </span>
+                            </Slot>
 
-                            {mode === 'flights' ? tAll('search.prose.onDates') : tAll('search.prose.fromDates')}
+                            {datesLead}
 
                             {/* Dates token */}
-                            <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                            <Slot>
                                 <Token filled={!!checkIn || !!flexOption} hint={hint} order={firstToken + 1} onClick={openPanel('dates')}>
                                     {datesValue}
                                 </Token>
+                                {travelersMark}
                                 {panelOpen === 'dates' && (
                                     <NotePanel width="min(400px,92vw)" extra={{ textAlign: 'left', maxHeight: 'none' }}>
                                         {/* Header */}
@@ -813,15 +828,16 @@ export function ImmersiveSearchBar({
                                         )}
                                     </NotePanel>
                                 )}
-                            </span>
+                            </Slot>
 
-                            {tAll('search.prose.withTravelers')}
+                            {travelersLead}
 
                             {/* Travelers token */}
-                            <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'baseline' }}>
+                            <Slot>
                                 <Token filled onClick={openPanel('travelers')} hint={false} order={firstToken + 2}>
                                     {travelersValue}
                                 </Token>
+                                {'.'}
                                 {panelOpen === 'travelers' && (
                                     <NotePanel width="280px" extra={{ maxHeight: 'none' }}>
                                         <div style={{ fontWeight: 700, fontSize: '15px', fontFamily: 'var(--font-sans)', marginBottom: '18px' }}>
@@ -837,16 +853,15 @@ export function ImmersiveSearchBar({
                                                     <div style={{ fontSize: '11px', color: 'rgba(241,245,249,0.45)' }}>{sub}</div>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.max(min, n - 1)); }} disabled={val <= min} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow, fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val <= min ? 'not-allowed' : 'pointer', opacity: val <= min ? 0.3 : 1 }}>−</button>
+                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.max(min, n - 1)); }} disabled={val <= min} style={{ width: 'var(--imm-step,36px)', height: 'var(--imm-step,36px)', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow, fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val <= min ? 'not-allowed' : 'pointer', opacity: val <= min ? 0.3 : 1 }}>−</button>
                                                     <div style={{ fontSize: '18px', fontWeight: 800, minWidth: '20px', textAlign: 'center', fontFamily: 'var(--font-sans)', color: '#f1f5f9' }}>{val}</div>
-                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.min(max, n + 1)); }} disabled={val >= max} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow, fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val >= max ? 'not-allowed' : 'pointer', opacity: val >= max ? 0.3 : 1 }}>+</button>
+                                                    <button onClick={e => { e.stopPropagation(); set((n: number) => Math.min(max, n + 1)); }} disabled={val >= max} style={{ width: 'var(--imm-step,36px)', height: 'var(--imm-step,36px)', borderRadius: '50%', border: 'none', background: FILL, boxShadow: BRAND.gradientShadow, fontSize: '18px', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: val >= max ? 'not-allowed' : 'pointer', opacity: val >= max ? 0.3 : 1 }}>+</button>
                                                 </div>
                                             </div>
                                         ))}
                                     </NotePanel>
                                 )}
-                            </span>
-                            {'.'}
+                            </Slot>
                         </div>
 
                         {/* ── Search pill ───────────────────────────────── */}

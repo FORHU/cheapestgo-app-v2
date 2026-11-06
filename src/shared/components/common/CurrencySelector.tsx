@@ -112,9 +112,9 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
             // toolbar's own geometry — the icon circle its neighbours are drawn
             // at, or the same height as a pill when it still carries a label.
             ? iconOnly
-              ? "h-6 w-6 shrink-0 justify-center rounded-full hover:opacity-80 md:h-10 md:w-10"
-              : "h-6 gap-1 rounded-full px-2 hover:opacity-80 md:h-10 md:px-3"
-            : cn("gap-1 px-1 py-1 rounded-lg", tone.trigger),
+              ? "h-9 w-9 shrink-0 justify-center rounded-full hover:opacity-80 md:h-10 md:w-10"
+              : "h-9 gap-1 rounded-full px-2.5 hover:opacity-80 md:h-10 md:px-3"
+            : cn("min-h-9 gap-1 px-1.5 py-1 rounded-lg", tone.trigger),
           triggerClassName,
         )}
         style={chrome ? {

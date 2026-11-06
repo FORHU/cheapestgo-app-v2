@@ -45,10 +45,13 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         return null;
     }
 
+    // A row from `lg` — sidebar column, then the page. Below it the sidebar is a bar on top and
+    // a drawer (see AdminSidebar), so the page stacks under the bar and has the full width.
+    // `min-w-0` lets a wide table scroll inside the page rather than widen the row past the screen.
     return (
-        <div className="min-h-screen flex bg-slate-50">
+        <div className="min-h-screen bg-slate-50 lg:flex">
             <AdminSidebar />
-            <main className="flex-1 overflow-auto">
+            <main className="min-w-0 overflow-auto lg:flex-1">
                 {children}
             </main>
         </div>

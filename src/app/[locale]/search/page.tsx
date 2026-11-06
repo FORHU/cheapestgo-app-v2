@@ -54,9 +54,19 @@ const EMPTY_FILTERS: HotelFiltersState = {
 };
 
 
+/**
+ * Holds the map's place while its code downloads, in the colour of the cover
+ * the map then loads under (see SearchMapContainer), so the two read as one
+ * surface until the finished map fades in.
+ */
+function MapChunkPlaceholder() {
+    const { theme } = useTheme();
+    return <div className="w-full h-full" style={{ background: brandTheme(theme).surface }} />;
+}
+
 const SearchMapContainer = dynamic(
     () => import('@/shared/components/mapbox/SearchMapContainer').then(m => m.SearchMapContainer),
-    { ssr: false, loading: () => <div className="w-full h-full" style={{ background: BRAND.surface }} /> }
+    { ssr: false, loading: () => <MapChunkPlaceholder /> }
 );
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -120,7 +130,7 @@ const fpx = (n: number) => Math.round(n * TYPE_SCALE * 10) / 10;
  * The phone card's own width cap, as a number — the one place along this
  * rail that still needs the inset as a raw pixel value rather than a class.
  *
- * Everywhere else the rail sits in the same `px-20` box the top bar does —
+ * Everywhere else the rail sits in the same box the top bar does —
  * `MAP_CHROME_GUTTER` — so the strip begins under the bar's left edge at every
  * width. The scroller's own inset used to be measured on
  * its own, in JS, off an `isMobile` that flips at 768 where the bar's gutter
@@ -191,13 +201,23 @@ const CARD_GEOM_MOBILE = {
  * from under it.
  */
 /**
- * The map view's floating chrome — the toolbar and the card rail — sits a flat
- * 80px off both window edges at every width.
+ * The map view's floating chrome — the toolbar and the card rail — sits 80px
+ * off both window edges on a desktop, and steps in below that.
  *
- * The rail reads this same constant (see below), so the strip under the bar
- * always starts and ends on the bar's edge.
+ * It was a flat 80px at every width, which on a phone spent 160 of 375px on
+ * gutter before the bar had drawn anything — the search field went to nothing
+ * and the controls ran out past the bar. It steps back up the way it did before
+ * it went flat: 16px on a phone, 32px from `sm`, 48px from `lg`, and the
+ * desktop's 80px from `xl`.
+ *
+ * The rail reads these same steps (see below), so the strip under the bar
+ * always starts and ends on the bar's edge. The two variants are the same steps
+ * as left padding and as a width, for the scroller's one-sided inset and the
+ * spacer that mirrors it. Spelled out rather than built, so Tailwind sees them.
  */
-const MAP_CHROME_GUTTER = 'px-20';
+const MAP_CHROME_GUTTER   = 'px-4 sm:px-8 lg:px-12 xl:px-20';
+const MAP_CHROME_GUTTER_L = 'pl-4 sm:pl-8 lg:pl-12 xl:pl-20';
+const MAP_CHROME_GUTTER_W = 'w-4 sm:w-8 lg:w-12 xl:w-20';
 
 const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:pb-7';
 /** The same clearance as an offset, for anything that floats rather than pads. */
@@ -343,7 +363,7 @@ function RailCard({
             style={{
                 position: 'relative',
                 width: width ? `${width}px` : g.width, minHeight: g.minH,
-                overflow: 'hidden',
+                borderRadius: px(16), overflow: 'hidden',
                 display: 'flex', alignItems: 'stretch',
                 background: c.surface,
                 border: '',
@@ -416,7 +436,7 @@ function RailCard({
                     {/* Price / rating stack */}
                     <div style={{ minWidth: 0 }}>
                         {property.priceLoading ? (
-                            <div className="animate-pulse rounded" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
+                            <div className="animate-pulse rounded-full" style={{ width: px(76), height: fpx(13), background: 'rgba(128,128,128,0.35)' }} />
                         ) : (
                             <p style={{
                                 fontSize: g.priceFs, fontWeight: 700, color: c.title, lineHeight: 1.3,
@@ -1327,6 +1347,35 @@ function HotelSearchContent() {
         );
     }
 
+    /** The map's "still searching" pill. Drawn in two places — see its use. */
+    const searchingPill = (
+        <div
+            className="flex min-w-0 items-center gap-2.5 rounded-full px-4 py-2"
+            style={{
+                background: chrome.surface,
+                border: `1px solid ${chrome.border}`,
+                boxShadow: chrome.shadow,
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+            }}
+        >
+            <span
+                aria-hidden="true"
+                className="shrink-0 animate-spin rounded-full motion-reduce:animate-none"
+                style={{
+                    width: 14, height: 14,
+                    border: `2px solid ${chrome.border}`,
+                    borderTopColor: chrome.text,
+                }}
+            />
+            {/* Truncated rather than wrapped: a long destination
+                would otherwise run the pill off a phone's edge. */}
+            <span className="min-w-0 truncate" style={{ fontSize: 12, fontWeight: 600, color: chrome.text }}>
+                {destination ? `Searching for stays in ${destination}…` : 'Searching for stays…'}
+            </span>
+        </div>
+    );
+
     return (
         <AnimatePresence mode="wait">
         {viewMode === 'list' ? (
@@ -1575,42 +1624,29 @@ function HotelSearchContent() {
                 below already covers the map and says the same thing.
 
                 Pointer-transparent — it is a notice, not a control, and it sits
-                over the part of the map people drag from. */}
+                over the part of the map people drag from.
+
+                Above a phone it hangs under the toolbar, off the bar's own
+                bottom edge rather than a fixed offset: the bar is two rows
+                below `lg` and grows by the dates line when that shows, and a
+                fixed 80px landed on top of either.
+
+                On a phone it sits in the middle of the map instead — that copy
+                is outside this box, after it, since inside it `top-1/2` was
+                the middle of the toolbar and the pill covered the bar. */}
             <AnimatePresence>
-                {isStreaming && (
+                {isStreaming && !isMobile && (
                     <motion.div
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
                         transition={{ duration: 0.18 }}
-                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        className="absolute left-1/2 top-[calc(100%+16px)] z-30 w-max max-w-full -translate-x-1/2"
                         style={{ pointerEvents: 'none' }}
                         role="status"
                         aria-live="polite"
                     >
-                        <div
-                            className="flex items-center gap-2.5 rounded-full px-4 py-2"
-                            style={{
-                                background: chrome.surface,
-                                border: `1px solid ${chrome.border}`,
-                                boxShadow: chrome.shadow,
-                                backdropFilter: 'blur(12px)',
-                                WebkitBackdropFilter: 'blur(12px)',
-                            }}
-                        >
-                            <span
-                                aria-hidden="true"
-                                className="shrink-0 animate-spin rounded-full motion-reduce:animate-none"
-                                style={{
-                                    width: 14, height: 14,
-                                    border: `2px solid ${chrome.border}`,
-                                    borderTopColor: chrome.text,
-                                }}
-                            />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
-                                {destination ? `Searching for stays in ${destination}…` : 'Searching for stays…'}
-                            </span>
-                        </div>
+                        {searchingPill}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -1632,12 +1668,15 @@ function HotelSearchContent() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
                         transition={{ duration: 0.18 }}
-                        className="absolute left-1/2 -translate-x-1/2 top-[68px] z-30 md:top-[80px]"
+                        // Off the bar's bottom edge, like the searching pill above,
+                        // and held to the bar's width: the message is one line, so
+                        // on a phone it truncates instead of running off screen.
+                        className="absolute left-1/2 top-[calc(100%+12px)] z-30 w-max max-w-full -translate-x-1/2 md:top-[calc(100%+16px)]"
                         style={{ pointerEvents: 'none' }}
                         role="status"
                     >
                         <div
-                            className="flex items-center gap-2.5 rounded-full px-4 py-2"
+                            className="flex min-w-0 items-center gap-2.5 rounded-full px-4 py-2"
                             style={{
                                 background: chrome.surface,
                                 border: `1px solid ${chrome.border}`,
@@ -1652,7 +1691,7 @@ function HotelSearchContent() {
                                 className="shrink-0 rounded-full"
                                 style={{ width: 8, height: 8, background: '#D97706' }}
                             />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: chrome.text, whiteSpace: 'nowrap' }}>
+                            <span className="min-w-0 truncate" style={{ fontSize: 12, fontWeight: 600, color: chrome.text }}>
                                 Live prices didn’t load
                                 {destination ? ` · showing stays in ${destination}` : ' · showing stays in this area'}
                             </span>
@@ -1709,6 +1748,34 @@ function HotelSearchContent() {
                     </AnimatePresence>
                 </div>
             </div>
+
+            {/* ── Still searching, on a phone ──────────────────── */}
+            {/* In the middle of the map, where the pins will land, rather than
+                under the toolbar: up there it crowded the bar and the dates
+                line, and on an empty map the centre is where the eye goes. It
+                steps aside while a hotel is picked from the rail, since a phone
+                centres the map on the picked pin (see the `easeTo` in
+                SearchMapContainer) and the notice would cover it.
+
+                Hangs just below the centre rather than on it: the map's loaders
+                (its spinner, then the one loading pin) stand above the centre
+                point, and the pill is their caption. */}
+            <AnimatePresence>
+                {isStreaming && isMobile && !selectedId && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute left-1/2 top-[calc(50%+14px)] z-30 w-max max-w-[calc(100vw-32px)] -translate-x-1/2"
+                        style={{ pointerEvents: 'none' }}
+                        role="status"
+                        aria-live="polite"
+                    >
+                        {searchingPill}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Looking. The skeleton rail that used to sit along the bottom is
                 gone: it promised a card layout the results may not fill, and it
@@ -1840,7 +1907,7 @@ function HotelSearchContent() {
                             scroll to horizontal. The bottom inset clears the app's
                             bottom nav wherever that nav is on screen. */}
                         <div className={cn('relative', RAIL_PAD_B_MOBILE)}>
-                            <div className="pl-20">
+                            <div className={MAP_CHROME_GUTTER_L}>
                                 <div
                                     ref={attachRailScroll}
                                     className="flex items-end gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
@@ -1873,7 +1940,7 @@ function HotelSearchContent() {
                                     ))}
                                     {/* Mirrors the strip's left inset so the last card
                                         doesn't butt against the window edge */}
-                                    <div className="w-20 shrink-0" />
+                                    <div className={cn('shrink-0', MAP_CHROME_GUTTER_W)} />
                                 </div>
                             </div>
 
@@ -1891,19 +1958,31 @@ function HotelSearchContent() {
                                 scroll past the visual right edge, while this row
                                 needs both edges to land where the bar's do. Only
                                 drawn once there's more than one page to move
-                                between. */}
+                                between.
+
+                                Ink on the bare map: near-black in light, white in
+                                dark, the inactive pages a strong tint of the same.
+                                They were the hairline colour (slate-200 / 10%
+                                white), which the day map's pale streets and the
+                                night map's dark ones both swallowed. */}
                             {railPageCount > 1 && (
-                                <div className="mt-3 flex justify-center gap-1.5 px-20">
+                                <div className={cn('mt-3 flex justify-center gap-1.5', MAP_CHROME_GUTTER)}>
                                     {Array.from({ length: railPageCount }).map((_, i) => (
                                         <button
                                             key={i}
                                             onClick={() => goToRailPage(i)}
                                             aria-label={`Page ${i + 1} of ${railPageCount}`}
                                             aria-current={i === railPage || undefined}
+                                            // A 6px dot, a 24px-tall target: the `before:` box reaches 9px
+                                            // above and below, and sideways only half the 6px gap, so the
+                                            // targets meet without overlapping however many pages there are.
+                                            className="relative before:absolute before:-inset-x-[3px] before:-inset-y-[9px] before:content-['']"
                                             style={{
                                                 width: i === railPage ? 20 : 6, height: 6, borderRadius: 3,
                                                 border: 'none', padding: 0, cursor: 'pointer',
-                                                background: i === railPage ? chrome.text : chrome.border,
+                                                background: i === railPage
+                                                    ? chrome.text
+                                                    : (uiTone === 'dark' ? 'rgba(248,250,252,0.6)' : 'rgba(15,23,42,0.5)'),
                                                 transition: 'width .2s ease, background .2s ease',
                                                 pointerEvents: 'auto',
                                             }}
@@ -1928,7 +2007,7 @@ function HotelSearchContent() {
                         // it clears the app's bottom nav too, and the same gutter,
                         // so it comes back on the right edge the Hide button it
                         // replaces sat on rather than out at the window's.
-                        className={cn('pointer-events-none absolute inset-x-0 z-20 px-20', RAIL_BOTTOM_MOBILE)}
+                        className={cn('pointer-events-none absolute inset-x-0 z-20', MAP_CHROME_GUTTER, RAIL_BOTTOM_MOBILE)}
                     >
                         <div className="flex justify-end">
                             <button

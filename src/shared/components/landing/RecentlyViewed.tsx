@@ -70,17 +70,17 @@ const RecentCard: React.FC<RecentCardProps> = ({ item, destination, index }) => 
       onClick={handleClick}
       whileHover={loading ? {} : { scale: 1.02, y: -2 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`relative flex gap-2 sm:gap-3 p-2.5 sm:p-3 min-h-[88px] sm:min-h-[92px] bg-white dark:bg-slate-900/80 border border-alabaster-border dark:border-obsidian-border shadow-md dark:shadow-black/20 overflow-hidden group ${loading ? 'cursor-wait' : 'cursor-pointer'}`}
+      className={`relative flex gap-2 sm:gap-3 p-2.5 sm:p-3 min-h-[88px] sm:min-h-[92px] bg-white dark:bg-slate-900/80 rounded-2xl border border-alabaster-border dark:border-obsidian-border shadow-md dark:shadow-black/20 overflow-hidden group ${loading ? 'cursor-wait' : 'cursor-pointer'}`}
     >
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+        <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center z-10">
           <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
         </div>
       )}
 
       {/* Thumbnail — responsive */}
-      <div className="relative w-14 h-14 min-[380px]:w-18 min-[380px]:h-18 sm:w-20 sm:h-20 overflow-hidden shrink-0">
+      <div className="relative w-14 h-14 min-[380px]:w-18 min-[380px]:h-18 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0">
         <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
           style={{ backgroundImage: `url(${item.image})` }}

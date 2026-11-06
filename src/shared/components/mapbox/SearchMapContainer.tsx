@@ -7,6 +7,7 @@ import { useHotelClusters, isCluster, type ViewBounds } from '@/shared/component
 import { ClusterPin } from '@/shared/components/map/ClusterPin';
 import { useTranslations } from 'next-intl';
 import { useMapboxInstance } from './hooks/useMapboxInstance';
+import { useMapReveal } from './hooks/useMapReveal';
 import { useMapInteractions, PoiData } from './hooks/useMapInteractions';
 import { useMapViewport } from './hooks/useMapViewport';
 import { MapContainer } from './components/MapContainer';
@@ -24,6 +25,7 @@ import { useIsMobile } from '@/shared/hooks/useMediaQuery';
 import { formatCurrency } from '@/shared/lib/format';
 import { NearbyPlaceMarker, POI_EXIT_MS } from '@/shared/components/map/NearbyPlaceMarker';
 import { HotelPin } from '@/shared/components/map/HotelPin';
+import { LoadingPin, LOADING_PIN_EXIT_MS } from '@/shared/components/map/LoadingPin';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { NearbyPlacePopup } from '@/shared/components/map/NearbyPlacePopup';
 import { useNearbyGems, type NearbyGem } from '@/features/hotels/hooks/useNearbyGems';
@@ -31,7 +33,7 @@ import type { NearbyPlace } from '@/shared/components/map/useMapNearbyPlaces';
 import type { MapEvent } from 'react-map-gl/mapbox';
 import type { Marker as MapboxMarker } from 'mapbox-gl';
 import { isAbortError } from '@/shared/lib/error';
-import { BRAND_STOPS } from '@/shared/lib/palette';
+import { BRAND, BRAND_STOPS, brandTheme } from '@/shared/lib/palette';
 
 /**
  * A place on the map, plus where it sits in the entrance stagger.
@@ -179,6 +181,7 @@ export const SearchMapContainer = React.memo(({
     showPois = true,
 }: SearchMapContainerProps) => {
     const { mapRef, isMapLoaded, isMapIdle, handleMapLoad: instanceHandleMapLoad, handleMapStyleChange } = useMapboxInstance();
+    const isMapRevealed = useMapReveal(mapRef, isMapLoaded);
     const isMobile = useIsMobile();
     const router = useRouter();
     const targetCurrency = useUserCurrency();
@@ -917,13 +920,54 @@ export const SearchMapContainer = React.memo(({
         prevMapStyleRef.current = themedMapStyle;
     }, [themedMapStyle, handleMapStyleChange]);
 
-    const initialViewState = useMemo(() => {
-        // Always prefer the explicit search coordinates from the URL (lat/lng from
-        // autocomplete). The bbox center can land in the sea for coastal cities.
-        const lng = defaultCenter?.lng ?? (districtBbox ? (districtBbox[0] + districtBbox[2]) / 2 : 139.6917);
-        const lat = defaultCenter?.lat ?? (districtBbox ? (districtBbox[1] + districtBbox[3]) / 2 : 35.6895);
-        return { longitude: lng, latitude: lat, zoom: 12, pitch: 0, bearing: 0 };
-    }, [defaultCenter?.lat, defaultCenter?.lng, districtBbox]);
+    /**
+     * Where the search is about: the map opens on it, and the loading pin stands
+     * on it. Always prefer the explicit search coordinates from the URL (lat/lng
+     * from autocomplete). The bbox center can land in the sea for coastal cities.
+     */
+    const searchCenter = useMemo(() => {
+        if (defaultCenter) return { lng: defaultCenter.lng, lat: defaultCenter.lat };
+        if (districtBbox) return { lng: (districtBbox[0] + districtBbox[2]) / 2, lat: (districtBbox[1] + districtBbox[3]) / 2 };
+        return null;
+    }, [defaultCenter?.lat, defaultCenter?.lng, districtBbox]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const initialViewState = useMemo(() => ({
+        longitude: searchCenter?.lng ?? 139.6917,
+        latitude:  searchCenter?.lat ?? 35.6895,
+        zoom: 12, pitch: 0, bearing: 0,
+    }), [searchCenter]);
+
+    // ── Loading pin ──────────────────────────────────────────────────────────
+    // One pin at the centre of the search while its hotels are still coming in;
+    // see LoadingPin. A search with no centre of its own stands it wherever the
+    // map is looking when it is first shown.
+    const [revealCenter, setRevealCenter] = React.useState<{ lng: number; lat: number } | null>(null);
+    React.useEffect(() => {
+        if (!isMapRevealed) return;
+        const c = mapRef.current?.getMap?.()?.getCenter?.();
+        if (c) setRevealCenter({ lng: c.lng, lat: c.lat });
+    }, [isMapRevealed, mapRef]);
+    const loadingPinAt = searchCenter ?? revealCenter;
+
+    /**
+     * Wanted while the search runs and the map can be seen. It steps aside while
+     * a hotel is picked from the rail: the map then centres on that hotel, and
+     * the pin would stand on top of its popup.
+     */
+    const wantLoadingPin = !!isSearching && isMapRevealed && !selectedId && !!loadingPinAt;
+    // Held mounted for the length of its exit once it is no longer wanted: an
+    // unmounted element cannot animate.
+    const [loadingPinMounted, setLoadingPinMounted] = React.useState(false);
+    React.useEffect(() => {
+        if (wantLoadingPin) { setLoadingPinMounted(true); return; }
+        const t = setTimeout(() => setLoadingPinMounted(false), LOADING_PIN_EXIT_MS);
+        return () => clearTimeout(t);
+    }, [wantLoadingPin]);
+
+    // The cover comes out of the DOM once its fade has run, taking its spinner
+    // with it. With reduced motion there is no fade and so no transitionend;
+    // the cover then just stays, invisible and pointer-transparent.
+    const [coverGone, setCoverGone] = React.useState(false);
 
     return (
         <div className="relative h-full w-full">
@@ -946,7 +990,15 @@ export const SearchMapContainer = React.memo(({
             >
                 <>
                         {/* Hotel pins rendered imperatively via mapboxgl.Marker — see useEffect above.
-                            None while the search runs; the page shows a searching pill instead. */}
+                            None while the search runs: one loading pin stands at the centre
+                            instead, and the page shows a searching pill. */}
+                        {loadingPinMounted && loadingPinAt && (
+                            <LoadingPin
+                                longitude={loadingPinAt.lng}
+                                latitude={loadingPinAt.lat}
+                                leaving={!wantLoadingPin}
+                            />
+                        )}
 
                         {radiusCircleGeoJSON && (
                             <Source id="nearby-radius" type="geojson" data={radiusCircleGeoJSON}>
@@ -1020,6 +1072,58 @@ export const SearchMapContainer = React.memo(({
                     />
                 )}
             </MapContainer>
+
+            {/* The map loads under this and fades in whole once its first frame
+                is finished (see `useMapReveal`), rather than filling in tile by
+                tile in front of the user. It is the ground the search page's
+                "Finding Stays" screen sits on, so the hand-off from that screen
+                to the cover is invisible. It takes pointer events while it shows, since a drag
+                under it would move the camera and push the reveal back.
+
+                z-15: over the hotel pins (1, or 10 when hovered), which can mount
+                under it and arrive with the map, and under the page's own chrome
+                (20 and up), which must stay usable while the map loads. */}
+            {!coverGone && (
+                <div
+                    aria-hidden={isMapRevealed || undefined}
+                    className="absolute inset-0 z-[15] transition-opacity duration-500 ease-out motion-reduce:transition-none"
+                    style={{
+                        background: brandTheme(theme).surface,
+                        opacity: isMapRevealed ? 0 : 1,
+                        pointerEvents: isMapRevealed ? 'none' : 'auto',
+                    }}
+                    onTransitionEnd={(e) => {
+                        if (e.target === e.currentTarget && isMapRevealed) setCoverGone(true);
+                    }}
+                >
+                    {/* A plain blue spinner while the map draws.
+
+                        Stands just above the centre line rather than on it: the
+                        phone's "Searching for stays" pill hangs just below the
+                        centre, and the loading pin that follows stands above it
+                        too, so the two loaders occupy the same spot in turn.
+
+                        Fades in after a beat, so a map that is ready almost at once
+                        does not flash a spinner on its way in. */}
+                    <div
+                        role="status"
+                        aria-label={tSearch('v2.mapLoading')}
+                        className="map-loader-in absolute bottom-1/2 left-1/2 -translate-x-1/2 pb-2"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="block animate-spin rounded-full motion-reduce:animate-none"
+                            style={{
+                                width: 32,
+                                height: 32,
+                                border: '3px solid rgba(59,130,246,0.2)',
+                                borderTopColor: BRAND.primary,
+                                animationDuration: '0.8s',
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Map Search Overlay */}
             <MapSearchOverlay

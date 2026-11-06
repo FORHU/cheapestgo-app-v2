@@ -41,6 +41,15 @@ const baseProps = {
     tone:            'dark' as const,
 };
 
+/** Each rate row's text, part by part — the title, its terms, its price. */
+const rateRows = () => within(screen.getByRole('radiogroup')).getAllByRole('radio').map(radio =>
+    [...radio.closest('label')!.querySelectorAll('span')]
+        .filter(span => span.children.length === 0 && span.textContent)
+        .map(span => span.textContent));
+
+/** The price at the foot of the card — the one Select books at. */
+const footPrice = () => screen.getByTestId('room-card-price');
+
 describe('RoomSelection', () => {
     it('renders the section heading and the filter row', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom()]} />);
@@ -55,10 +64,11 @@ describe('RoomSelection', () => {
         expect(screen.getByText('/night')).toBeInTheDocument();
     });
 
-    it('bullets the bed, the searched party and the board under the name', () => {
+    it('lists the bed and the searched party under the name, and the board on the rate', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom()]} occupancy={{ adults: 2, children: 1 }} />);
         expect(screen.getAllByRole('listitem').map(li => li.textContent))
-            .toEqual(['1 double bed', '2 Adults · 1 Child', 'Room Only']);
+            .toEqual(['1 double bed', '2 Adults · 1 Child']);
+        expect(within(screen.getByTestId('room-rate')).getByText('Room Only')).toBeInTheDocument();
     });
 
     it('omits the size row when the room carries no size', () => {
@@ -79,9 +89,8 @@ describe('RoomSelection', () => {
             }],
         });
         render(<RoomSelection {...baseProps} rooms={[room]} />);
-        // "Non-refundable" is also a filter button — the row's line is the <p>.
-        const line = screen.getAllByText('Non-refundable').filter(el => el.tagName === 'P');
-        expect(line).toHaveLength(1);
+        // "Non-refundable" is also a filter button — the rate's line is inside its row.
+        expect(within(screen.getByTestId('room-rate')).getByText('Non-refundable')).toBeInTheDocument();
         expect(screen.queryByText(/Free cancellation/)).not.toBeInTheDocument();
     });
 
@@ -138,20 +147,31 @@ describe('RoomSelection', () => {
         expect(screen.getAllByRole('button', { name: /^(Select|Selected)$/ })).toHaveLength(1);
     });
 
-    it('offers every rate as a chip, cheapest showing first', () => {
+    it('offers every rate as a radio row with its own terms and price, cheapest picked first', () => {
         render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
-        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
-        expect(chips.map(c => c.textContent))
-            .toEqual(['$200 · Room Only · free cancellation', '$240 · Breakfast Included · non-refundable']);
-        expect(chips[0]).toHaveAttribute('aria-checked', 'true');
-        expect(screen.getByText('$200')).toBeInTheDocument();
+        expect(screen.getByRole('radiogroup')).toHaveAccessibleName('Rates for Comfort Leisure Room');
+        expect(rateRows()).toEqual([
+            ['Room Only', 'Free cancellation', '$200'],
+            ['Breakfast Included', 'Non-refundable', '$240'],
+        ]);
+        expect(within(screen.getByRole('radiogroup')).getAllByRole('radio')[0]).toBeChecked();
+        expect(footPrice()).toHaveTextContent('$200/night');
     });
 
-    it('re-reads the card from the chip that is picked', () => {
+    it('reprices the foot of the card from the row that is picked', () => {
         render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} />);
+        const radios = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        fireEvent.click(radios[1]);
+        expect(radios[1]).toBeChecked();
+        expect(radios[0]).not.toBeChecked();
+        expect(footPrice()).toHaveTextContent('$240/night');
+    });
+
+    it('books nothing when a row is picked — only Select does', () => {
+        const onSelect = vi.fn();
+        render(<RoomSelection {...baseProps} rooms={[twoRateRoom()]} onSelect={onSelect} />);
         fireEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
-        expect(screen.getByText('$240')).toBeInTheDocument();
-        expect(screen.queryByText('$200')).not.toBeInTheDocument();
+        expect(onSelect).not.toHaveBeenCalled();
     });
 
     it('books the picked rate, not the cheapest', () => {
@@ -164,9 +184,12 @@ describe('RoomSelection', () => {
         }));
     });
 
-    it('shows no chip row for a room sold one way', () => {
+    it('shows one plain rate row, with nothing to pick, for a room sold one way', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom()]} />);
         expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+        expect(screen.getByTestId('room-rate')).toHaveTextContent('Room OnlyFree cancellation up to 24h before check-in');
+        // The price is the foot's alone — the one row does not repeat it.
+        expect(screen.getAllByText('$200')).toHaveLength(1);
     });
 
     const rate = (o: Record<string, unknown>) => ({
@@ -199,7 +222,7 @@ describe('RoomSelection', () => {
      * a normal one. They share a card, so the chip must name what each is; unnamed, a reader
      * picks on price and gets the other.
      */
-    it('names the room difference on the chip when one heading covers several', () => {
+    it('names the room difference on the row when one heading covers several', () => {
         render(<RoomSelection {...baseProps} rooms={[
             makeRoom({ id: 'r1', name: 'Standard Double room (shared bathroom)',
                        rates: [rate({ offerId: 'a' })] }),
@@ -207,9 +230,8 @@ describe('RoomSelection', () => {
                        rates: [rate({ offerId: 'b', price: 240 })] }),
         ]} />);
         expect(screen.getAllByRole('article')).toHaveLength(1);
-        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
-        expect(chips.map(c => c.textContent))
-            .toEqual(['$200 · shared bathroom', '$240 · full double bed']);
+        expect(rateRows().map(([title]) => title))
+            .toEqual(['Room Only · shared bathroom', 'Room Only · full double bed']);
     });
 
     /**
@@ -225,8 +247,7 @@ describe('RoomSelection', () => {
                        name: 'Premier Twin room (twin beds) (lounge access)' }),
         ]} />);
         expect(screen.getAllByRole('article')).toHaveLength(1);
-        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
-        expect(chips.map(c => c.textContent)).toEqual(['$200 · bed not guaranteed', '$240']);
+        expect(rateRows().map(([title]) => title)).toEqual(['Room Only · bed not guaranteed', 'Room Only']);
     });
 
     /**
@@ -242,17 +263,18 @@ describe('RoomSelection', () => {
         expect(screen.getByText('$200')).toBeInTheDocument();
     });
 
-    /** A chip carries only what differs — a board every offer shares tells the reader nothing. */
-    it('leaves a board shared by every offer off the chips', () => {
+    /** Rows sharing a board are told apart by the line under it — what cancelling costs. */
+    it('words each row\'s cancellation under its board', () => {
         render(<RoomSelection {...baseProps} rooms={[makeRoom({
             rates: [
                 rate({ offerId: 'a', price: 200 }),
                 rate({ offerId: 'b', price: 240, refundable: false, refundableTag: 'NON_REFUNDABLE' }),
             ],
         })]} />);
-        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
-        expect(chips.map(c => c.textContent))
-            .toEqual(['$200 · free to Sep 9', '$240 · non-refundable']);
+        expect(rateRows()).toEqual([
+            ['Room Only', 'Free cancellation up to 24h before check-in', '$200'],
+            ['Room Only', 'Non-refundable', '$240'],
+        ]);
     });
 });
 
@@ -375,6 +397,22 @@ describe('RoomSelection — room photography', () => {
         const sources = Array.from(document.querySelectorAll('img')).map(img => img.getAttribute('src'));
         expect(sources).toContain('/room-a.jpg');
         expect(sources).not.toContain(HOTEL_SHOT);
+    });
+
+    it('counts the room’s photos on the card, and opens its details from them', () => {
+        const room = makeRoom({ roomPhotos: ['/room-a.jpg', '/room-b.jpg', '/room-c.jpg'] });
+        render(<RoomSelection {...baseProps} rooms={[room]} image={HOTEL_SHOT} />);
+
+        const photos = screen.getByRole('button', { name: 'View room photos' });
+        expect(photos).toHaveTextContent('3 photos');
+        fireEvent.click(photos);
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('counts nothing over the hotel’s photo — it is not the room’s', () => {
+        render(<RoomSelection {...baseProps} rooms={[makeRoom()]} image={HOTEL_SHOT} />);
+        expect(screen.queryByText(/photos?$/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'View room photos' })).not.toBeInTheDocument();
     });
 
     it('reads the room’s photos from content.gallery, where current api-v2 sends them', () => {

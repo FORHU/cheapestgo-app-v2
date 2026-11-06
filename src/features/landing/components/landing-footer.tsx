@@ -26,9 +26,12 @@ export function LandingFooter({ tone = 'onDark' }: { tone?: 'default' | 'onDark'
                 <div className="flex flex-wrap items-center justify-between gap-6 max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-5">
                     <LogoWordmark height={36} tone={tone} />
 
-                    <nav className="flex flex-wrap gap-6 text-[13px]">
+                    {/* Below `md` each link is a 44px row for a thumb — at its 20px line
+                        height the wrapped rows were a hard target — and the row gap closes
+                        up to keep the footer about the height it was. */}
+                    <nav className="flex flex-wrap gap-x-6 gap-y-0 text-[13px] md:gap-6">
                         {FOOTER_LINKS.map(({ key, href }) => (
-                            <Link key={key} href={href} className={CHROME_LINK}>
+                            <Link key={key} href={href} className={`${CHROME_LINK} max-md:inline-flex max-md:min-h-11 max-md:items-center`}>
                                 {t(key)}
                             </Link>
                         ))}

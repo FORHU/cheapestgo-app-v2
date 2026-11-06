@@ -112,7 +112,7 @@ const MapPopup = React.memo(function MapPopup({
     }, [mapRef]);
 
     const content = (
-        <div className="bg-white dark:bg-slate-900 overflow-hidden shadow-2xl w-[240px]">
+        <div className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl w-[240px]">
             {/* Image */}
             <div className="relative">
                 {image ? (

@@ -256,6 +256,7 @@ export type HotelBookingStatus =
 export type FlightBookingStatus =
     | 'booked'
     | 'pnr_created'
+    | 'confirmed'
     | 'awaiting_ticket'
     | 'ticketed'
     | 'failed'

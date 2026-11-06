@@ -14,7 +14,7 @@ import { useTravelers } from '@/shared/stores/search.store';
 import { useHydrated } from '@/shared/hooks/useHydrated';
 
 const CARD = 'snap-start shrink-0 w-[250px] block group';
-const MEDIA = 'relative h-[200px] overflow-hidden mb-3 bg-slate-200 dark:bg-slate-800';
+const MEDIA = 'relative h-[200px] rounded-[16px] overflow-hidden mb-3 bg-slate-200 dark:bg-slate-800';
 const IMG = 'object-cover transition-transform duration-500 group-hover:scale-[1.04]';
 const SIZES = '250px';
 

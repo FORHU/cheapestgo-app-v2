@@ -149,7 +149,11 @@ export function RouteEditor({
     };
 
     return (
-        <div ref={wrapRef} className="relative min-w-0" style={{ flex: '1 1 auto', maxWidth: 520 }}>
+        // Grows from nothing rather than from its content. Two airport fields are wider
+        // than a phone bar's first row has beside back and the trip, so sized by content
+        // the route took a row of its own and pushed the trip onto a third; from a zero
+        // basis it takes whatever that row leaves, up to the cap.
+        <div ref={wrapRef} className="relative min-w-0" style={{ flex: '1 1 0%', maxWidth: 520 }}>
             <div
                 className="flex h-9 items-center gap-1.5 rounded-full px-2.5 md:h-10 md:gap-3 md:px-[18px]"
                 style={{
@@ -166,10 +170,10 @@ export function RouteEditor({
                     onClick={() => onApply({ origin: destination, destination: origin })}
                     aria-label={tAll('flights.topBar.swap')}
                     title={tAll('flights.topBar.swap')}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-70 md:h-7 md:w-7"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full cursor-pointer transition-opacity hover:opacity-70"
                     style={{ background: p.hover, color: p.text }}
                 >
-                    <ArrowLeftRight size={12} className="md:size-[13px]" />
+                    <ArrowLeftRight size={13} />
                 </button>
                 {field('destination')}
                 {(searching || (side && loading)) && (

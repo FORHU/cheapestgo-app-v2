@@ -274,6 +274,26 @@ const Map = React.memo(
 
             const resolvedStyle = isStandard ? STANDARD_STYLE_URL : mapStyle;
 
+            /**
+             * Standard's config, handed to the constructor so the first frame is
+             * already drawn in it.
+             *
+             * Applied only after load, as the effects above do, the map first
+             * paints Standard's defaults (the day preset, trees, POI labels) and
+             * then repaints: in the dark theme a daylit map flashes up and re-lights
+             * itself, and every tile is laid out twice before the map settles.
+             * Read once at construction; later changes still go through the
+             * `standardConfig` effect. Undefined keys are dropped, since Mapbox
+             * reads a key that is present as a value to set.
+             */
+            const [initialStyleConfig] = React.useState(() => {
+                if (!isStandard || !standardConfig) return undefined;
+                const basemap = Object.fromEntries(
+                    Object.entries(standardConfig).filter(([, value]) => value !== undefined),
+                );
+                return { basemap };
+            });
+
             const token = env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
             return (
@@ -291,6 +311,7 @@ const Map = React.memo(
                         mapStyle={resolvedStyle as MapboxMapProps['mapStyle']}
                         onLoad={handleLoad}
                         antialias={antialias}
+                        config={initialStyleConfig}
                         {...props}
                     >
                         {isStyleLoaded && !isStandard && enable3DTerrain && (

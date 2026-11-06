@@ -39,13 +39,12 @@ vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: '
 vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
 
 // Stripe: a card form that is a single button, which "authorises" the card when pressed.
+const stripeMock = vi.hoisted(() => ({ confirmPayment: vi.fn() }));
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn(async () => ({})) }));
 vi.mock('@stripe/react-stripe-js', () => ({
     Elements: ({ children }: { children: React.ReactNode }) => <div data-testid="stripe-elements">{children}</div>,
     PaymentElement: () => <div data-testid="payment-element" />,
-    useStripe: () => ({
-        confirmPayment: vi.fn(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } })),
-    }),
+    useStripe: () => ({ confirmPayment: stripeMock.confirmPayment }),
     useElements: () => ({}),
 }));
 
@@ -108,6 +107,7 @@ const proceed = () => fireEvent.click(screen.getByRole('button', { name: /contin
 
 beforeEach(() => {
     vi.clearAllMocks();
+    stripeMock.confirmPayment.mockImplementation(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } }));
     auth.user = { email: 'juan@example.com', first_name: '', last_name: '' };
     visit();
     api();
@@ -362,5 +362,61 @@ describe('the form, in the brand\'s look', () => {
     it('fills the main action with the brand gradient', async () => {
         renderPage();
         expect(ringed(await screen.findByRole('button', { name: /continue to payment/i }))).toMatch(/linear-gradient/);
+    });
+});
+
+describe('a warning, in a dialog rather than the red box', () => {
+    async function toDetails() {
+        renderPage();
+        await screen.findByText(/USD 254/);
+        await waitFor(() => expect(screen.getByRole('button', { name: /continue to payment/i })).toBeEnabled());
+        fillHolder(); fillCoGuest();
+    }
+
+    async function warning(title: string | RegExp) {
+        const dialog = await screen.findByRole('alertdialog', { name: title });
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        return dialog;
+    }
+
+    it('says a card was declined, and closing leaves the card form to try again', async () => {
+        stripeMock.confirmPayment.mockResolvedValueOnce({ error: { message: 'Your card was declined.' } });
+        await toDetails();
+        proceed();
+        fireEvent.click(await screen.findByRole('button', { name: /pay usd/i }));
+
+        const dialog = await warning("Your payment didn't go through");
+        expect(within(dialog).getByText('Your card was declined.')).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /pay usd/i })).toBeEnabled();
+    });
+
+    it('relays a refusal the form stays open for, and closing leaves the form', async () => {
+        api({ pay: () => { throw httpError(500, { error: 'INTERNAL', message: 'The payment could not be opened.' }); } });
+        await toDetails();
+        proceed();
+
+        const dialog = await warning("We couldn't complete your booking");
+        expect(within(dialog).getByText('The payment could not be opened.')).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
+    });
+
+    it('names a booking already held for those dates, with the way to it', async () => {
+        api({ pay: () => { throw httpError(409, { error: 'DUPLICATE_BOOKING', message: 'dup', existingBookingId: 'CG-OLD1' }); } });
+        await toDetails();
+        proceed();
+
+        const dialog = await warning(/already have a booking at Bayside Grand Manila/i);
+        expect(within(dialog).getByText(/cancel your existing booking first/i)).toBeInTheDocument();
+        expect(within(dialog).getByRole('link', { name: 'View existing booking' })).toHaveAttribute('href', '/trips/CG-OLD1');
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
     });
 });
