@@ -637,22 +637,26 @@
       "currentlySelected": "当前已选",
       "includesTaxes": "含税费",
       "freeCancellation": "免费取消",
-      "nonRefundable": "不可退款"
+      "nonRefundable": "不可退款",
+      "select": "选择",
+      "flightDetails": "航班详情"
     },
     "itinerary": {
-      "arriveAt": "抵达",
-      "departFrom": "出发",
-      "flightDuration": "飞行时长",
       "layoverLabel": "中转",
-      "layoverValue": "在 {airport} 中转 {duration}",
       "legLabel": "第 {number} 段",
       "nonstop": "直飞",
       "outbound": "去程",
       "return": "回程",
       "stopCount": "{count} 次经停",
       "terminal": "{terminal} 号航站楼",
-      "terminalUnavailable": "航站楼信息将在临近出发时提供",
-      "totalFlightDuration": "总飞行时长"
+      "terminalTba": "航站楼待定",
+      "oneStopIn": "在{place}中转 1 次",
+      "totalTrip": "总行程时间",
+      "layoverIn": "在{place}中转 {duration}",
+      "sameAirport": "同一机场，无需转场",
+      "changeAirports": "需换机场：{from} → {to}",
+      "footnote": "所有时间均为当地时间。",
+      "footnoteTerminals": "航站楼将在临近出发时确认。所有时间均为当地时间。"
     },
     "filters": {
       "cheapest": "最便宜",

@@ -637,22 +637,26 @@
       "currentlySelected": "選択中",
       "includesTaxes": "税・手数料込み",
       "freeCancellation": "無料キャンセル",
-      "nonRefundable": "払い戻し不可"
+      "nonRefundable": "払い戻し不可",
+      "select": "選択",
+      "flightDetails": "フライト詳細"
     },
     "itinerary": {
-      "arriveAt": "到着",
-      "departFrom": "出発",
-      "flightDuration": "飛行時間",
       "layoverLabel": "乗り継ぎ",
-      "layoverValue": "{airport} で {duration}",
       "legLabel": "区間 {number}",
       "nonstop": "直行",
       "outbound": "往路",
       "return": "復路",
       "stopCount": "経由{count}回",
       "terminal": "ターミナル {terminal}",
-      "terminalUnavailable": "ターミナル情報は出発が近づくと表示されます",
-      "totalFlightDuration": "総飛行時間"
+      "terminalTba": "ターミナル未定",
+      "oneStopIn": "{place}で1回乗り継ぎ",
+      "totalTrip": "総所要時間",
+      "layoverIn": "{place}で{duration}の乗り継ぎ",
+      "sameAirport": "同じ空港・移動なし",
+      "changeAirports": "空港の移動あり：{from}→{to}",
+      "footnote": "時刻はすべて現地時間です。",
+      "footnoteTerminals": "ターミナルは出発が近づくと確定します。時刻はすべて現地時間です。"
     },
     "filters": {
       "cheapest": "最安",

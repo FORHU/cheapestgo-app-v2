@@ -637,22 +637,26 @@
       "currentlySelected": "현재 선택됨",
       "includesTaxes": "세금 및 수수료 포함",
       "freeCancellation": "무료 취소",
-      "nonRefundable": "환불 불가"
+      "nonRefundable": "환불 불가",
+      "select": "선택",
+      "flightDetails": "항공편 상세 정보"
     },
     "itinerary": {
-      "arriveAt": "도착",
-      "departFrom": "출발",
-      "flightDuration": "비행 시간",
       "layoverLabel": "경유",
-      "layoverValue": "{airport}에서 {duration}",
       "legLabel": "구간 {number}",
       "nonstop": "직항",
       "outbound": "가는 편",
       "return": "오는 편",
       "stopCount": "경유 {count}회",
       "terminal": "터미널 {terminal}",
-      "terminalUnavailable": "터미널 정보는 출발일이 가까워지면 제공됩니다",
-      "totalFlightDuration": "총 비행 시간"
+      "terminalTba": "터미널 미정",
+      "oneStopIn": "{place} 1회 경유",
+      "totalTrip": "총 소요 시간",
+      "layoverIn": "{place}에서 {duration} 경유",
+      "sameAirport": "같은 공항, 이동 없음",
+      "changeAirports": "공항 이동: {from} → {to}",
+      "footnote": "모든 시간은 현지 시간입니다.",
+      "footnoteTerminals": "터미널은 출발이 가까워지면 확정됩니다. 모든 시간은 현지 시간입니다."
     },
     "filters": {
       "cheapest": "최저가",

@@ -21,7 +21,7 @@ import { FlightFilters } from '@/features/flights/components/flight-filters';
 import { FlightSearchTopBar } from '@/features/flights/components/flight-search-top-bar';
 import { PriceAlertButton } from '@/features/flights/components/PriceAlertButton';
 import {
-    DEFAULT_FLIGHT_FILTERS, activeFilterCount as countActiveFilters, applyFlightFilters, type FlightFilterState,
+    DEFAULT_FLIGHT_FILTERS, activeFilterCount as countActiveFilters, applyFlightFilters, offerHighlights, type FlightFilterState,
     type PriceConverter,
 } from '@/features/flights/lib/filter-offers';
 import { formatPrice } from '@/features/flights/lib/flight-utils';
@@ -254,6 +254,8 @@ export function FlightSearchClient() {
         () => applyFlightFilters(allOffers.length > 0 ? allOffers : rawOffers, filters, shownPrice),
         [allOffers, rawOffers, filters, shownPrice],
     );
+    // The cheapest and the fastest of what the filters leave, in the currency the cards print.
+    const highlights = useMemo(() => offerHighlights(filteredOffers, shownPrice), [filteredOffers, shownPrice]);
     const activeFilterCount = countActiveFilters(filters);
 
     const isLoading = state.status === 'loading' || state.status === 'loading_slow';
@@ -668,6 +670,7 @@ export function FlightSearchClient() {
                                         loading={isLoading}
                                         onSelect={handleSelect}
                                         checkingOfferId={revalidating}
+                                        highlights={highlights}
                                         skeletonCount={8}
                                     />
                                 )}

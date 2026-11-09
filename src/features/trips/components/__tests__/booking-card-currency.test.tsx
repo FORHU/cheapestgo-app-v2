@@ -155,9 +155,9 @@ describe('the booked flight\'s itinerary', () => {
         expect(screen.getByRole('button', { name: 'Hide flight itinerary' })).toHaveAttribute('aria-expanded', 'true');
         expect(screen.getByText('Outbound')).toBeInTheDocument();
         expect(screen.getByText('Return')).toBeInTheDocument();
-        // Each leg names its flight at both ends, as the results card's itinerary does.
-        expect(screen.getAllByText('Economy CI 702')).toHaveLength(2);
-        expect(screen.getAllByText('Economy CI 701')).toHaveLength(2);
+        // Each leg names its flight once, between its two stops, as the results card's itinerary does.
+        expect(screen.getByText('CI 702')).toBeInTheDocument();
+        expect(screen.getByText('CI 701')).toBeInTheDocument();
         expect(screen.getByText('Terminal 1')).toBeInTheDocument();
     });
 

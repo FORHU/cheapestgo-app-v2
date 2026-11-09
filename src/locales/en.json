@@ -637,22 +637,26 @@
       "currentlySelected": "Currently Selected",
       "includesTaxes": "includes taxes & fees",
       "freeCancellation": "Free Cancellation",
-      "nonRefundable": "Non-refundable"
+      "nonRefundable": "Non-refundable",
+      "select": "Select",
+      "flightDetails": "Flight details"
     },
     "itinerary": {
-      "departFrom": "Depart from",
-      "arriveAt": "Arrive at",
-      "flightDuration": "Flight Duration",
       "outbound": "Outbound",
       "return": "Return",
       "legLabel": "Leg {number}",
       "layoverLabel": "Layover",
-      "layoverValue": "{duration} at {airport}",
       "terminal": "Terminal {terminal}",
-      "terminalUnavailable": "Terminal available closer to departure",
-      "totalFlightDuration": "Total Flight Duration",
       "nonstop": "Nonstop",
-      "stopCount": "{count, plural, one {# stop} other {# stops}}"
+      "stopCount": "{count, plural, one {# stop} other {# stops}}",
+      "terminalTba": "Terminal TBA",
+      "oneStopIn": "1 stop in {place}",
+      "totalTrip": "Total trip",
+      "layoverIn": "{duration} layover in {place}",
+      "sameAirport": "same airport, no transfer",
+      "changeAirports": "change airports, {from} to {to}",
+      "footnote": "Times are local.",
+      "footnoteTerminals": "Terminals are confirmed closer to departure. Times are local."
     },
     "filters": {
       "cheapest": "Cheapest",

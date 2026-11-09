@@ -117,6 +117,16 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `flights.results.flightsTo` | Flights to {city} | {city}행 항공편 | {city}行きのフライト | 飞往{city}的航班 |
 | `flights.results.flightsFound` | {count} flights found | 항공편 {count}편 검색됨 | {count}件のフライトが見つかりました | 找到 {count} 个航班 |
 | `flights.results.checkingFare` | Checking the fare is still available… | 요금이 아직 유효한지 확인하는 중… | 運賃がまだ有効か確認しています… | 正在确认该票价是否仍然有效… |
+| `flights.card.select` | Select | 선택 | 選択 | 选择 |
+| `flights.card.flightDetails` | Flight details | 항공편 상세 정보 | フライト詳細 | 航班详情 |
+| `flights.itinerary.terminalTba` | Terminal TBA | 터미널 미정 | ターミナル未定 | 航站楼待定 |
+| `flights.itinerary.oneStopIn` | 1 stop in {place} | {place} 1회 경유 | {place}で1回乗り継ぎ | 在{place}中转 1 次 |
+| `flights.itinerary.totalTrip` | Total trip | 총 소요 시간 | 総所要時間 | 总行程时间 |
+| `flights.itinerary.layoverIn` | {duration} layover in {place} | {place}에서 {duration} 경유 | {place}で{duration}の乗り継ぎ | 在{place}中转 {duration} |
+| `flights.itinerary.sameAirport` | same airport, no transfer | 같은 공항, 이동 없음 | 同じ空港・移動なし | 同一机场，无需转场 |
+| `flights.itinerary.changeAirports` | change airports, {from} to {to} | 공항 이동: {from} → {to} | 空港の移動あり：{from}→{to} | 需换机场：{from} → {to} |
+| `flights.itinerary.footnote` | Times are local. | 모든 시간은 현지 시간입니다. | 時刻はすべて現地時間です。 | 所有时间均为当地时间。 |
+| `flights.itinerary.footnoteTerminals` | Terminals are confirmed closer to departure. Times are local. | 터미널은 출발이 가까워지면 확정됩니다. 모든 시간은 현지 시간입니다. | ターミナルは出発が近づくと確定します。時刻はすべて現地時間です。 | 航站楼将在临近出发时确认。所有时间均为当地时间。 |
 | `flights.results.clearFilters` | Clear filters | 필터 초기화 | 絞り込みをクリア | 清除筛选 |
 | `flights.topBar.swap` | Swap origin and destination | 출발지와 도착지 바꾸기 | 出発地と到着地を入れ替える | 交换出发地和目的地 |
 | `flights.topBar.changeTrip` | Change dates and travellers | 날짜 및 여행자 변경 | 日程と人数を変更 | 更改日期和出行人数 |
