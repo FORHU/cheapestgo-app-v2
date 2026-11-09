@@ -1,10 +1,36 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState, useMemo } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchStore, useTravelers, useActiveDropdown } from '@/shared/stores/search.store';
+import { useTheme } from '@/shared/components/ThemeContext';
+import { SelectField } from '@/features/checkout/components/select-field';
+import { isInPickerLayer } from '@/features/checkout/components/picker-panel';
+import { checkoutPalette } from '@/features/checkout/lib/palette';
+
+const AGE_OPTIONS = Array.from({ length: 18 }, (_, i) => ({ value: String(i), label: `${i} yrs` }));
+
+/** A child's age, as a dropdown in the site's picker rather than the browser's `<select>`. */
+function ChildAge({ index, age, onChange }: { index: number; age: number; onChange: (age: number) => void }) {
+    const id = useId();
+    const { theme } = useTheme();
+    return (
+        <SelectField
+            id={id}
+            ariaLabel={`Child ${index + 1} age`}
+            value={String(age)}
+            options={AGE_OPTIONS}
+            placeholder="Age"
+            onChange={(v) => onChange(Number(v))}
+            palette={checkoutPalette(theme)}
+            className="gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold dark:bg-slate-800"
+            panelWidth={160}
+            chevronSize={12}
+        />
+    );
+}
 
 interface CounterProps {
     label: string;
@@ -75,6 +101,9 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
+            // A child's age opens its picker at the top of the page, outside this box: a click
+            // there is still inside the travellers.
+            if (isInPickerLayer(e.target)) return;
             if (ref.current && !ref.current.contains(e.target as Node)) onClose();
         };
         if (isOpen) document.addEventListener('mousedown', handler);
@@ -129,24 +158,16 @@ export function TravelerPicker({ forceOpen }: TravelerPickerProps) {
                             {childrenAges.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-2">
                                     {childrenAges.map((age, idx) => (
-                                        <div
+                                        <ChildAge
                                             key={idx}
-                                            className="flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-bold text-slate-700 dark:text-slate-300"
-                                        >
-                                            <select
-                                                value={age}
-                                                onChange={(e) => {
-                                                    const newAges = [...childrenAges];
-                                                    newAges[idx] = parseInt(e.target.value);
-                                                    setChildrenAges(newAges);
-                                                }}
-                                                className="bg-transparent text-[10px] font-bold outline-none"
-                                            >
-                                                {Array.from({ length: 18 }, (_, i) => (
-                                                    <option key={i} value={i}>{i} yrs</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                            index={idx}
+                                            age={age}
+                                            onChange={(next) => {
+                                                const newAges = [...childrenAges];
+                                                newAges[idx] = next;
+                                                setChildrenAges(newAges);
+                                            }}
+                                        />
                                     ))}
                                 </div>
                             )}

@@ -42,8 +42,14 @@ export function PickerPanel({
             const panel = panelRef.current;
             if (!field || !panel) return;
             const rect = field.getBoundingClientRect();
+            // Level with the field's left edge, unless that runs it off the right of the screen:
+            // a field on the right of a narrow row (a filter's "to" time) opens it leftwards.
+            const screen = document.documentElement.clientWidth;
+            const left = screen > 0
+                ? Math.max(16, Math.min(rect.left, screen - panel.offsetWidth - 16))
+                : rect.left;
             panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
-            panel.style.left = `${rect.left + window.scrollX}px`;
+            panel.style.left = `${left + window.scrollX}px`;
         };
         place();
         // A calendar opened low on a phone ran off the bottom of the screen. Bring it all into
@@ -62,9 +68,10 @@ export function PickerPanel({
                 <>
                     {/* Above the floating controls (chat 50, brand preview 70, the bottom nav's 100–102),
                         below the install prompt's modal (9998). */}
-                    <div data-testid="picker-backdrop" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200 }} />
+                    <div data-testid="picker-backdrop" data-picker-layer onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200 }} />
                     <div
                         ref={panelRef}
+                        data-picker-layer
                         className="cg-picker-panel"
                         role={role}
                         aria-labelledby={role ? labelledBy : undefined}
@@ -90,6 +97,15 @@ export function PickerPanel({
             )}
         </>
     );
+}
+
+/**
+ * Whether an event happened in an open picker — its panel or the backdrop behind it. Drawn at
+ * the top of the page, outside the popover that opened it, a picker inside a popover that
+ * closes on a click outside itself (the search bar's travellers) must be let through by it.
+ */
+export function isInPickerLayer(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest('[data-picker-layer]') !== null;
 }
 
 /** How an option looks: a pill, the chosen one filled with the brand gradient. */

@@ -220,9 +220,7 @@ export function FlightItinerary({ offer, className, clock = AIRPORT_CLOCK }: {
                                 </dl>
                             </div>
 
-                            <div className={cn('my-4 border-t @xl:my-[22px]', HAIRLINE)} />
-
-                            <div className="grid grid-cols-[minmax(3.25rem,auto)_16px_minmax(0,1fr)] gap-x-2.5 @xl:grid-cols-[minmax(4rem,auto)_16px_minmax(0,1.2fr)_minmax(0,1fr)] @xl:gap-x-4">
+                            <div className="mt-4 grid grid-cols-[minmax(3.25rem,auto)_16px_minmax(0,1fr)] gap-x-2.5 @xl:mt-5 @xl:grid-cols-[minmax(4rem,auto)_16px_minmax(0,1.2fr)_minmax(0,1fr)] @xl:gap-x-4">
                                 {segments.map((seg, j) => {
                                     const next = segments[j + 1];
                                     const wait = next ? clock.layover(seg.arrival?.time, next.departure?.time) : null;

@@ -6,6 +6,9 @@ import { Save, Loader2, CheckCircle } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { cn } from '@/shared/lib/cn';
 import { CURRENCIES } from '@/shared/lib/currency';
+import { useTheme } from '@/shared/components/ThemeContext';
+import { SelectField } from '@/features/checkout/components/select-field';
+import { checkoutPalette } from '@/features/checkout/lib/palette';
 import type { UserPreferences } from '@/shared/types';
 
 const LANGUAGES = [
@@ -17,6 +20,7 @@ const LANGUAGES = [
 
 export function PreferencesSection() {
     const tAll = useTranslations();
+    const { theme } = useTheme();
     const [prefs, setPrefs] = useState<UserPreferences>({
         currency: 'USD',
         language: 'en',
@@ -73,20 +77,20 @@ export function PreferencesSection() {
 
             {/* Currency */}
             <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                <label htmlFor="pref-currency" className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                     {tAll('account.preferences.displayCurrency')}
                 </label>
-                <select
+                {/* The site's dropdown, not the browser's — whose list the system draws in its own colours. */}
+                <SelectField
+                    id="pref-currency"
                     value={prefs.currency ?? 'USD'}
-                    onChange={e => setPrefs(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                >
-                    {CURRENCIES.map(c => (
-                        <option key={c.code} value={c.code}>
-                            {c.code} — {c.label}
-                        </option>
-                    ))}
-                </select>
+                    options={CURRENCIES.map(c => ({ value: c.code, label: `${c.code} — ${c.label}` }))}
+                    placeholder="USD"
+                    onChange={code => setPrefs(prev => ({ ...prev, currency: code }))}
+                    palette={checkoutPalette(theme)}
+                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                    panelWidth={320}
+                />
             </div>
 
             {/* Language */}
