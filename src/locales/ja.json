@@ -472,7 +472,7 @@
       "receipt": {
         "confirmedToDestination": "{destination}行きのフライトが確定しました。",
         "allSet": "ご予約が完了しました",
-        "confirmedSentTo": "{destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました",
+        "receiptSentTo": "フライトの詳細と領収書を{email}宛に送信しました",
         "approxTotal": "{currency}換算（概算）",
         "receiptSentRich": "領収書を<b>{email}</b>宛に送信しました。",
         "passengersCount": "{count}名",

@@ -356,7 +356,7 @@ function PropertyContent() {
      * one product.
      *
      * It used to name `--font-jakarta` — a *second* next/font instance of Plus
-     * Jakarta Sans that the layout loads beside `--font-plus-jakarta`, the one
+     * Jakarta Sans that the layout used to load beside `--font-plus-jakarta`, the one
      * `font-sans` is bound to. Same family, separately hosted and separately
      * fetched, and pinned here at a fixed weight range while the shell's is
      * variable across 400–800. Inheriting drops the duplicate rather than

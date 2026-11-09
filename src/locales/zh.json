@@ -472,7 +472,7 @@
       "receipt": {
         "confirmedToDestination": "您飞往{destination}的航班已确认。",
         "allSet": "预订完成",
-        "confirmedSentTo": "您飞往{destination}的航班已确认，航班详情和收据已发送至 {email}",
+        "receiptSentTo": "航班详情和收据已发送至 {email}",
         "approxTotal": "约合 {currency}",
         "receiptSentRich": "收据已发送至<b>{email}</b>。",
         "passengersCount": "{count} 位乘客",

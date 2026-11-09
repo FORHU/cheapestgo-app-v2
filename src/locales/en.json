@@ -472,7 +472,7 @@
       "receipt": {
         "confirmedToDestination": "Your flight to {destination} is confirmed.",
         "allSet": "You’re all set",
-        "confirmedSentTo": "Your flight to {destination} is confirmed, flight details and receipt has been sent to {email}",
+        "receiptSentTo": "Flight details and receipt have been sent to {email}",
         "approxTotal": "Approx. in {currency}",
         "receiptSentRich": "A receipt has been sent to <b>{email}</b>.",
         "passengersCount": "{count, plural, one {# passenger} other {# passengers}}",

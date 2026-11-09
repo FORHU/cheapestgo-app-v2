@@ -99,6 +99,12 @@ const USED = [
     'checkout.flight.genderPlaceholder',
     'checkout.example',
     'checkout.flight.whosFlying',
+    // The flight's confirmation.
+    'checkout.flight.receipt.allSet',
+    'checkout.flight.receipt.confirmedToDestination',
+    'checkout.flight.receipt.receiptSentTo',
+    'checkout.flight.receipt.passengersCount',
+    'checkout.summary.flight',
     'checkout.flight.receipt.next.title',
     'checkout.flight.receipt.next.hotel',
     'checkout.flight.receipt.next.hotelLine',

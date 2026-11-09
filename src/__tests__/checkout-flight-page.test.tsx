@@ -754,8 +754,10 @@ describe('after the card', () => {
         // Itinerary detail only the GET /flights/offers/:offerId fetch carries — wait for it.
         expect(await screen.findByText('Duffel Airways')).toBeInTheDocument();
 
-        // One sentence: where the flight goes, and the contact's address — not the signed-in account's.
-        expect(screen.getByText(/Your flight to Tokyo is confirmed, flight details and receipt has been sent to juan@example\.com/)).toBeInTheDocument();
+        // Where the flight goes, and where the receipt went: the contact's address — not the
+        // signed-in account's.
+        expect(screen.getByText('Your flight to Tokyo is confirmed.')).toBeInTheDocument();
+        expect(screen.getByText('Flight details and receipt have been sent to juan@example.com')).toBeInTheDocument();
         expect(screen.queryByText(/account@example\.com/)).not.toBeInTheDocument();
 
         // The flight itself: each end by its airport's full name and code, the day and the
@@ -774,10 +776,13 @@ describe('after the card', () => {
         expect(screen.getByText(/1 carry-on bag/)).toBeInTheDocument();
         expect(screen.getByText(/1 checked bag/)).toBeInTheDocument();
 
-        // The passenger, and what was paid: one fare, the service fee inside it.
-        expect(screen.getByText('Juan Cruz')).toBeInTheDocument();
+        // The passenger, shown back in the form's fields, and what was paid: one fare, the
+        // service fee inside it.
         expect(screen.getByText('ADULT 1')).toBeInTheDocument();
-        expect(screen.getByText('Payment Summary')).toBeInTheDocument();
+        expect(screen.getByText('Juan')).toBeInTheDocument();
+        expect(screen.getByText('Cruz')).toBeInTheDocument();
+        expect(screen.getByText('juan@example.com')).toBeInTheDocument();
+        expect(screen.getByText('Total paid')).toBeInTheDocument();
         expect(screen.getAllByText('USD 272.40')).toHaveLength(2);    // the fare line and what the card was held for
         expect(screen.queryByText('USD 22.40')).not.toBeInTheDocument();
         expect(screen.queryByText('USD 250.00')).not.toBeInTheDocument();
