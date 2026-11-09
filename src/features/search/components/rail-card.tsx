@@ -119,7 +119,7 @@ export function RailCard({
             {/* Price circle */}
             <div className="absolute flex items-center justify-center" style={{ width: PRICE_CIRCLE, height: PRICE_CIRCLE, borderRadius: '50%', top: CARD_IMG_H - PRICE_CIRCLE / 2, right: -CIRCLE_BLEED, zIndex: 10, background: c.chipBg, boxShadow: '0 2px 12px rgba(0,0,0,0.28)' }}>
                 {property.priceLoading ? (
-                    <div className="animate-pulse rounded" style={{ width: px(42), height: px(11), background: 'rgba(128,128,128,0.35)' }} />
+                    <div className="animate-pulse rounded-full" style={{ width: px(42), height: px(11), background: 'rgba(128,128,128,0.35)' }} />
                 ) : (
                     <span style={{ fontSize: priceFont, fontWeight: 700, color: c.chipText, whiteSpace: 'nowrap', lineHeight: 1.2, paddingRight: Math.max(0, CIRCLE_BLEED * 2) }}>
                         {priceLine}

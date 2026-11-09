@@ -39,13 +39,12 @@ vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: '
 vi.mock('@/shared/components/common/CurrencySelector', () => ({ CurrencySelector: () => null }));
 
 // Stripe: a card form that is a single button, which "authorises" the card when pressed.
+const stripeMock = vi.hoisted(() => ({ confirmPayment: vi.fn() }));
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn(async () => ({})) }));
 vi.mock('@stripe/react-stripe-js', () => ({
     Elements: ({ children }: { children: React.ReactNode }) => <div data-testid="stripe-elements">{children}</div>,
     PaymentElement: () => <div data-testid="payment-element" />,
-    useStripe: () => ({
-        confirmPayment: vi.fn(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } })),
-    }),
+    useStripe: () => ({ confirmPayment: stripeMock.confirmPayment }),
     useElements: () => ({}),
 }));
 
@@ -96,18 +95,19 @@ const payments = () => post.mock.calls.filter((c) => String(c[0]).endsWith('/cre
 // Every guest's name fields carry the same example name, so the lead guest is the first pair
 // on the form and the co-guest the second.
 function fillHolder() {
-    fireEvent.change(screen.getAllByPlaceholderText('John')[0], { target: { value: 'Juan' } });
-    fireEvent.change(screen.getAllByPlaceholderText('Doe')[0], { target: { value: 'dela Cruz' } });
-    fireEvent.change(screen.getByPlaceholderText('eg.johndoe@gmail.com'), { target: { value: 'juan@example.com' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. John')[0], { target: { value: 'Juan' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. Doe')[0], { target: { value: 'dela Cruz' } });
+    fireEvent.change(screen.getByPlaceholderText('e.g. johndoe@gmail.com'), { target: { value: 'juan@example.com' } });
 }
 function fillCoGuest() {
-    fireEvent.change(screen.getAllByPlaceholderText('John')[1], { target: { value: 'Maria' } });
-    fireEvent.change(screen.getAllByPlaceholderText('Doe')[1], { target: { value: 'dela Cruz' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. John')[1], { target: { value: 'Maria' } });
+    fireEvent.change(screen.getAllByPlaceholderText('e.g. Doe')[1], { target: { value: 'dela Cruz' } });
 }
 const proceed = () => fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
 beforeEach(() => {
     vi.clearAllMocks();
+    stripeMock.confirmPayment.mockImplementation(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } }));
     auth.user = { email: 'juan@example.com', first_name: '', last_name: '' };
     visit();
     api();
@@ -191,7 +191,7 @@ describe('a room that has gone', () => {
         renderPage();
 
         expect(await screen.findByRole('alert')).toHaveTextContent(/no longer available/i);
-        expect(screen.queryByPlaceholderText('John')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('e.g. John')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
     });
 
@@ -236,8 +236,8 @@ describe('the details form', () => {
         renderPage();
         await screen.findByText(/USD 254/);
 
-        expect(screen.getAllByPlaceholderText('John')).toHaveLength(2);
-        expect(screen.getAllByPlaceholderText('Doe')).toHaveLength(2);
+        expect(screen.getAllByPlaceholderText('e.g. John')).toHaveLength(2);
+        expect(screen.getAllByPlaceholderText('e.g. Doe')).toHaveLength(2);
     });
 });
 
@@ -333,28 +333,33 @@ describe('paying and confirming', () => {
 describe('the form, in the brand\'s look', () => {
     const ringed = (el: Element | null) => el?.getAttribute('style') ?? '';
 
-    it('rings every field in the brand gradient before anything is typed', async () => {
+    it('keeps every field quiet before anything is typed, and rings only the one being typed in', async () => {
         visit({ adults: '2', children: '1' });
         renderPage();
 
-        // blue-600 → cyan-500, as jsdom writes them back.
-        const gradientRing = /linear-gradient\(90deg, rgb\(37, 99, 235\) 0%, rgb\(6, 182, 212\) 100%\) border-box/;
-        for (const placeholder of ['John', 'Doe', 'eg.johndoe@gmail.com']) {
+        // At rest, a hairline: no field carries the gradient, so ten fields are not ten glowing
+        // outlines.
+        for (const placeholder of ['e.g. John', 'e.g. Doe', 'e.g. johndoe@gmail.com']) {
             for (const field of await screen.findAllByPlaceholderText(placeholder)) {
-                expect(ringed(field)).toMatch(gradientRing);
+                expect(ringed(field)).not.toMatch(/linear-gradient/);
             }
         }
-        expect(ringed(document.querySelector('.cg-phone'))).toMatch(gradientRing);
-        expect(ringed(document.querySelector('textarea'))).toMatch(gradientRing);
+        expect(ringed(document.querySelector('.cg-phone'))).not.toMatch(/linear-gradient/);
+        expect(ringed(document.querySelector('textarea'))).not.toMatch(/linear-gradient/);
+
+        // The gradient, blue-600 → cyan-500, is the focused field's ring — a rule jsdom keeps but
+        // does not apply, so it is read from the page's stylesheet.
+        const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
+        expect(css).toMatch(/\.cg-field:focus,\.cg-phone:focus-within\{[^}]*linear-gradient\(90deg,#2563eb 0%,#06b6d4 100%\)\) border-box/);
     });
 
-    it('trades the ring for a red edge on a field that is wrong', async () => {
+    it('keeps a red edge on a field that is wrong', async () => {
         renderPage();
-        await screen.findAllByPlaceholderText('John');
+        await screen.findAllByPlaceholderText('e.g. John');
         proceed();
 
         // The lead guest's first name — the first of the form's name fields.
-        const [first] = await screen.findAllByPlaceholderText('John');
+        const [first] = await screen.findAllByPlaceholderText('e.g. John');
         await waitFor(() => expect(ringed(first)).not.toMatch(/linear-gradient/));
         expect(first).toHaveStyle({ borderColor: '#E4685A' });
     });
@@ -362,5 +367,61 @@ describe('the form, in the brand\'s look', () => {
     it('fills the main action with the brand gradient', async () => {
         renderPage();
         expect(ringed(await screen.findByRole('button', { name: /continue to payment/i }))).toMatch(/linear-gradient/);
+    });
+});
+
+describe('a warning, in a dialog rather than the red box', () => {
+    async function toDetails() {
+        renderPage();
+        await screen.findByText(/USD 254/);
+        await waitFor(() => expect(screen.getByRole('button', { name: /continue to payment/i })).toBeEnabled());
+        fillHolder(); fillCoGuest();
+    }
+
+    async function warning(title: string | RegExp) {
+        const dialog = await screen.findByRole('alertdialog', { name: title });
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        return dialog;
+    }
+
+    it('says a card was declined, and closing leaves the card form to try again', async () => {
+        stripeMock.confirmPayment.mockResolvedValueOnce({ error: { message: 'Your card was declined.' } });
+        await toDetails();
+        proceed();
+        fireEvent.click(await screen.findByRole('button', { name: /pay usd/i }));
+
+        const dialog = await warning("Your payment didn't go through");
+        expect(within(dialog).getByText('Your card was declined.')).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /pay usd/i })).toBeEnabled();
+    });
+
+    it('relays a refusal the form stays open for, and closing leaves the form', async () => {
+        api({ pay: () => { throw httpError(500, { error: 'INTERNAL', message: 'The payment could not be opened.' }); } });
+        await toDetails();
+        proceed();
+
+        const dialog = await warning("We couldn't complete your booking");
+        expect(within(dialog).getByText('The payment could not be opened.')).toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
+    });
+
+    it('names a booking already held for those dates, with the way to it', async () => {
+        api({ pay: () => { throw httpError(409, { error: 'DUPLICATE_BOOKING', message: 'dup', existingBookingId: 'CG-OLD1' }); } });
+        await toDetails();
+        proceed();
+
+        const dialog = await warning(/already have a booking at Bayside Grand Manila/i);
+        expect(within(dialog).getByText(/cancel your existing booking first/i)).toBeInTheDocument();
+        expect(within(dialog).getByRole('link', { name: 'View existing booking' })).toHaveAttribute('href', '/trips/CG-OLD1');
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
     });
 });

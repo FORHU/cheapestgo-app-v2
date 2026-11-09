@@ -75,6 +75,8 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `property.v2.mealPlan` | Meal plan | 식사 조건 | 食事プラン | 餐食安排 |
 | `property.v2.cancellationPolicy` | Cancellation policy | 취소 정책 | キャンセルポリシー | 取消政策 |
 | `property.v2.price` | Price | 요금 | 料金 | 价格 |
+| `property.v2.roomPhotoCount` | 6 photos | 사진 6장 | 写真6枚 | 6 张照片 |
+| `property.v2.rateOptionsFor` | Rates for {room} | {room} 요금 옵션 | {room}の料金プラン | {room} 的价格方案 |
 | `hotels.rooms.roomDetails` | Room details | 객실 상세 정보 | 客室の詳細 | 房型详情 |
 
 ## trips
@@ -100,6 +102,7 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `search.v2.clusterChecking` | checking {count}… | {count}곳 확인 중… | {count}件を確認中… | 正在确认 {count} 处… |
 | `search.v2.clusterHotels` | {count} hotels | 호텔 {count}곳 | ホテル{count}軒 | {count} 家酒店 |
 | `search.v2.clusterFrom` | from {price} | {price}부터 | {price}〜 | {price} 起 |
+| `search.v2.mapLoading` | Loading map… | 지도를 불러오는 중… | 地図を読み込み中… | 正在加载地图… |
 
 ## flights
 
@@ -282,6 +285,10 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.receipt.confirmedSentTo` | Your flight to {destination} is confirmed, flight details and receipt has been sent to {email} | {destination}행 항공편이 확정되었으며, 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다 | {destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました | 您飞往{destination}的航班已确认，航班详情和收据已发送至 {email} |
 | `checkout.flight.receipt.approxTotal` | Approx. in {currency} | {currency} 환산 금액(약) | {currency}換算（概算） | 约合 {currency} |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
+| `checkout.example` | e.g. {value} | 예: {value} | 例：{value} | 例如：{value} |
+| `checkout.flight.contactTitle` | Contact details | 연락처 정보 | 連絡先 | 联系方式 |
+| `checkout.flight.passportTitle` | Passport details | 여권 정보 | パスポート情報 | 护照信息 |
+| `checkout.flight.genderPlaceholder` | Select gender | 성별 선택 | 性別を選択 | 选择性别 |
 | `checkout.flight.whosFlying` | Who's flying? | 누가 탑승하시나요? | ご搭乗者はどなたですか？ | 谁将乘机？ |
 | `checkout.flight.summary.fareDetails` | Fare details | 요금 세부 정보 | 運賃の詳細 | 票价详情 |
 | `checkout.flight.summary.showItineraries` | Show flight itineraries | 항공편 일정 보기 | フライト日程を表示 | 显示航班行程 |
@@ -564,3 +571,39 @@ v1; these did not. Written by Claude (2026-11-04).
 | `golf.booking.extraRemove` | Remove one: {name} | {name} 빼기 | {name}を減らす | 减少{name} |
 | `golf.booking.extraNames.lessons` | Golf lesson | 골프 레슨 | ゴルフレッスン | 高尔夫课程 |
 | `golf.booking.extraNames.range_balls` | Bucket of range balls | 연습볼 바구니 | 練習ボール(カゴ) | 练习球(每筐) |
+
+## Landing header — mobile menu
+
+The hamburger's accessible name, read out by a screen reader; not printed. Written by Claude
+(2026-11-05).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `nav.menu` | Menu | 메뉴 | メニュー | 菜单 |
+
+## Flight checkout — a flight already booked that day
+
+The dialog shown when a traveller already holds a flight leaving the same airport on the same day.
+`{route}` is an airport code (MNL), `{date}` a short date in the reader's language. Written by
+Claude (2026-11-06).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `checkout.flight.duplicateTitle` | You already have a flight that day | 같은 날 이미 예약된 항공편이 있습니다 | 同じ日にご予約済みのフライトがあります | 您当天已有航班预订 |
+| `checkout.flight.duplicateBody` | Your booking departing {route} on {date} is still active. | {date} {route} 출발 예약이 아직 유효합니다. | {date}に{route}を出発するご予約がまだ有効です。 | 您{date}从{route}出发的预订仍然有效。 |
+| `checkout.flight.duplicateHint` | Check it before you book another flight on the same date. | 같은 날 다른 항공편을 예약하기 전에 기존 예약을 확인해 주세요. | 同じ日に別のフライトを予約する前に、ご予約内容をご確認ください。 | 在同一天预订其他航班之前，请先查看现有预订。 |
+| `checkout.flight.duplicateClose` | Close | 닫기 | 閉じる | 关闭 |
+
+## Checkout — warnings shown as dialogs
+
+The titles and buttons of the dialogs the checkout's warnings are shown in (a fare that sold out
+or changed, a declined card). The messages under them are the existing `checkout.flight.*` and
+`checkout.failed.*` strings. Written by Claude (2026-11-06).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `checkout.alert.close` | Close | 닫기 | 閉じる | 关闭 |
+| `checkout.alert.fareChangedTitle` | The fare changed | 요금이 변경되었습니다 | 運賃が変更されました | 票价已变动 |
+| `checkout.alert.fareGoneTitle` | This fare is no longer available | 이 요금은 더 이상 이용할 수 없습니다 | この運賃はご利用いただけなくなりました | 该票价已不可用 |
+| `checkout.alert.searchAgain` | Search again | 다시 검색 | もう一度検索 | 重新搜索 |
+| `checkout.alert.paymentTitle` | Your payment didn't go through | 결제가 완료되지 않았습니다 | お支払いが完了しませんでした | 付款未成功 |

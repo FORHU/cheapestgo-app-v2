@@ -23,7 +23,8 @@ vi.mock('@/i18n/navigation', () => ({
     ),
     useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock('@/shared/lib/http', () => ({ http: { get, post: vi.fn() } }));
+// A flight's page asks the API to check it with Duffel on open; nothing has changed there.
+vi.mock('@/shared/lib/http', () => ({ http: { get, post: vi.fn(async () => ({ changed: false })) } }));
 vi.mock('@/shared/stores/search.store', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/shared/stores/search.store')>()),
     useUserCurrency: () => live.currency,

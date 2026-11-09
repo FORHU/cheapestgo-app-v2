@@ -286,27 +286,27 @@
     },
     "title": "결제",
     "userDetails": {
-      "age": "나이 *",
+      "age": "나이",
       "agePlaceholder": "0–17",
       "childN": "아동 {n}",
       "dateOfBirth": "생년월일",
-      "email": "이메일 *",
+      "email": "이메일",
       "emailPlaceholder": "이메일",
-      "firstName": "이름 *",
+      "firstName": "이름",
       "firstNamePlaceholder": "이름",
       "gender": "성별",
       "genderFemale": "여성",
       "genderMale": "남성",
       "guest1": "게스트 1 (본인)",
       "guestN": "게스트 {n}",
-      "lastName": "성 *",
+      "lastName": "성",
       "lastNamePlaceholder": "성",
       "country": "국가",
       "no": "아니요",
       "passportExpiry": "여권 만료일",
       "passportNumber": "여권 번호",
       "phone": "전화번호",
-      "phoneNumber": "전화번호 *",
+      "phoneNumber": "전화번호",
       "phonePlaceholder": "번호",
       "title": "내 정보",
       "travelingForWork": "출장인가요?",
@@ -382,6 +382,7 @@
     "planAnotherTrip": "다른 여행 계획하기",
     "agreePrefix": "계속하면 다음에 동의하는 것으로 간주됩니다:",
     "continueToPayment": "결제로 진행",
+    "example": "예: {value}",
     "signInArrow": "로그인 →",
     "guestDetails": "투숙객 정보",
     "paymentInfo": "결제 정보",
@@ -443,7 +444,14 @@
       "countryPlaceholder": "국가 선택",
       "countryNoResults": "검색된 국가가 없습니다",
       "passportPlaceholder": "예: P1234567A",
+      "contactTitle": "연락처 정보",
+      "passportTitle": "여권 정보",
+      "genderPlaceholder": "성별 선택",
       "whosFlying": "누가 탑승하시나요?",
+      "duplicateTitle": "같은 날 이미 예약된 항공편이 있습니다",
+      "duplicateBody": "{date} {route} 출발 예약이 아직 유효합니다.",
+      "duplicateHint": "같은 날 다른 항공편을 예약하기 전에 기존 예약을 확인해 주세요.",
+      "duplicateClose": "닫기",
       "settling": {
         "description": "항공사에서 항공권을 확정하고 있습니다. 몇 분 정도 걸릴 수 있으며, 발권되는 즉시 내 여행에 표시됩니다."
       },
@@ -522,6 +530,13 @@
       "refresh": "상태 새로고침",
       "viewTrips": "내 여행 보기",
       "stillWorking": "아직 처리 중입니다. 이 페이지는 자동으로 업데이트됩니다."
+    },
+    "alert": {
+      "close": "닫기",
+      "fareChangedTitle": "요금이 변경되었습니다",
+      "fareGoneTitle": "이 요금은 더 이상 이용할 수 없습니다",
+      "searchAgain": "다시 검색",
+      "paymentTitle": "결제가 완료되지 않았습니다"
     }
   },
   "currencyPicker": {
@@ -1663,6 +1678,7 @@
     "trips": "여행",
     "createAccount": "계정 만들기",
     "accountSettings": "계정 설정",
+    "menu": "메뉴",
     "membersSave": "회원은 10% 이상 절약",
     "membersSaveSubtitle": "로그인 시 선정 숙소 할인 적용",
     "accountWorks": "계정은 CheapestGo 및 모든 파트너 사이트에서 사용 가능합니다"
@@ -1901,7 +1917,9 @@
       "switchToDark": "다크 모드로 전환",
       "mealPlan": "식사 조건",
       "cancellationPolicy": "취소 정책",
-      "price": "요금"
+      "price": "요금",
+      "roomPhotoCount": "사진 {count}장",
+      "rateOptionsFor": "{room} 요금 옵션"
     },
     "metaDescription": "{name}의 요금, 객실, 사진을 확인하세요. 가격을 비교하고 가능한 경우 무료 취소로 예약하실 수 있습니다."
   },
@@ -2107,7 +2125,8 @@
       "staysCount": "숙소 {count}곳",
       "clusterChecking": "{count}곳 확인 중…",
       "clusterHotels": "호텔 {count}곳",
-      "clusterFrom": "{price}부터"
+      "clusterFrom": "{price}부터",
+      "mapLoading": "지도를 불러오는 중…"
     },
     "freeCancel": "무료 취소",
     "recent": "최근",

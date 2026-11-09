@@ -286,27 +286,27 @@
     },
     "title": "结账",
     "userDetails": {
-      "age": "年龄 *",
+      "age": "年龄",
       "agePlaceholder": "0–17",
       "childN": "儿童 {n}",
       "dateOfBirth": "出生日期",
-      "email": "邮箱 *",
+      "email": "邮箱",
       "emailPlaceholder": "邮箱",
-      "firstName": "名字 *",
+      "firstName": "名字",
       "firstNamePlaceholder": "名字",
       "gender": "性别",
       "genderFemale": "女",
       "genderMale": "男",
       "guest1": "房客 1（本人）",
       "guestN": "房客 {n}",
-      "lastName": "姓氏 *",
+      "lastName": "姓氏",
       "lastNamePlaceholder": "姓氏",
       "country": "国家/地区",
       "no": "否",
       "passportExpiry": "护照有效期",
       "passportNumber": "护照号码",
       "phone": "电话",
-      "phoneNumber": "电话号码 *",
+      "phoneNumber": "电话号码",
       "phonePlaceholder": "号码",
       "title": "您的信息",
       "travelingForWork": "因公出差？",
@@ -382,6 +382,7 @@
     "planAnotherTrip": "规划下一次旅行",
     "agreePrefix": "继续即表示您同意我们的",
     "continueToPayment": "继续付款",
+    "example": "例如：{value}",
     "signInArrow": "登录 →",
     "guestDetails": "入住人信息",
     "paymentInfo": "支付信息",
@@ -443,7 +444,14 @@
       "countryPlaceholder": "选择国家/地区",
       "countryNoResults": "未找到国家/地区",
       "passportPlaceholder": "例如：P1234567A",
+      "contactTitle": "联系方式",
+      "passportTitle": "护照信息",
+      "genderPlaceholder": "选择性别",
       "whosFlying": "谁将乘机？",
+      "duplicateTitle": "您当天已有航班预订",
+      "duplicateBody": "您{date}从{route}出发的预订仍然有效。",
+      "duplicateHint": "在同一天预订其他航班之前，请先查看现有预订。",
+      "duplicateClose": "关闭",
       "settling": {
         "description": "航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。"
       },
@@ -522,6 +530,13 @@
       "refresh": "刷新状态",
       "viewTrips": "查看我的行程",
       "stillWorking": "仍在处理中，此页面会自动更新。"
+    },
+    "alert": {
+      "close": "关闭",
+      "fareChangedTitle": "票价已变动",
+      "fareGoneTitle": "该票价已不可用",
+      "searchAgain": "重新搜索",
+      "paymentTitle": "付款未成功"
     }
   },
   "currencyPicker": {
@@ -1663,6 +1678,7 @@
     "trips": "行程",
     "createAccount": "创建账户",
     "accountSettings": "账户设置",
+    "menu": "菜单",
     "membersSave": "会员可省夐10%或更多",
     "membersSaveSubtitle": "登录后可享选定住宿折扣",
     "accountWorks": "您的账户可在CheapestGo及所有合作站点使用"
@@ -1901,7 +1917,9 @@
       "switchToDark": "切换到深色模式",
       "mealPlan": "餐食安排",
       "cancellationPolicy": "取消政策",
-      "price": "价格"
+      "price": "价格",
+      "roomPhotoCount": "{count} 张照片",
+      "rateOptionsFor": "{room} 的价格方案"
     },
     "metaDescription": "查看{name}的价格、房型和照片。比较价格，并在可选时享受免费取消预订。"
   },
@@ -2107,7 +2125,8 @@
       "staysCount": "{count} 处住宿",
       "clusterChecking": "正在确认 {count} 处…",
       "clusterHotels": "{count} 家酒店",
-      "clusterFrom": "{price} 起"
+      "clusterFrom": "{price} 起",
+      "mapLoading": "正在加载地图…"
     },
     "freeCancel": "免费取消",
     "recent": "最近",

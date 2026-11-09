@@ -18,6 +18,8 @@ import { http } from '@/shared/lib/http';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { NearbyExplorer } from '@/features/hotels/components/nearby/NearbyExplorer';
 import { PropertyDescription } from '@/features/hotels/components/property-description';
+import { PropertyFaq } from '@/features/hotels/components/property-faq';
+import { GuestReviews } from '@/features/hotels/components/guest-reviews';
 import { cn } from '@/shared/lib/cn';
 import { SECTION_HEADING, SHELL_CAP, SHELL_GUTTER } from '@/shared/lib/layout';
 import { RoomSelection, ratesOf, roomPhotosOf, type SelectedOffer } from '@/features/hotels/components/room-selection';
@@ -52,7 +54,6 @@ type PropertyApiResponse = SharedPropertyApiResponse;
  *  search pages. A CSS gradient, so only ever a `background`; strokes take
  *  `BRAND_STROKE` instead. */
 const ACCENT = BRAND.gradient;
-const GREEN  = '#2FB67F';
 
 /**
  * Every colour the page below the Hero paints with, picked by theme rather
@@ -157,13 +158,6 @@ const HERO_ARROW: React.CSSProperties = {
     filter: 'drop-shadow(0 1px 6px rgba(0,0,0,.6))',
 };
 
-function ratingInfo(score: number): { label: string; color: string } {
-    // Keys, not words: this runs outside a component, where a hook cannot.
-    if (score >= 9) return { label: 'ratings.exceptional', color: GREEN };
-    if (score >= 8) return { label: 'ratings.excellent',   color: BRAND.gradient };
-    return                  { label: 'Good',        color: '#E0A23C' };
-}
-
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 
 function Spinner({ size = 32, accent = 'rgba(255,255,255,.2)' }: { size?: number; accent?: string }) {
@@ -250,8 +244,9 @@ function PropertyContent() {
     const rooms        = data?.rooms ?? [];
     /** Stays are off sale — the rooms are absent for our reason, not the hotel's. */
     const maintenance  = data?.maintenance === true;
-    const reviewItems  = (data?.reviewItems ?? []).slice(0, 4);
+    const reviewItems  = data?.reviewItems ?? [];
     const reviewScore  = Number(data?.reviews?.rating ?? 0);
+    const reviewCount  = Number(data?.reviews?.reviews_count ?? 0);
     const selectedRoom = selectedOffer?.room ?? null;
     const selectedRate = selectedOffer?.rate ?? null;
     const heroImage     = content?.images?.[0] ?? null;
@@ -555,15 +550,18 @@ function PropertyContent() {
                         </div>
                     </PageColumn>
 
-                    {/* Dots — one per photograph, however many there are. */}
+                    {/* Dots — one per photograph, however many there are. An 8px dot is
+                        drawn and a 24px square is tapped (the `before:` box); on a phone
+                        the gap opens to 16px so neighbouring targets meet, not overlap. */}
                     {heroCount > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 8, zIndex: 2 }}>
+                        <div className="gap-4 md:gap-2" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', zIndex: 2 }}>
                             {heroImages.map((src, i) => (
                                 <button
                                     key={src}
                                     onClick={() => { setHeroDir(i >= heroIndex ? 1 : -1); setHeroIndex(i); }}
                                     aria-label={`Photo ${i + 1} of ${heroCount}`}
                                     aria-current={i === heroIndex || undefined}
+                                    className="relative before:absolute before:-inset-2 before:content-['']"
                                     style={{
                                         width: 8, height: 8, borderRadius: '50%',
                                         border: 'none', padding: 0, cursor: 'pointer',
@@ -684,34 +682,34 @@ function PropertyContent() {
                 )}
                 </Reveal>
 
-                {/* ── Guest reviews ──────────────────────────────────────────── */}
-                {reviewItems.length > 0 && (
-                    <Reveal style={{ margin: '44px 0 0' }}>
-                        <h2 className={cn(SECTION_HEADING, 'mb-4')} style={{ color: palette.title }}>{t('v2.whatGuestsSay')}</h2>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-                            {reviewItems.map((rev, i) => {
-                                const score = Number(rev.score ?? 0);
-                                const ri    = ratingInfo(score);
-                                const blurb = rev.pros || rev.headline || t('v2.greatStay');
-                                return (
-                                    <div
-                                        key={i}
-                                        style={{ flex: '1 1 260px', background: palette.cardBg, padding: 20, position: 'relative', transform: `rotate(${i % 2 === 0 ? '-0.5deg' : '0.5deg'})`, border: `1px solid ${palette.cardBorder}` }}
-                                    >
-                                        {score > 0 && (
-                                            <div style={{ position: 'absolute', top: -12, right: 16, background: ri.color, color: '#fff', fontSize: 17, fontWeight: 800, padding: '5px 10px', borderRadius: 10, border: '2px dashed rgba(255,255,255,.5)' }}>
-                                                {score.toFixed(1)}
-                                            </div>
-                                        )}
-                                        <p style={{ fontSize: 20, lineHeight: 1.55, color: palette.soft, margin: '0 0 12px' }}>
-                                            &ldquo;{blurb}&rdquo;
-                                        </p>
-                                        <div style={{ fontSize: 17, fontWeight: 700, color: palette.title }}>{rev.reviewer_name ?? 'Guest'}</div>
-                                        {rev.country && <div style={{ fontSize: 15, color: palette.muted }}>{rev.country}</div>}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                {/* ── FAQ ──────────────────────────────────────────────────────
+                    v1's questions, answered from this hotel's own data: its
+                    hours, what it has, and what it asks a guest to know. After
+                    the rooms, as v1 has it, so the questions a guest has about
+                    booking sit right under the rates. The amenity groups are
+                    read too: a parking or pool fact can sit in a group without
+                    reaching the flat list. */}
+                <Reveal className="mt-14 sm:mt-16">
+                    <PropertyFaq
+                        tone={theme}
+                        propertyName={content.name ?? ''}
+                        checkInTime={content.check_in_time ?? content.check_in}
+                        checkOutTime={content.check_out_time ?? content.check_out}
+                        facilities={[
+                            ...amenities,
+                            ...(content.amenityGroups ?? []).flatMap(g => [...g.amenities, ...g.nonFree]),
+                        ]}
+                        importantInfo={content.additionalInfo}
+                    />
+                </Reveal>
+
+                {/* ── Guest reviews ────────────────────────────────────────────
+                    The hotel's score and every written review api-v2 sent with
+                    it, with v1's sort and "Load more". Hidden only when there is
+                    neither a score nor a review. */}
+                {(reviewScore > 0 || reviewItems.length > 0) && (
+                    <Reveal className="mt-14 sm:mt-16">
+                        <GuestReviews tone={theme} rating={reviewScore} count={reviewCount} items={reviewItems} />
                     </Reveal>
                 )}
             </PageColumn>
@@ -731,11 +729,15 @@ function PropertyContent() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 24 }}
                         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="fixed right-5 bottom-20 z-40 sm:right-8 lg:right-12 lg:bottom-8"
+                        // Below `lg`: on the left, clear of the bottom nav — `bottom-20` sat
+                        // 2px under it — and of the support launcher, which rides above the
+                        // nav on the right. From `lg`: in the corner, but inset past the
+                        // launcher, which held the arrow end of this button under it.
+                        className="fixed left-4 bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] z-40 px-5 py-3.5 text-base sm:px-[26px] sm:py-[15px] sm:text-lg lg:left-auto lg:right-24 lg:bottom-8"
                         style={{
                             display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '15px 26px', borderRadius: 100, border: 'none',
-                            background: ACCENT, color: '#fff', fontWeight: 700, fontSize: 18,
+                            borderRadius: 100, border: 'none',
+                            background: ACCENT, color: '#fff', fontWeight: 700,
                             cursor: 'pointer', whiteSpace: 'nowrap',
                             boxShadow: '0 20px 46px -12px rgba(37,99,235,.55)',
                         }}

@@ -94,6 +94,10 @@ const USED = [
     'checkout.flight.countryPlaceholder',
     'checkout.flight.countryNoResults',
     'checkout.flight.passportPlaceholder',
+    'checkout.flight.contactTitle',
+    'checkout.flight.passportTitle',
+    'checkout.flight.genderPlaceholder',
+    'checkout.example',
     'checkout.flight.whosFlying',
     'checkout.flight.receipt.next.title',
     'checkout.flight.receipt.next.hotel',
@@ -129,6 +133,11 @@ const USED = [
     'checkout.validation.emailInvalid',
     'checkout.validation.ageInvalid',
     'checkout.validation.specialRequestsTooLong',
+    'checkout.alert.close',
+    'checkout.alert.fareChangedTitle',
+    'checkout.alert.fareGoneTitle',
+    'checkout.alert.searchAgain',
+    'checkout.alert.paymentTitle',
 ];
 
 describe('checkout messages', () => {

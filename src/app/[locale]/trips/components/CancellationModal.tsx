@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
-import { X, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { http } from '@/shared/lib/http';
 import { CancellationFeeCard } from './CancellationFeeCard';
@@ -25,7 +25,51 @@ interface QuoteResponse {
     penaltyAmount?: number;
     cancellationId?: string | null;
     requiresManualCancellation?: boolean;
+    /** Cancelled at Duffel already — its dashboard, or the airline — and settled by the API. */
+    alreadyCancelled?: boolean;
+    status?: string;
     error?: string;
+}
+
+/** What to tell a traveller whose flight turned out to be cancelled already, by where it stands. */
+function alreadyCancelledMessage(status: string | undefined): string {
+    switch (status) {
+        case 'refunded':
+            return 'This flight has already been cancelled, and your refund has been issued.';
+        case 'refund_failed':
+            return 'This flight has already been cancelled, but the refund didn\'t go through. Our team will follow up.';
+        case 'cancelled':
+            return 'This flight has already been cancelled. Our support team will be in touch about any refund.';
+        default:
+            return 'This flight has already been cancelled. Your refund is on its way.';
+    }
+}
+
+/** What `POST /flights/cancel-booking` answers — a 200 whether or not the airline agreed. */
+interface CancelResult {
+    status: string;
+    requiresManualCancellation?: boolean;
+    providerMissing?: boolean;
+}
+
+function cancelOutcome(result: CancelResult | undefined): { kind: 'done' | 'refund_failed' | 'failed'; message: string } {
+    switch (result?.status) {
+        case 'cancel_failed':
+            return {
+                kind: 'failed',
+                message: result.requiresManualCancellation
+                    ? 'This booking can\'t be cancelled online. Please contact support and we\'ll cancel it for you.'
+                    : 'The airline didn\'t accept the cancellation. Please try again, or contact support.',
+            };
+        case 'refund_failed':
+            return { kind: 'refund_failed', message: 'Your flight is cancelled, but the refund didn\'t go through. Our team will follow up.' };
+        case 'refund_pending':
+            return { kind: 'done', message: 'Your flight is cancelled. Your refund is on its way.' };
+        case 'refunded':
+            return { kind: 'done', message: 'Your flight is cancelled and your refund has been issued.' };
+        default:
+            return { kind: 'done', message: 'Your flight is cancelled.' };
+    }
 }
 
 export function CancellationModal({
@@ -41,6 +85,8 @@ export function CancellationModal({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [quote, setQuote] = useState<QuoteResponse | null>(null);
+    /** Set when the flight proved to be cancelled already: nothing left to confirm. */
+    const [notice, setNotice] = useState<string | null>(null);
 
     // Fetch cancel quote on step 1 mount
     useEffect(() => {
@@ -48,11 +94,14 @@ export function CancellationModal({
         setStep(1);
         setError(null);
         setQuote(null);
+        setNotice(null);
         setIsLoading(true);
 
         http.post<QuoteResponse>('/flights/cancel-quote', { bookingId })
             .then((res) => {
-                if (res.success) {
+                if (res.alreadyCancelled) {
+                    setNotice(alreadyCancelledMessage(res.status));
+                } else if (res.success) {
                     setQuote(res);
                 } else if (res.requiresManualCancellation) {
                     setError(res.error || 'Online cancellation is not supported for this booking. Please contact customer service.');
@@ -68,6 +117,11 @@ export function CancellationModal({
             });
     }, [isOpen, bookingId]);
 
+    // The page behind the dialog still shows the flight as booked: bring it up to date.
+    useEffect(() => {
+        if (notice) onSuccess();
+    }, [notice, onSuccess]);
+
     if (!isOpen) return null;
 
     const handleConfirmCancel = async () => {
@@ -75,12 +129,19 @@ export function CancellationModal({
         setError(null);
 
         try {
-            await http.post('/flights/cancel-booking', {
+            const result = await http.post<CancelResult>('/flights/cancel-booking', {
                 bookingId,
                 cancellationId: quote?.cancellationId || undefined,
             });
-            toast.success('Booking cancellation requested successfully!');
+            // A refusal comes back as a 200 with its status — it was reported as a success.
+            const outcome = cancelOutcome(result);
             onSuccess();
+            if (outcome.kind === 'failed') {
+                setError(outcome.message);
+                return;
+            }
+            if (outcome.kind === 'refund_failed') toast.error(outcome.message);
+            else toast.success(outcome.message);
             onClose();
         } catch (err) {
             setError(errorMessage(err, 'Cancellation request failed. Please try again.'));
@@ -119,7 +180,19 @@ export function CancellationModal({
                     </div>
                 )}
 
-                {!isLoading && error && (
+                {!isLoading && notice && (
+                    <div className="my-4 space-y-4">
+                        <div className="flex gap-3 p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl">
+                            <CheckCircle className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{notice}</p>
+                        </div>
+                        <Button onClick={onClose} className="w-full">
+                            {tAll('trips.cancellationModal.close')}
+                        </Button>
+                    </div>
+                )}
+
+                {!isLoading && !notice && error && (
                     <div className="my-4 space-y-4">
                         <div className="flex gap-3 p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl">
                             <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={18} />
@@ -134,7 +207,7 @@ export function CancellationModal({
                     </div>
                 )}
 
-                {!isLoading && !error && step === 1 && quote && (
+                {!isLoading && !notice && !error && step === 1 && quote && (
                     <div className="my-4 space-y-4">
                         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                             Review the penalty and refund breakdown below. The refund amount shown is estimated based on the airline fare policies.

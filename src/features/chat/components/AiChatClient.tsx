@@ -268,15 +268,16 @@ export function AiChatClient() {
                 <div className="flex items-center gap-3 px-4 h-12 shrink-0">
                     <button
                         onClick={() => setSidebarOpen(v => !v)}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        className="-ml-2 flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                         title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                     >
                         {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
                     </button>
                     {!sidebarOpen && (
                         <button
                             onClick={newChat}
-                            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-sm"
+                            className="flex min-h-9 items-center gap-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-sm"
                         >
                             <Plus size={15} />
                             {tAll('ai.newChat')}
@@ -285,8 +286,9 @@ export function AiChatClient() {
                     <div className="flex-1" />
                     <Link
                         href="/"
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        className="-mr-2 flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                         title={tAll('ai.goHome')}
+                        aria-label={tAll('ai.goHome')}
                     >
                         <Home size={18} />
                     </Link>

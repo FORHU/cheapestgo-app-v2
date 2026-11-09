@@ -40,7 +40,7 @@ export function PriceAlertsSection() {
         return (
             <div className="space-y-3 animate-pulse">
                 {[1, 2].map(i => (
-                    <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700" />
+                    <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-xl" />
                 ))}
             </div>
         );
@@ -70,7 +70,7 @@ export function PriceAlertsSection() {
                     {alerts.map(alert => (
                         <div
                             key={alert.id}
-                            className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 group"
+                            className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 group"
                         >
                             {/* Type icon */}
                             <div className={cn(

@@ -416,6 +416,23 @@ html.dark body.flat-ground .flat-ground-strip {
 }
 
 /*
+ * The search map's loading spinner, on the cover the map loads under
+ * (SearchMapContainer). Held back a beat, so a map that is ready almost at once
+ * fades in without a spinner flashing on the way.
+ *
+ * Opacity only: the spinner is centred with a translate, and a transform here
+ * would throw that away for the length of the animation.
+ */
+@keyframes map-loader-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.map-loader-in {
+  animation: map-loader-in 240ms ease-out 250ms backwards;
+}
+
+/*
  * The flight card's route line: a plane flying it from departure to arrival,
  * trailing a streak of the brand gradient (flight-card.tsx, `RouteLine`).
  *
@@ -501,6 +518,24 @@ body {
 body {
   overflow-x: clip;
   max-width: 100vw;
+}
+
+/* Text fields at 16px or more on touch screens.
+   iOS Safari zooms the whole page into any field whose text is under 16px the
+   moment it is focused, and leaves it zoomed after — the search bars (12px) and
+   every form (14px) did that. `max(16px, 1em)` only ever raises a field: 1em is
+   the size it would inherit, so one that sits in larger type keeps it.
+   `!important` because checkout draws its fields with an inline `fontSize: 14`,
+   which no stylesheet rule outranks otherwise; no field anywhere is set above
+   16px, so the rule has nothing to shrink. Scoped to a coarse pointer because
+   the zoom is a touch-browser behaviour, and a narrow desktop window keeps the
+   design's smaller type. */
+@media (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file'], [type='hidden']),
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
 }
 
 .blur-transition {
@@ -807,6 +842,51 @@ body {
     font-size: 14px;
     font-weight: 700;
     transition: color 0.3s ease 0.1s;
+}
+
+/*
+ * Checkout form sizes. A phone or a touch screen gets 48px fields (a 44px tap target with room to
+ * spare) and 16px in every field, so the date, gender and country pickers, which are buttons, read
+ * the same size as the text inputs the touch-screen rule above raises to 16px. The picker panels'
+ * rows, day cells and arrows grow with them. A mouse on a wide screen keeps the design's 40px
+ * fields and 14px text.
+ */
+:root {
+    --cg-field-h: 40px;
+    --cg-field-fs: 14px;
+    --cg-label-fs: 13px;
+    --cg-note-fs: 12px;
+    --cg-small-fs: 11px;
+    --cg-option-py: 9px;
+    --cg-pick-fs: 13px;
+    --cg-day: 36px;
+    --cg-cell-h: 40px;
+    --cg-nav: 32px;
+    --cg-picker-min: 0px;
+}
+
+@media (max-width: 639px), (pointer: coarse) {
+    :root {
+        --cg-field-h: 48px;
+        --cg-field-fs: 16px;
+        --cg-label-fs: 14px;
+        --cg-note-fs: 13px;
+        --cg-small-fs: 12px;
+        --cg-option-py: 12px;
+        --cg-pick-fs: 15px;
+        --cg-day: 44px;
+        --cg-cell-h: 44px;
+        --cg-nav: 40px;
+    }
+}
+
+/* On a phone every picker field spans the form, so its panel can open as wide as the screen
+   allows, which is what lets the calendar's seven day cells reach 44px. Not on a wider touch
+   screen, where a field in the right-hand column would push a wide panel off the edge. */
+@media (max-width: 639px) {
+    :root {
+        --cg-picker-min: 360px;
+    }
 }
 
 @keyframes cg-slide-forward {

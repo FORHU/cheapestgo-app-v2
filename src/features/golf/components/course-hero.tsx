@@ -193,7 +193,10 @@ export function CourseHero({
                     </CourseColumn>
 
                     {count > 1 && (
-                        <div className="z-[2] flex flex-wrap justify-center gap-2">
+                        // An 8px dot is drawn, a 24px square is tapped: the `before:` box widens
+                        // each target without changing the dot, and on a phone the gap opens to
+                        // 16px so neighbouring targets meet rather than overlap.
+                        <div className="z-[2] flex flex-wrap justify-center gap-4 md:gap-2">
                             {images.map((src, i) => (
                                 <button
                                     key={src}
@@ -201,7 +204,7 @@ export function CourseHero({
                                     onClick={() => page(i, i >= index ? 1 : -1)}
                                     aria-label={t('photo', { n: i + 1 })}
                                     aria-current={i === index || undefined}
-                                    className={cn('h-2 w-2 cursor-pointer rounded-full p-0 transition-colors', i === index ? 'bg-white' : 'bg-white/45')}
+                                    className={cn("relative h-2 w-2 cursor-pointer rounded-full p-0 transition-colors before:absolute before:-inset-2 before:content-['']", i === index ? 'bg-white' : 'bg-white/45')}
                                 />
                             ))}
                         </div>

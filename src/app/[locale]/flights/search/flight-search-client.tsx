@@ -651,7 +651,7 @@ export function FlightSearchClient() {
                                 )}
 
                                 {state.status === 'success' && filteredOffers.length === 0 && allOffers.length > 0 ? (
-                                    <div className="border border-dashed border-slate-300 bg-white px-4 py-16 text-center dark:border-white/10 dark:bg-slate-900">
+                                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-16 text-center dark:border-white/10 dark:bg-slate-900">
                                         <h3 className="font-medium text-slate-900 dark:text-white">{tAll('flights.results.noMatch')}</h3>
                                         <p className="mt-1 text-sm text-slate-500 dark:text-white/50">{tAll('flights.results.noMatchHint')}</p>
                                         <button

@@ -13,6 +13,7 @@ import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common
 import { LogoWordmark } from './logo-wordmark';
 import { useBrandName } from '@/shared/components/BrandProvider';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
+import { LandingMobileMenu } from './landing-mobile-menu';
 
 /**
  * The landing page's own header: transparent over the dark canvas, carrying the
@@ -20,7 +21,8 @@ import SignInDropdown from '@/shared/auth/SignInDropdown';
  *
  * Deliberately not the app-wide `<Header />`, which is themed and sticky.
  *
- * The controls drop below 760px, where the search bar takes the whole viewport.
+ * Below 761px the row of controls gives way to a hamburger holding sign in
+ * (`LandingMobileMenu`), so the search bar keeps the rest of the viewport.
  *
  * `tone` is the same choice the menus make (`SELECTOR_TONES`). `onDark` is the
  * landing page's. `default` is the same bar on a page that follows the theme —
@@ -82,6 +84,12 @@ function LandingHeaderContent({ tone }: { tone: SelectorVariant }) {
                             {tAll('nav.signIn')}
                         </Link>
                     )}
+                </div>
+
+                {/* Pulled out by the button's own padding, so the glyph sits on the 24px gutter
+                    the wordmark starts from. */}
+                <div className="-mr-2.5 min-[761px]:hidden">
+                    <LandingMobileMenu tone={tone} />
                 </div>
             </div>
         </header>

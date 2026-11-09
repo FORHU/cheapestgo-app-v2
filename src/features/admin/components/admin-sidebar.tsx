@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+    Menu,
+    X,
     LayoutDashboard,
     BookOpen,
     Users,
@@ -126,73 +128,152 @@ function useGolfRequestsWaiting(pathname: string): number {
     return waiting;
 }
 
+function AdminWordmark() {
+    return (
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <PlaneTakeoff size={16} className="text-blue-400" />
+            <span className="text-sm font-bold text-white tracking-tight">
+                Cheapest<span className="text-blue-400">Go</span>
+                <span className="ml-1.5 text-[9px] uppercase tracking-widest text-slate-500 font-semibold">
+                    Admin
+                </span>
+            </span>
+        </Link>
+    );
+}
+
+/**
+ * The back office's navigation: a column beside the page from `lg`, a drawer below it.
+ *
+ * It was a 240px column at every width, which on a phone left the page about 120px — no
+ * back-office screen could be read, let alone worked, on one. Below `lg` the column is a
+ * drawer instead, opened from a bar across the top: over a scrim, closed by the scrim, its
+ * own close button, Escape, or following a link. The drawer is always in the document and
+ * only moved off-screen, so the links are the same links at every width.
+ */
 export function AdminSidebar() {
     const pathname = usePathname();
     const active = activeHref(pathname);
     const golfWaiting = useGolfRequestsWaiting(pathname);
 
+    const [open, setOpen] = useState(false);
+    const menuRef = useRef<HTMLButtonElement>(null);
+    const closeRef = useRef<HTMLButtonElement>(null);
+
+    // A link followed is a page reached: the drawer has done its job.
+    useEffect(() => { setOpen(false); }, [pathname]);
+
+    // Focus goes into the drawer when it opens and back to the menu button when Escape closes it.
+    useEffect(() => {
+        if (!open) return;
+        closeRef.current?.focus();
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            setOpen(false);
+            menuRef.current?.focus();
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open]);
+
     return (
-        <aside className="w-60 shrink-0 min-h-screen bg-slate-900 flex flex-col">
-            {/* Logo */}
-            <div className="h-14 flex items-center px-5 border-b border-white/5">
-                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <PlaneTakeoff size={16} className="text-blue-400" />
-                    <span className="text-sm font-bold text-white tracking-tight">
-                        Cheapest<span className="text-blue-400">Go</span>
-                        <span className="ml-1.5 text-[9px] uppercase tracking-widest text-slate-500 font-semibold">
-                            Admin
-                        </span>
-                    </span>
-                </Link>
-            </div>
-
-            {/* Nav — scrolls on its own so the logo and footer stay put on a short window */}
-            <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
-                {NAV_GROUPS.map((group) => (
-                    <div key={group.title} className="space-y-px">
-                        <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                            {group.title}
-                        </p>
-                        {group.items.map(({ href, label, icon: Icon }) => {
-                            const isActive = active === href;
-                            return (
-                                <Link
-                                    key={href}
-                                    href={href}
-                                    className={cn(
-                                        'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors group',
-                                        isActive
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                    )}
-                                >
-                                    <Icon size={16} className="shrink-0" />
-                                    <span className="flex-1">{label}</span>{' '}
-                                    {href === '/admin/golf/bookings' && golfWaiting > 0 && (
-                                        <span
-                                            aria-label={`${golfWaiting} waiting`}
-                                            className="min-w-5 rounded-full bg-rose-500 px-1.5 text-center text-[11px] leading-5 font-semibold text-white"
-                                        >
-                                            {golfWaiting}
-                                        </span>
-                                    )}
-                                    {isActive && <ChevronRight size={14} className="opacity-60" />}
-                                </Link>
-                            );
-                        })}
-                    </div>
-                ))}
-            </nav>
-
-            {/* Footer */}
-            <div className="px-4 py-4 border-t border-white/5">
-                <Link
-                    href="/"
-                    className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+        <>
+            {/* The bar the drawer opens from — below `lg` only, where there is no column. */}
+            <div className="sticky top-0 z-40 flex h-14 items-center gap-2 bg-slate-900 px-2 lg:hidden">
+                <button
+                    ref={menuRef}
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    aria-label="Open menu"
+                    aria-expanded={open}
+                    aria-controls="admin-sidebar"
+                    className="flex size-10 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
                 >
-                    Back to app
-                </Link>
+                    <Menu size={20} />
+                </button>
+                <AdminWordmark />
             </div>
-        </aside>
+
+            {open && (
+                <div
+                    aria-hidden="true"
+                    data-testid="admin-sidebar-scrim"
+                    onClick={() => setOpen(false)}
+                    className="fixed inset-0 z-40 bg-slate-950/60 lg:hidden"
+                />
+            )}
+
+            <aside
+                id="admin-sidebar"
+                className={cn(
+                    'fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-slate-900 transition-transform duration-200 ease-out',
+                    open ? 'translate-x-0 shadow-2xl' : '-translate-x-full',
+                    'lg:static lg:z-auto lg:min-h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none lg:transition-none',
+                )}
+            >
+                {/* Logo */}
+                <div className="h-14 flex items-center justify-between px-5 border-b border-white/5">
+                    <AdminWordmark />
+                    <button
+                        ref={closeRef}
+                        type="button"
+                        onClick={() => { setOpen(false); menuRef.current?.focus(); }}
+                        aria-label="Close menu"
+                        className="-mr-3 flex size-10 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white/5 hover:text-white lg:hidden"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {/* Nav — scrolls on its own so the logo and footer stay put on a short window */}
+                <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
+                    {NAV_GROUPS.map((group) => (
+                        <div key={group.title} className="space-y-px">
+                            <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                                {group.title}
+                            </p>
+                            {group.items.map(({ href, label, icon: Icon }) => {
+                                const isActive = active === href;
+                                return (
+                                    <Link
+                                        key={href}
+                                        href={href}
+                                        className={cn(
+                                            // Taller rows in the drawer, where a thumb picks them; the column keeps its 1.5.
+                                            'flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-[13px] font-medium transition-colors group lg:py-1.5',
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                        )}
+                                    >
+                                        <Icon size={16} className="shrink-0" />
+                                        <span className="flex-1">{label}</span>{' '}
+                                        {href === '/admin/golf/bookings' && golfWaiting > 0 && (
+                                            <span
+                                                aria-label={`${golfWaiting} waiting`}
+                                                className="min-w-5 rounded-full bg-rose-500 px-1.5 text-center text-[11px] leading-5 font-semibold text-white"
+                                            >
+                                                {golfWaiting}
+                                            </span>
+                                        )}
+                                        {isActive && <ChevronRight size={14} className="opacity-60" />}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </nav>
+
+                {/* Footer */}
+                <div className="px-4 py-4 border-t border-white/5">
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                        Back to app
+                    </Link>
+                </div>
+            </aside>
+        </>
     );
 }

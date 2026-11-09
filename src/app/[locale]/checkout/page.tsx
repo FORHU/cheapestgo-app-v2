@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown, User, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown } from 'lucide-react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
@@ -17,6 +17,8 @@ import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/h
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
+import { DuplicateFlightModal, type DuplicateFlight } from '@/features/checkout/components/duplicate-flight-modal';
+import { CheckoutAlertDialog, type CheckoutAlert } from '@/features/checkout/components/checkout-alert-dialog';
 import { CheckoutToolbar } from '@/features/checkout/components/checkout-toolbar';
 import { SkeletonBar } from '@/features/checkout/components/skeleton-bar';
 import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
@@ -110,12 +112,13 @@ const DIAL_CODES: { code: string; dial: string; flag: string; name: string }[] =
 /**
  * The example person in every name field on the booking forms — flight passengers, the lead
  * guest and every other guest alike, in every language. Split across the two fields, so the
- * first-name box reads as asking for a first name and not a whole one.
+ * first-name box reads as asking for a first name and not a whole one. Shown through
+ * `checkout.example` ("e.g. John"): bare, "John" and "Doe" read as answers already filled in.
  */
 const EXAMPLE_FIRST_NAME = 'John';
 const EXAMPLE_LAST_NAME  = 'Doe';
 /** The same person's contact details, so email and phone read as examples too, like the names. */
-const EXAMPLE_EMAIL = 'eg.johndoe@gmail.com';
+const EXAMPLE_EMAIL = 'johndoe@gmail.com';
 const EXAMPLE_PHONE = '912 345 6789';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -150,36 +153,46 @@ function validatePassengers(passengers: PassengerInfo[]): Record<string, string>
 // ─── Shared UI helpers ────────────────────────────────────────────────────────
 
 /**
- * A field's fill and edge: the brand gradient, blue-600 → cyan-500, as a ring — the
- * search card's glow, drawn as an outline. The ring is two background layers: the field's
- * fill painted to the padding box, the gradient to the border box, showing only through the
- * transparent border. A field that is wrong trades the ring for a plain red edge.
+ * A field's fill and edge. At rest, a hairline in the slate the cards use (`--cg-edge`, which
+ * `fieldCss` darkens under the pointer). The brand gradient, blue-600 → cyan-500, rings only the
+ * field being typed in — `.cg-field:focus` in `fieldCss` paints it as two background layers, the
+ * fill to the padding box and the gradient to the border box — so the accent marks where you
+ * are, not every box on the page. A field that is wrong keeps a red edge, focused or not.
  */
 function fieldEdge(palette: Palette, hasError = false): React.CSSProperties {
-    // `--cg-ring` is the solid colour the edge becomes when the browser autofills the field and
-    // strips the gradient — see the autofill rules in `fieldCss`.
+    // `--cg-ring` is the solid colour the focused edge becomes when the browser autofills the
+    // field and strips the gradient — see the autofill rules in `fieldCss`. `--cg-focus` is what
+    // the focus rule paints the edge with: the gradient, or for a wrong field its red.
     return hasError
-        ? { border: `1.5px solid ${DANGER}`, background: palette.fieldBg, '--cg-ring': DANGER } as React.CSSProperties
-        : { border: '1.5px solid transparent', background: `linear-gradient(${palette.fieldBg},${palette.fieldBg}) padding-box,${ACCENT_FILL} border-box`, '--cg-ring': BRAND.primary } as React.CSSProperties;
+        ? { border: `1px solid ${DANGER}`, background: palette.fieldBg, '--cg-ring': DANGER, '--cg-focus': DANGER } as React.CSSProperties
+        : { border: `1px solid var(--cg-edge, ${palette.fieldLine})`, background: palette.fieldBg, '--cg-ring': BRAND.primary } as React.CSSProperties;
 }
+
+/** How round a field's corners are: softer than the pill the main action keeps, so a field
+ *  does not read as a button. */
+const FIELD_RADIUS = 14;
 
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
-        width: '100%', height: 40, padding: '0 16px', borderRadius: 999,
+        // Sizes from `--cg-field-*` in globals.css: 40px and 14px with a mouse, 48px and 16px on a
+        // phone or a touch screen.
+        width: '100%', height: 'var(--cg-field-h)', padding: '0 16px', borderRadius: FIELD_RADIUS,
         ...fieldEdge(palette, hasError),
         color: palette.text,
-        fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+        fontSize: 'var(--cg-field-fs)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
     };
 }
 
 /**
  * A field's caption. With `htmlFor` it is a real `<label>`, so the field is named by it.
- * `required` appends the same " *" the first-name and email captions carry in their text, for a
- * caption whose text does not.
+ * `required` appends a quiet " *" — the one way a caption is marked, so the mark looks the same
+ * on every field rather than living in some captions' text and not others'. No icon: one beside
+ * every caption was ten more marks in the accent, and the same person icon stood for a name and
+ * a gender alike.
  */
-function Label({ children, palette, icon: Icon, htmlFor, required }: { children: React.ReactNode; palette: Palette; icon?: LucideIcon; htmlFor?: string; required?: boolean }) {
-    const style: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 400, color: palette.text, marginBottom: 8, paddingLeft: 4 };
-    const content = <>{Icon && <Icon size={13} strokeWidth={1.75} color={palette.icon} style={{ flexShrink: 0 }} />}{children}{required && <span aria-hidden> *</span>}</>;
+function Label({ children, palette, htmlFor, required }: { children: React.ReactNode; palette: Palette; htmlFor?: string; required?: boolean }) {
+    const style: React.CSSProperties = { display: 'block', fontSize: 'var(--cg-label-fs)', fontWeight: 500, color: palette.text, marginBottom: 8, paddingLeft: 2 };
+    const content = <>{children}{required && <span aria-hidden style={{ color: palette.muted }}> *</span>}</>;
     return htmlFor
         ? <label htmlFor={htmlFor} style={style}>{content}</label>
         : <div style={style}>{content}</div>;
@@ -187,7 +200,7 @@ function Label({ children, palette, icon: Icon, htmlFor, required }: { children:
 
 function ErrText({ msg }: { msg?: string }) {
     if (!msg) return null;
-    return <div style={{ fontSize: 11, color: DANGER, marginTop: 5, fontWeight: 600 }}>{msg}</div>;
+    return <div style={{ fontSize: 'var(--cg-small-fs)', color: DANGER, marginTop: 5, fontWeight: 600 }}>{msg}</div>;
 }
 
 function Spinner({ color = '#fff' }: { color?: string }) {
@@ -205,13 +218,16 @@ function Spinner({ color = '#fff' }: { color?: string }) {
  * The same in both themes.
  */
 function PrimaryBtn({
-    onClick, loading, disabled, children,
+    onClick, loading, disabled, children, buttonRef,
 }: {
     onClick?: () => void; loading: boolean; disabled?: boolean; children: React.ReactNode;
+    /** For handing focus back to it, as the same-day flight dialog does once it closes. */
+    buttonRef?: React.Ref<HTMLButtonElement>;
 }) {
     const dead = loading || disabled;
     return (
         <button
+            ref={buttonRef}
             onClick={onClick}
             disabled={dead}
             style={{
@@ -260,8 +276,8 @@ function PhoneField({
             <div
                 className="cg-phone"
                 style={{
-                    display: 'flex', alignItems: 'center', width: '100%', height: 40,
-                    borderRadius: 999, ...fieldEdge(palette, !!error), boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', width: '100%', height: 'var(--cg-field-h)',
+                    borderRadius: FIELD_RADIUS, ...fieldEdge(palette, !!error), boxSizing: 'border-box',
                 }}
             >
                 <button
@@ -273,7 +289,7 @@ function PhoneField({
                     onClick={() => (open ? close() : setOpen(true))}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px', height: '100%',
-                        background: 'none', border: 'none', color: palette.text, fontSize: 14,
+                        background: 'none', border: 'none', color: palette.text, fontSize: 'var(--cg-field-fs)',
                         cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
                     }}
                 >
@@ -293,7 +309,7 @@ function PhoneField({
                     className="cg-field"
                     style={{
                         flex: 1, minWidth: 0, height: '100%', background: 'none', border: 'none',
-                        outline: 'none', color: palette.text, fontSize: 14, padding: '0 14px', fontFamily: 'inherit',
+                        outline: 'none', color: palette.text, fontSize: 'var(--cg-field-fs)', padding: '0 14px', fontFamily: 'inherit',
                     }}
                 />
             </div>
@@ -417,11 +433,13 @@ function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance
             accordionItemLabelSelectedFontWeight: '400',
         },
         rules: {
-            // Stripe's rules take no gradient, so its inputs are ringed in the gradient's
-            // blue: the nearest the iframe can come to the fields on the details step.
-            '.Input':         { border: `1.5px solid ${palette.icon}`, boxShadow: 'none', padding: '12px 16px', borderRadius: '999px' },
-            '.Input:focus':   { boxShadow: `0 0 0 4px ${BRAND.primaryWash}` },
-            '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '400', marginBottom: '8px' },
+            // As the fields on the details step: a hairline at rest and the same corners. Stripe's
+            // rules take no gradient, so the focused edge is the gradient's blue, the nearest the
+            // iframe can come to it.
+            '.Input':         { border: `1px solid ${palette.fieldLine}`, boxShadow: 'none', padding: '12px 16px', borderRadius: `${FIELD_RADIUS}px` },
+            '.Input:hover':   { borderColor: palette.fieldLineHover },
+            '.Input:focus':   { borderColor: BRAND.primary, boxShadow: `0 0 0 4px ${BRAND.primaryWash}` },
+            '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '500', marginBottom: '8px' },
             '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingTop: '0', paddingLeft: '0', paddingRight: '0' },
             '.Tab':           { border: 'none', boxShadow: 'none' },
             // The optional save-info fields sit straight on the panel, as in the design.
@@ -478,7 +496,7 @@ function StripePaymentForm({
 
     return (
         <>
-            <div style={{ background: palette.surface, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
+            <div style={{ background: palette.surface, borderRadius: 12, padding: 'clamp(20px,3vw,36px)', paddingBottom: 'clamp(18px,2.4vw,28px)', marginBottom: 25 }}>
                 <PaymentElement options={{
                     layout: 'accordion',
                     ...(country ? { defaultValues: { billingDetails: { address: { country } } } } : {}),
@@ -579,7 +597,7 @@ function ConfirmedScreen({
                     <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
                 </div>
 
-                <div className="receipt-card" style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, overflow: 'hidden' }}>
+                <div className="receipt-card" style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 24, overflow: 'hidden' }}>
                     {hotelImage && (
                         <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
                             <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -755,7 +773,15 @@ function CheckoutContent() {
     // The flight checkout's step. The hotel's comes from its state machine (`step` below).
     const [flightStep, setStep]     = useState<Step>('form');
     const [submitting, setSubmitting] = useState(false);
-    const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+    /** A warning that stops the flight checkout — shown as a dialog, gone once closed. */
+    const [flightAlert, setFlightAlert] = useState<CheckoutAlert | null>(null);
+    const closeFlightAlert = useCallback(() => setFlightAlert(null), []);
+    /** A flight from the same airport on the same day is already booked: shown as a dialog the
+     *  traveller closes, not in the error box. */
+    const [duplicateFlight, setDuplicateFlight] = useState<DuplicateFlight | null>(null);
+    /** Where focus goes when that dialog closes. The button disables itself while the request
+     *  runs, so it has already lost focus by the time the dialog opens and could notice it. */
+    const flightSubmitRef = useRef<HTMLButtonElement>(null);
 
     // Flight booking state. The hotel's lives in `useHotelCheckout`.
     const [clientSecret, setClientSecret]   = useState<string | null>(null);
@@ -905,7 +931,7 @@ function CheckoutContent() {
     // the money only once the airline has said yes; when it says no, the hold is released
     // and the payment form behind this step has nothing left to pay with.
     const handleFlightPaid = useCallback(async (stripePaymentIntentId: string) => {
-        setSubmitting(true); setErrorMsg(null);
+        setSubmitting(true); setFlightAlert(null);
         const backToDetails = () => { setClientSecret(null); setFlightSessionId(''); setHeld(null); setStep('form'); };
         try {
             const flightRes = await http.post<{ bookingId: string; pnr?: string; status: string }>(
@@ -922,31 +948,44 @@ function CheckoutContent() {
                     setFlightSettling(failure.needsReview ? 'needs_review' : 'pending');
                     break;
                 case 'price_changed':
-                    setErrorMsg(t('flight.priceChanged', {
-                        was: `${failure.currency} ${failure.was.toLocaleString()}`,
-                        now: `${failure.currency} ${failure.now.toLocaleString()}`,
-                    }));
+                    setFlightAlert({
+                        title: t('alert.fareChangedTitle'),
+                        message: t('flight.priceChanged', {
+                            was: `${failure.currency} ${failure.was.toLocaleString()}`,
+                            now: `${failure.currency} ${failure.now.toLocaleString()}`,
+                        }),
+                    });
                     backToDetails();
                     break;
                 case 'offer_expired':
-                    setErrorMsg(t('flight.offerExpired'));
+                    // Nothing on this page can book it now: the way on is a new search.
+                    setFlightAlert({
+                        title: t('alert.fareGoneTitle'),
+                        message: t('flight.offerExpired'),
+                        action: { label: t('alert.searchAgain'), onClick: () => router.back() },
+                    });
                     backToDetails();
                     break;
                 case 'refused':
-                    setErrorMsg(failure.message || t('failed.released'));
+                    setFlightAlert({ title: t('failed.title'), message: failure.message || t('failed.released') });
                     backToDetails();
                     break;
                 default:
-                    setErrorMsg(failure.message || 'Booking confirmation failed. Contact support with your payment reference.');
+                    setFlightAlert({
+                        title: t('failed.title'),
+                        message: failure.message || 'Booking confirmation failed. Contact support with your payment reference.',
+                    });
             }
         } finally {
             setSubmitting(false);
         }
-    }, [flightSessionId, t]);
+    }, [flightSessionId, t, router]);
 
     // The same Stripe form serves both; what happens after a card is authorised does not.
     const handleStripeSuccess = mode === 'flight' ? handleFlightPaid : hotel.onCardAuthorised;
-    const handleStripeError = (msg: string) => (mode === 'flight' ? setErrorMsg(msg) : hotel.onCardError(msg));
+    const handleStripeError = (msg: string) => (mode === 'flight'
+        ? setFlightAlert({ title: t('alert.paymentTitle'), message: msg })
+        : hotel.onCardError(msg));
     const hotelSubmitting = submitting || hotel.busy;
 
     // ── Flight submit ──
@@ -959,7 +998,7 @@ function CheckoutContent() {
             return;
         }
 
-        setSubmitting(true); setErrorMsg(null);
+        setSubmitting(true); setFlightAlert(null);
         try {
             // `/flights/book` opens a PaymentIntent that holds the card; it orders nothing
             // and takes nothing. The airline is asked once the card is authorised, by
@@ -1003,11 +1042,27 @@ function CheckoutContent() {
                 : null);
             setStep('payment');
         } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : 'Booking failed. Please try again.');
+            // The same-day warning (ADR-0011) gets a dialog rather than the error box: nothing
+            // the traveller typed is wrong, and the box kept saying so until the next submit.
+            const e = err as { code?: string; body?: Record<string, unknown> };
+            if (e?.code === 'DUPLICATE_BOOKING') {
+                const text = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+                setDuplicateFlight({
+                    route:             text(e.body?.route) ?? origin,
+                    departureDate:     text(e.body?.departureDate) ?? departureDate,
+                    existingBookingId: text(e.body?.existingBookingId),
+                });
+                return;
+            }
+            setFlightAlert({
+                title: t('failed.title'),
+                message: err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
+            });
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t]);
+    const closeDuplicateFlight = useCallback(() => setDuplicateFlight(null), []);
 
     // ── Price helpers ──
     //
@@ -1050,17 +1105,41 @@ function CheckoutContent() {
         marginBottom: 16,
     };
 
+    /** A group inside a section (a passenger's contact details, their passport): a hairline
+     *  above and a heading in sentence case, a step below the section's spaced capitals. */
+    const groupTitleStyle: React.CSSProperties = {
+        marginTop: 28,
+        paddingTop: 24,
+        borderTop: `1px solid ${palette.hairline}`,
+        fontSize: 15,
+        fontWeight: 600,
+        color: palette.title,
+        marginBottom: 16,
+    };
+
     const fieldCss = (
         <style>{`
             @keyframes spin{to{transform:rotate(360deg)}}
             .cg-field::placeholder{color:${palette.muted};opacity:1}
-            .cg-field:focus,.cg-phone:focus-within{box-shadow:0 0 0 4px ${BRAND.primaryWash}}
-            .cg-phone .cg-field:focus{box-shadow:none}
-            /* An autofilled field used to lose its pill: the ring and the fill are background images,
-               and Chrome's autofill style sets 'background-image: none !important', which nothing
-               here can outrank. A border colour and an inset shadow it leaves alone, so those put
-               the edge and the fill back — the ring a solid colour, the gradient being the thing
-               stripped. */
+            .cg-field,.cg-phone{transition:border-color .15s ease,box-shadow .15s ease}
+            /* A field's resting hairline (see fieldEdge) darkens under the pointer. A wrong field
+               sets its own red edge, which this does not reach. */
+            .cg-field:hover,.cg-phone:hover{--cg-edge:${palette.fieldLineHover}}
+            /* The field being typed in, and only that one, is ringed in the brand gradient: the
+               fill painted to the padding box over the gradient to the border box, showing through
+               the border made transparent. '!important' to outrank the field's inline edge. */
+            .cg-field:focus,.cg-phone:focus-within{
+                border-color:transparent !important;
+                background:linear-gradient(${palette.fieldBg},${palette.fieldBg}) padding-box,var(--cg-focus,${ACCENT_FILL}) border-box !important;
+                box-shadow:0 0 0 4px ${BRAND.primaryWash};
+            }
+            /* The phone number sits inside the ring already drawn around both halves. */
+            .cg-phone .cg-field:focus{background:none !important;box-shadow:none}
+            /* Chrome's autofill style sets 'background-image: none !important', which nothing here
+               can outrank, so an autofilled field loses the gradient and its fill. A border colour
+               and an inset shadow it leaves alone, so those put the fill back and, while it is
+               typed in, the ring — a solid colour, the gradient being the thing stripped. At rest
+               its hairline is a plain border colour already. */
             .cg-field:-webkit-autofill,
             .cg-field:-webkit-autofill:hover,
             .cg-field:-webkit-autofill:focus,
@@ -1068,21 +1147,32 @@ function CheckoutContent() {
                 -webkit-text-fill-color:${palette.text};
                 caret-color:${palette.text};
                 transition:background-color 600000s 0s, color 600000s 0s;
-                border-color:var(--cg-ring,${BRAND.primary}) !important;
                 -webkit-box-shadow:0 0 0 1000px ${palette.fieldBg} inset;
                 box-shadow:0 0 0 1000px ${palette.fieldBg} inset;
             }
             .cg-field:-webkit-autofill:focus{
+                border-color:var(--cg-ring,${BRAND.primary}) !important;
                 -webkit-box-shadow:0 0 0 1000px ${palette.fieldBg} inset, 0 0 0 4px ${BRAND.primaryWash};
                 box-shadow:0 0 0 1000px ${palette.fieldBg} inset, 0 0 0 4px ${BRAND.primaryWash};
             }
             .cg-field:autofill{
                 -webkit-text-fill-color:${palette.text};
-                border-color:var(--cg-ring,${BRAND.primary}) !important;
                 box-shadow:0 0 0 1000px ${palette.fieldBg} inset;
             }
-            /* The phone number sits inside the pill that is already drawn around it; a fill of its
-               own would square off the pill's ends. */
+            .cg-field:autofill:focus{border-color:var(--cg-ring,${BRAND.primary}) !important}
+            /* Below the two-column layout the summary sits under the form, and the button that moves
+               on sat at the foot of a long scroll. There it rides at the bottom of the screen while
+               the form scrolls under it, over a fade into the page's ground. */
+            @media (max-width:1023px){
+                .cg-cta{
+                    position:sticky;bottom:0;z-index:5;
+                    margin-left:calc(-1 * clamp(16px,4vw,44px));margin-right:calc(-1 * clamp(16px,4vw,44px));
+                    padding:20px clamp(16px,4vw,44px) calc(12px + env(safe-area-inset-bottom,0px));
+                    background:linear-gradient(to top,${palette.bg} 72%,transparent);
+                }
+            }
+            /* The phone number sits inside the field already drawn around it; a fill of its own
+               would square off that field's rounded corners. */
             .cg-phone .cg-field:-webkit-autofill,
             .cg-phone .cg-field:-webkit-autofill:focus,
             .cg-phone .cg-field:autofill{
@@ -1185,16 +1275,28 @@ function CheckoutContent() {
     }
 
     // ── Not logged in helper ──
-    // Tinted with the checkout's accent, as its other notices are, and in the page's language.
+    // A quiet plate in the summary card's tones, with the sign-in as a secondary button beside the
+    // words (under them on a phone): an accent-tinted box between the heading and the first field
+    // read as a warning, and pulled the eye off the form.
     function AuthBanner() {
         if (user) return null;
         return (
-            <div style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${ACCENT}55`, background: `${ACCENT}14`, fontSize: 13, color: palette.soft }}>
-                <strong style={{ color: palette.title }}>{tAll('checkout.signInToComplete')}</strong>
-                <div style={{ marginTop: 2 }}>{tAll('checkout.signInBannerDesc')}</div>
+            <div style={{
+                marginBottom: 32, padding: '14px 16px', borderRadius: 16,
+                border: `1px solid ${palette.summaryBorder}`, background: palette.summaryBg,
+                display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            }}>
+                <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: palette.title }}>{tAll('checkout.signInToComplete')}</div>
+                    <div style={{ fontSize: 13, lineHeight: 1.45, color: palette.muted, marginTop: 2 }}>{tAll('checkout.signInBannerDesc')}</div>
+                </div>
                 <button
                     onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-                    style={{ color: ACCENT, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0, marginTop: 8 }}
+                    style={{
+                        minHeight: 44, padding: '0 18px', borderRadius: 999, border: `1px solid ${palette.fieldLine}`,
+                        background: 'transparent', color: palette.title, fontWeight: 600, fontSize: 14,
+                        cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                    }}
                 >
                     {tAll('checkout.signInArrow')}
                 </button>
@@ -1214,7 +1316,7 @@ function CheckoutContent() {
         const rule = <div aria-hidden style={{ height: 1, background: palette.cardLine, margin: '12px 0' }} />;
         return (
             <div style={{ position: 'sticky', top: 24 }}>
-                <div style={{ background: palette.surface, overflow: 'hidden' }}>
+                <div style={{ background: palette.surface, borderRadius: 12, overflow: 'hidden' }}>
                     {hotelImage && (
                         <div style={{ height: 204, overflow: 'hidden' }}>
                             <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1367,7 +1469,7 @@ function CheckoutContent() {
     // checkout rather than a page and its older cousin.
     if (mode === 'flight') {
         const flightBackLabel = step === 'payment' ? t('backToBookingDetails') : tAll('property.v2.goBack');
-        const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 18 };
+        const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 16 };
         // A contact detail or a single answer takes the left column, as on the hotel form;
         // on a phone the half is too narrow, so it takes the row.
         const half = 'col-span-2 sm:col-span-1';
@@ -1384,7 +1486,7 @@ function CheckoutContent() {
                         </div>
 
                         <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
-                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                                 {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
                             </h1>
                             {step === 'form' && (
@@ -1395,10 +1497,18 @@ function CheckoutContent() {
                         </div>
 
                         <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
-                            {errorMsg && (
-                                <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                    {errorMsg}
-                                </div>
+                            {flightAlert && (
+                                <CheckoutAlertDialog
+                                    alert={flightAlert}
+                                    palette={palette}
+                                    onClose={closeFlightAlert}
+                                    // Back on the details, focus goes to the button that submits them.
+                                    returnFocusRef={step === 'form' ? flightSubmitRef : undefined}
+                                />
+                            )}
+
+                            {duplicateFlight && (
+                                <DuplicateFlightModal duplicate={duplicateFlight} palette={palette} onClose={closeDuplicateFlight} returnFocusRef={flightSubmitRef} />
                             )}
 
                             <AuthBanner />
@@ -1412,37 +1522,65 @@ function CheckoutContent() {
                                     const heading = p.type === 'CHD' ? tAll('checkout.userDetails.childN', { n: nth })
                                         : p.type === 'INF' ? t('flight.infantN', { n: nth })
                                             : t('flight.adultN', { n: nth });
+                                    const example = (value: string) => t('example', { value });
+                                    // Three short groups rather than one column of nine fields: who the
+                                    // traveller is, how to reach them (the lead traveller only), and their
+                                    // passport — with more room between the groups than within them.
                                     return (
-                                        <section key={i} style={{ marginBottom: 28 }}>
+                                        <section key={i} style={{ marginBottom: 40 }}>
                                             <div style={{ ...sectionLabelStyle, marginBottom: 6 }}>{heading}</div>
-                                            <p style={{ fontSize: 12, color: palette.muted, margin: '0 0 16px' }}>{t('flight.nameHint')}</p>
+                                            <p style={{ fontSize: 'var(--cg-note-fs)', color: palette.muted, margin: '0 0 18px' }}>{t('flight.nameHint')}</p>
                                             <div style={fieldGrid}>
                                                 <div>
-                                                    <Label palette={palette} icon={User} htmlFor={id('firstName')}>{tAll('checkout.userDetails.firstName')}</Label>
-                                                    <input id={id('firstName')} type="text" aria-required="true" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!err('firstName'))} />
+                                                    <Label palette={palette} htmlFor={id('firstName')} required>{tAll('checkout.userDetails.firstName')}</Label>
+                                                    <input id={id('firstName')} type="text" aria-required="true" autoComplete={i === 0 ? 'given-name' : 'off'} value={p.firstName} onChange={e => onPassenger(i, 'firstName', e.target.value)} placeholder={example(EXAMPLE_FIRST_NAME)} className="cg-field" style={mkField(palette, !!err('firstName'))} />
                                                     <ErrText msg={err('firstName')} />
                                                 </div>
                                                 <div>
-                                                    <Label palette={palette} icon={User} htmlFor={id('lastName')}>{tAll('checkout.userDetails.lastName')}</Label>
-                                                    <input id={id('lastName')} type="text" aria-required="true" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!err('lastName'))} />
+                                                    <Label palette={palette} htmlFor={id('lastName')} required>{tAll('checkout.userDetails.lastName')}</Label>
+                                                    <input id={id('lastName')} type="text" aria-required="true" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={example(EXAMPLE_LAST_NAME)} className="cg-field" style={mkField(palette, !!err('lastName'))} />
                                                     <ErrText msg={err('lastName')} />
                                                 </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} htmlFor={id('dateOfBirth')} required>{tAll('checkout.userDetails.dateOfBirth')}</Label>
+                                                    {/* Only the birthdays the airline accepts for this passenger's type, on the day they fly. */}
+                                                    <DateField id={id('dateOfBirth')} value={p.dateOfBirth} onChange={v => onPassenger(i, 'dateOfBirth', v)}
+                                                        {...birthDateBounds(p.type, departureDate, todayIso)} openTo="year"
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
+                                                    <ErrText msg={err('dateOfBirth')} />
+                                                </div>
+                                                <div className={half}>
+                                                    <Label palette={palette} htmlFor={id('gender')} required>{tAll('checkout.userDetails.gender')}</Label>
+                                                    {/* Required by the check above and sent with the booking, but the
+                                                        control was missing, so the form could never be submitted. */}
+                                                    <SelectField id={id('gender')} value={p.gender} onChange={v => onPassenger(i, 'gender', v)}
+                                                        placeholder={t('flight.genderPlaceholder')}
+                                                        options={[
+                                                            { value: 'M', label: tAll('checkout.userDetails.genderMale') },
+                                                            { value: 'F', label: tAll('checkout.userDetails.genderFemale') },
+                                                        ]}
+                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('gender'))} />
+                                                    <ErrText msg={err('gender')} />
+                                                </div>
+                                            </div>
 
-                                                {/* Contact details once, on the lead traveller: they are the booking's
-                                                    contact, where the e-ticket goes and what the airline calls. */}
-                                                {i === 0 && <>
+                                            {/* Contact details once, on the lead traveller: they are the booking's
+                                                contact, where the e-ticket goes and what the airline calls. */}
+                                            {i === 0 && <>
+                                                <div style={groupTitleStyle}>{t('flight.contactTitle')}</div>
+                                                <div style={fieldGrid}>
                                                     <div className={`${half} sm:col-start-1`}>
-                                                        <Label palette={palette} icon={Mail} htmlFor={id('email')}>{tAll('checkout.userDetails.email')}</Label>
-                                                        <input id={id('email')} type="email" aria-required="true" autoComplete="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={EXAMPLE_EMAIL} className="cg-field" style={mkField(palette, !!err('email'))} />
+                                                        <Label palette={palette} htmlFor={id('email')} required>{tAll('checkout.userDetails.email')}</Label>
+                                                        <input id={id('email')} type="email" aria-required="true" autoComplete="email" value={p.email} onChange={e => onPassenger(i, 'email', e.target.value)} placeholder={example(EXAMPLE_EMAIL)} className="cg-field" style={mkField(palette, !!err('email'))} />
                                                         <ErrText msg={err('email')} />
                                                     </div>
                                                     <div className={`${half} sm:col-start-1`}>
-                                                        <Label palette={palette} icon={Phone} htmlFor={id('phone')}>{tAll('checkout.userDetails.phoneNumber')}</Label>
+                                                        <Label palette={palette} htmlFor={id('phone')} required>{tAll('checkout.userDetails.phoneNumber')}</Label>
                                                         <PhoneField
                                                             palette={palette}
                                                             inputId={id('phone')}
                                                             required
-                                                            placeholder={EXAMPLE_PHONE}
+                                                            placeholder={example(EXAMPLE_PHONE)}
                                                             code={contactPhoneCode}
                                                             number={p.phone}
                                                             onCode={setContactPhoneCode}
@@ -1451,37 +1589,19 @@ function CheckoutContent() {
                                                         />
                                                         <ErrText msg={err('phone')} />
                                                     </div>
-                                                    <p className="col-span-2" style={{ fontSize: 12, color: palette.muted, margin: '-8px 4px 0' }}>{t('flight.contactHint')}</p>
-                                                </>}
+                                                    <p className="col-span-2" style={{ fontSize: 'var(--cg-note-fs)', lineHeight: 1.45, color: palette.muted, margin: '-6px 2px 0' }}>{t('flight.contactHint')}</p>
+                                                </div>
+                                            </>}
 
-                                                <div className={half}>
-                                                    <Label palette={palette} icon={Calendar} htmlFor={id('dateOfBirth')} required>{tAll('checkout.userDetails.dateOfBirth')}</Label>
-                                                    {/* Only the birthdays the airline accepts for this passenger's type, on the day they fly. */}
-                                                    <DateField id={id('dateOfBirth')} value={p.dateOfBirth} onChange={v => onPassenger(i, 'dateOfBirth', v)}
-                                                        {...birthDateBounds(p.type, departureDate, todayIso)} openTo="year"
-                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
-                                                    <ErrText msg={err('dateOfBirth')} />
-                                                </div>
-                                                <div className={half}>
-                                                    <Label palette={palette} icon={User} htmlFor={id('gender')} required>{tAll('checkout.userDetails.gender')}</Label>
-                                                    {/* Required by the check above and sent with the booking, but the
-                                                        control was missing, so the form could never be submitted. */}
-                                                    <SelectField id={id('gender')} value={p.gender} onChange={v => onPassenger(i, 'gender', v)}
-                                                        placeholder={tAll('checkout.userDetails.gender')}
-                                                        options={[
-                                                            { value: 'M', label: tAll('checkout.userDetails.genderMale') },
-                                                            { value: 'F', label: tAll('checkout.userDetails.genderFemale') },
-                                                        ]}
-                                                        palette={palette} className="cg-field" style={mkField(palette, !!err('gender'))} />
-                                                    <ErrText msg={err('gender')} />
-                                                </div>
+                                            <div style={groupTitleStyle}>{t('flight.passportTitle')}</div>
+                                            <div style={fieldGrid}>
                                                 <div className={half}>
                                                     <Label palette={palette} htmlFor={id('passportNumber')} required>{tAll('checkout.userDetails.passportNumber')}</Label>
                                                     <input id={id('passportNumber')} type="text" aria-required="true" autoComplete="off" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={t('flight.passportPlaceholder')} className="cg-field" style={mkField(palette, !!err('passportNumber'))} />
                                                     <ErrText msg={err('passportNumber')} />
                                                 </div>
                                                 <div className={half}>
-                                                    <Label palette={palette} icon={Calendar} htmlFor={id('passportExpiry')} required>{tAll('checkout.userDetails.passportExpiry')}</Label>
+                                                    <Label palette={palette} htmlFor={id('passportExpiry')} required>{tAll('checkout.userDetails.passportExpiry')}</Label>
                                                     <DateField id={id('passportExpiry')} value={p.passportExpiry} onChange={v => onPassenger(i, 'passportExpiry', v)}
                                                         {...passportExpiryBounds(departureDate, todayIso)} openTo="day"
                                                         palette={palette} className="cg-field" style={mkField(palette, !!err('passportExpiry'))} />
@@ -1499,8 +1619,8 @@ function CheckoutContent() {
                                     );
                                 })}
 
-                                <div style={{ marginTop: 40 }}>
-                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting}>
+                                <div className="cg-cta" style={{ marginTop: 16 }}>
+                                    <PrimaryBtn onClick={handleFlightSubmit} loading={submitting} buttonRef={flightSubmitRef}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
                                 </div>
@@ -1524,7 +1644,7 @@ function CheckoutContent() {
                                 </>
                             )}
 
-                            <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                            <p style={{ fontSize: 'var(--cg-small-fs)', color: palette.faint, textAlign: 'center', marginTop: 14 }}>
                                 {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                             </p>
                         </div>
@@ -1540,8 +1660,27 @@ function CheckoutContent() {
     }
 
     // ── Hotel checkout ────────────────────────────────────────────────────────
+    // The warnings the traveller answers by closing them — shown as a dialog, and gone with
+    // `dismissNotice`, leaving the step they carry on from. The bigger turns (a price that
+    // moved, a room that went, a booking that failed after payment) stay panels on the page.
+    const hotelFailure = hotelState.failure;
+    const hotelAlert: CheckoutAlert | null =
+        hotelState.phase === 'failed' && hotelFailure?.kind === 'duplicate'
+            ? {
+                title: t('duplicateBookingTitle', { hotel: hotelName }),
+                message: t('duplicateBookingDesc'),
+                ...(hotelFailure.existingBookingId && {
+                    action: { label: t('viewExistingBooking'), href: `/trips/${hotelFailure.existingBookingId}` },
+                }),
+            }
+        : hotelState.phase === 'quoted' && hotelFailure
+            ? { title: t('failed.title'), message: hotelFailure.message }
+        : hotelState.phase === 'awaiting_payment' && hotelState.message
+            ? { title: t('alert.paymentTitle'), message: hotelState.message }
+        : null;
+
     const backLabel = step === 'payment' ? t('backToBookingDetails') : tAll('property.v2.goBack');
-    const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 18 };
+    const fieldGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 12, rowGap: 16 };
 
     return (
         <div style={rootStyle}>
@@ -1560,7 +1699,7 @@ function CheckoutContent() {
                     <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
                         {/* One line from `lg` up, as drawn — it may run past the form column into
                             the gutter, which the steps never reach. Sized so it always fits there. */}
-                        <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(36px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                        <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                             {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
                         </h1>
                         {step === 'form' && (
@@ -1571,10 +1710,8 @@ function CheckoutContent() {
                     </div>
 
                     <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
-                        {errorMsg && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                {errorMsg}
-                            </div>
+                        {hotelAlert && (
+                            <CheckoutAlertDialog alert={hotelAlert} palette={palette} onClose={hotel.dismissNotice} />
                         )}
 
                         {roomsRequested > 1 && <MultiRoomNotice palette={palette} />}
@@ -1603,17 +1740,6 @@ function CheckoutContent() {
                                 onChooseAnother={() => router.back()}
                             />
                         )}
-                        {hotelState.phase === 'failed' && hotelState.failure?.kind === 'duplicate' && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                <div>{t('duplicateBookingTitle', { hotel: hotelName })}</div>
-                                <div style={{ marginTop: 4, color: palette.soft }}>{t('duplicateBookingDesc')}</div>
-                                {hotelState.failure.existingBookingId && (
-                                    <Link href={`/trips/${hotelState.failure.existingBookingId}`} style={{ color: ACCENT, fontWeight: 700 }}>
-                                        {t('viewExistingBooking')}
-                                    </Link>
-                                )}
-                            </div>
-                        )}
                         {hotelState.phase === 'failed' && hotelState.failure?.kind !== 'duplicate' && (
                             <BookingFailedPanel
                                 released={hotelState.outcome?.kind === 'failed' ? hotelState.outcome.released : false}
@@ -1622,18 +1748,6 @@ function CheckoutContent() {
                                 onTryAgain={hotel.restart}
                             />
                         )}
-                        {/* A refusal the traveller can act on in place: the form stays, with the reason. */}
-                        {hotelState.phase === 'quoted' && hotelState.failure && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                {hotelState.failure.message}
-                            </div>
-                        )}
-                        {/* A declined card is retried on the same payment. */}
-                        {hotelState.phase === 'awaiting_payment' && hotelState.message && (
-                            <div role="alert" style={{ marginBottom: 24, padding: '14px 18px', borderRadius: 14, border: `1px solid ${DANGER}55`, background: `${DANGER}14`, fontSize: 13, color: DANGER }}>
-                                {hotelState.message}
-                            </div>
-                        )}
 
                         <AuthBanner />
 
@@ -1641,17 +1755,17 @@ function CheckoutContent() {
                         {step === 'form' && hotelState.phase !== 'unavailable' && hotelState.phase !== 'failed' && (
                             <>
                                 {/* Guest 1 — the booking holder */}
-                                <section style={{ marginBottom: 28 }}>
+                                <section style={{ marginBottom: 36 }}>
                                     <div style={sectionLabelStyle}>{t('userDetails.guest1')}</div>
                                     <div style={fieldGrid}>
                                         <div>
-                                            <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!fieldError('holder.firstName'))} />
+                                            <Label palette={palette} required>{t('userDetails.firstNamePlaceholder')}</Label>
+                                            <input type="text" autoComplete="given-name" value={guest.firstName} onChange={e => onGuest('firstName', e.target.value)} placeholder={t('example', { value: EXAMPLE_FIRST_NAME })} className="cg-field" style={mkField(palette, !!fieldError('holder.firstName'))} />
                                             <ErrText msg={fieldError('holder.firstName')} />
                                         </div>
                                         <div>
-                                            <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!fieldError('holder.lastName'))} />
+                                            <Label palette={palette} required>{t('userDetails.lastNamePlaceholder')}</Label>
+                                            <input type="text" autoComplete="family-name" value={guest.lastName} onChange={e => onGuest('lastName', e.target.value)} placeholder={t('example', { value: EXAMPLE_LAST_NAME })} className="cg-field" style={mkField(palette, !!fieldError('holder.lastName'))} />
                                             <ErrText msg={fieldError('holder.lastName')} />
                                         </div>
                                         {/* Email and phone keep to the left column, as drawn — a
@@ -1659,15 +1773,15 @@ function CheckoutContent() {
                                             phone the half is too narrow for an address, so both
                                             take the full row. */}
                                         <div className="col-span-2 sm:col-span-1 sm:col-start-1">
-                                            <Label palette={palette} icon={Mail}>{t('userDetails.emailPlaceholder')}</Label>
-                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={EXAMPLE_EMAIL} className="cg-field" style={mkField(palette, !!fieldError('holder.email'))} />
+                                            <Label palette={palette} required>{t('userDetails.emailPlaceholder')}</Label>
+                                            <input type="email" autoComplete="email" value={guest.email} onChange={e => onGuest('email', e.target.value)} placeholder={t('example', { value: EXAMPLE_EMAIL })} className="cg-field" style={mkField(palette, !!fieldError('holder.email'))} />
                                             <ErrText msg={fieldError('holder.email')} />
                                         </div>
                                         <div className="col-span-2 sm:col-span-1 sm:col-start-1">
-                                            <Label palette={palette} icon={Phone}>{t('userDetails.phoneNumber')}</Label>
+                                            <Label palette={palette}>{t('userDetails.phoneNumber')}</Label>
                                             <PhoneField
                                                 palette={palette}
-                                                placeholder={EXAMPLE_PHONE}
+                                                placeholder={t('example', { value: EXAMPLE_PHONE })}
                                                 code={guest.phoneCode}
                                                 number={guest.phone}
                                                 onCode={v => onGuest('phoneCode', v)}
@@ -1681,17 +1795,17 @@ function CheckoutContent() {
 
                                 {/* Guests 2..N — name only */}
                                 {coGuests.map((g, i) => (
-                                    <section key={i} style={{ marginBottom: 28 }}>
+                                    <section key={i} style={{ marginBottom: 36 }}>
                                         <div style={sectionLabelStyle}>{t('userDetails.guestN', { n: i + 2 })}</div>
                                         <div style={fieldGrid}>
                                             <div>
-                                                <Label palette={palette} icon={User}>{t('userDetails.firstNamePlaceholder')}</Label>
-                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder={EXAMPLE_FIRST_NAME} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.firstName`))} />
+                                                <Label palette={palette} required>{t('userDetails.firstNamePlaceholder')}</Label>
+                                                <input type="text" value={g.firstName} onChange={e => onCoGuest(i, 'firstName', e.target.value)} placeholder={t('example', { value: EXAMPLE_FIRST_NAME })} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.firstName`))} />
                                                 <ErrText msg={fieldError(`coGuests.${i}.firstName`)} />
                                             </div>
                                             <div>
-                                                <Label palette={palette} icon={User}>{t('userDetails.lastNamePlaceholder')}</Label>
-                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder={EXAMPLE_LAST_NAME} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.lastName`))} />
+                                                <Label palette={palette} required>{t('userDetails.lastNamePlaceholder')}</Label>
+                                                <input type="text" value={g.lastName} onChange={e => onCoGuest(i, 'lastName', e.target.value)} placeholder={t('example', { value: EXAMPLE_LAST_NAME })} className="cg-field" style={mkField(palette, !!fieldError(`coGuests.${i}.lastName`))} />
                                                 <ErrText msg={fieldError(`coGuests.${i}.lastName`)} />
                                             </div>
                                         </div>
@@ -1700,11 +1814,11 @@ function CheckoutContent() {
 
                                 {/* Children — an age is what a supplier admits and prices them by */}
                                 {kids.map((k, i) => (
-                                    <section key={`kid-${i}`} style={{ marginBottom: 28 }}>
+                                    <section key={`kid-${i}`} style={{ marginBottom: 36 }}>
                                         <div style={sectionLabelStyle}>{t('userDetails.childN', { n: i + 1 })}</div>
                                         <div style={fieldGrid}>
                                             <div>
-                                                <Label palette={palette}>{t('userDetails.age')}</Label>
+                                                <Label palette={palette} required>{t('userDetails.age')}</Label>
                                                 <input
                                                     type="number" inputMode="numeric" min={0} max={17} step={1}
                                                     value={k.age} onChange={e => onKid(i, 'age', e.target.value)}
@@ -1719,7 +1833,7 @@ function CheckoutContent() {
                                 ))}
 
                                 {/* Special requests: passed to the property, not guaranteed by it */}
-                                <section style={{ marginBottom: 28 }}>
+                                <section style={{ marginBottom: 36 }}>
                                     <div style={sectionLabelStyle}>{t('specialRequests.title')}</div>
                                     <textarea
                                         value={specialRequests}
@@ -1727,12 +1841,12 @@ function CheckoutContent() {
                                         placeholder={t('specialRequests.placeholder')}
                                         rows={3}
                                         className="cg-field"
-                                        style={{ ...mkField(palette, !!fieldError('specialRequests')), height: 'auto', padding: '12px 16px', borderRadius: 20, resize: 'vertical' }}
+                                        style={{ ...mkField(palette, !!fieldError('specialRequests')), height: 'auto', padding: '12px 16px', borderRadius: FIELD_RADIUS, resize: 'vertical' }}
                                     />
                                     <ErrText msg={fieldError('specialRequests')} />
                                 </section>
 
-                                <div style={{ marginTop: 40 }}>
+                                <div className="cg-cta" style={{ marginTop: 16 }}>
                                     <PrimaryBtn onClick={handleHotelSubmitForm} loading={hotelSubmitting} disabled={!hotel.canSubmit}>
                                         {t('continueToPayment')}
                                     </PrimaryBtn>
@@ -1754,7 +1868,7 @@ function CheckoutContent() {
                             </Elements>
                         )}
 
-                        <p style={{ fontSize: 11, color: palette.faint, textAlign: 'center', marginTop: 14 }}>
+                        <p style={{ fontSize: 'var(--cg-small-fs)', color: palette.faint, textAlign: 'center', marginTop: 14 }}>
                             {t('agreePrefix')} <Link href="/terms" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.terms')}</Link> {tRoot('legal.termsGate.checkboxConnector')} <Link href="/privacy" style={{ color: palette.soft, textDecoration: 'underline' }}>{tRoot('footer.privacyMinimal')}</Link>.
                         </p>
                     </div>

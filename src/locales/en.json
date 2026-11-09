@@ -286,27 +286,27 @@
     },
     "title": "Checkout",
     "userDetails": {
-      "age": "Age *",
+      "age": "Age",
       "agePlaceholder": "0–17",
       "childN": "CHILD {n}",
       "dateOfBirth": "Date of birth",
-      "email": "Email *",
+      "email": "Email",
       "emailPlaceholder": "Email",
-      "firstName": "First Name *",
+      "firstName": "First name",
       "firstNamePlaceholder": "First name",
       "gender": "Gender",
       "genderFemale": "Female",
       "genderMale": "Male",
       "guest1": "GUEST 1 (YOU)",
       "guestN": "GUEST {n}",
-      "lastName": "Last Name *",
+      "lastName": "Last name",
       "lastNamePlaceholder": "Last name",
       "country": "Country",
       "no": "No",
       "passportExpiry": "Passport expiry",
       "passportNumber": "Passport number",
       "phone": "Phone",
-      "phoneNumber": "Phone number *",
+      "phoneNumber": "Phone number",
       "phonePlaceholder": "Number",
       "title": "Your details",
       "travelingForWork": "Traveling for work?",
@@ -382,6 +382,7 @@
     "planAnotherTrip": "Plan another trip",
     "agreePrefix": "By continuing you agree to our",
     "continueToPayment": "Continue to payment",
+    "example": "e.g. {value}",
     "signInArrow": "Sign in →",
     "guestDetails": "Guest details",
     "paymentInfo": "Payment info",
@@ -443,7 +444,14 @@
       "countryPlaceholder": "Select country",
       "countryNoResults": "No countries found",
       "passportPlaceholder": "e.g. P1234567A",
+      "contactTitle": "Contact details",
+      "passportTitle": "Passport details",
+      "genderPlaceholder": "Select gender",
       "whosFlying": "Who's flying?",
+      "duplicateTitle": "You already have a flight that day",
+      "duplicateBody": "Your booking departing {route} on {date} is still active.",
+      "duplicateHint": "Check it before you book another flight on the same date.",
+      "duplicateClose": "Close",
       "settling": {
         "description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued."
       },
@@ -522,6 +530,13 @@
       "refresh": "Refresh status",
       "viewTrips": "View my trips",
       "stillWorking": "Still working on it — this page updates by itself."
+    },
+    "alert": {
+      "close": "Close",
+      "fareChangedTitle": "The fare changed",
+      "fareGoneTitle": "This fare is no longer available",
+      "searchAgain": "Search again",
+      "paymentTitle": "Your payment didn't go through"
     }
   },
   "currencyPicker": {
@@ -1663,6 +1678,7 @@
     "trips": "Trips",
     "createAccount": "Create an account",
     "accountSettings": "Account Settings",
+    "menu": "Menu",
     "membersSave": "Members save 10% or more",
     "membersSaveSubtitle": "on select stays when signed in",
     "accountWorks": "Your account works across CheapestGo and all partner sites"
@@ -1901,7 +1917,9 @@
       "switchToDark": "Switch to dark mode",
       "mealPlan": "Meal plan",
       "cancellationPolicy": "Cancellation policy",
-      "price": "Price"
+      "price": "Price",
+      "roomPhotoCount": "{count, plural, one {# photo} other {# photos}}",
+      "rateOptionsFor": "Rates for {room}"
     },
     "metaDescription": "Rates, rooms and photos for {name}. Compare prices and book with free cancellation where available."
   },
@@ -2107,7 +2125,8 @@
       "staysCount": "{count} Stays",
       "clusterChecking": "checking {count}…",
       "clusterHotels": "{count} hotels",
-      "clusterFrom": "from {price}"
+      "clusterFrom": "from {price}",
+      "mapLoading": "Loading map…"
     },
     "freeCancel": "Free cancel",
     "recent": "Recent",

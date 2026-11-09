@@ -75,6 +75,8 @@ export interface UseHotelCheckout {
     onCardAuthorised: (paymentIntentId: string) => Promise<void>;
     onCardError:  (message: string) => void;
     backToDetails: () => void;
+    /** The traveller closed the dialog a refusal, a decline or a duplicate was shown in. */
+    dismissNotice: () => void;
     /** Start over from a booking that failed: forget it, and take a fresh quote. */
     restart: () => void;
 }
@@ -281,6 +283,7 @@ export function useHotelCheckout(options: UseHotelCheckoutOptions): UseHotelChec
         onCardAuthorised,
         onCardError:   useCallback((message: string) => dispatch({ type: 'CARD_FAILED', message }), []),
         backToDetails: useCallback(() => dispatch({ type: 'BACK_TO_DETAILS' }), []),
+        dismissNotice: useCallback(() => dispatch({ type: 'NOTICE_DISMISSED' }), []),
         restart: useCallback(() => {
             inFlight.current = { pay: false, confirm: false };
             polled.current = { reference: '', count: 0 };

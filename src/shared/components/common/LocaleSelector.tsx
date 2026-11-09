@@ -97,17 +97,17 @@ export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }
                         // the toolbar's own geometry — the icon circle its neighbours
                         // are drawn at, or a pill when it still carries a label.
                         ? iconOnly
-                            ? "h-6 w-6 shrink-0 justify-center rounded-full hover:opacity-80 md:h-10 md:w-10"
-                            : "h-6 gap-1.5 rounded-full px-2 hover:opacity-80 md:h-10 md:px-3"
-                        : cn("gap-1.5 px-1 py-1 rounded-lg", tone.trigger),
+                            ? "h-9 w-9 shrink-0 justify-center rounded-full hover:opacity-80 md:h-10 md:w-10"
+                            : "h-9 gap-1.5 rounded-full px-2.5 hover:opacity-80 md:h-10 md:px-3"
+                        : cn("min-h-9 gap-1.5 px-1.5 py-1 rounded-lg", tone.trigger),
                 )}
                 style={chrome ? { background: chrome.surface, border: `1px solid ${chrome.border}`, color: chrome.text } : undefined}
                 aria-expanded={open}
                 aria-haspopup="listbox"
                 aria-label={iconOnly ? `Language: ${current.label}` : 'Select language'}
             >
-                {/* Inside a 24px circle the flag has to come down off its 22px
-                    header size or it runs to the button's own edge. */}
+                {/* Inside the toolbar's icon circle the flag comes down off its
+                    22px header size, so it sits in the circle rather than filling it. */}
                 <FlagIcon
                     code={current.flag}
                     className={cn(iconOnly && 'h-[12px] w-[17px] md:h-[13px] md:w-[19px]', !chrome && tone.flagRing)}

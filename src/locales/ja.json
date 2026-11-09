@@ -286,27 +286,27 @@
     },
     "title": "お支払い",
     "userDetails": {
-      "age": "年齢 *",
+      "age": "年齢",
       "agePlaceholder": "0–17",
       "childN": "子供 {n}",
       "dateOfBirth": "生年月日",
-      "email": "メールアドレス *",
+      "email": "メールアドレス",
       "emailPlaceholder": "メールアドレス",
-      "firstName": "名 *",
+      "firstName": "名",
       "firstNamePlaceholder": "名",
       "gender": "性別",
       "genderFemale": "女性",
       "genderMale": "男性",
       "guest1": "ゲスト 1（ご本人）",
       "guestN": "ゲスト {n}",
-      "lastName": "姓 *",
+      "lastName": "姓",
       "lastNamePlaceholder": "姓",
       "country": "国",
       "no": "いいえ",
       "passportExpiry": "パスポート有効期限",
       "passportNumber": "パスポート番号",
       "phone": "電話番号",
-      "phoneNumber": "電話番号 *",
+      "phoneNumber": "電話番号",
       "phonePlaceholder": "番号",
       "title": "お客様情報",
       "travelingForWork": "出張ですか？",
@@ -382,6 +382,7 @@
     "planAnotherTrip": "次の旅行を計画する",
     "agreePrefix": "続行すると、以下に同意したものとみなされます:",
     "continueToPayment": "お支払いに進む",
+    "example": "例：{value}",
     "signInArrow": "ログイン →",
     "guestDetails": "ご宿泊者情報",
     "paymentInfo": "お支払い情報",
@@ -443,7 +444,14 @@
       "countryPlaceholder": "国を選択",
       "countryNoResults": "該当する国がありません",
       "passportPlaceholder": "例：P1234567A",
+      "contactTitle": "連絡先",
+      "passportTitle": "パスポート情報",
+      "genderPlaceholder": "性別を選択",
       "whosFlying": "ご搭乗者はどなたですか？",
+      "duplicateTitle": "同じ日にご予約済みのフライトがあります",
+      "duplicateBody": "{date}に{route}を出発するご予約がまだ有効です。",
+      "duplicateHint": "同じ日に別のフライトを予約する前に、ご予約内容をご確認ください。",
+      "duplicateClose": "閉じる",
       "settling": {
         "description": "航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。"
       },
@@ -522,6 +530,13 @@
       "refresh": "状況を更新",
       "viewTrips": "マイトリップを見る",
       "stillWorking": "処理中です。このページは自動的に更新されます。"
+    },
+    "alert": {
+      "close": "閉じる",
+      "fareChangedTitle": "運賃が変更されました",
+      "fareGoneTitle": "この運賃はご利用いただけなくなりました",
+      "searchAgain": "もう一度検索",
+      "paymentTitle": "お支払いが完了しませんでした"
     }
   },
   "currencyPicker": {
@@ -1663,6 +1678,7 @@
     "trips": "旅行",
     "createAccount": "アカウントを作成",
     "accountSettings": "アカウント設定",
+    "menu": "メニュー",
     "membersSave": "会員は10%以上割引",
     "membersSaveSubtitle": "ログイン中の対象宿泊が対象",
     "accountWorks": "アカウントはCheapestGoおよびすべてのパートナーサイトで利用できます"
@@ -1901,7 +1917,9 @@
       "switchToDark": "ダークモードに切り替える",
       "mealPlan": "食事プラン",
       "cancellationPolicy": "キャンセルポリシー",
-      "price": "料金"
+      "price": "料金",
+      "roomPhotoCount": "写真{count}枚",
+      "rateOptionsFor": "{room}の料金プラン"
     },
     "metaDescription": "{name}の料金・客室・写真をご覧いただけます。価格を比較し、可能な場合は無料キャンセルでご予約いただけます。"
   },
@@ -2107,7 +2125,8 @@
       "staysCount": "{count}件の宿泊施設",
       "clusterChecking": "{count}件を確認中…",
       "clusterHotels": "ホテル{count}軒",
-      "clusterFrom": "{price}〜"
+      "clusterFrom": "{price}〜",
+      "mapLoading": "地図を読み込み中…"
     },
     "freeCancel": "無料キャンセル",
     "recent": "最近",

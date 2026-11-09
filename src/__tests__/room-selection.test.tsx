@@ -40,6 +40,14 @@ const base = {
 /** The room names currently on screen, in order. */
 const shownRooms = () => screen.getAllByRole('heading', { level: 4 }).map(h => h.textContent);
 
+/** The radio rows of the one card on screen. */
+const rateRadios = () => within(screen.getByRole('radiogroup')).getAllByRole('radio');
+
+/** A rate row's title — the first line of its label. */
+const rowTitle = (radio: HTMLElement) =>
+    [...radio.closest('label')!.querySelectorAll('span')]
+        .find(span => span.children.length === 0 && span.textContent)?.textContent;
+
 describe('RoomSelection', () => {
     it('starts on All, with every room showing', () => {
         render(<RoomSelection {...base} rooms={[room({ id: 'a', name: 'A' }), room({ id: 'b', name: 'B' })]} />);
@@ -118,8 +126,8 @@ describe('RoomSelection', () => {
     it('promises no free cancellation on a non-refundable rate, whatever deadline came with it', () => {
         render(<RoomSelection {...base} rooms={[room({ rates: [rate({ cancellationDeadline: '2026-08-28T12:00:00Z' })] })]} />);
         expect(screen.queryByText(/Free cancellation/)).not.toBeInTheDocument();
-        // The line says what the rate is instead — the <p>, not the filter chip of the same name.
-        expect(screen.getAllByText('Non-refundable').filter(el => el.tagName === 'P')).toHaveLength(1);
+        // The row says what the rate is instead — not the filter chip of the same name.
+        expect(within(screen.getByTestId('room-rate')).getByText('Non-refundable')).toBeInTheDocument();
     });
 
     it('says so when a filter matches nothing', async () => {
@@ -255,11 +263,10 @@ describe('RoomSelection', () => {
         // One card, named once — not the same room twice over differing only in price.
         expect(shownRooms()).toEqual(['Comfort Leisure Room']);
         // The cheapest rate is what the card reads as.
-        expect(screen.getByText('$169')).toBeInTheDocument();
-        expect(screen.getByText('Room Only')).toBeInTheDocument();
-        // The dearer one is reachable as a chip rather than as a second card.
-        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
-        expect(chips.map(c => c.textContent)).toEqual(['$169 · Room Only', '$200 · Breakfast Included']);
+        expect(screen.getByTestId('room-card-price')).toHaveTextContent('$169');
+        expect(rateRadios()[0]).toBeChecked();
+        // The dearer one is reachable as a row rather than as a second card.
+        expect(rateRadios().map(rowTitle)).toEqual(['Room Only', 'Breakfast Included']);
     });
 
     it('orders rooms cheapest first', () => {
@@ -273,11 +280,11 @@ describe('RoomSelection', () => {
             />,
         );
         // Twin leads on its cheapest rate ($100), so it sorts above Double ($200); its $300
-        // rate lives on its own card as a chip and no longer pushes between the two rooms.
+        // rate lives on its own card as a row and no longer pushes between the two rooms.
         expect(shownRooms()).toEqual(['Twin', 'Double']);
     });
 
-    it('selects the rate whose chip was picked', async () => {
+    it('selects the rate whose row was picked', async () => {
         const onSelect = vi.fn();
         render(
             <RoomSelection
@@ -292,7 +299,7 @@ describe('RoomSelection', () => {
             />,
         );
 
-        await userEvent.click(within(screen.getByRole('radiogroup')).getAllByRole('radio')[1]);
+        await userEvent.click(rateRadios()[1]);
         await userEvent.click(screen.getByRole('button', { name: 'Select' }));
 
         expect(onSelect).toHaveBeenCalledTimes(1);
@@ -315,9 +322,9 @@ describe('RoomSelection', () => {
         // One action on the card, and it shows as taken because 'b' is the chosen offer.
         expect(screen.getAllByRole('button', { name: /^(Selected|Select)$/ })).toHaveLength(1);
         expect(screen.getByRole('button', { name: 'Selected' })).toHaveAttribute('aria-pressed', 'true');
-        // The dearer chip is the lit one, not the cheaper first chip.
-        const chips = within(screen.getByRole('radiogroup')).getAllByRole('radio');
-        expect(chips.map(c => c.getAttribute('aria-checked'))).toEqual(['false', 'true']);
+        // The dearer row is the lit one, not the cheaper first row, and the foot prices it.
+        expect(rateRadios().map(r => (r as HTMLInputElement).checked)).toEqual([false, true]);
+        expect(screen.getByTestId('room-card-price')).toHaveTextContent('$200');
     });
 
     it('prints the nightly rate it was given, and does not divide it again', () => {

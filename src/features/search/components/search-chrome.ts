@@ -47,12 +47,14 @@ export function sortPalette(theme: 'light' | 'dark') {
  * The map toolbar's circular icon buttons — back, nearby places, theme.
  *
  * 40px on desktop — the size they were before the map and list toolbars were
- * merged — and 24px on the phone bar, where the row has to fit more controls in
- * less width. Shared as a constant because several buttons carrying the same
- * geometry inline is how they drift apart.
+ * merged — and 36px on the phone bar, the height of the field and the date pill
+ * beside them. They were 24px there while the phone bar was one row and had to
+ * fit every control across it; since it wraps, the controls have a row of their
+ * own and a 24px circle was only a hard target for a thumb. Shared as a constant
+ * because several buttons carrying the same geometry inline is how they drift apart.
  */
 export const ICON_BTN =
-    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full cursor-pointer ' +
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full cursor-pointer ' +
     'transition-opacity hover:opacity-80 md:h-10 md:w-10';
 
 /**
