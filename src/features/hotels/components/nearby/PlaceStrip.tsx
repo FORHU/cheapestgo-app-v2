@@ -381,7 +381,11 @@ function PlaceCard({ gem, distance, active, onSelect, onDetails, detailsLabel, r
                 <div className="truncate text-[10px] font-bold uppercase tracking-widest text-white/70">
                     {gem.displayCategory ?? gem.category.replace(/_/g, ' ')}
                 </div>
-                <div className="line-clamp-2 text-[13px] font-extrabold leading-tight text-white" aria-hidden>
+                {/* Always two lines tall, clamped at two. The caption is anchored to the bottom
+                    of the card, so a one-line name let its category label and its neighbour's sit
+                    at different heights — the row of cards read as misaligned. Reserving the
+                    second line fixes every row against the card's edge instead of the text. */}
+                <div className="line-clamp-2 min-h-[2.5em] text-[13px] font-extrabold leading-tight text-white" aria-hidden>
                     {name}
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] font-semibold text-white/75">

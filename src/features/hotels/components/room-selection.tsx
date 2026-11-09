@@ -597,6 +597,17 @@ const MODAL_PHOTO_ARROW =
     'absolute top-1/2 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]';
 
 /**
+ * The card's own, smaller arrows. A filled disc rather than the modal's bare glyph: the modal
+ * sits on a dark scrim, while these land on whatever the photograph happens to be, and a bare
+ * white chevron disappears into a pale sky. 28px is under the 44px touch minimum on its own,
+ * so the before: box pads the target out without pushing the discs apart on a narrow card.
+ */
+const CARD_PHOTO_ARROW =
+    'absolute top-1/2 z-10 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center '
+    + 'rounded-full bg-slate-900/55 text-white backdrop-blur-[2px] transition-colors hover:bg-slate-900/80 '
+    + "before:absolute before:-inset-2 before:content-['']";
+
+/**
  * The room details modal, as the 1a design splits it: the gallery on the left, the room on the
  * right, and the price with Select pinned under the room. Below `md` it is a bottom sheet — the
  * gallery over the room, the price and Select still pinned to the bottom edge.
@@ -1038,8 +1049,16 @@ function RoomCard({
     // so a lead photo — but the photos after the first are not reliably of the room (the
     // building, the toiletries, the bathroom), so reaching past it to tell the two apart would
     // put a picture on the card that is not the room at all.
-    const photo = card.photos[0] ?? image;
     const photoCount = card.photos.length;
+    /** The room's own photographs, the hotel's shot standing in when it has none. */
+    const gallery = photoCount ? card.photos : (image ? [image] : []);
+    const [photoIdx, setPhotoIdx] = useState(0);
+    // Clamped rather than reset: picking another rate chip can swap the card's photos, and an
+    // index left past the end of a shorter gallery would blank the image.
+    const shownIdx = gallery.length ? Math.min(photoIdx, gallery.length - 1) : 0;
+    const photo = gallery[shownIdx];
+    const stepPhoto = (delta: number) =>
+        setPhotoIdx(i => (Math.min(i, gallery.length - 1) + delta + gallery.length) % gallery.length);
     const symbol = currencySymbol(currency) || currency;
     const price = (c: RateCard) => `${symbol}${Math.round(c.nightly).toLocaleString()}`;
 
@@ -1103,6 +1122,35 @@ function RoomCard({
                                 {t('v2.roomPhotoCount', { count: photoCount })}
                             </span>
                         </button>
+                    )}
+                    {/* Over the full-bleed button above, so a tap pages the photo instead of
+                        opening the modal — hence `stopPropagation`. Always drawn rather than
+                        shown on hover: a phone has no hover, and this is mainly for a phone. */}
+                    {gallery.length > 1 && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); stepPhoto(-1); }}
+                                aria-label={t('v2.previousPhoto')}
+                                className={cn(CARD_PHOTO_ARROW, 'left-1.5')}
+                            >
+                                <ChevronLeft size={16} strokeWidth={2.5} aria-hidden />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); stepPhoto(1); }}
+                                aria-label={t('v2.nextPhoto')}
+                                className={cn(CARD_PHOTO_ARROW, 'right-1.5')}
+                            >
+                                <ChevronRight size={16} strokeWidth={2.5} aria-hidden />
+                            </button>
+                            <span
+                                aria-hidden
+                                className="absolute right-2 bottom-2.5 rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] font-semibold text-white tabular-nums"
+                            >
+                                {shownIdx + 1}/{gallery.length}
+                            </span>
+                        </>
                     )}
                 </div>
 
