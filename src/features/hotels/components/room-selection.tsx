@@ -1111,7 +1111,7 @@ function RoomCard({
                 <div className="flex min-w-0 flex-col gap-3.5 p-4 sm:p-5 @lg:p-6">
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 flex-col gap-1.5">
-                            <h4 className={cn('font-display text-[20px] leading-[1.2] font-bold tracking-[-0.02em] @md:text-[22px]', palette.name)}>
+                            <h4 className={cn('font-display text-[17px] leading-[1.2] font-bold tracking-[-0.02em] @md:text-[22px]', palette.name)}>
                                 {card.heading}
                             </h4>
                             {card.roomDetails.length > 0 && (
@@ -1185,7 +1185,7 @@ function RoomCard({
                         its bottom edge. Announced when it changes: picking a row reprices the card. */}
                     <div className="mt-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
                         <p data-testid="room-card-price" aria-live="polite" className="whitespace-nowrap">
-                            <span className={cn('font-mono text-[22px] font-bold', palette.price)}>{price(card)}</span>
+                            <span className={cn('font-mono text-[19px] font-bold @md:text-[22px]', palette.price)}>{price(card)}</span>
                             <span className={cn('text-[12px]', palette.unit)}>{tAll('hotels.perNight')}</span>
                         </p>
                         {/* Only this button picks the rate — the card is not clickable — and the
@@ -1195,7 +1195,7 @@ function RoomCard({
                             onClick={() => onSelect({ room: card.room, rate: card.rate })}
                             aria-pressed={selected}
                             className={cn(
-                                'h-11 shrink-0 cursor-pointer rounded-full px-7 text-[14px] font-bold whitespace-nowrap transition-[filter,color]',
+                                'h-10 shrink-0 cursor-pointer rounded-full px-5 text-[13px] font-bold whitespace-nowrap transition-[filter,color] @md:h-11 @md:px-7 @md:text-[14px]',
                                 selected ? palette.selectOn : palette.selectIdle,
                             )}
                         >

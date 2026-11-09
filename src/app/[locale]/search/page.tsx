@@ -1951,53 +1951,6 @@ function HotelSearchContent() {
                                     <div className={cn('shrink-0', MAP_CHROME_GUTTER_W)} />
                                 </div>
                             </div>
-
-                            {/* Pagination dots — one per page, the strip's own
-                                paging state (`railPage`/`goToRailPage`) already
-                                drives the wheel and pin-click travel; this is
-                                just the first visible control for it. Inside the
-                                same bottom-nav-clearing wrapper as the scroller
-                                above it, so the safe-area padding still applies
-                                below whichever of the two is now the last
-                                visible thing.
-
-                                Its own symmetric gutter, not the scroller's: the
-                                scroller's is left-only on purpose, so a card can
-                                scroll past the visual right edge, while this row
-                                needs both edges to land where the bar's do. Only
-                                drawn once there's more than one page to move
-                                between.
-
-                                Ink on the bare map: near-black in light, white in
-                                dark, the inactive pages a strong tint of the same.
-                                They were the hairline colour (slate-200 / 10%
-                                white), which the day map's pale streets and the
-                                night map's dark ones both swallowed. */}
-                            {railPageCount > 1 && (
-                                <div className={cn('mt-3 flex justify-center gap-1.5', MAP_CHROME_GUTTER)}>
-                                    {Array.from({ length: railPageCount }).map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => goToRailPage(i)}
-                                            aria-label={`Page ${i + 1} of ${railPageCount}`}
-                                            aria-current={i === railPage || undefined}
-                                            // A 6px dot, a 24px-tall target: the `before:` box reaches 9px
-                                            // above and below, and sideways only half the 6px gap, so the
-                                            // targets meet without overlapping however many pages there are.
-                                            className="relative before:absolute before:-inset-x-[3px] before:-inset-y-[9px] before:content-['']"
-                                            style={{
-                                                width: i === railPage ? 20 : 6, height: 6, borderRadius: 3,
-                                                border: 'none', padding: 0, cursor: 'pointer',
-                                                background: i === railPage
-                                                    ? chrome.text
-                                                    : (uiTone === 'dark' ? 'rgba(248,250,252,0.6)' : 'rgba(15,23,42,0.5)'),
-                                                transition: 'width .2s ease, background .2s ease',
-                                                pointerEvents: 'auto',
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </motion.div>
                 )}
