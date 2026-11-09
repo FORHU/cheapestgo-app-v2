@@ -29,6 +29,7 @@ import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/se
 import { resolveStayDates } from '@/shared/lib/stay';
 import { BRAND, brandTheme } from '@/shared/lib/palette';
 import { BRAND_STROKE, BrandStrokeDefs } from '@/shared/components/BrandStroke';
+import { distanceLabel } from '@/features/search/utils/distanceLabel';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
@@ -286,7 +287,7 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef, width,
+    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef, width, anchorName,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
@@ -294,6 +295,8 @@ function RailCard({
     onSelect: (id: string) => void; onHover: (id: string | null) => void;
     onViewDetails: (id: string) => void;
     currency: string; theme: 'light' | 'dark';
+    /** What the traveller searched, so a distance can name what it is from. ADR-0051. */
+    anchorName?: string;
     /** One card to a screen, edge to edge — the design's phone layout. */
     mobile: boolean;
     /** Hands the card's element up so the rail can scroll it into view when its
@@ -330,7 +333,10 @@ function RailCard({
      * been deselected.
      */
     const enlarged = isSelected || (!mobile && isHovered);
-    const address = property.location ?? property.city ?? '';
+    // The address says where it is; the distance says how far that is from what was asked
+    // for. "Hachioji, Tokyo" alone never told anyone it was 33 km out. ADR-0051.
+    const address = [property.location ?? property.city, distanceLabel(property.distanceKm, anchorName)]
+        .filter(Boolean).join(' · ');
     const g = mobile ? CARD_GEOM_MOBILE : CARD_GEOM;
 
     return (
@@ -1864,6 +1870,7 @@ function HotelSearchContent() {
                                             onViewDetails={handleViewDetails}
                                             currency={currency}
                                             theme={uiTone}
+                                            anchorName={destination}
                                             mobile={isMobile}
                                             elementRef={(el) => {
                                                 if (el) railCardEls.current.set(property.id, el);
