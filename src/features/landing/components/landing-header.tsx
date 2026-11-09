@@ -13,7 +13,6 @@ import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common
 import { LogoWordmark } from './logo-wordmark';
 import { useBrandName } from '@/shared/components/BrandProvider';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
-import { LandingMobileMenu } from './landing-mobile-menu';
 
 /**
  * The landing page's own header: transparent over the dark canvas, carrying the
@@ -21,8 +20,9 @@ import { LandingMobileMenu } from './landing-mobile-menu';
  *
  * Deliberately not the app-wide `<Header />`, which is themed and sticky.
  *
- * Below 761px the row of controls gives way to a hamburger holding sign in
- * (`LandingMobileMenu`), so the search bar keeps the rest of the viewport.
+ * Below 761px the row of controls gives way to sign in alone (`AccountControl`), so
+ * the search bar keeps the rest of the viewport. The language, the currency and the
+ * theme are in the bottom bar's settings sheet there (`SettingsPanel`).
  *
  * `tone` is the same choice the menus make (`SELECTOR_TONES`). `onDark` is the
  * landing page's. `default` is the same bar on a page that follows the theme —
@@ -30,7 +30,6 @@ import { LandingMobileMenu } from './landing-mobile-menu';
  * carry the theme switch, since it stands in for the only header that had one.
  */
 function LandingHeaderContent({ tone }: { tone: SelectorVariant }) {
-    const user = useAuthStore((s) => s.user);
     const tAll = useTranslations();
     const brand = useBrandName();
     const themed = tone === 'default';
@@ -70,29 +69,43 @@ function LandingHeaderContent({ tone }: { tone: SelectorVariant }) {
                     <CurrencySelector variant={tone} />
                     {themed && <ThemeSwitch />}
 
-                    {/* Signed in, it is the app header's round profile button and menu, as in v1.
-                        Signed out, v1's gradient, blue-600 → cyan-500, like every button on this page. */}
-                    {user ? (
-                        <div className="ml-1">
-                            <SignInDropdown tone={tone} />
-                        </div>
-                    ) : (
-                        <Link
-                            href="/login"
-                            className="ml-1 rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-[filter] duration-150 hover:brightness-110"
-                        >
-                            {tAll('nav.signIn')}
-                        </Link>
-                    )}
+                    <div className="ml-1">
+                        <AccountControl tone={tone} />
+                    </div>
                 </div>
 
-                {/* Pulled out by the button's own padding, so the glyph sits on the 24px gutter
-                    the wordmark starts from. */}
-                <div className="-mr-2.5 min-[761px]:hidden">
-                    <LandingMobileMenu tone={tone} />
+                <div className="min-[761px]:hidden">
+                    <AccountControl tone={tone} touch />
                 </div>
             </div>
         </header>
+    );
+}
+
+/**
+ * Sign in, at every width. Signed out, v1's gradient, blue-600 → cyan-500, like every
+ * button on this page, to the full-page sign-in screen. Signed in, the app header's
+ * round profile button and its menu, as in v1.
+ *
+ * `touch` is the phone's: the button grows to a 44px target, where on a desktop the
+ * pointer needs none.
+ */
+function AccountControl({ tone, touch = false }: { tone: SelectorVariant; touch?: boolean }) {
+    const user = useAuthStore((s) => s.user);
+    const tAll = useTranslations();
+
+    if (user) return <SignInDropdown tone={tone} triggerClassName={touch ? 'p-2' : undefined} />;
+
+    return (
+        <Link
+            href="/login"
+            className={cn(
+                'rounded-full bg-linear-to-r from-blue-600 to-cyan-500 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-[filter] duration-150 hover:brightness-110',
+                touch ? 'inline-flex h-11 items-center' : 'block py-2.5',
+            )}
+        >
+            {tAll('nav.signIn')}
+        </Link>
     );
 }
 

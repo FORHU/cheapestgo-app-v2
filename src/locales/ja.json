@@ -1687,7 +1687,6 @@
     "trips": "旅行",
     "createAccount": "アカウントを作成",
     "accountSettings": "アカウント設定",
-    "menu": "メニュー",
     "membersSave": "会員は10%以上割引",
     "membersSaveSubtitle": "ログイン中の対象宿泊が対象",
     "accountWorks": "アカウントはCheapestGoおよびすべてのパートナーサイトで利用できます"
@@ -2733,7 +2732,11 @@
     "freeCancel": "無料キャンセル",
     "back": "戻る",
     "retry": "再試行",
-    "goBack": "戻る"
+    "goBack": "戻る",
+    "loadingPage": "ページを読み込み中",
+    "theme": "テーマ",
+    "themeLight": "ライト",
+    "themeDark": "ダーク"
   },
   "account": {
     "title": "マイアカウント",

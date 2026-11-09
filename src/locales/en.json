@@ -1687,7 +1687,6 @@
     "trips": "Trips",
     "createAccount": "Create an account",
     "accountSettings": "Account Settings",
-    "menu": "Menu",
     "membersSave": "Members save 10% or more",
     "membersSaveSubtitle": "on select stays when signed in",
     "accountWorks": "Your account works across CheapestGo and all partner sites"
@@ -2733,7 +2732,11 @@
     "freeCancel": "Free cancel",
     "back": "Back",
     "retry": "Retry",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "loadingPage": "Loading page",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "account": {
     "title": "My Account",

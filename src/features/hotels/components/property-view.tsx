@@ -11,7 +11,10 @@
 
 import React, { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import { useTranslations } from 'next-intl';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+// The app's router, not next/navigation's: it keeps the visitor's language on the way to the
+// checkout, and shows the bar across the top while the checkout loads.
+import { useRouter } from '@/i18n/navigation';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { http } from '@/shared/lib/http';

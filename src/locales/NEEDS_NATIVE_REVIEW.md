@@ -593,15 +593,6 @@ v1; these did not. Written by Claude (2026-11-04).
 | `golf.booking.extraNames.lessons` | Golf lesson | 골프 레슨 | ゴルフレッスン | 高尔夫课程 |
 | `golf.booking.extraNames.range_balls` | Bucket of range balls | 연습볼 바구니 | 練習ボール(カゴ) | 练习球(每筐) |
 
-## Landing header — mobile menu
-
-The hamburger's accessible name, read out by a screen reader; not printed. Written by Claude
-(2026-11-05).
-
-| Key | English | 한국어 | 日本語 | 中文 |
-|-----|---------|--------|--------|------|
-| `nav.menu` | Menu | 메뉴 | メニュー | 菜单 |
-
 ## Flight checkout — a flight already booked that day
 
 The dialog shown when a traveller already holds a flight leaving the same airport on the same day.
@@ -628,3 +619,24 @@ or changed, a declined card). The messages under them are the existing `checkout
 | `checkout.alert.fareGoneTitle` | This fare is no longer available | 이 요금은 더 이상 이용할 수 없습니다 | この運賃はご利用いただけなくなりました | 该票价已不可用 |
 | `checkout.alert.searchAgain` | Search again | 다시 검색 | もう一度検索 | 重新搜索 |
 | `checkout.alert.paymentTitle` | Your payment didn't go through | 결제가 완료되지 않았습니다 | お支払いが完了しませんでした | 付款未成功 |
+
+## Moving between pages
+
+What a screen reader calls the bar across the top of the screen while another page loads. Written
+by Claude (2026-11-09).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `common.loadingPage` | Loading page | 페이지를 불러오는 중 | ページを読み込み中 | 页面加载中 |
+
+## Phone settings sheet
+
+The bottom bar's gear opens language, currency and theme. These name the theme choice; the
+language and currency headings are the existing `common.language` and `common.currency`.
+Written by Claude (2026-11-09).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `common.theme` | Theme | 테마 | テーマ | 主题 |
+| `common.themeLight` | Light | 라이트 | ライト | 浅色 |
+| `common.themeDark` | Dark | 다크 | ダーク | 深色 |

@@ -6,8 +6,9 @@ import { Link } from '@/i18n/navigation';
 import { usePathname } from '@/i18n/navigation';
 import { Home, List, Settings2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import SignInDropdown from '@/shared/auth/SignInDropdown';
 import { useChromeTone } from '@/shared/components/ChromeToneContext';
+import { SettingsPanel } from '@/shared/components/common/SettingsPanel';
+import { getNavigationPhase, subscribeNavigation } from '@/i18n/navigationProgress';
 
 /**
  * Two skins, picked by the screen's chrome tone rather than by the app theme.
@@ -56,9 +57,9 @@ export const NAV_SKIN = {
 const navItems = [
     { label: 'Home', icon: Home, href: '/' },
     { label: 'Trips', icon: List, href: '/trips' },
-    // No `/settings` route exists. The sheet this opens is already the account
-    // surface — it carries Account settings and sign in/out — so the gear opens
-    // it rather than linking somewhere that would 404.
+    // No `/settings` route exists. The gear opens a sheet instead: language,
+    // currency and theme, and the account once signed in (`SettingsPanel`).
+    // Not sign in — that is the header's button.
     { label: 'Settings', icon: Settings2, href: null },
 ] as const;
 
@@ -68,12 +69,23 @@ export const MobileBottomNav = () => {
     const skin = NAV_SKIN[useChromeTone()];
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
-    const activeIndex = React.useMemo(() => {
-        if (isSheetOpen) return 2;
+    // The tab just tapped, lit while its page loads. Without it the old tab stays lit until the
+    // page arrives, which on a slow phone reads as a tap that missed. Only for as long as that
+    // navigation is under way: once its page is here the pathname says the same, and if it
+    // never comes the old tab is right again.
+    const [tapped, setTapped] = React.useState<number | null>(null);
+    const loading = React.useSyncExternalStore(subscribeNavigation, getNavigationPhase, () => 'idle' as const) === 'loading';
+    React.useEffect(() => {
+        if (!loading) setTapped(null);
+    }, [loading]);
+
+    const currentIndex = React.useMemo(() => {
         if (pathname === '/' || pathname === '/flights/search') return 0;
         if (pathname === '/trips') return 1;
         return 0;
-    }, [pathname, isSheetOpen]);
+    }, [pathname]);
+
+    const activeIndex = isSheetOpen ? 2 : loading && tapped !== null ? tapped : currentIndex;
 
     // Not on the checkout either: a form someone is paying through keeps the screen to itself,
     // with its own way back (the toolbar's back button) and its own button pinned to the foot.
@@ -128,8 +140,10 @@ export const MobileBottomNav = () => {
                         ) : (
                             <Link
                                 href={item.href}
-                                onClick={() => setIsSheetOpen(false)}
-                                aria-current={isActive ? 'page' : undefined}
+                                onClick={() => { setIsSheetOpen(false); setTapped(index); }}
+                                // The page on screen, not the one on its way: a screen reader
+                                // hears where it is until it has arrived somewhere else.
+                                aria-current={!isSheetOpen && index === currentIndex ? 'page' : undefined}
                                 aria-label={item.label}
                                 className={slot}
                             >
@@ -153,16 +167,25 @@ export const MobileBottomNav = () => {
                 {isSheetOpen && (
                     <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSheetOpen(false)} className="fixed inset-0 bg-black/50 z-[101] lg:hidden" />
-                        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed bottom-0 left-0 right-0 z-[102] bg-white dark:bg-slate-900 rounded-t-[24px] shadow-2xl lg:hidden max-h-[85vh] overflow-hidden flex flex-col">
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="mobile-settings-title"
+                            className="fixed bottom-0 left-0 right-0 z-[102] bg-white dark:bg-slate-900 rounded-t-[24px] shadow-2xl lg:hidden max-h-[85vh] overflow-hidden flex flex-col"
+                        >
                             <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto my-3 shrink-0" />
                             <div className="flex items-center justify-between px-6 py-2 border-b border-slate-100 dark:border-slate-800">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{tAll('common.settings')}</h2>
+                                <h2 id="mobile-settings-title" className="text-lg font-bold text-slate-900 dark:text-white">{tAll('common.settings')}</h2>
                                 <button onClick={() => setIsSheetOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label={tAll('common.closeSettings')}>
                                     <X size={20} className="text-slate-500" />
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)]">
-                                <SignInDropdown variant="inline" onNavigate={() => setIsSheetOpen(false)} />
+                                <SettingsPanel onNavigate={() => setIsSheetOpen(false)} />
                             </div>
                         </motion.div>
                     </>
