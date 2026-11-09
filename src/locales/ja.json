@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "{destination}行きのフライトが確定しました。",
         "allSet": "ご予約が完了しました",
-        "receiptSentTo": "フライトの詳細と領収書を{email}宛に送信しました",
+        "receiptSentTo": "領収書を{email}宛に送信しました",
+        "bagsLabel": "手荷物",
+        "departureTerminal": "出発ターミナル",
+        "arrivalTerminal": "到着ターミナル",
+        "airlinePnr": "航空会社のPNR",
+        "pnrHint": "チェックイン時にご利用ください",
         "approxTotal": "{currency}換算（概算）",
         "receiptSentRich": "領収書を<b>{email}</b>宛に送信しました。",
         "passengersCount": "{count}名",
@@ -2636,6 +2641,14 @@
         "declined": "お断り",
         "cancelled": "キャンセル済み"
       }
+    },
+    "search": {
+      "label": "予約を検索",
+      "placeholder": "名前・路線・予約番号で検索",
+      "clear": "検索をクリア",
+      "noMatch": "「{query}」に一致する予約はありません",
+      "noMatchHint": "ホテル名やゴルフ場名、MNLなどの空港コード、予約番号でお試しください。",
+      "results": "{count}件の予約が見つかりました"
     }
   },
   "support": {

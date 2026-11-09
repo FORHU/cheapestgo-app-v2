@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "Your flight to {destination} is confirmed.",
         "allSet": "You’re all set",
-        "receiptSentTo": "Flight details and receipt have been sent to {email}",
+        "receiptSentTo": "Receipt sent to {email}",
+        "bagsLabel": "Bags",
+        "departureTerminal": "Departure terminal",
+        "arrivalTerminal": "Arrival terminal",
+        "airlinePnr": "Airline PNR",
+        "pnrHint": "use this at check-in",
         "approxTotal": "Approx. in {currency}",
         "receiptSentRich": "A receipt has been sent to <b>{email}</b>.",
         "passengersCount": "{count, plural, one {# passenger} other {# passengers}}",
@@ -2636,6 +2641,14 @@
         "declined": "Declined",
         "cancelled": "Cancelled"
       }
+    },
+    "search": {
+      "label": "Search your bookings",
+      "placeholder": "Search by name, route or reference",
+      "clear": "Clear search",
+      "noMatch": "No bookings match “{query}”",
+      "noMatchHint": "Try a hotel or course name, an airport code like MNL, or a booking reference.",
+      "results": "{count, plural, one {# booking found} other {# bookings found}}"
     }
   },
   "support": {

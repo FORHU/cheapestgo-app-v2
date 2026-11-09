@@ -69,7 +69,7 @@ const CHIP     = 'bg-linear-to-r from-blue-600 to-cyan-500 text-white';
  *
  * Exported for the trip cards, which draw a booked flight the way it was found.
  */
-export function AirlineBadge({ code, name }: { code: string; name: string }) {
+export function AirlineBadge({ code, name, className }: { code: string; name: string; className?: string }) {
     const [loaded, setLoaded] = useState(false);
     const [failed, setFailed] = useState(false);
     const iata = (code ?? '').toUpperCase().slice(0, 3);
@@ -77,7 +77,10 @@ export function AirlineBadge({ code, name }: { code: string; name: string }) {
 
     return (
         <span
-            className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-500 group-hover:scale-[1.04] md:size-[120px] md:shadow-md"
+            className={cn(
+                'relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-500 group-hover:scale-[1.04] md:size-[120px] md:shadow-md',
+                className,
+            )}
         >
             {showLogo && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -227,9 +230,13 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                 : 'Refundable (fees may apply)';
     const cabin = (primary.cabinClass || 'economy').replace('_', ' ');
     const checkedBags = offer.baggage?.checkedBags ?? 0;
-    const fact = 'inline-flex items-center gap-1.5 whitespace-nowrap';
-    const time = cn('text-2xl leading-none font-semibold tracking-[-0.01em] md:text-[30px]', TITLE);
-    const code = cn('mt-1.5 text-[14px] tracking-[0.04em]', MUTED);
+    // Sizes are the phone's first, then the desktop's from `md` up. On a phone the card is a
+    // stack, and at the desktop's sizes one result took most of the screen. So the phone's are
+    // smaller: a card's details at 11px, its times and price 16–17px.
+    const fact = 'inline-flex items-center gap-1 whitespace-nowrap md:gap-1.5';
+    const factIcon = 'size-3 md:size-[15px]';
+    const time = cn('text-[17px] leading-none font-semibold tracking-[-0.01em] md:text-[30px]', TITLE);
+    const code = cn('mt-1 text-[11px] tracking-[0.04em] md:mt-1.5 md:text-[14px]', MUTED);
 
     return (
         <motion.article
@@ -246,8 +253,8 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
             <div className="flex flex-col md:min-h-[205px] md:flex-row">
                 {/* ─── Logo plate ─── */}
                 {/* No fill of its own: the disc sits straight on the card. */}
-                <div className="relative flex h-20 shrink-0 items-center justify-center px-6 md:h-auto md:w-[240px]">
-                    <AirlineBadge code={primary.airline} name={primary.airlineName || primary.airline} />
+                <div className="relative flex h-16 shrink-0 items-center justify-center px-6 md:h-auto md:w-[240px]">
+                    <AirlineBadge code={primary.airline} name={primary.airlineName || primary.airline} className="size-11" />
                     {/* The bookmark rides on the plate on a phone, where the price column is a row. */}
                     <div className="absolute top-1/2 right-4 -translate-y-1/2 md:hidden">
                         <SaveButton {...saveProps} variant="bookmark" />
@@ -255,45 +262,45 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                 </div>
 
                 {/* ─── Itinerary ─── */}
-                <div className="flex min-w-0 flex-1 flex-col px-5 py-5 md:pt-7 md:pr-8 md:pb-6 md:pl-9">
-                    <h3 className={cn('text-[20px] leading-tight font-bold', TITLE)}>{primary.airlineName || primary.airline}</h3>
-                    <p className={cn('mt-1 text-[13px]', MUTED)}>
+                <div className="flex min-w-0 flex-1 flex-col px-4 py-3 md:pt-7 md:pr-8 md:pb-6 md:pl-9">
+                    <h3 className={cn('text-[15px] leading-tight font-bold md:text-[20px]', TITLE)}>{primary.airlineName || primary.airline}</h3>
+                    <p className={cn('mt-0.5 text-[11px] md:mt-1 md:text-[13px]', MUTED)}>
                         {primary.flightNumber}
                         {segments.length > 1 && ` + ${segments.length - 1} more`}
                     </p>
 
-                    <div className="mt-[18px] flex items-center gap-4 md:gap-5">
+                    <div className="mt-3 flex items-center gap-2.5 md:mt-[18px] md:gap-5">
                         <div>
                             <div className={time}>{formatTime(primary.departure?.time)}</div>
                             <div className={code}>{primary.origin}</div>
                         </div>
-                        <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-                            <span className={cn('text-[13px]', TEXT)}>{formatDuration(outboundMinutes)}</span>
+                        <div className="flex min-w-0 flex-1 flex-col items-center gap-1 md:gap-1.5">
+                            <span className={cn('text-[11px] md:text-[13px]', TEXT)}>{formatDuration(outboundMinutes)}</span>
                             <RouteLine stops={outboundStops} />
-                            <span className={cn('text-[13px]', MUTED)}>{stopsLabel(outboundStops)}</span>
+                            <span className={cn('text-[11px] md:text-[13px]', MUTED)}>{stopsLabel(outboundStops)}</span>
                         </div>
                         <div className="text-right">
                             <div className={time}>
                                 {formatTime(last.arrival?.time)}
-                                {arrivalDays > 0 && <sup className={cn('ml-0.5 text-[12px] font-medium', MUTED)}>+{arrivalDays}</sup>}
+                                {arrivalDays > 0 && <sup className={cn('ml-0.5 text-[11px] font-medium md:text-[12px]', MUTED)}>+{arrivalDays}</sup>}
                             </div>
                             <div className={code}>{last.destination}</div>
                         </div>
                     </div>
 
-                    <div className={cn('mt-[18px] flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[14px]', MUTED)}>
+                    <div className={cn('mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] md:mt-[18px] md:gap-x-[18px] md:gap-y-1.5 md:text-[14px]', MUTED)}>
                         <span className={cn(fact, isRefundable && 'text-emerald-600 dark:text-emerald-400')}>{refundLabel}</span>
-                        <span className={cn(fact, 'capitalize')}><Armchair size={15} />{cabin}</span>
-                        {primary.aircraft && <span className={fact}><Plane size={15} />{primary.aircraft}</span>}
+                        <span className={cn(fact, 'capitalize')}><Armchair size={15} className={factIcon} />{cabin}</span>
+                        {primary.aircraft && <span className={fact}><Plane size={15} className={factIcon} />{primary.aircraft}</span>}
                         {offer.baggage?.cabinBag != null && (
                             <span className={fact}>
-                                <Luggage size={15} />
+                                <Luggage size={15} className={factIcon} />
                                 {offer.baggage.cabinBag ? '1 carry-on bag' : 'No carry-on bag'}
                             </span>
                         )}
                         {offer.baggage && (
                             <span className={fact}>
-                                <BaggageClaim size={15} />
+                                <BaggageClaim size={15} className={factIcon} />
                                 {checkedBags > 0 ? `${checkedBags} checked bag${checkedBags > 1 ? 's' : ''}` : 'No checked bag'}
                             </span>
                         )}
@@ -303,34 +310,35 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                         type="button"
                         onClick={() => setExpanded(!expanded)}
                         aria-expanded={expanded}
-                        className={cn('mt-3 inline-flex items-center gap-1 self-start text-[14px] transition-opacity hover:opacity-70', TEXT)}
+                        className={cn('mt-2 inline-flex items-center gap-1 self-start text-[12px] transition-opacity hover:opacity-70 md:mt-3 md:text-[14px]', TEXT)}
                     >
                         {expanded
                             ? 'Hide segments'
                             : offer.alternatives && offer.alternatives.length > 0
                                 ? `Show segments · ${offer.alternatives.length + 1} fare options`
                                 : 'Show segments'}
-                        {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        {expanded ? <ChevronUp size={15} className={factIcon} /> : <ChevronDown size={15} className={factIcon} />}
                     </button>
                 </div>
 
                 {/* ─── Price ─── */}
-                <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t px-5 py-4 md:w-[230px] md:flex-col md:items-stretch md:border-t-0 md:border-l md:p-6', HAIRLINE)}>
+                <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3 md:w-[230px] md:flex-col md:items-stretch md:border-t-0 md:border-l md:p-6', HAIRLINE)}>
                     <div className="hidden justify-end md:flex">
                         <SaveButton {...saveProps} variant="bookmark" />
                     </div>
                     <div>
                         <p className="whitespace-nowrap">
-                            <span className={cn('text-[22px] font-bold md:text-[26px]', TITLE)}>{money(pricePerPerson, currency)}</span>
-                            <span className={cn('text-[15px]', MUTED)}> / person</span>
+                            <span className={cn('text-[16px] font-bold md:text-[26px]', TITLE)}>{money(pricePerPerson, currency)}</span>
+                            <span className={cn('text-[12px] md:text-[15px]', MUTED)}> / person</span>
                         </p>
-                        <p className={cn('mt-1 text-[13px] first-letter:uppercase', MUTED)}>{tAll('flights.card.includesTaxes')}</p>
+                        <p className={cn('mt-0.5 text-[11px] first-letter:uppercase md:mt-1 md:text-[13px]', MUTED)}>{tAll('flights.card.includesTaxes')}</p>
                     </div>
+                    {/* Smaller on a phone, but still 40px tall to tap. */}
                     <button
                         type="button"
                         onClick={() => handleSelect(offer)}
                         disabled={checkingPrice}
-                        className={cn('h-[42px] shrink-0 rounded-full px-6 text-[15px] font-medium transition-opacity hover:opacity-85 disabled:opacity-60 md:w-full', CHIP)}
+                        className={cn('h-10 shrink-0 rounded-full px-4 text-[13px] font-medium transition-opacity hover:opacity-85 disabled:opacity-60 md:h-[42px] md:w-full md:px-6 md:text-[15px]', CHIP)}
                     >
                         {checkingPrice ? 'Checking price…' : 'Select Now'}
                     </button>

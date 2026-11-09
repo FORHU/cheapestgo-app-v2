@@ -757,7 +757,7 @@ describe('after the card', () => {
         // Where the flight goes, and where the receipt went: the contact's address — not the
         // signed-in account's.
         expect(screen.getByText('Your flight to Tokyo is confirmed.')).toBeInTheDocument();
-        expect(screen.getByText('Flight details and receipt have been sent to juan@example.com')).toBeInTheDocument();
+        expect(screen.getByText('Receipt sent to juan@example.com')).toBeInTheDocument();
         expect(screen.queryByText(/account@example\.com/)).not.toBeInTheDocument();
 
         // The flight itself: each end by its airport's full name and code, the day and the
@@ -768,20 +768,21 @@ describe('after the card', () => {
         expect(screen.getByText('Narita International Airport (NRT)')).toBeInTheDocument();
         expect(screen.getByText('Tue, Dec 1, 2026, 1:56 PM')).toBeInTheDocument();
         expect(screen.getByText('Tue, Dec 1, 2026, 7:35 PM')).toBeInTheDocument();
-        expect(screen.getByText(/ZZ2200/)).toBeInTheDocument();
-        expect(screen.getByText(/ABC123/)).toBeInTheDocument(); // the airline's own PNR
-        expect(screen.getByText('Terminal 2')).toBeInTheDocument();
-        expect(screen.getByText('Terminal 1')).toBeInTheDocument();
-        expect(screen.getByText('Refundable (fees may apply)')).toBeInTheDocument();
+        expect(screen.getByText('ZZ2200')).toBeInTheDocument();
+        expect(screen.getByText('Terminal 2')).toBeInTheDocument();     // departure terminal
+        expect(screen.getByText('Terminal 1')).toBeInTheDocument();     // arrival terminal
         expect(screen.getByText(/1 carry-on bag/)).toBeInTheDocument();
         expect(screen.getByText(/1 checked bag/)).toBeInTheDocument();
 
-        // The passenger, shown back in the form's fields, and what was paid: one fare, the
-        // service fee inside it.
-        expect(screen.getByText('ADULT 1')).toBeInTheDocument();
-        expect(screen.getByText('Juan')).toBeInTheDocument();
-        expect(screen.getByText('Cruz')).toBeInTheDocument();
-        expect(screen.getByText('juan@example.com')).toBeInTheDocument();
+        // Both references, each in its own box: ours, and the airline's for check-in.
+        expect(screen.getByText('Booking reference')).toBeInTheDocument();
+        expect(screen.getByText('Airline PNR')).toBeInTheDocument();
+        expect(screen.getByText('ABC123')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'Copy' })).toHaveLength(2);
+
+        // Who flies, and what was paid: one fare, the service fee inside it.
+        expect(screen.getByText('Passenger')).toBeInTheDocument();
+        expect(screen.getByText('Juan Cruz')).toBeInTheDocument();
         expect(screen.getByText('Total paid')).toBeInTheDocument();
         expect(screen.getAllByText('USD 272.40')).toHaveLength(2);    // the fare line and what the card was held for
         expect(screen.queryByText('USD 22.40')).not.toBeInTheDocument();

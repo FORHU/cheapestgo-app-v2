@@ -598,12 +598,12 @@ export function FlightSearchClient() {
                             </motion.div>
 
                             <div className="min-w-0 flex-1">
-                                <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                                <div className="mb-4 flex flex-wrap items-start justify-between gap-3 md:mb-5">
                                     <div>
-                                        <h1 className="text-lg font-bold text-slate-900 md:text-2xl dark:text-slate-50">
+                                        <h1 className="text-base font-bold text-slate-900 md:text-2xl dark:text-slate-50">
                                             {tAll('flights.results.flightsTo', { city: destinationCity })}
                                         </h1>
-                                        <p className="mt-0.5 text-xs text-slate-500 md:text-sm dark:text-white/55">
+                                        <p className="mt-0.5 text-[11px] text-slate-500 md:text-sm dark:text-white/55">
                                             {isLoading
                                                 ? tAll('flights.results.findingFares')
                                                 : tAll('flights.results.flightsFound', { count: filteredOffers.length })}

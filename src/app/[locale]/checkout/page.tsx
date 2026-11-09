@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown } from 'lucide-react';
-import { loadStripe, type Appearance } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
 import { useAuthStore } from '@/shared/auth/store';
@@ -34,6 +34,8 @@ import {
 } from '@/features/checkout/components/booking-state-panels';
 import { nightsBetween } from '@/shared/lib/stay';
 import { ACCENT, ACCENT_FILL, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
+import { FIELD_RADIUS, TOUCH_SIZING_QUERY, stripeAppearance } from '@/features/checkout/lib/stripe-appearance';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { BRAND } from '@/shared/lib/palette';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
@@ -167,10 +169,6 @@ function fieldEdge(palette: Palette, hasError = false): React.CSSProperties {
         ? { border: `1px solid ${DANGER}`, background: palette.fieldBg, '--cg-ring': DANGER, '--cg-focus': DANGER } as React.CSSProperties
         : { border: `1px solid var(--cg-edge, ${palette.fieldLine})`, background: palette.fieldBg, '--cg-ring': BRAND.primary } as React.CSSProperties;
 }
-
-/** How round a field's corners are: softer than the pill the main action keeps, so a field
- *  does not read as a button. */
-const FIELD_RADIUS = 14;
 
 function mkField(palette: Palette, hasError = false): React.CSSProperties {
     return {
@@ -405,49 +403,6 @@ function ProgressBar({ step, palette }: { step: Step; palette: Palette }) {
     );
 }
 
-/**
- * The Payment Element dressed as the rest of the form: pill inputs on the
- * field fill, labels in body colour, the accordion flattened onto the panel.
- * Stripe draws it in its own iframe, so its text and placeholders are Stripe's
- * and can only be restyled, not reworded.
- */
-function stripeAppearance(palette: Palette, theme: 'light' | 'dark'): Appearance {
-    return {
-        theme: theme === 'dark' ? 'night' : 'stripe',
-        variables: {
-            // Neutral, so the "Card" heading and its icon read as the panel's title, as in
-            // the design; the accent stays on the focus ring, set on `.Input:focus` below.
-            colorPrimary:         palette.text,
-            colorBackground:      palette.fieldBg,
-            colorText:            palette.text,
-            colorTextSecondary:   palette.muted,
-            colorTextPlaceholder: palette.faint,
-            colorDanger:          DANGER,
-            // Stripe's own containers (Link's save-info block, menus) take this; only the
-            // inputs are pills, below. At 999px here the save-info block became an oval.
-            borderRadius:         '12px',
-            fontSizeBase:         '14px',
-            spacingUnit:          '4px',
-            accordionItemLabelFontSize:           '16px',
-            accordionItemLabelFontWeight:         '400',
-            accordionItemLabelSelectedFontWeight: '400',
-        },
-        rules: {
-            // As the fields on the details step: a hairline at rest and the same corners. Stripe's
-            // rules take no gradient, so the focused edge is the gradient's blue, the nearest the
-            // iframe can come to it.
-            '.Input':         { border: `1px solid ${palette.fieldLine}`, boxShadow: 'none', padding: '12px 16px', borderRadius: `${FIELD_RADIUS}px` },
-            '.Input:hover':   { borderColor: palette.fieldLineHover },
-            '.Input:focus':   { borderColor: BRAND.primary, boxShadow: `0 0 0 4px ${BRAND.primaryWash}` },
-            '.Label':         { color: palette.text, fontSize: '13px', fontWeight: '500', marginBottom: '8px' },
-            '.AccordionItem': { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', paddingTop: '0', paddingLeft: '0', paddingRight: '0' },
-            '.Tab':           { border: 'none', boxShadow: 'none' },
-            // The optional save-info fields sit straight on the panel, as in the design.
-            '.Block':         { backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: '0' },
-        },
-    };
-}
-
 // ─── Stripe payment form ──────────────────────────────────────────────────────
 
 function StripePaymentForm({
@@ -505,9 +460,13 @@ function StripePaymentForm({
                     <span>{t.rich('securedPoweredBy', { brand: 'Stripe', b: (chunks) => <b style={{ color: palette.soft, fontWeight: 700 }}>{chunks}</b> })}</span>
                 </div>
             </div>
-            <PrimaryBtn onClick={handlePay} loading={submitting || clicking} disabled={!stripe || !elements}>
-                {t('payNow', { amount: amountLabel ?? `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
-            </PrimaryBtn>
+            {/* As the details step's button: below the two-column layout the card form is long, so
+                the button rides at the bottom of the screen rather than at the foot of the scroll. */}
+            <div className="cg-cta">
+                <PrimaryBtn onClick={handlePay} loading={submitting || clicking} disabled={!stripe || !elements}>
+                    {t('payNow', { amount: amountLabel ?? `${currency} ${total.toLocaleString(undefined, { maximumFractionDigits: 0 })}` })}
+                </PrimaryBtn>
+            </div>
         </>
     );
 }
@@ -713,6 +672,8 @@ function CheckoutContent() {
     const { user }     = useAuthStore();
     const { theme }    = useTheme();
     const palette      = checkoutPalette(theme);
+    // The card form's sizes follow the details step's: touch sizes on a phone or a touch screen.
+    const touchSizing  = useMediaQuery(TOUCH_SIZING_QUERY);
     const countryOptions = useMemo(() => getCountryOptions(locale), [locale]);
 
     // ── Detect mode ──
@@ -1629,7 +1590,7 @@ function CheckoutContent() {
                             {step === 'payment' && clientSecret && (
                                 <>
                                     <p style={{ fontSize: 13, lineHeight: 1.5, color: palette.soft, margin: '0 0 18px' }}>{t('flight.cardHeld')}</p>
-                                    <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                                    <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme, touchSizing) }}>
                                         <StripePaymentForm
                                             onSuccess={handleStripeSuccess}
                                             onError={handleStripeError}
@@ -1856,7 +1817,7 @@ function CheckoutContent() {
 
                         {/* Step 2: Stripe payment */}
                         {step === 'payment' && hotelState.clientSecret && (
-                            <Elements stripe={getStripe()} options={{ clientSecret: hotelState.clientSecret, appearance: stripeAppearance(palette, theme) }}>
+                            <Elements stripe={getStripe()} options={{ clientSecret: hotelState.clientSecret, appearance: stripeAppearance(palette, theme, touchSizing) }}>
                                 <StripePaymentForm
                                     onSuccess={handleStripeSuccess}
                                     onError={handleStripeError}

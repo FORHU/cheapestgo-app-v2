@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "您飞往{destination}的航班已确认。",
         "allSet": "预订完成",
-        "receiptSentTo": "航班详情和收据已发送至 {email}",
+        "receiptSentTo": "收据已发送至 {email}",
+        "bagsLabel": "行李",
+        "departureTerminal": "出发航站楼",
+        "arrivalTerminal": "到达航站楼",
+        "airlinePnr": "航空公司 PNR",
+        "pnrHint": "办理值机时使用",
         "approxTotal": "约合 {currency}",
         "receiptSentRich": "收据已发送至<b>{email}</b>。",
         "passengersCount": "{count} 位乘客",
@@ -2636,6 +2641,14 @@
         "declined": "已拒绝",
         "cancelled": "已取消"
       }
+    },
+    "search": {
+      "label": "搜索预订",
+      "placeholder": "按名称、航线或预订编号搜索",
+      "clear": "清除搜索",
+      "noMatch": "没有与“{query}”匹配的预订",
+      "noMatchHint": "试试酒店或球场名称、MNL 等机场代码，或预订编号。",
+      "results": "找到 {count} 个预订"
     }
   },
   "support": {

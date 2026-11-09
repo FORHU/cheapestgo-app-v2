@@ -87,6 +87,12 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `trips.v2.backToMyTrips` | Back to My Bookings | 내 예약으로 돌아가기 | マイ予約に戻る | 返回我的预订 |
 | `trips.v2.downloadETicket` | Download E-Ticket | 전자항공권 다운로드 | Eチケットをダウンロード | 下载电子客票 |
 | `trips.v2.refundNotice` | Refund eligibility is subject to airline fare rules. | 환불 가능 여부는 항공사 운임 규정에 따릅니다. | 払い戻しの可否は航空会社の運賃規則に従います。 | 是否可退款取决于航空公司的票价规则。 |
+| `trips.search.label` | Search your bookings | 예약 검색 | 予約を検索 | 搜索预订 |
+| `trips.search.placeholder` | Search by name, route or reference | 이름, 노선, 예약 번호로 검색 | 名前・路線・予約番号で検索 | 按名称、航线或预订编号搜索 |
+| `trips.search.clear` | Clear search | 검색어 지우기 | 検索をクリア | 清除搜索 |
+| `trips.search.noMatch` | No bookings match “{query}” | ‘{query}’와(과) 일치하는 예약이 없습니다 | 「{query}」に一致する予約はありません | 没有与“{query}”匹配的预订 |
+| `trips.search.noMatchHint` | Try a hotel or course name, an airport code like MNL, or a booking reference. | 호텔·골프장 이름, MNL 같은 공항 코드, 예약 번호로 검색해 보세요. | ホテル名やゴルフ場名、MNLなどの空港コード、予約番号でお試しください。 | 试试酒店或球场名称、MNL 等机场代码，或预订编号。 |
+| `trips.search.results` | {count} bookings found (said by a screen reader) | 예약 {count}건을 찾았습니다 | {count}件の予約が見つかりました | 找到 {count} 个预订 |
 
 ## search
 
@@ -282,7 +288,12 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.nameHint` | Enter names exactly as they appear on the passport. | 여권에 표기된 것과 동일하게 이름을 입력해 주세요. | お名前はパスポートの記載どおりに入力してください。 | 请按照护照上的写法填写姓名。 |
 | `checkout.flight.contactHint` | Your e-ticket is sent here, and the airline uses this number for flight changes. | 전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다. | eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。 | 电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。 |
 | `checkout.flight.receipt.allSet` | You’re all set | 예약이 완료되었습니다 | ご予約が完了しました | 预订完成 |
-| `checkout.flight.receipt.receiptSentTo` | Flight details and receipt have been sent to {email} | 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다 | フライトの詳細と領収書を{email}宛に送信しました | 航班详情和收据已发送至 {email} |
+| `checkout.flight.receipt.receiptSentTo` | Receipt sent to {email} | 영수증이 {email}(으)로 전송되었습니다 | 領収書を{email}宛に送信しました | 收据已发送至 {email} |
+| `checkout.flight.receipt.bagsLabel` | Bags | 수하물 | 手荷物 | 行李 |
+| `checkout.flight.receipt.departureTerminal` | Departure terminal | 출발 터미널 | 出発ターミナル | 出发航站楼 |
+| `checkout.flight.receipt.arrivalTerminal` | Arrival terminal | 도착 터미널 | 到着ターミナル | 到达航站楼 |
+| `checkout.flight.receipt.airlinePnr` | Airline PNR | 항공사 PNR | 航空会社のPNR | 航空公司 PNR |
+| `checkout.flight.receipt.pnrHint` | use this at check-in | 체크인 시 사용하세요 | チェックイン時にご利用ください | 办理值机时使用 |
 | `checkout.flight.receipt.approxTotal` | Approx. in {currency} | {currency} 환산 금액(약) | {currency}換算（概算） | 约合 {currency} |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
 | `checkout.example` | e.g. {value} | 예: {value} | 例：{value} | 例如：{value} |

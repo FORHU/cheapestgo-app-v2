@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { ArrowRight, Check, Copy, CopyCheck, Download, Plane } from 'lucide-react';
+import { Check, Copy, CopyCheck, Download } from 'lucide-react';
 import { ACCENT_FILL, type Palette } from '@/features/checkout/lib/palette';
 import { BRAND } from '@/shared/lib/palette';
 import { airportLabel, formatDateTimeLocale, groupSegmentsIntoSlices } from '@/features/flights/lib/flight-utils';
@@ -19,45 +19,11 @@ import { useLiveRates } from '@/shared/lib/use-live-rates';
 
 /** Prices, times and references: tabular figures, so they line up and read as data. */
 const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
-/** The form's field corners (`FIELD_RADIUS` on the checkout page), so a field shown here reads
- *  as the one the traveller filled in. */
+/** The form's field corners (`FIELD_RADIUS` on the checkout page), so a box shown here reads as
+ *  one of the form's. */
 const FIELD_RADIUS = 14;
 
 // ─── Small pieces ───────────────────────────────────────────────────────────────
-
-/** The airline's logo, same CDN the rest of the app reads it from. A plane in the pill fill
- *  stands in while there is none to show — an airline the CDN has no logo for, or the offer not
- *  read yet. Decorative: the airline's name is written beside it. */
-function AirlineAvatar({ code, palette }: { code?: string; palette: Palette }) {
-    const [broken, setBroken] = useState(false);
-    return (
-        <div aria-hidden style={{
-            width: 44, height: 44, borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
-            background: palette.stepIdle, color: palette.title, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-            {code && !broken ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                    src={`https://images.kiwi.com/airlines/64/${code}.png`}
-                    alt=""
-                    style={{ width: 26, height: 26, objectFit: 'contain' }}
-                    onError={() => setBroken(true)}
-                />
-            ) : <Plane size={18} />}
-        </div>
-    );
-}
-
-function Pill({ children, palette }: { children: React.ReactNode; palette: Palette }) {
-    return (
-        <span style={{
-            display: 'inline-flex', alignItems: 'center', padding: '6px 12px', borderRadius: 999,
-            fontSize: 13, background: palette.stepIdle, color: palette.title,
-        }}>
-            {children}
-        </span>
-    );
-}
 
 /** The box a field is drawn in on the form, without the input: the same height, fill, hairline
  *  and corners, but no hover or focus ring, since there is nothing here to type into. */
@@ -71,18 +37,20 @@ function fieldBox(palette: Palette): React.CSSProperties {
 
 const ellipsis: React.CSSProperties = { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 
-/** One answer from the form, shown back as the field it was typed into: the form's caption over
- *  the form's box. A `dt`/`dd` pair, so it reads as a label and its value. */
-function ShownField({ label, value, palette }: { label: string; value: string; palette: Palette }) {
+/** One fact about the booking: a quiet caption over its value. A `dt`/`dd` pair, so it reads as
+ *  a label and its value. */
+function Fact({ label, children, palette }: { label: string; children: React.ReactNode; palette: Palette }) {
     return (
         <div style={{ minWidth: 0 }}>
-            <dt style={{ fontSize: 'var(--cg-label-fs)', fontWeight: 500, color: palette.text, marginBottom: 8, paddingLeft: 2 }}>{label}</dt>
-            <dd title={value} style={{ ...fieldBox(palette), margin: 0 }}>
-                <span style={ellipsis}>{value || '—'}</span>
-            </dd>
+            <dt style={{ fontSize: 'var(--cg-label-fs)', color: palette.muted }}>{label}</dt>
+            <dd style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600, color: palette.title, overflowWrap: 'anywhere' }}>{children}</dd>
         </div>
     );
 }
+
+/** A terminal as the boards write it: "2" becomes "T2"; a name the airline already spelled out
+ *  is left as it is. */
+const shortTerminal = (terminal: string) => (/^\d/.test(terminal) ? `T${terminal}` : terminal);
 
 /**
  * The checkout's three steps, every one of them done. The form's bar marks only the step in hand;
@@ -131,8 +99,8 @@ interface FlightConfirmedScreenProps {
     offer:         FlightOffer | null;
     loadingOffer:  boolean;
     bookingId:     string | null;
-    /** The airline's own record locator. The booking reference above is ours; an airport kiosk
-     *  or the airline's own app asks for theirs. Shown only when `/flights/confirm` returned one. */
+    /** The airline's own record locator. The booking reference is ours; an airport kiosk or the
+     *  airline's own app asks for theirs. Shown only when `/flights/confirm` returned one. */
     pnr:           string | null;
     origin:        string;
     destination:   string;
@@ -154,26 +122,29 @@ interface FlightConfirmedScreenProps {
     onTrips:       () => void;
 }
 
+type CopyTarget = 'reference' | 'pnr';
+
 // ─── The screen ───────────────────────────────────────────────────────────────
 //
-// As designed ("Booking Confirmed", in the checkout-alignment project): the confirmation is drawn
-// on the checkout form's own grid, so arriving here reads as the form's last step, not a new page.
-// The steps sit top right where the form's bar was, all three done. The left column holds what the
-// form collected, shown back in the form's own boxes: our booking reference (and where the receipt
-// went), the flight bought, each passenger's name, the lead's email. The summary card stays on the
-// right where it was through the checkout, now with what was paid.
+// As designed ("Booking Confirmed 1b", in the checkout-alignment project): the checkout's last
+// step, on the form's own grid. The steps sit top right where the form's bar was, all three done,
+// with the summary card beneath them as it was through the checkout, now with what was paid.
 //
-// The itinerary's detail — airline, airport names, terminals, bags, fare terms — comes from the
-// offer the page read, a GET the URL's own params never carried; everything else (the fare paid,
-// who flies, where the e-ticket went) is what the booking itself already knows, so it is never
-// blocked on that fetch.
+// The left column answers what a traveller looks for at the airport. Who flies, which flight, the
+// cabin, the bags and the terminal at each end, as a grid of facts; then the two references, each
+// in a box with its own Copy: ours, for anything about the booking, and the airline's PNR, which
+// is what check-in asks for.
+//
+// The itinerary's detail — flights, terminals, bags, airport names — comes from the offer the
+// page read, a GET the URL's own params never carried. Everything else (who flies, the fare paid,
+// both references, where the receipt went) is what the booking itself already knows, so it is
+// never blocked on that fetch.
 //
 // The fare is one figure: the service fee is part of it, as the checkout's summary has it.
 //
-// Below the two columns' first rows: the trips button and, under it, the rest of the trip — a
-// hotel where the flight lands and a tee time there, which waits for the offer, the only thing
-// that says which city that is. On a phone the summary comes before that button, so the receipt
-// reads through before the way out of it.
+// Below: the trips button and, under it, the rest of the trip — a hotel where the flight lands and
+// a tee time there, which waits for the offer, the only thing that says which city that is. On a
+// phone the summary comes before that button, so the receipt reads through before the way out.
 export function FlightConfirmedScreen({
     palette, offer, loadingOffer, bookingId, pnr, origin, destination, departureDate, cabin,
     currency, total, adults, childPassengers, infants, passengers, contactEmail,
@@ -182,7 +153,9 @@ export function FlightConfirmedScreen({
     const tAll = useTranslations();
     const t = useTranslations('checkout');
     const locale = useLocale();
-    const [copied, setCopied] = useState(false);
+    const [copied, setCopied] = useState<CopyTarget | null>(null);
+    const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
     // The receipt states what the card was charged, in the currency it was charged in — that is a
     // fact, and it does not move with the selector. The selector's currency gets a second line, an
@@ -195,44 +168,42 @@ export function FlightConfirmedScreen({
 
     const totalPax = adults + childPassengers + infants;
     const slices: NormalizedSegment[][] = offer ? groupSegmentsIntoSlices(offer.segments) : [];
+    const loadingItinerary = loadingOffer && !offer;
 
-    const firstSegment = slices[0]?.[0];
+    const outbound = slices[0] ?? [];
+    const firstSegment = outbound[0];
+    const lastOutbound = outbound[outbound.length - 1];
     // Where the outbound lands — not the last slice, which on a round trip lands back home.
     const stay = arrivalStay(slices);
     const destinationCity = stay?.city;
 
-    const isRefundable = offer ? (offer.farePolicy ? offer.farePolicy.isRefundable : offer.refundable) : false;
-    const penalty = offer?.farePolicy?.refundPenaltyAmount;
-    const refundLabel = !isRefundable
-        ? tAll('flights.card.nonRefundable')
-        : penalty === 0
-            ? tAll('flights.card.freeCancellation')
-            : tAll('checkout.flight.receipt.refundable');
-    const checkedBags = offer?.baggage?.checkedBags ?? 0;
+    // Every flight on the ticket, in order: a connection or a return is a flight number too.
+    const flightNumbers = Array.from(new Set(slices.flat().map(s => s.flightNumber).filter(Boolean)));
+    const airlineName = firstSegment ? (firstSegment.airlineName || firstSegment.airline) : '';
     const cabinName = (firstSegment?.cabinClass ?? cabin ?? '').replace(/_/g, ' ');
-    const loadingItinerary = loadingOffer && !offer;
+    const checkedBags = offer?.baggage?.checkedBags ?? 0;
+    const bags = [
+        offer?.baggage?.cabinBag ? tAll('checkout.flight.receipt.carryOnBag') : null,
+        checkedBags > 0 ? tAll('checkout.flight.receipt.checkedBagsCount', { count: checkedBags }) : null,
+    ].filter((b): b is string => b !== null);
+    const terminalLabel = tAll('checkout.flight.receipt.terminal');
+    const departTerminal = firstSegment?.departure.terminal;
+    const arriveTerminal = lastOutbound?.arrival.terminal;
 
-    const handleCopy = async () => {
-        if (!bookingId) return;
+    const handleCopy = async (value: string, target: CopyTarget) => {
         try {
-            await navigator.clipboard.writeText(bookingId);
-            setCopied(true);
+            await navigator.clipboard.writeText(value);
+            setCopied(target);
             toast.success(tAll('checkout.flight.receipt.copyReferenceDone'));
-            setTimeout(() => setCopied(false), 2000);
+            clearTimeout(copiedTimer.current);
+            copiedTimer.current = setTimeout(() => setCopied(null), 2000);
         } catch {
             // Clipboard access denied or unavailable — the reference is still on screen to
-            // select by hand, so this fails quietly rather than with an error the traveller
-            // can do nothing about.
+            // select by hand (a click selects all of it), so this fails quietly rather than with
+            // an error the traveller can do nothing about.
         }
     };
 
-    // The form's two headings: a section's spaced capitals, and a group's sentence case under a
-    // hairline (`sectionLabelStyle` and `groupTitleStyle` on the checkout page).
-    const sectionLabel: React.CSSProperties = { fontWeight: 700, fontSize: 14, letterSpacing: '0.12em', textTransform: 'uppercase', color: palette.title, margin: 0 };
-    const group: React.CSSProperties = { marginTop: 28, paddingTop: 24, borderTop: `1px solid ${palette.hairline}` };
-    const groupTitle: React.CSSProperties = { fontSize: 15, fontWeight: 600, color: palette.title, margin: '0 0 16px' };
-
-    // The summary card's parts, as on the form's.
     const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 14, fontSize: 13, color: palette.text };
     const rule = (margin: string) => <div aria-hidden style={{ height: 1, background: palette.cardLine, margin }} />;
     // A quiet action beside the main one: text, but a 44px target.
@@ -240,28 +211,41 @@ export function FlightConfirmedScreen({
         display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 8px', border: 'none',
         background: 'transparent', color, fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
     });
+    const caption: React.CSSProperties = { fontSize: 'var(--cg-label-fs)', color: palette.muted };
+    const skeletonValue = <span aria-hidden style={{ display: 'block', paddingTop: 4 }}><SkeletonBar palette={palette} width={96} height={14} /></span>;
 
-    /** One end of a flight: what it is, the airport by full name and code, the day and the clock,
-     *  and the terminal when the airline gave one. */
-    const end = (caption: string, e: NormalizedSegment['departure'], code: string) => (
-        <div>
-            <div style={{ fontSize: 12, color: palette.muted }}>{caption}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: palette.title, marginTop: 2 }}>{airportLabel(e, code)}</div>
-            <div style={{ fontSize: 13, color: palette.text, marginTop: 2, fontFamily: MONO }}>
-                <span>{formatDateTimeLocale(e.time, locale)}</span>
-                {/* The terminal wraps as one piece, never as "Terminal" at a line's end and its number below. */}
-                {e.terminal && <>{' '}<span style={{ whiteSpace: 'nowrap' }}>· <span>{tAll('checkout.flight.receipt.terminal')} {e.terminal}</span></span></>}
+    /** A reference in the form's box, picked whole by one click, with its own Copy. The button is
+     *  named "Copy" and described by the caption above, so the two read apart. */
+    const referenceBox = (value: string, target: CopyTarget, captionId: string, extra?: React.CSSProperties) => (
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div title={value} style={{ ...fieldBox(palette), flex: 1, fontFamily: MONO, color: palette.title, userSelect: 'all', ...extra }}>
+                <span style={ellipsis}>{value}</span>
             </div>
+            <button
+                type="button"
+                onClick={() => handleCopy(value, target)}
+                aria-describedby={captionId}
+                className="no-print"
+                style={{ ...fieldBox(palette), flexShrink: 0, gap: 8, color: palette.title, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+                {copied === target ? <CopyCheck aria-hidden size={15} /> : <Copy aria-hidden size={15} />}
+                {copied === target ? tAll('checkout.flight.receipt.copyReferenceDone') : tAll('checkout.flight.receipt.copyReference')}
+            </button>
         </div>
     );
 
-    const paxLabel = (p: FlightPassengerInfo, i: number) => {
-        // Numbered within its own type, as the airline lists them and the form headed them.
-        const nth = passengers.slice(0, i + 1).filter(q => q.type === p.type).length;
-        return p.type === 'CHD' ? tAll('checkout.userDetails.childN', { n: nth })
-            : p.type === 'INF' ? tAll('checkout.flight.infantN', { n: nth })
-                : tAll('checkout.flight.adultN', { n: nth });
-    };
+    /** One end of a flight: what it is, the airport by full name and code, the day and the clock,
+     *  and the terminal as the boards write it. */
+    const end = (label: string, e: NormalizedSegment['departure'], code: string) => (
+        <div>
+            <div style={{ fontSize: 12, color: palette.muted }}>{label}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: palette.title, marginTop: 2 }}>{airportLabel(e, code)}</div>
+            <div style={{ fontSize: 13, color: palette.text, marginTop: 2, fontFamily: MONO }}>
+                <span>{formatDateTimeLocale(e.time, locale)}</span>
+                {e.terminal && <>{' '}<span style={{ whiteSpace: 'nowrap' }}>· {shortTerminal(e.terminal)}</span></>}
+            </div>
+        </div>
+    );
 
     return (
         <div className="cg-receipt" style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
@@ -288,100 +272,82 @@ export function FlightConfirmedScreen({
                         <h1 className="font-bold tracking-[-0.01em]" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                             {tAll('checkout.flight.receipt.allSet')}
                         </h1>
-                        <p style={{ fontSize: 'clamp(19px,2.2vw,32px)', fontWeight: 400, lineHeight: 1.25, color: palette.text, margin: '10px 0 0' }}>
+                        <p style={{ fontSize: 'clamp(19px,2.2vw,32px)', fontWeight: 400, lineHeight: 1.25, color: palette.text, margin: '8px 0 0' }}>
                             {tAll('checkout.flight.receipt.confirmedToDestination', { destination: destinationCity ?? destination })}
+                        </p>
+                        <p style={{ fontSize: 'var(--cg-note-fs)', lineHeight: 1.45, color: palette.muted, margin: '10px 0 0', overflowWrap: 'anywhere' }}>
+                            {tAll('checkout.flight.receipt.receiptSentTo', { email: contactEmail })}
                         </p>
                     </div>
 
-                    {/* What the form collected, shown back */}
-                    <div className="lg:col-start-1 lg:row-start-2 min-w-0" style={{ marginTop: 30 }}>
-                        {/* Our reference, and where the receipt went */}
-                        <section aria-labelledby="cg-ref-title">
-                            <h2 id="cg-ref-title" style={sectionLabel}>{t('bookingReference')}</h2>
-                            <p style={{ fontSize: 'var(--cg-note-fs)', lineHeight: 1.45, color: palette.muted, margin: '6px 0 0' }}>
-                                {tAll('checkout.flight.receipt.receiptSentTo', { email: contactEmail })}
-                            </p>
-                            {bookingId && (
-                                <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                                    {/* The link blue: blue-400 on the dark field, blue-600 on the light. */}
-                                    <div title={bookingId} style={{ ...fieldBox(palette), flex: 1, fontFamily: MONO, color: palette.icon }}>
-                                        <span style={ellipsis}>{bookingId}</span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleCopy}
-                                        className="no-print"
-                                        style={{ ...fieldBox(palette), flexShrink: 0, gap: 8, color: palette.title, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-                                    >
-                                        {copied ? <CopyCheck aria-hidden size={15} /> : <Copy aria-hidden size={15} />}
-                                        {copied ? tAll('checkout.flight.receipt.copyReferenceDone') : tAll('checkout.flight.receipt.copyReference')}
-                                    </button>
-                                </div>
+                    {/* What the traveller needs at the airport */}
+                    <div className="lg:col-start-1 lg:row-start-2 min-w-0" style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${palette.hairline}` }}>
+                        <dl
+                            aria-busy={loadingItinerary || undefined}
+                            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '20px 24px', margin: 0 }}
+                        >
+                            <Fact label={totalPax === 1 ? tAll('documents.eticket.passenger') : tAll('checkout.flight.receipt.passengerSectionTitle')} palette={palette}>
+                                {passengers.map((p, i) => <div key={i}>{`${p.firstName} ${p.lastName}`.trim() || '—'}</div>)}
+                            </Fact>
+                            {(loadingItinerary || flightNumbers.length > 0) && (
+                                <Fact label={tAll('checkout.summary.flight')} palette={palette}>
+                                    {loadingItinerary ? skeletonValue : <>
+                                        <div style={{ fontFamily: MONO }}>{flightNumbers.join(' · ')}</div>
+                                        {/* Which airline the PNR below belongs to. */}
+                                        {airlineName && <div style={{ fontSize: 13, fontWeight: 400, color: palette.muted, marginTop: 2 }}>{airlineName}</div>}
+                                    </>}
+                                </Fact>
                             )}
-                        </section>
+                            {cabinName && (
+                                <Fact label={tAll('flights.topBar.cabin')} palette={palette}>
+                                    <span style={{ textTransform: 'capitalize' }}>{cabinName}</span>
+                                </Fact>
+                            )}
+                            {(loadingItinerary || bags.length > 0) && (
+                                <Fact label={tAll('checkout.flight.receipt.bagsLabel')} palette={palette}>
+                                    {/* Each allowance wraps whole, never "1" at a line's end and "checked bag" below. */}
+                                    {loadingItinerary ? skeletonValue : bags.map((b, i) => (
+                                        <React.Fragment key={b}>{i > 0 && ' · '}<span style={{ whiteSpace: 'nowrap' }}>{b}</span></React.Fragment>
+                                    ))}
+                                </Fact>
+                            )}
+                            {(loadingItinerary || departTerminal) && (
+                                <Fact label={tAll('checkout.flight.receipt.departureTerminal')} palette={palette}>
+                                    {loadingItinerary || !firstSegment ? skeletonValue
+                                        : <><span>{firstSegment.departure.airport || firstSegment.origin}</span> · <span>{terminalLabel} {departTerminal}</span></>}
+                                </Fact>
+                            )}
+                            {(loadingItinerary || arriveTerminal) && (
+                                <Fact label={tAll('checkout.flight.receipt.arrivalTerminal')} palette={palette}>
+                                    {loadingItinerary || !lastOutbound ? skeletonValue
+                                        : <><span>{lastOutbound.arrival.airport || lastOutbound.destination}</span> · <span>{terminalLabel} {arriveTerminal}</span></>}
+                                </Fact>
+                            )}
+                        </dl>
+                        {loadingItinerary && <span className="sr-only">{tAll('checkout.flight.receipt.loadingItinerary')}</span>}
 
-                        {/* The airline, its reference, and what the fare includes */}
-                        <section aria-labelledby="cg-flight-title" style={group}>
-                            <h2 id="cg-flight-title" style={groupTitle}>{tAll('checkout.summary.flight')}</h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-                                <AirlineAvatar code={firstSegment?.airline} palette={palette} />
-                                <div style={{ minWidth: 0 }}>
-                                    {loadingItinerary ? (
-                                        <div aria-busy="true" style={{ display: 'grid', gap: 6 }}>
-                                            <SkeletonBar palette={palette} width={150} height={15} />
-                                            <SkeletonBar palette={palette} width={110} height={12} />
-                                            <span className="sr-only">{tAll('checkout.flight.receipt.loadingItinerary')}</span>
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: 15, fontWeight: 600, color: palette.title }}>
-                                            {firstSegment ? (firstSegment.airlineName || firstSegment.airline) : `${origin} → ${destination}`}
-                                        </div>
-                                    )}
-                                    {!loadingItinerary && (firstSegment?.flightNumber || pnr) && (
-                                        <div style={{ fontSize: 13, color: palette.muted, marginTop: 2, fontFamily: MONO }}>
-                                            {[firstSegment?.flightNumber, pnr && `${tAll('trips.pnr')} ${pnr}`].filter(Boolean).join(' · ')}
-                                        </div>
-                                    )}
-                                </div>
+                        {/* Ours, for anything about the booking */}
+                        {bookingId && <>
+                            <div id="cg-ref-caption" style={{ ...caption, marginTop: 28 }}>{tAll('checkout.bookingPage.reference')}</div>
+                            {referenceBox(bookingId, 'reference', 'cg-ref-caption')}
+                        </>}
+
+                        {/* The airline's, which check-in asks for */}
+                        {pnr && <>
+                            <div id="cg-pnr-caption" style={{ ...caption, marginTop: 18 }}>
+                                {tAll('checkout.flight.receipt.airlinePnr')}{' '}
+                                <span style={{ color: palette.faint }}>· {tAll('checkout.flight.receipt.pnrHint')}</span>
                             </div>
-                            {offer && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
-                                    <Pill palette={palette}>{refundLabel}</Pill>
-                                    {cabinName && <Pill palette={palette}><span style={{ textTransform: 'capitalize' }}>{cabinName}</span></Pill>}
-                                    {offer.baggage?.cabinBag && <Pill palette={palette}>{tAll('checkout.flight.receipt.carryOnBag')}</Pill>}
-                                    {checkedBags > 0 && <Pill palette={palette}>{tAll('checkout.flight.receipt.checkedBagsCount', { count: checkedBags })}</Pill>}
-                                </div>
-                            )}
-                        </section>
-
-                        {/* Who flies — and, on the lead, where the e-ticket went */}
-                        <div style={group}>
-                            {passengers.map((p, i) => (
-                                <section key={i} aria-labelledby={`cg-pax-${i}`} style={{ marginTop: i ? 28 : 0 }}>
-                                    <h2 id={`cg-pax-${i}`} style={sectionLabel}>{paxLabel(p, i)}</h2>
-                                    <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', columnGap: 12, rowGap: 16, margin: '16px 0 0' }}>
-                                        <ShownField label={tAll('checkout.userDetails.firstName')} value={p.firstName} palette={palette} />
-                                        <ShownField label={tAll('checkout.userDetails.lastName')} value={p.lastName} palette={palette} />
-                                        {i === 0 && contactEmail && <ShownField label={tAll('checkout.userDetails.email')} value={contactEmail} palette={palette} />}
-                                    </dl>
-                                </section>
-                            ))}
-                        </div>
+                            {referenceBox(pnr, 'pnr', 'cg-pnr-caption', { letterSpacing: '0.06em' })}
+                        </>}
                     </div>
 
                     {/* Right: the summary, under the steps, as through the checkout */}
-                    <aside className="lg:col-start-2 lg:row-start-2 lg:row-span-2 mt-10 lg:mt-0 lg:pt-[30px]">
+                    <aside className="lg:col-start-2 lg:row-start-2 lg:row-span-2 mt-10 lg:mt-0 lg:pt-[28px]">
                         <div style={{ position: 'sticky', top: 24 }}>
                             <div className="receipt-card" style={{ background: palette.surface, borderRadius: 12, padding: '18px 30px 26px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 17, color: palette.title }}>
-                                    <span>{origin}</span>
-                                    <ArrowRight aria-hidden size={16} />
-                                    <span>{destination}</span>
-                                </div>
-                                <div style={{ fontSize: 13, color: palette.muted, marginTop: 4 }}>
-                                    {cabinName && <><span style={{ textTransform: 'capitalize' }}>{cabinName}</span> · </>}
-                                    {tAll('checkout.flight.receipt.passengersCount', { count: totalPax })}
-                                </div>
+                                <div style={{ fontWeight: 700, fontSize: 17, color: palette.title }}>{origin} → {destination}</div>
+                                {cabinName && <div style={{ fontSize: 13, color: palette.muted, marginTop: 4, textTransform: 'capitalize' }}>{cabinName}</div>}
 
                                 {/* Where it leaves and where it lands, once for each direction */}
                                 {slices.map((segs, idx) => {
@@ -408,7 +374,6 @@ export function FlightConfirmedScreen({
                                                 <SkeletonBar palette={palette} width="54%" height={12} />
                                             </div>
                                         ))}
-                                        <span className="sr-only">{tAll('checkout.flight.receipt.loadingItinerary')}</span>
                                     </div>
                                 )}
                                 {/* The offer could not be read: the day the link carried. */}
@@ -421,15 +386,9 @@ export function FlightConfirmedScreen({
                                 {rule('16px 0 12px')}
 
                                 {/* What was paid. One fare line: the service fee is part of it. */}
-                                <div style={{ display: 'grid', gap: 8 }}>
-                                    <div style={row}>
-                                        <span>{tAll('checkout.flight.receipt.fareLine', { count: totalPax })}</span>
-                                        <span style={{ fontFamily: MONO }}>{formatMoney(total, currency)}</span>
-                                    </div>
-                                    <div style={row}>
-                                        <span>{tAll('checkout.flight.receipt.taxesAndFees')}</span>
-                                        <span style={{ color: palette.muted }}>{tAll('checkout.flight.receipt.includedLabel')}</span>
-                                    </div>
+                                <div style={row}>
+                                    <span>{tAll('checkout.flight.receipt.fareLine', { count: totalPax })}</span>
+                                    <span style={{ fontFamily: MONO }}>{formatMoney(total, currency)}</span>
                                 </div>
 
                                 {rule('12px 0')}
@@ -444,13 +403,12 @@ export function FlightConfirmedScreen({
                                         <span style={{ fontFamily: MONO }}>≈ {formatMoney(approx.amount, approx.currency)}</span>
                                     </div>
                                 )}
-                                <div style={{ fontSize: 12, color: palette.muted, marginTop: 10 }}>{tAll('checkout.flight.receipt.paymentProcessedSecurely')}</div>
                             </div>
                         </div>
                     </aside>
 
                     {/* Where to go next */}
-                    <div className="no-print lg:col-start-1 lg:row-start-3 min-w-0" style={{ marginTop: 36 }}>
+                    <div className="no-print lg:col-start-1 lg:row-start-3 min-w-0" style={{ marginTop: 32 }}>
                         {/* The form's main action, in the same place: a full-width pill in the brand gradient. */}
                         <button
                             type="button"

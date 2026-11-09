@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "{destination}행 항공편이 확정되었습니다.",
         "allSet": "예약이 완료되었습니다",
-        "receiptSentTo": "항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다",
+        "receiptSentTo": "영수증이 {email}(으)로 전송되었습니다",
+        "bagsLabel": "수하물",
+        "departureTerminal": "출발 터미널",
+        "arrivalTerminal": "도착 터미널",
+        "airlinePnr": "항공사 PNR",
+        "pnrHint": "체크인 시 사용하세요",
         "approxTotal": "{currency} 환산 금액(약)",
         "receiptSentRich": "영수증이 <b>{email}</b>로 전송되었습니다.",
         "passengersCount": "{count}명",
@@ -2636,6 +2641,14 @@
         "declined": "거절됨",
         "cancelled": "취소됨"
       }
+    },
+    "search": {
+      "label": "예약 검색",
+      "placeholder": "이름, 노선, 예약 번호로 검색",
+      "clear": "검색어 지우기",
+      "noMatch": "‘{query}’와(과) 일치하는 예약이 없습니다",
+      "noMatchHint": "호텔·골프장 이름, MNL 같은 공항 코드, 예약 번호로 검색해 보세요.",
+      "results": "예약 {count}건을 찾았습니다"
     }
   },
   "support": {
