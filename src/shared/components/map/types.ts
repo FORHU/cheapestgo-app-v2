@@ -19,6 +19,10 @@ export interface MappableProperty {
     starRating?: number;
     location?: string;
     city?: string;
+    /** Kilometres from the **Search Anchor**, and only when that is far for the rung the
+     *  traveller picked — api-v2 decides, the card just prints it. Absent means central,
+     *  never "missing". ADR-0051. */
+    distanceKm?: number | null;
     country?: string;
     boardType?: string;
 }

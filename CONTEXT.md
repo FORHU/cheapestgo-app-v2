@@ -104,6 +104,20 @@ _Avoid_: labelling an Offer by board alone. Two chips reading `Room only` at dif
 the traveller there is a difference and refuse to say what it is; whichever attributes vary within
 a Room are the ones its Offers must show.
 
+## Search Anchor
+The place the traveller actually picked, and the point every result is measured from — a city, a
+district or a landmark, never a bounding box. A search reaches well beyond the anchor on purpose,
+because the alternative is deciding where a city ends by drawing a rectangle around it, and a
+rectangle around Tokyo both excludes Fuchu and includes Kawasaki. How far a result sits from the
+anchor is part of that result, and it is said out loud when it is far for the scale of the thing
+anchored ([ADR-0051](../cheapest-go-app/docs/adr/0051-a-search-tells-the-traveller-how-far-it-reached.md)).
+_Avoid_: reading "reached beyond the anchor" as "wrong". A Tokyo search returns Hachioji, Fussa and
+Machida, 32–33 km out and all of them Tokyo; of 297 results on 2026-11-06, none were outside it.
+_Avoid_: showing a result's distance without naming the anchor. "33 km from centre" does not say
+the centre of what, and the traveller picked something with a name.
+_Avoid_: anchoring a Province or Country search. The middle of Hokkaido is not a place anyone is
+measuring from, and a distance from it is noise on every card.
+
 ## Display Currency
 What a price is *shown* in across the storefront — the one the viewer picked, and the one every
 screen from search to the payment button must agree on. The picker offers only currencies that

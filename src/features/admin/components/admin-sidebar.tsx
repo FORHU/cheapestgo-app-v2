@@ -8,6 +8,7 @@ import {
     X,
     LayoutDashboard,
     BookOpen,
+    Receipt,
     Users,
     Tag,
     MessageCircle,
@@ -55,6 +56,7 @@ const NAV_GROUPS = [
             { href: '/admin/users',        label: 'Users',        icon: Shield },
             { href: '/admin/suppliers',    label: 'Suppliers',    icon: Building2 },
             { href: '/admin/revenue',      label: 'Revenue',      icon: Banknote },
+            { href: '/admin/payments',     label: 'Payments',     icon: Receipt },
         ],
     },
     {

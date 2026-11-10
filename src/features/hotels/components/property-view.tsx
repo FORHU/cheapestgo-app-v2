@@ -540,7 +540,7 @@ function PropertyContent() {
                         {/* Twice the previous size on both — clamp bounds
                             doubled, not just the fluid step between them, so
                             the floor and ceiling grow with it too. */}
-                        <div style={{ fontWeight: 500, fontSize: 'clamp(44px,5.2vw,60px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
+                        <div style={{ fontWeight: 500, fontSize: 'clamp(26px,5.2vw,60px)', letterSpacing: '-0.02em', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
                             {content.name}
                         </div>
                         {/* The street address, as the design has it, and only

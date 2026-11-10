@@ -29,6 +29,7 @@ import { ACCENT, SORT_OPTIONS, sortPalette, type SortValue } from '@/features/se
 import { resolveStayDates } from '@/shared/lib/stay';
 import { BRAND, brandTheme } from '@/shared/lib/palette';
 import { BRAND_STROKE, BrandStrokeDefs } from '@/shared/components/BrandStroke';
+import { distanceLabel } from '@/features/search/utils/distanceLabel';
 
 
 const DISTRICT_MARKER_THRESHOLD = 11;
@@ -306,7 +307,7 @@ function railCardPalette(theme: 'light' | 'dark') {
 
 function RailCard({
     property, isSelected, isHovered, shiftLeft, shiftRight,
-    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef, width,
+    onSelect, onHover, onViewDetails, currency, theme, mobile, elementRef, width, anchorName,
 }: {
     property: MappableProperty; isSelected: boolean; isHovered: boolean;
     /** Room a grown neighbour needs on this card's left / right. */
@@ -314,6 +315,8 @@ function RailCard({
     onSelect: (id: string) => void; onHover: (id: string | null) => void;
     onViewDetails: (id: string) => void;
     currency: string; theme: 'light' | 'dark';
+    /** What the traveller searched, so a distance can name what it is from. ADR-0051. */
+    anchorName?: string;
     /** One card to a screen, edge to edge — the design's phone layout. */
     mobile: boolean;
     /** Hands the card's element up so the rail can scroll it into view when its
@@ -350,7 +353,10 @@ function RailCard({
      * been deselected.
      */
     const enlarged = isSelected || (!mobile && isHovered);
-    const address = property.location ?? property.city ?? '';
+    // The address says where it is; the distance says how far that is from what was asked
+    // for. "Hachioji, Tokyo" alone never told anyone it was 33 km out. ADR-0051.
+    const address = [property.location ?? property.city, distanceLabel(property.distanceKm, anchorName)]
+        .filter(Boolean).join(' · ');
     const g = mobile ? CARD_GEOM_MOBILE : CARD_GEOM;
 
     return (
@@ -1637,9 +1643,10 @@ function HotelSearchContent() {
             <AnimatePresence>
                 {isStreaming && !isMobile && (
                     <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
+                        key={isMobile ? 'searching-centre' : 'searching-top'}
+                        initial={isMobile ? { opacity: 0, scale: 0.96 } : { opacity: 0, y: -6 }}
+                        animate={isMobile ? { opacity: 1, scale: 1 } : { opacity: 1, y: 0 }}
+                        exit={isMobile ? { opacity: 0, scale: 0.96 } : { opacity: 0, y: -6 }}
                         transition={{ duration: 0.18 }}
                         className="absolute left-1/2 top-[calc(100%+16px)] z-30 w-max max-w-full -translate-x-1/2"
                         style={{ pointerEvents: 'none' }}
@@ -1931,6 +1938,7 @@ function HotelSearchContent() {
                                             onViewDetails={handleViewDetails}
                                             currency={currency}
                                             theme={uiTone}
+                                            anchorName={destination}
                                             mobile={isMobile}
                                             elementRef={(el) => {
                                                 if (el) railCardEls.current.set(property.id, el);
@@ -1943,53 +1951,6 @@ function HotelSearchContent() {
                                     <div className={cn('shrink-0', MAP_CHROME_GUTTER_W)} />
                                 </div>
                             </div>
-
-                            {/* Pagination dots — one per page, the strip's own
-                                paging state (`railPage`/`goToRailPage`) already
-                                drives the wheel and pin-click travel; this is
-                                just the first visible control for it. Inside the
-                                same bottom-nav-clearing wrapper as the scroller
-                                above it, so the safe-area padding still applies
-                                below whichever of the two is now the last
-                                visible thing.
-
-                                Its own symmetric gutter, not the scroller's: the
-                                scroller's is left-only on purpose, so a card can
-                                scroll past the visual right edge, while this row
-                                needs both edges to land where the bar's do. Only
-                                drawn once there's more than one page to move
-                                between.
-
-                                Ink on the bare map: near-black in light, white in
-                                dark, the inactive pages a strong tint of the same.
-                                They were the hairline colour (slate-200 / 10%
-                                white), which the day map's pale streets and the
-                                night map's dark ones both swallowed. */}
-                            {railPageCount > 1 && (
-                                <div className={cn('mt-3 flex justify-center gap-1.5', MAP_CHROME_GUTTER)}>
-                                    {Array.from({ length: railPageCount }).map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => goToRailPage(i)}
-                                            aria-label={`Page ${i + 1} of ${railPageCount}`}
-                                            aria-current={i === railPage || undefined}
-                                            // A 6px dot, a 24px-tall target: the `before:` box reaches 9px
-                                            // above and below, and sideways only half the 6px gap, so the
-                                            // targets meet without overlapping however many pages there are.
-                                            className="relative before:absolute before:-inset-x-[3px] before:-inset-y-[9px] before:content-['']"
-                                            style={{
-                                                width: i === railPage ? 20 : 6, height: 6, borderRadius: 3,
-                                                border: 'none', padding: 0, cursor: 'pointer',
-                                                background: i === railPage
-                                                    ? chrome.text
-                                                    : (uiTone === 'dark' ? 'rgba(248,250,252,0.6)' : 'rgba(15,23,42,0.5)'),
-                                                transition: 'width .2s ease, background .2s ease',
-                                                pointerEvents: 'auto',
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </motion.div>
                 )}

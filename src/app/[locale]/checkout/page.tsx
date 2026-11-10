@@ -1604,7 +1604,14 @@ function CheckoutContent() {
                             {step === 'payment' && clientSecret && (
                                 <>
                                     <p style={{ fontSize: 13, lineHeight: 1.5, color: palette.soft, margin: '0 0 18px' }}>{t('flight.cardHeld')}</p>
-                                    <Elements stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme, touchSizing) }}>
+                                    {/* Keyed on the secret: Stripe cannot change an Elements
+                                        instance's intent once it is mounted, so a second checkout
+                                        in the same session handed a new secret to an instance
+                                        still bound to the old one. Stripe answered 400 on every
+                                        payment_intent fetch and the card form never appeared.
+                                        Remounting on a new secret is the documented way, and the
+                                        golf flow has done it since it shipped. */}
+                                    <Elements key={clientSecret} stripe={getStripe()} options={{ clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                         <StripePaymentForm
                                             onSuccess={handleStripeSuccess}
                                             onError={handleStripeError}
@@ -1830,8 +1837,10 @@ function CheckoutContent() {
                         )}
 
                         {/* Step 2: Stripe payment */}
+                        {/* Keyed on the secret, for the same reason as the flight form above: an
+                            Elements instance keeps the intent it mounted with. */}
                         {step === 'payment' && hotelState.clientSecret && (
-                            <Elements stripe={getStripe()} options={{ clientSecret: hotelState.clientSecret, appearance: stripeAppearance(palette, theme, touchSizing) }}>
+                            <Elements key={hotelState.clientSecret} stripe={getStripe()} options={{ clientSecret: hotelState.clientSecret, appearance: stripeAppearance(palette, theme) }}>
                                 <StripePaymentForm
                                     onSuccess={handleStripeSuccess}
                                     onError={handleStripeError}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Undo2 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
+import { CancelBookingDialog } from '@/features/admin/components/cancel-booking-dialog';
 import type { Booking, BookingStatus } from '@/shared/types';
 
 // ─── Status badge mapping ─────────────────────────────────────────────────────
@@ -63,11 +64,14 @@ function SortableHeader({
 interface BookingsTableProps {
     bookings: Booking[];
     userEmailMap?: Record<string, string>; // userId → email
+    /** Called after a cancellation goes through, so the page can reload the list. */
+    onChanged?: () => void;
 }
 
-export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProps) {
+export function BookingsTable({ bookings, userEmailMap = {}, onChanged }: BookingsTableProps) {
     const [sortKey, setSortKey] = useState<SortKey>('createdAt');
     const [sortDir, setSortDir] = useState<SortDir>('desc');
+    const [cancelling, setCancelling] = useState<Booking | null>(null);
 
     function handleSort(key: SortKey) {
         if (key === sortKey) {
@@ -101,6 +105,9 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
                         <SortableHeader label="Status"     sortKey="status"      current={sortKey} dir={sortDir} onSort={handleSort} />
                         <SortableHeader label="Amount"     sortKey="totalAmount" current={sortKey} dir={sortDir} onSort={handleSort} />
                         <SortableHeader label="Date"       sortKey="createdAt"   current={sortKey} dir={sortDir} onSort={handleSort} />
+                        <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -143,10 +150,33 @@ export function BookingsTable({ bookings, userEmailMap = {} }: BookingsTableProp
                                     day:   'numeric',
                                 })}
                             </td>
+                            <td className="px-3 py-1.5 text-right whitespace-nowrap">
+                                {/* Only a live booking can be cancelled. A failed one never
+                                    reached the supplier, and a cancelled one is already done —
+                                    offering the button would promise an action that does nothing. */}
+                                {booking.status === 'confirmed' || booking.status === 'pending' ? (
+                                    <button
+                                        onClick={() => setCancelling(booking)}
+                                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                                    >
+                                        <Undo2 size={12} aria-hidden /> Cancel
+                                    </button>
+                                ) : (
+                                    <span className="text-xs text-slate-300">—</span>
+                                )}
+                            </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
+
+            {cancelling && (
+                <CancelBookingDialog
+                    booking={cancelling}
+                    onClose={() => setCancelling(null)}
+                    onDone={() => onChanged?.()}
+                />
+            )}
         </div>
     );
 }

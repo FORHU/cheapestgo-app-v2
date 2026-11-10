@@ -194,7 +194,7 @@ function Disclosure({
             type="button"
             onClick={onClick}
             aria-expanded={expanded}
-            className={cn('cursor-pointer text-[18px] font-bold transition-colors', palette.link)}
+            className={cn('cursor-pointer text-[15px] font-bold transition-colors sm:text-[18px]', palette.link)}
         >
             {label}
         </button>
@@ -504,17 +504,17 @@ export function PropertyDescription({
                                     {/* Symbol and digits are separate type, as
                                         drawn: the symbol a size down, so the
                                         number carries the line alone. */}
-                                    <span className={cn('text-[36px] font-bold sm:text-[42px]', palette.title)}>
+                                    <span className={cn('text-[26px] font-bold sm:text-[36px] md:text-[42px]', palette.title)}>
                                         {symbol}
                                     </span>
-                                    <span className={cn('-ml-1.5 text-[42px] font-bold tracking-[-0.02em] sm:text-[50px]', palette.title)}>
+                                    <span className={cn('-ml-1.5 text-[30px] font-bold tracking-[-0.02em] sm:text-[42px] md:text-[50px]', palette.title)}>
                                         {Math.round(price).toLocaleString()}
                                     </span>
-                                    <span className={cn('text-[21px] sm:text-[24px]', palette.muted)}>{tAll('hotels.perNight')}</span>
+                                    <span className={cn('text-[15px] sm:text-[21px] md:text-[24px]', palette.muted)}>{tAll('hotels.perNight')}</span>
                                 </>
                             )}
                             {hasRating && (
-                                <span className={cn('text-[22px] sm:text-[25px]', palette.soft)}>
+                                <span className={cn('text-[16px] sm:text-[22px] md:text-[25px]', palette.soft)}>
                                     <b className={cn('font-bold', palette.title)}>{rating.toFixed(1)}</b> {tAll('hotels.description.rating')}
                                 </span>
                             )}
@@ -525,7 +525,7 @@ export function PropertyDescription({
                         // A description list, not two spans: these are
                         // labelled values, and that is what a screen reader
                         // should hear.
-                        <dl className={cn('shrink-0 text-right text-[18px] leading-[1.5]', palette.soft)}>
+                        <dl className={cn('shrink-0 text-right text-[13px] leading-[1.5] sm:text-[18px]', palette.soft)}>
                             {inTime && (
                                 <div className="flex justify-end gap-2">
                                     <dt className={cn('font-bold', palette.title)}>{tAll('hotels.description.checkIn')}</dt>
@@ -596,7 +596,7 @@ export function PropertyDescription({
                         // of a single element — split into three paragraphs it
                         // would clamp each of them to five lines instead of the
                         // description as a whole.
-                        className={cn('mt-6 text-[18px] leading-[1.6]', palette.body)}
+                        className={cn('mt-6 text-[15px] leading-[1.6] sm:text-[18px]', palette.body)}
                         // The clamp as a style rather than a `line-clamp-*`
                         // utility: it has to come off entirely when expanded,
                         // and toggling between two utilities leaves whichever
