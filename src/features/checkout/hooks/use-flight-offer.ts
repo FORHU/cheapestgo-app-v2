@@ -15,26 +15,31 @@ import type { FlightOffer } from '@/shared/types';
  *
  * Never blocks anything and is never retried: a slow or failed fetch leaves the checkout on the
  * fare in its link, with no fee line, and the receipt on the route and date it already had.
+ *
+ * Except one answer: `gone`, the airline no longer has the offer (`OFFER_EXPIRED`). Nothing can
+ * book it now, and the page decides what to do about that.
  */
 export function useFlightOffer(offerId: string | null, currency?: string) {
     const [offer, setOffer]     = useState<FlightOffer | null>(null);
     const [loading, setLoading] = useState(!!offerId);
+    const [gone, setGone]       = useState(false);
 
     useEffect(() => {
-        if (!offerId) { setOffer(null); setLoading(false); return; }
+        if (!offerId) { setOffer(null); setLoading(false); setGone(false); return; }
         let cancelled = false;
         setLoading(true);
+        setGone(false);
         // A new currency re-quotes the offer already read; a new offer drops it.
         setOffer(o => (o?.offerId === offerId ? o : null));
         const query = currency ? `?currency=${encodeURIComponent(currency)}` : '';
         http.get<FlightOffer>(`/flights/offers/${encodeURIComponent(offerId)}${query}`)
             .then(o => { if (!cancelled) setOffer(o); })
             // A failed re-quote leaves the quote there was; the page names its currency beside
-            // every figure, so it is out of date, not mislabelled.
-            .catch(() => { /* see above */ })
+            // every figure, so it is out of date, not mislabelled. A gone offer is said so.
+            .catch((err: { code?: unknown }) => { if (!cancelled && err?.code === 'OFFER_EXPIRED') setGone(true); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, [offerId, currency]);
 
-    return { offer, loading };
+    return { offer, loading, gone };
 }

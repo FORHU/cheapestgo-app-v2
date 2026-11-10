@@ -6,6 +6,9 @@ export function useMediaQuery(query: string): boolean {
     const [matches, setMatches] = useState(false);
 
     useEffect(() => {
+        // Every browser has it; a test's simulated DOM (jsdom) does not. There the query simply
+        // does not match, rather than the component that asked failing to mount.
+        if (typeof window.matchMedia !== 'function') return;
         const mq = window.matchMedia(query);
         setMatches(mq.matches);
         const handler = (e: MediaQueryListEvent) => setMatches(e.matches);

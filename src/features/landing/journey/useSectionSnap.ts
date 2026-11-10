@@ -22,9 +22,9 @@ const SAME_GESTURE_MS = 180;
 
 /**
  * Each stop as a scroll position, from the top of the track — and never past the bottom of the
- * page. The stop for the end of the track is the bottom of the page: the track's last stage
- * runs to the end and the footer rises over it, so aiming at the track's own end would ease
- * toward a place the document cannot scroll to and stop dead where it runs out.
+ * page. The footer rises over the end of the track, so a stop near its end may lie beyond where
+ * the document can scroll; aiming there would ease toward a place it cannot reach and stop dead
+ * where it runs out.
  */
 export function snapTargets(stops: number[], top: number, trackPx: number, maxScroll: number): number[] {
     return stops.map(s => Math.min(top + s * trackPx, maxScroll));

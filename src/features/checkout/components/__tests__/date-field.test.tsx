@@ -120,4 +120,33 @@ describe('DateField', () => {
         fireEvent.click(screen.getByTestId('picker-backdrop'));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+
+    // On a phone the support chat button (z-index 50) and the brand preview switcher (70) float
+    // over the bottom of the screen. Drawn inside the field, the calendar sat beneath them, and
+    // after a step change beneath anything outside the step's own layer: the dates under them
+    // could not be tapped.
+    it('opens at the top of the page, above the controls that float over it, under its field', () => {
+        const { container } = render(<Harness />);
+        const field = screen.getByLabelText('Date of birth').parentElement as HTMLElement;
+        vi.spyOn(field, 'getBoundingClientRect').mockReturnValue(
+            { top: 500, bottom: 548, left: 16, right: 374, width: 358, height: 48, x: 16, y: 500, toJSON: () => ({}) } as DOMRect,
+        );
+        open();
+
+        expect(container.contains(dialog())).toBe(false);
+        expect(dialog().parentElement).toBe(document.body);
+        expect(Number(dialog().style.zIndex)).toBeGreaterThan(70);
+        expect(Number(screen.getByTestId('picker-backdrop').style.zIndex)).toBeGreaterThan(70);
+        // Still placed under its field: 8px below its bottom edge, level with its left.
+        expect(dialog().style.top).toBe('556px');
+        expect(dialog().style.left).toBe('16px');
+    });
+
+    it('closes on Tab and hands focus back to the field, so Tab carries on through the form', () => {
+        render(<Harness />);
+        open();
+        fireEvent.keyDown(dialog(), { key: 'Tab' });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('Date of birth')).toHaveFocus();
+    });
 });

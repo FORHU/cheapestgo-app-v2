@@ -51,18 +51,18 @@ const SKIN: Record<SelectorVariant, {
         avatarRing: '',
     },
     onDark: {
-        // Not the language menu's 18% white: that is a list of one word a row, and this panel
-        // holds a name, an address and a sign-out, so over a bright photograph the rows behind
-        // it showed through the text. The slate-900 the search bar's own dropdowns use,
-        // blurred, holds white text over anything.
-        panel: 'rounded-[20px] bg-[#0f172a]/90 backdrop-blur-[18px] backdrop-saturate-150 border border-white/10 shadow-[0_26px_55px_-18px_rgba(0,0,0,0.7)]',
+        // The language and currency menus' own glass, 18% white over a deep blur, so the three
+        // menus on the landing header are one material. It holds more text than their one word
+        // a row — a name, an address, a sign-out — so the quiet text is a step brighter than
+        // theirs would need, and the sign-out's red a step lighter, to read on the glass.
+        panel: SELECTOR_TONES.onDark.menu,
         title: 'text-white',
-        muted: 'text-white/60',
-        row: 'text-white/85 hover:bg-white/[0.08]',
-        icon: 'text-white/60',
-        hairline: 'border-white/10',
-        outlineButton: 'border border-white/25 text-white hover:bg-white/[0.08]',
-        danger: 'text-red-400 hover:bg-red-500/15',
+        muted: 'text-white/75',
+        row: 'text-white/90 hover:bg-white/[0.14]',
+        icon: 'text-white/75',
+        hairline: 'border-white/15',
+        outlineButton: 'border border-white/30 text-white hover:bg-white/[0.14]',
+        danger: 'text-red-300 hover:bg-red-500/20',
         avatarRing: 'ring-1 ring-white/25',
     },
 };
@@ -83,9 +83,11 @@ interface SignInDropdownProps {
     collapsible?: boolean;
     onNavigate?: () => void;
     onToggleOpen?: (open: boolean) => void;
+    /** Merged onto the dropdown's trigger, last — a phone's header grows it to a 44px target. */
+    triggerClassName?: string;
 }
 
-const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', tone = 'default', collapsible = false, onNavigate, onToggleOpen }) => {
+const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', tone = 'default', collapsible = false, onNavigate, onToggleOpen, triggerClassName }) => {
     const tAll = useTranslations();
     const { user } = useAuthStore();
     const openAuthModal = useModalStore((state) => state.openAuthModal);
@@ -211,7 +213,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
     if (!mounted || !user) {
         return (
             <div ref={dropdownRef} className="relative">
-                <button onClick={() => setIsOpen(!isOpen)} className={cn('flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full shrink-0', FILL_BUTTON)}>
+                <button onClick={() => setIsOpen(!isOpen)} className={cn('flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full shrink-0', FILL_BUTTON, triggerClassName)}>
                     {tAll('nav.signIn')}
                 </button>
                 <AnimatePresence>
@@ -241,7 +243,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
 
     return (
         <div ref={dropdownRef} className="relative">
-            <button onClick={() => setIsOpen(!isOpen)} aria-label={t('account')} aria-expanded={isOpen} className={cn('flex items-center gap-2 p-1 rounded-full transition-colors shrink-0', SELECTOR_TONES[tone].trigger)}>
+            <button onClick={() => setIsOpen(!isOpen)} aria-label={t('account')} aria-expanded={isOpen} className={cn('flex items-center gap-2 p-1 rounded-full transition-colors shrink-0', SELECTOR_TONES[tone].trigger, triggerClassName)}>
                 <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className={cn('size-7 text-[10px]', skin.avatarRing)} />
             </button>
             <AnimatePresence>
@@ -282,7 +284,3 @@ const SignInDropdown: React.FC<SignInDropdownProps> = (props) => (
 );
 
 export default SignInDropdown;
-
-/** The panel's material and avatar, for the landing header's mobile menu, which holds the same
- *  account controls behind a hamburger and should read as the same panel. */
-export { SKIN as ACCOUNT_PANEL_SKIN, Avatar as AccountAvatar, FILL_BUTTON, getInitials };

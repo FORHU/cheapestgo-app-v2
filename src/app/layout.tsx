@@ -24,7 +24,6 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'optional' });
 const fredoka = Fredoka({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-fredoka' });
-const plusJakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-jakarta' });
 
 // The landing page is the only surface on Open Sans — it rebinds --font-sans and
 // --font-display to this variable on its own root (see src/app/page.tsx).
@@ -95,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
     return (
         <html lang={locale} suppressHydrationWarning>
-            <body className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${fredoka.variable} ${plusJakarta.variable} ${openSans.variable} font-sans`}>
+            <body className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${fredoka.variable} ${openSans.variable} font-sans`}>
                 {/* Puts the saved theme on <html> before the first paint.
                     ThemeProvider reads the class back rather than localStorage,
                     so this is what carries a dark-mode reader through a reload

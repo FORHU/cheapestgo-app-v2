@@ -7,6 +7,7 @@ import {
     filterBounds,
     minutesOfDay,
     offerArrivalAirport,
+    offerHighlights,
     offerStopsPerDirection,
     type FlightFilterState,
 } from '../filter-offers';
@@ -294,5 +295,45 @@ describe('in the currency on show', () => {
 
     it('is the offers\' own currency when the page gives no converter', () => {
         expect(filterBounds([usd('a', 400), usd('b', 650)]).price).toEqual([400, 650]);
+    });
+});
+
+describe('the cheapest and fastest marks', () => {
+    const priced = (id: string, perPerson: number, minutes: number) =>
+        offer({ id, price: { total: perPerson, base: perPerson, taxes: 0, currency: 'USD', pricePerAdult: perPerson }, sliceDurations: [minutes], totalDuration: minutes });
+
+    it('marks the cheapest and the fastest of the list', () => {
+        const slowCheap = priced('a', 118, 400);
+        const fastDear = priced('b', 260, 230);
+        const middle = priced('c', 180, 300);
+        const marks = offerHighlights([middle, slowCheap, fastDear]);
+        expect(marks.get(slowCheap)).toBe('cheapest');
+        expect(marks.get(fastDear)).toBe('fastest');
+        expect(marks.has(middle)).toBe(false);
+    });
+
+    it('compares the prices the cards print, not the currencies they came in', () => {
+        const usd = priced('a', 100, 300);
+        const krw = { ...priced('b', 120_000, 300), price: { total: 120_000, base: 120_000, taxes: 0, currency: 'KRW', pricePerAdult: 120_000 } } as FlightOffer;
+        const toUsd = (amount: number, currency: string) => (currency === 'KRW' ? amount / 1400 : amount);
+        expect(offerHighlights([usd, krw], toUsd).get(krw)).toBe('cheapest');
+    });
+
+    it('gives the one offer that is both a single mark, and no slower offer the fastest one', () => {
+        const both = priced('a', 100, 200);
+        const other = priced('b', 150, 300);
+        const marks = offerHighlights([other, both]);
+        expect(marks.get(both)).toBe('cheapest');
+        expect(marks.has(other)).toBe(false);
+    });
+
+    it('passes the fastest mark to an offer that is just as fast', () => {
+        const both = priced('a', 100, 200);
+        const asFast = priced('b', 150, 200);
+        expect(offerHighlights([both, asFast]).get(asFast)).toBe('fastest');
+    });
+
+    it('marks nothing in a list of one', () => {
+        expect(offerHighlights([priced('a', 100, 200)]).size).toBe(0);
     });
 });

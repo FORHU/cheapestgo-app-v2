@@ -248,6 +248,10 @@ export function FilterSwitch({
 
 // ─── Typed field ──────────────────────────────────────────────────────────────
 
+/** A field's pill in the panel — a typed one, and a dropdown beside it (the flight times). */
+export const FILTER_FIELD_CLASS =
+    'h-9 min-w-0 rounded-full border px-3 text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30';
+
 /**
  * A value the traveller can type, committed on Enter or on leaving the field —
  * never per keystroke, or a price of 1,200 would filter at 1, 12 and 120 on the
@@ -294,7 +298,7 @@ export function FilterField({
                 }
             }}
             className={cn(
-                'h-9 min-w-0 rounded-full border px-3 text-[14px] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30',
+                FILTER_FIELD_CLASS,
                 '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
                 palette.field,
                 className,

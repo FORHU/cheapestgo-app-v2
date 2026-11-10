@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import React from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
 import { HOTEL_TOKENS, ratingInfo } from '@/features/hotels/types/property.types';
@@ -26,10 +27,13 @@ export function PropertyHero({
     return (
         <div style={{ position: 'relative', height: '58vh', minHeight: 320 }}>
             {heroImage ? (
-                <img
+                <Image
                     src={heroImage}
                     alt={name}
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    fill
+                    unoptimized
+                    sizes="100vw"
+                    style={{ objectFit: 'cover' }}
                 />
             ) : (
                 <div style={{ position: 'absolute', inset: 0, background: '#22383A' }} />

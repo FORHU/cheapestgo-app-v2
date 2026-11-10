@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { BRAND } from '@/shared/lib/palette';
 
 interface HotelPinProps {
@@ -113,9 +114,12 @@ export function HotelPin({ image, priceLabel, active = false, selected = false, 
                         />
                     )}
                     {image && (
-                        <img
+                        <Image
                             src={pinPhotoUrl(image)}
                             alt=""
+                            width={THUMB}
+                            height={THUMB}
+                            unoptimized
                             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             onError={(e) => {
                                 // The small size missing is no reason to lose the photo: retry

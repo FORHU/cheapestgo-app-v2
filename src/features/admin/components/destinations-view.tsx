@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { Globe, Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { Button } from '@/shared/components/ui/button';
@@ -176,7 +177,7 @@ export function DestinationsView() {
                                             <td className="px-3 py-1.5">
                                                 <div className="flex items-center gap-3">
                                                     {dest.image_url ? (
-                                                        <img src={dest.image_url} alt={dest.city} className="w-8 h-8 rounded-lg object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                        <Image src={dest.image_url} alt={dest.city} width={32} height={32} unoptimized className="w-8 h-8 rounded-lg object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                                     ) : (
                                                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"><Globe size={14} className="text-slate-400" /></div>
                                                     )}

@@ -7,16 +7,49 @@ import { Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { StateScreen, stateActionClass } from '@/shared/components/StateScreen';
 import type { FlightOffer } from '@/shared/types';
+import type { OfferHighlight } from '../lib/filter-offers';
 import { FlightCard } from './flight-card';
 
 const PAGE_SIZE = 15;
 
-/** The card's own shape — plate, itinerary, price column — so nothing moves when results land. */
+/**
+ * The card's own shape, so nothing moves when results land: on a phone the airline's line, the
+ * times, the chips and the price row; from `md` up the plate, itinerary and price column.
+ */
 function FlightCardSkeleton({ index = 0 }: { index?: number }) {
     const bar = 'rounded bg-slate-200 dark:bg-white/10';
     return (
+        <>
         <div
-            className="flex animate-pulse flex-col overflow-hidden rounded-2xl bg-white md:min-h-[205px] md:flex-row dark:bg-slate-900"
+            className="animate-pulse rounded-2xl border border-slate-200 bg-white px-4 py-3.5 md:hidden dark:border-white/10 dark:bg-slate-900"
+            style={{ animationDelay: `${index * 150}ms` }}
+        >
+            <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-full bg-slate-200 dark:bg-white/10" />
+                <div className="flex-1">
+                    <div className={cn(bar, 'h-4 w-24')} />
+                    <div className={cn(bar, 'mt-1.5 h-3 w-14')} />
+                </div>
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+                <div className={cn(bar, 'h-5 w-14')} />
+                <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
+                <div className={cn(bar, 'h-5 w-14')} />
+            </div>
+            <div className="mt-5 flex gap-1.5">
+                <div className="h-6 w-28 rounded-full bg-slate-200 dark:bg-white/10" />
+                <div className="h-6 w-36 rounded-full bg-slate-200 dark:bg-white/10" />
+            </div>
+            <div className="mt-3.5 flex items-center justify-between border-t border-slate-200 pt-3.5 dark:border-white/10">
+                <div>
+                    <div className={cn(bar, 'h-6 w-16')} />
+                    <div className={cn(bar, 'mt-1.5 h-3 w-20')} />
+                </div>
+                <div className="h-11 w-[84px] rounded-xl bg-slate-200 dark:bg-white/10" />
+            </div>
+        </div>
+        <div
+            className="hidden animate-pulse overflow-hidden rounded-2xl bg-white md:flex md:min-h-[205px] md:flex-row dark:bg-slate-900"
             style={{ animationDelay: `${index * 150}ms` }}
         >
             <div className="flex h-20 shrink-0 items-center justify-center md:h-auto md:w-[240px]">
@@ -43,6 +76,7 @@ function FlightCardSkeleton({ index = 0 }: { index?: number }) {
                 <div className="h-[42px] w-28 rounded-full bg-slate-200 md:mt-4 md:w-full dark:bg-white/10" />
             </div>
         </div>
+        </>
     );
 }
 
@@ -57,6 +91,8 @@ interface FlightResultsProps {
     className?: string;
     /** The offer whose fare is being checked with the airline right now. */
     checkingOfferId?: string | null;
+    /** The cheapest and the fastest of `offers`, marked on their cards — `offerHighlights`. */
+    highlights?: Map<FlightOffer, OfferHighlight>;
 }
 
 export function FlightResults({
@@ -69,6 +105,7 @@ export function FlightResults({
     emptyMessage,
     className,
     checkingOfferId = null,
+    highlights,
 }: FlightResultsProps) {
     const tAll = useTranslations();
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -165,6 +202,7 @@ export function FlightResults({
                         index={idx}
                         onSelect={onSelect}
                         checkingPrice={checkingOfferId === offer.offerId}
+                        highlight={highlights?.get(offer)}
                     />
                 ))}
             </AnimatePresence>

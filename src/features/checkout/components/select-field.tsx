@@ -69,7 +69,7 @@ export function OptionList({
  * by the operating system, in its colours, and cannot match the date picker beside it.
  */
 export function SelectField({
-    id, value, options, placeholder, onChange, palette, style, className,
+    id, value, options, placeholder, onChange, palette, style, className, ariaLabel, panelWidth = 260, chevronSize = 16,
 }: {
     /** For the `<label htmlFor>` that names it. */
     id:          string;
@@ -81,6 +81,12 @@ export function SelectField({
     /** The field's own look — the page's, so it matches the inputs beside it. */
     style?:      React.CSSProperties;
     className?:  string;
+    /** Its name where no `<label>` gives it one. */
+    ariaLabel?:  string;
+    /** The panel's width; a phone widens it to `--cg-picker-min` for the fingers. */
+    panelWidth?: number;
+    /** For a field smaller than a form's. */
+    chevronSize?: number;
 }) {
     const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -95,12 +101,15 @@ export function SelectField({
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={open}
+                aria-label={ariaLabel ? `${ariaLabel}: ${chosen?.label ?? placeholder}` : undefined}
                 onClick={() => (open ? close() : setOpen(true))}
                 className={className}
                 style={{ ...style, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, textAlign: 'left', cursor: 'pointer' }}
             >
-                <span style={{ color: chosen ? palette.text : palette.muted }}>{chosen?.label ?? placeholder}</span>
-                <ChevronDown size={16} color={palette.icon} style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s ease' }} />
+                <span style={{ color: chosen ? palette.text : palette.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {chosen?.label ?? placeholder}
+                </span>
+                <ChevronDown size={chevronSize} color={palette.icon} style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s ease' }} />
             </button>
             {open && (
                 <OptionList
@@ -110,7 +119,7 @@ export function SelectField({
                     onPick={(v) => { onChange(v); close(); }}
                     onClose={close}
                     palette={palette}
-                    width={260}
+                    width={panelWidth}
                 />
             )}
         </div>

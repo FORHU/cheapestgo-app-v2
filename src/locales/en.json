@@ -282,7 +282,8 @@
       "flight": "Flight",
       "dates": "Dates",
       "guests": "Guests",
-      "room": "Room"
+      "room": "Room",
+      "tripSummary": "Trip summary"
     },
     "title": "Checkout",
     "userDetails": {
@@ -436,7 +437,6 @@
     "flight": {
       "cardHeld": "Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing.",
       "priceChanged": "The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare.",
-      "offerExpired": "This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again.",
       "adultN": "ADULT {n}",
       "infantN": "INFANT {n}",
       "nameHint": "Enter names exactly as they appear on the passport.",
@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "Your flight to {destination} is confirmed.",
         "allSet": "You’re all set",
-        "confirmedSentTo": "Your flight to {destination} is confirmed, flight details and receipt has been sent to {email}",
+        "receiptSentTo": "Receipt sent to {email}",
+        "bagsLabel": "Bags",
+        "departureTerminal": "Departure terminal",
+        "arrivalTerminal": "Arrival terminal",
+        "airlinePnr": "Airline PNR",
+        "pnrHint": "use this at check-in",
         "approxTotal": "Approx. in {currency}",
         "receiptSentRich": "A receipt has been sent to <b>{email}</b>.",
         "passengersCount": "{count, plural, one {# passenger} other {# passengers}}",
@@ -534,10 +539,9 @@
     "alert": {
       "close": "Close",
       "fareChangedTitle": "The fare changed",
-      "fareGoneTitle": "This fare is no longer available",
-      "searchAgain": "Search again",
       "paymentTitle": "Your payment didn't go through"
-    }
+    },
+    "loadingCheckout": "Loading checkout…"
   },
   "currencyPicker": {
     "label": "Select currency"
@@ -594,6 +598,8 @@
       "datePicked": "We picked this date — change it to see other fares.",
       "duration": "Duration",
       "empty": "No flights found for these dates.",
+      "fareGoneBody": "The airline has stopped selling it. You have not been charged — these are the fares on sale now.",
+      "fareGoneTitle": "That fare is no longer available",
       "filters": "Filters",
       "filtersTitle": "Flight Filters",
       "findingFares": "Finding the best fares…",
@@ -632,7 +638,9 @@
       "currentlySelected": "Currently Selected",
       "includesTaxes": "includes taxes & fees",
       "freeCancellation": "Free Cancellation",
-      "nonRefundable": "Non-refundable"
+      "nonRefundable": "Non-refundable",
+      "select": "Select",
+      "flightDetails": "Flight details"
     },
     "itinerary": {
       "departFrom": "Depart from",
@@ -1023,12 +1031,6 @@
           "titleRest": "just ask.",
           "caption": "Tell us the trip. We'll price the stays and routes that fit."
         },
-        "options": {
-          "eyebrow": "ARRIVAL",
-          "titleLead": "Now",
-          "titleRest": "choose.",
-          "caption": "Stays, flights and golf, all in one place."
-        },
         "golf": {
           "titleLead": "Or",
           "titleRest": "tee off.",
@@ -1037,12 +1039,6 @@
       },
       "strip": {
         "from": "from {price}"
-      },
-      "options": {
-        "staysNote": "Hotels & homes",
-        "flightsNote": "Every carrier we reach",
-        "golf": "Golf",
-        "golfNote": "Curated courses, tee times on request"
       },
       "ask": {
         "placeholder": "Describe the trip you want…",
@@ -1678,7 +1674,6 @@
     "trips": "Trips",
     "createAccount": "Create an account",
     "accountSettings": "Account Settings",
-    "menu": "Menu",
     "membersSave": "Members save 10% or more",
     "membersSaveSubtitle": "on select stays when signed in",
     "accountWorks": "Your account works across CheapestGo and all partner sites"
@@ -2140,20 +2135,6 @@
     "chatPlaceholder": "Ask anything — flights, hotels, trip planning...",
     "hotels": "Hotels",
     "prose": {
-      "flyFrom": "Fly me from ",
-      "to": " to",
-      "stayIn": "Find me a stay in",
-      "onDates": ", on ",
-      "fromDates": ", from ",
-      "withTravelers": ", with ",
-      "anywhere": "somewhere amazing",
-      "sometime": "sometime soon",
-      "justMe": "just me",
-      "ofUs": "{count} of us",
-      "origin": "wherever you are",
-      "aDate": "a date",
-      "yourDates": "your dates",
-      "flexibleTrip": "a flexible trip",
       "teeOffAt": "Tee off at",
       "onDay": ", on ",
       "forPlayers": ", for ",
@@ -2161,14 +2142,11 @@
       "firstOpenDay": "the first open day",
       "players": "{count, plural, one {# player} other {# players}}"
     },
-    "trendingCities": "Popular cities",
     "popularAirports": "Popular airports",
     "noAirportsMatch": "No airports match “{query}”",
-    "imFlexible": "I'm flexible",
     "oneWay": "One-way",
     "roundTrip": "Round-trip",
     "whenFlying": "When are you flying?",
-    "pickDates": "Pick your dates",
     "nights": "{count, plural, one {# night} other {# nights}}",
     "listView": "List View",
     "mapView": "Map View",
@@ -2185,6 +2163,43 @@
       "howMany": "How many players?",
       "fewer": "Fewer players",
       "more": "More players"
+    },
+    "steps": {
+      "navLabel": "Search steps",
+      "where": "Where",
+      "when": "When",
+      "who": "Who",
+      "from": "From",
+      "to": "To",
+      "trip": "Trip",
+      "askStay": "Where do you want to stay?",
+      "askFrom": "Where are you flying from?",
+      "askTo": "Where are you flying to?",
+      "askTrip": "What kind of trip is it?",
+      "askStayDates": "When are you staying?",
+      "placePlaceholder": "City, area, or hotel name",
+      "orPickOne": "Or pick one",
+      "nextDates": "Next: dates",
+      "nextDestination": "Next: destination",
+      "nextOrigin": "Next: departure",
+      "nextGuests": "Next: guests",
+      "nextTravellers": "Next: travellers",
+      "searchStays": "Search stays",
+      "searchFlights": "Search flights",
+      "selected": "{name} selected",
+      "enterHintAirport": "Press Enter to pick the highlighted airport",
+      "enterHintPlace": "Press Enter to pick the highlighted place",
+      "fromOrigin": "From {city}",
+      "change": "Change",
+      "back": "Back",
+      "datesOptional": "Optional — skip it and we'll pick dates for you.",
+      "noPlaceMatch": "No places match “{query}”",
+      "fewerAdults": "Fewer adults",
+      "moreAdults": "More adults",
+      "fewerChildren": "Fewer children",
+      "moreChildren": "More children",
+      "oneWayNote": "Just the flight there",
+      "roundTripNote": "There and back, with a return date"
     }
   },
   "seo": {
@@ -2636,6 +2651,14 @@
         "declined": "Declined",
         "cancelled": "Cancelled"
       }
+    },
+    "search": {
+      "label": "Search your bookings",
+      "placeholder": "Search by name, route or reference",
+      "clear": "Clear search",
+      "noMatch": "No bookings match “{query}”",
+      "noMatchHint": "Try a hotel or course name, an airport code like MNL, or a booking reference.",
+      "results": "{count, plural, one {# booking found} other {# bookings found}}"
     }
   },
   "support": {
@@ -2716,7 +2739,11 @@
     "freeCancel": "Free cancel",
     "back": "Back",
     "retry": "Retry",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "loadingPage": "Loading page",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "account": {
     "title": "My Account",

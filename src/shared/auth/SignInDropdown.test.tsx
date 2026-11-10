@@ -71,7 +71,7 @@ describe('the panel', () => {
         render(<SignInDropdown tone="onDark" />);
         const panel = await openPanel();
 
-        expect(panel.className).toContain('bg-[#0f172a]/90');
+        expect(panel.className).toContain('bg-white/[0.18]');
         expect(panel.className).not.toContain('bg-white/60');
         expect(panel.innerHTML).toContain('text-white');
         // Nothing that would turn dark text on in a light theme.

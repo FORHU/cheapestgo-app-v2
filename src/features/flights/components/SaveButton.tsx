@@ -50,6 +50,8 @@ interface SaveButtonProps {
     /** `bookmark`: the flight card's 36px gradient disc — the hotel card's save chip. */
     variant?: 'heart' | 'bookmark';
     onSavedChange?: (saved: boolean) => void;
+    /** The bookmark's own look, merged over the disc: the phone's results card draws it as a bare icon. */
+    className?: string;
 }
 
 export function SaveButton({
@@ -64,6 +66,7 @@ export function SaveButton({
     size = 'md',
     variant = 'heart',
     onSavedChange,
+    className,
 }: SaveButtonProps) {
     const [isSaved, setIsSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -156,7 +159,10 @@ export function SaveButton({
             <button
                 onClick={toggleSave}
                 disabled={isLoading}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-blue-600 to-cyan-500 text-white transition-opacity hover:opacity-85 disabled:opacity-60"
+                className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-blue-600 to-cyan-500 text-white transition-opacity hover:opacity-85 disabled:opacity-60',
+                    className,
+                )}
                 aria-label={isSaved ? 'Remove from saved' : 'Save flight'}
                 aria-pressed={isSaved}
             >

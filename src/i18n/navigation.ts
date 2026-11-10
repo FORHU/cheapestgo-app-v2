@@ -10,8 +10,12 @@ import { routing } from './routing';
  * the whole point of ADR-0015 - the language belongs to the URL, so a link
  * someone shares carries it, and a crawler stays in one language across the site.
  *
+ * Link and useRouter also report each move to another page as it is asked for,
+ * for the bar across the top of the screen while the next page loads - which is
+ * why they come from a client file of their own (./navigationClient).
+ *
  * Import these everywhere under app/[locale]. Routes outside the locale segment
  * (/admin) keep next/navigation: they are staff-facing and English-only.
  */
-export const { Link, redirect, usePathname, useRouter, getPathname } =
-    createNavigation(routing);
+export const { redirect, usePathname, getPathname } = createNavigation(routing);
+export { Link, useRouter } from './navigationClient';
