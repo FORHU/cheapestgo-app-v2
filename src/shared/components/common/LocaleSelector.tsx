@@ -25,6 +25,35 @@ const LOCALES = [
     { code: 'zh', label: 'CN', flag: 'CN' },
 ] as const satisfies ReadonlyArray<{ code: Locale; label: string; flag: FlagCode }>;
 
+/**
+ * The language on screen, and how to change it — for this menu and for the phone's settings
+ * sheet, so the two change it the same way.
+ */
+export function useLocaleSwitch() {
+    const router = useRouter();
+    // The URL is the source of truth for language (ADR-0015), so the current
+    // locale is read from the route rather than from a cookie this component
+    // owns. `pathname` here is already locale-stripped, which is what lets the
+    // same path be re-rendered under a different prefix below.
+    const locale = useLocale() as Locale;
+    const pathname = usePathname();
+
+    const select = (next: Locale) => {
+        if (next === locale) return;
+        // Re-render the page the visitor is on under the new prefix, so the
+        // language is in the address bar and survives being shared. In place, not
+        // a reload: the translations live in the locale layout, which this
+        // navigation renders again (see app/[locale]/layout.tsx). The query goes
+        // with the path, so a search is not lost by changing language. `replace`
+        // rather than `push`: switching language is not a place in history.
+        //
+        // `switchLocale` wraps it in a cross-fade where the browser supports one.
+        switchLocale(next, () => router.replace(pathname + window.location.search, { locale: next }));
+    };
+
+    return { locale, select };
+}
+
 export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }: {
     variant?: SelectorVariant;
     /**
@@ -48,13 +77,7 @@ export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }
     /** Row hover in state — see the same note in CurrencySelector. */
     const [hovered, setHovered] = useState<string | null>(null);
     const ref = useRef<HTMLDivElement>(null);
-    const router = useRouter();
-    // The URL is the source of truth for language (ADR-0015), so the current
-    // locale is read from the route rather than from a cookie this component
-    // owns. `pathname` here is already locale-stripped, which is what lets the
-    // same path be re-rendered under a different prefix below.
-    const locale = useLocale() as Locale;
-    const pathname = usePathname();
+    const { locale, select } = useLocaleSwitch();
 
     useEffect(() => {
         setMounted(true);
@@ -70,16 +93,7 @@ export function LocaleSelector({ variant = 'default', chrome, iconOnly = false }
 
     const handleLocaleSelect = (next: Locale) => {
         setOpen(false);
-        if (next === locale) return;
-        // Re-render the page the visitor is on under the new prefix, so the
-        // language is in the address bar and survives being shared. In place, not
-        // a reload: the translations live in the locale layout, which this
-        // navigation renders again (see app/[locale]/layout.tsx). The query goes
-        // with the path, so a search is not lost by changing language. `replace`
-        // rather than `push`: switching language is not a place in history.
-        //
-        // `switchLocale` wraps it in a cross-fade where the browser supports one.
-        switchLocale(next, () => router.replace(pathname + window.location.search, { locale: next }));
+        select(next);
     };
 
     if (!mounted) return null;

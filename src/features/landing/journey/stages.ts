@@ -13,7 +13,7 @@
  * order the pass fills in — a stage may only write a line below the one before it.
  */
 
-export type StageId = 'stays' | 'flights' | 'golf' | 'ai' | 'options';
+export type StageId = 'stays' | 'flights' | 'golf' | 'ai';
 
 const IMG = '/images/destinations';
 
@@ -35,7 +35,7 @@ export type Showcase =
     /** Many places at once, resolving tile by tile as the question is asked. */
     | { kind: 'mosaic'; images: string[] }
     /**
-     * One place, held still. The descent has stopped moving; now you choose.
+     * One place, held still.
      *
      * `strength` is how opaque the photograph is over the stage's ground (default 0.6). A
      * photo that is meant to carry the stage itself wants most of the ground hidden.
@@ -50,14 +50,12 @@ export type Showcase =
  */
 export interface StageFace {
     /**
-     * Also the key to its wording: the two-part heading, the caption and an optional eyebrow are
-     * in the message files under `landing.journey.stages.<id>`, not here, so the language
-     * selector reaches them. They were English literals on this interface, which left the whole
-     * Journey in English between a translated header and footer.
+     * Also the key to its wording: the two-part heading and the caption are in the message
+     * files under `landing.journey.stages.<id>`, not here, so the language selector reaches
+     * them. They were English literals on this interface, which left the whole Journey in
+     * English between a translated header and footer.
      *
-     * Only the closing stage keeps an eyebrow ("ARRIVAL"); the search stage's numbered
-     * "STAGE 01 · HOTELS" labels were dropped. The heading is two parts so the first can be set
-     * apart from the rest.
+     * The heading is two parts so the first can be set apart from the rest.
      */
     id: StageId;
     /**
@@ -157,8 +155,11 @@ const ALL_STAGES: Stage[] = [
     },
     {
         id: 'ai',
+        // Running to the very end of the track: whichever stage is last runs to 1 and stays
+        // rather than leaving, so no empty screen follows it. With this stage hidden, the
+        // search above takes over its share and runs to the end itself (see `reflow`).
         from: 0.44,
-        to: 0.59,
+        to: 1,
         side: 'left',
         showcase: {
             kind: 'mosaic',
@@ -171,27 +172,13 @@ const ALL_STAGES: Stage[] = [
         // stage, and dark because the content is points of light.
         ground: 'radial-gradient(120% 90% at 70% 20%,#1b1246 0%,#0d1030 45%,#05070f 100%)',
     },
-    {
-        id: 'options',
-        // Running to the very end of the track: this is where the descent stops moving, so
-        // it is the one stage that stays rather than leaving. The track used to hold a final
-        // empty viewport after it, and a snap stop landed there — a blank screen with only
-        // the footer on it.
-        from: 0.59,
-        to: 1,
-        side: 'center',
-        // A dusk coastline held still, at near full strength: the photograph is the stage.
-        showcase: { kind: 'still', image: `${IMG}/dusk-coast.webp`, strength: 0.95 },
-        // Daylight. The descent ends somewhere bright, so arriving at the choice feels
-        // like arriving rather than like the page running out.
-        ground: 'linear-gradient(180deg,#123a5c 0%,#1d6ea8 50%,#2aa5c9 100%)',
-    },
 ];
 
 /**
  * Stages that are built but kept off the page. The AI planner is parked here: its panel,
  * showcase and copy are all still in the codebase, so bringing it back — or reusing the
- * slot for something else — is deleting its id from this list, not rebuilding it.
+ * slot for something else — is deleting its id from this list, not rebuilding it. (It adds
+ * a stop, so `JOURNEY_SCREENS` has to grow with it; a test says by how much.)
  */
 const HIDDEN_STAGES: readonly StageId[] = ['ai'];
 
@@ -227,14 +214,14 @@ export function showcaseImages(s: Showcase): string[] {
 }
 
 /**
- * Quick-pick destinations shown as chips under the Stays search.
+ * Quick-pick destinations, offered as picture tiles by the Stays search's first question.
  *
  * Independent of the stage's showcase backdrop (which now holds on one photo rather than
- * cross-fading through these) — clicking a chip sets the search destination regardless of
+ * cross-fading through these) — picking a tile sets the search destination regardless of
  * what is behind it.
  *
  * `fetchActStays` looks each of these up in our own tables by city name — the first three
- * have real promoted listings and come back priced; Oklahoma City does not, so its chip
+ * have real promoted listings and come back priced; Oklahoma City does not, so its tile
  * names the destination without a price, the same graceful path an outage in any of the
  * others already falls back to.
  */
@@ -250,8 +237,14 @@ export const SHOWCASE_DESTINATIONS = [
  *
  * The one number that sets the pace of the whole descent: lower and the stages flick past
  * before a search can be used, higher and the page stops responding to the wheel.
+ *
+ * Just long enough that the footer starts to come up a notch after the last stop — the
+ * search, docked — and no sooner: the footer enters once the track's last screen begins,
+ * at Journey Progress `1 - 1 / JOURNEY_SCREENS`. Longer, and the visitor scrolls on past
+ * the search through screens where nothing moves before the footer arrives. It was 5 while
+ * a closing stage followed the search.
  */
-export const JOURNEY_SCREENS = 5;
+export const JOURNEY_SCREENS = 1.6;
 
 /** Journey Progress at which the hero copy has fully faded. */
 export const HERO_FADE_END = 0.14;
@@ -268,17 +261,17 @@ export const HERO_FADE_END = 0.14;
 export const STAGE_DOCK = 0.25;
 
 /**
- * Where one wheel gesture lands: the top (hero), each stage's dock, and — for the last stage —
- * the end of the track, which is the bottom of the page. The last stage runs to the end and
- * stays, with the footer rising over it, so it settles there rather than a quarter of the way
- * in: a dock of its own would be a stop that only moved the footer. Derived from `STAGES`
- * rather than written out separately, so moving a stage's span in this file can never leave a
- * stop pointing at empty ground.
+ * Where one wheel gesture lands: the top (hero), then each stage's dock. Past the last one
+ * there is no stop: the next notch is let through, and the page scrolls on into the footer,
+ * which rises under the last stage and pushes it up (`useFooterClearance`). That stage is the
+ * search, so it docks like any other rather than settling at the bottom of the page — a stop
+ * there would land the search squeezed above the footer. Derived from `STAGES` rather than
+ * written out separately, so moving a stage's span in this file can never leave a stop
+ * pointing at empty ground.
  */
 export const JOURNEY_STOPS: number[] = [
     0,
-    ...STAGES.slice(0, -1).map(s => s.from + (s.to - s.from) * STAGE_DOCK),
-    1,
+    ...STAGES.map(s => s.from + (s.to - s.from) * STAGE_DOCK),
 ];
 
 /**

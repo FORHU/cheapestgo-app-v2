@@ -606,11 +606,6 @@ function HotelSearchContent() {
     const rung          = searchParams.get('rung')         ?? '';
     const searchQs    = searchParams.toString();
 
-    // From the same resolver the dates came from, never derived separately — a price and
-    // the stay it covers travel together, and deriving the divisor apart from the dates is
-    // what doubled the nightly rate in v1 (ADR-0020).
-    const nights = stay.nights;
-
     const [hotels, setHotels]                   = useState<MappableProperty[]>([]);
     const [status, setStatus]                   = useState<StreamStatus>('idle');
     /**
@@ -916,7 +911,7 @@ function HotelSearchContent() {
             price: Math.round(convertCurrency(h.price, h.currency || 'USD', currency)),
             currency,
         })),
-    [sorted, currency, nights]);
+    [sorted, currency]);
 
     /**
      * Price bounds for the filter panel's slider, in the user's own currency —
@@ -933,7 +928,7 @@ function HotelSearchContent() {
         const max = Math.ceil(Math.max(...prices));
         // A single price point would give the slider a zero-width track.
         return { min, max: max > min ? max : min + 1 };
-    }, [sorted, currency, nights]);
+    }, [sorted, currency]);
 
     /**
      * The panel's bounds, clamped to the range. Unset bounds fall back to it,
@@ -978,7 +973,7 @@ function HotelSearchContent() {
             });
         }
         return list;
-    }, [sorted, mapFilters.starRatings, priceNarrowed, filterMin, filterMax, currency, nights]);
+    }, [sorted, mapFilters.starRatings, priceNarrowed, filterMin, filterMax, currency]);
 
     const railSorted = useMemo(() => {
         if (!districtBbox || showAllCityOverride || mapZoom < DISTRICT_MARKER_THRESHOLD) return mapFiltered;

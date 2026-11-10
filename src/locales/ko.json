@@ -282,7 +282,8 @@
       "flight": "항공편",
       "dates": "날짜",
       "guests": "투숙객",
-      "room": "객실"
+      "room": "객실",
+      "tripSummary": "여정 요약"
     },
     "title": "결제",
     "userDetails": {
@@ -436,7 +437,6 @@
     "flight": {
       "cardHeld": "지금은 카드 승인만 진행되며, 항공사가 항공권을 확정한 후에 결제됩니다. 확정되지 않으면 승인이 해제되며 비용이 청구되지 않습니다.",
       "priceChanged": "항공사가 확정하기 전에 요금이 {was}에서 {now}(으)로 변경되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 새 요금으로 예약하려면 정보를 다시 제출해 주세요.",
-      "offerExpired": "항공사가 확정하기 전에 이 요금이 매진되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 다시 검색해 주세요.",
       "adultN": "성인 {n}",
       "infantN": "유아 {n}",
       "nameHint": "여권에 표기된 것과 동일하게 이름을 입력해 주세요.",
@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "{destination}행 항공편이 확정되었습니다.",
         "allSet": "예약이 완료되었습니다",
-        "confirmedSentTo": "{destination}행 항공편이 확정되었으며, 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다",
+        "receiptSentTo": "영수증이 {email}(으)로 전송되었습니다",
+        "bagsLabel": "수하물",
+        "departureTerminal": "출발 터미널",
+        "arrivalTerminal": "도착 터미널",
+        "airlinePnr": "항공사 PNR",
+        "pnrHint": "체크인 시 사용하세요",
         "approxTotal": "{currency} 환산 금액(약)",
         "receiptSentRich": "영수증이 <b>{email}</b>로 전송되었습니다.",
         "passengersCount": "{count}명",
@@ -534,10 +539,9 @@
     "alert": {
       "close": "닫기",
       "fareChangedTitle": "요금이 변경되었습니다",
-      "fareGoneTitle": "이 요금은 더 이상 이용할 수 없습니다",
-      "searchAgain": "다시 검색",
       "paymentTitle": "결제가 완료되지 않았습니다"
-    }
+    },
+    "loadingCheckout": "결제 페이지를 불러오는 중…"
   },
   "currencyPicker": {
     "label": "통화 선택"
@@ -594,6 +598,8 @@
       "datePicked": "날짜는 저희가 골랐습니다 — 변경하시면 다른 요금을 보실 수 있습니다.",
       "duration": "소요 시간",
       "empty": "해당 날짜에 항공편이 없습니다.",
+      "fareGoneBody": "항공사가 이 요금의 판매를 중단했습니다. 결제되지 않았으며, 지금 판매 중인 요금을 보여 드립니다.",
+      "fareGoneTitle": "해당 요금은 더 이상 이용할 수 없습니다",
       "filters": "필터",
       "filtersTitle": "항공편 필터",
       "findingFares": "최적의 요금을 찾는 중…",
@@ -632,7 +638,9 @@
       "currentlySelected": "현재 선택됨",
       "includesTaxes": "세금 및 수수료 포함",
       "freeCancellation": "무료 취소",
-      "nonRefundable": "환불 불가"
+      "nonRefundable": "환불 불가",
+      "select": "선택",
+      "flightDetails": "항공편 상세 정보"
     },
     "itinerary": {
       "arriveAt": "도착",
@@ -1023,12 +1031,6 @@
           "titleRest": "그냥 물어보세요.",
           "caption": "여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요."
         },
-        "options": {
-          "eyebrow": "도착",
-          "titleLead": "이제",
-          "titleRest": "선택하세요.",
-          "caption": "숙소, 항공편, 골프까지 한곳에서."
-        },
         "golf": {
           "titleLead": "또는",
           "titleRest": "티오프하세요.",
@@ -1037,12 +1039,6 @@
       },
       "strip": {
         "from": "{price}부터"
-      },
-      "options": {
-        "staysNote": "호텔 및 숙소",
-        "flightsNote": "연결 가능한 모든 항공사",
-        "golf": "골프",
-        "golfNote": "엄선한 골프장, 티타임은 문의로"
       },
       "ask": {
         "placeholder": "원하는 여행을 설명해 주세요…",
@@ -1678,7 +1674,6 @@
     "trips": "여행",
     "createAccount": "계정 만들기",
     "accountSettings": "계정 설정",
-    "menu": "메뉴",
     "membersSave": "회원은 10% 이상 절약",
     "membersSaveSubtitle": "로그인 시 선정 숙소 할인 적용",
     "accountWorks": "계정은 CheapestGo 및 모든 파트너 사이트에서 사용 가능합니다"
@@ -2140,20 +2135,6 @@
     "chatPlaceholder": "무엇이든 물어보세요 — 항공, 호텔, 여행 계획...",
     "hotels": "호텔",
     "prose": {
-      "flyFrom": "출발 ",
-      "to": " 도착",
-      "stayIn": "숙소",
-      "onDates": ", 날짜 ",
-      "fromDates": ", 날짜 ",
-      "withTravelers": ", 인원 ",
-      "anywhere": "어딘가 멋진 곳",
-      "sometime": "언젠가 곧",
-      "justMe": "혼자",
-      "ofUs": "{count}명",
-      "origin": "내가 있는 곳",
-      "aDate": "원하는 날",
-      "yourDates": "원하는 일정",
-      "flexibleTrip": "유연한 여행",
       "teeOffAt": "골프장",
       "onDay": ", 날짜 ",
       "forPlayers": ", 인원 ",
@@ -2161,14 +2142,11 @@
       "firstOpenDay": "가장 빠른 날",
       "players": "{count}명"
     },
-    "trendingCities": "인기 도시",
     "popularAirports": "인기 공항",
     "noAirportsMatch": "“{query}”와(과) 일치하는 공항이 없습니다",
-    "imFlexible": "날짜 미정",
     "oneWay": "편도",
     "roundTrip": "왕복",
     "whenFlying": "언제 출발하시나요?",
-    "pickDates": "날짜를 선택하세요",
     "nights": "{count}박",
     "listView": "목록 보기",
     "mapView": "지도 보기",
@@ -2185,6 +2163,43 @@
       "howMany": "몇 분이 라운드하시나요?",
       "fewer": "인원 줄이기",
       "more": "인원 늘리기"
+    },
+    "steps": {
+      "navLabel": "검색 단계",
+      "where": "장소",
+      "when": "날짜",
+      "who": "인원",
+      "from": "출발",
+      "to": "도착",
+      "trip": "여정",
+      "askStay": "어디에서 묵고 싶으세요?",
+      "askFrom": "어디에서 출발하세요?",
+      "askTo": "어디로 가세요?",
+      "askTrip": "어떤 여정인가요?",
+      "askStayDates": "언제 묵으세요?",
+      "placePlaceholder": "도시, 지역 또는 호텔 이름",
+      "orPickOne": "또는 여기서 고르세요",
+      "nextDates": "다음: 날짜",
+      "nextDestination": "다음: 도착지",
+      "nextOrigin": "다음: 출발지",
+      "nextGuests": "다음: 인원",
+      "nextTravellers": "다음: 탑승객",
+      "searchStays": "숙소 검색",
+      "searchFlights": "항공편 검색",
+      "selected": "{name} 선택됨",
+      "enterHintAirport": "Enter를 누르면 강조된 공항이 선택됩니다",
+      "enterHintPlace": "Enter를 누르면 강조된 장소가 선택됩니다",
+      "fromOrigin": "{city}에서 출발",
+      "change": "변경",
+      "back": "이전",
+      "datesOptional": "선택 사항입니다. 건너뛰면 날짜를 골라 드립니다.",
+      "noPlaceMatch": "“{query}”와(과) 일치하는 장소가 없습니다",
+      "fewerAdults": "성인 줄이기",
+      "moreAdults": "성인 늘리기",
+      "fewerChildren": "아동 줄이기",
+      "moreChildren": "아동 늘리기",
+      "oneWayNote": "가는 항공편만",
+      "roundTripNote": "왕복, 돌아오는 날짜까지"
     }
   },
   "seo": {
@@ -2636,6 +2651,14 @@
         "declined": "거절됨",
         "cancelled": "취소됨"
       }
+    },
+    "search": {
+      "label": "예약 검색",
+      "placeholder": "이름, 노선, 예약 번호로 검색",
+      "clear": "검색어 지우기",
+      "noMatch": "‘{query}’와(과) 일치하는 예약이 없습니다",
+      "noMatchHint": "호텔·골프장 이름, MNL 같은 공항 코드, 예약 번호로 검색해 보세요.",
+      "results": "예약 {count}건을 찾았습니다"
     }
   },
   "support": {
@@ -2716,7 +2739,11 @@
     "freeCancel": "무료 취소",
     "back": "뒤로",
     "retry": "다시 시도",
-    "goBack": "뒤로 가기"
+    "goBack": "뒤로 가기",
+    "loadingPage": "페이지를 불러오는 중",
+    "theme": "테마",
+    "themeLight": "라이트",
+    "themeDark": "다크"
   },
   "account": {
     "title": "내 계정",

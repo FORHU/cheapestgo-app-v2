@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 
 /** How far the wing layer may shift toward the pointer, in either axis. Small on purpose —
  *  this is meant to be noticed on the second look, not the first. */
@@ -56,15 +57,14 @@ export function HeroBackdrop() {
 
     return (
         <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
-            <img
+            <Image
                 src="/images/hero/wing-bg-1920.webp"
-                srcSet="/images/hero/wing-bg-960.webp 960w, /images/hero/wing-bg-1920.webp 1920w"
                 sizes="100vw"
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover opacity-35"
                 width={1920}
                 height={1280}
-                loading="eager"
+                priority
                 fetchPriority="high"
                 decoding="async"
                 draggable={false}
@@ -81,9 +81,8 @@ export function HeroBackdrop() {
             >
                 <div className="hero-wing-drift h-full w-full">
                     <div className="hero-wing-mask relative h-full w-full">
-                        <img
+                        <Image
                             src="/images/hero/wing-bg-1920.webp"
-                            srcSet="/images/hero/wing-bg-960.webp 960w, /images/hero/wing-bg-1920.webp 1920w"
                             sizes="100vw"
                             alt=""
                             className="h-full w-full object-cover opacity-60"

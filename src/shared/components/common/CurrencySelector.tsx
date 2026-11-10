@@ -20,6 +20,33 @@ export const CURRENCIES = [
   { code: 'CNY', country: 'CN', symbol: '¥' },
 ] as const;
 
+/**
+ * The currency prices are shown in, and how to change it — for this menu and for the phone's
+ * settings sheet, so the two change it the same way.
+ */
+export function useCurrencySwitch() {
+  const currency = useUserCurrency();
+  const { setUserCurrency, setUserCountry } = useSearchActions();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const select = (currencyCode: string, countryCode: string) => {
+    setUserCurrency(currencyCode);
+    setUserCountry(countryCode);
+
+    // Pages that price from `?currency=` rather than from the store — checkout re-quotes
+    // the room in the new currency when the param changes.
+    if (pathname && (pathname.includes('/property/') || pathname.includes('/flights') || pathname.includes('/checkout'))) {
+      const params = new URLSearchParams(searchParams?.toString() || '');
+      params.set('currency', currencyCode);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  };
+
+  return { currency, select };
+}
+
 interface CurrencySelectorProps {
   className?: string;
   align?: 'left' | 'right';
@@ -66,11 +93,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
    * outranks any `hover:` class that would otherwise cover this.
    */
   const [hovered, setHovered] = useState<string | null>(null);
-  const userCurrency = useUserCurrency();
-  const { setUserCurrency, setUserCountry } = useSearchActions();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { currency: userCurrency, select } = useCurrencySwitch();
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -83,17 +106,8 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   }, [isOpen]);
 
   const handleCurrencySelect = (currencyCode: string, countryCode: string) => {
-    setUserCurrency(currencyCode);
-    setUserCountry(countryCode);
     setIsOpen(false);
-
-    // Pages that price from `?currency=` rather than from the store — checkout re-quotes
-    // the room in the new currency when the param changes.
-    if (pathname && (pathname.includes('/property/') || pathname.includes('/flights') || pathname.includes('/checkout'))) {
-      const params = new URLSearchParams(searchParams?.toString() || '');
-      params.set('currency', currencyCode);
-      router.replace(`${pathname}?${params.toString()}`);
-    }
+    select(currencyCode, countryCode);
   };
 
   // Account preferences can set a currency this menu does not list, so fall

@@ -11,7 +11,10 @@
 
 import React, { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import { useTranslations } from 'next-intl';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+// The app's router, not next/navigation's: it keeps the visitor's language on the way to the
+// checkout, and shows the bar across the top while the checkout loads.
+import { useRouter } from '@/i18n/navigation';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { http } from '@/shared/lib/http';
@@ -238,10 +241,10 @@ function PropertyContent() {
             .finally(()=> { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
-    }, [hotelId, checkIn, checkOut, adults, children]);
+    }, [hotelId, checkIn, checkOut, adults, children, t]);
 
     const content      = data?.content;
-    const rooms        = data?.rooms ?? [];
+    const rooms        = useMemo(() => data?.rooms ?? [], [data?.rooms]);
     /** Stays are off sale — the rooms are absent for our reason, not the hotel's. */
     const maintenance  = data?.maintenance === true;
     const reviewItems  = data?.reviewItems ?? [];
@@ -250,7 +253,7 @@ function PropertyContent() {
     const selectedRoom = selectedOffer?.room ?? null;
     const selectedRate = selectedOffer?.rate ?? null;
     const heroImage     = content?.images?.[0] ?? null;
-    const allImages     = content?.images ?? [];
+    const allImages     = useMemo(() => content?.images ?? [], [content?.images]);
     /**
      * What the banner pages through: the hotel's own photographs, then every
      * room shot the supplier sent.
@@ -356,7 +359,7 @@ function PropertyContent() {
      * one product.
      *
      * It used to name `--font-jakarta` — a *second* next/font instance of Plus
-     * Jakarta Sans that the layout loads beside `--font-plus-jakarta`, the one
+     * Jakarta Sans that the layout used to load beside `--font-plus-jakarta`, the one
      * `font-sans` is bound to. Same family, separately hosted and separately
      * fetched, and pinned here at a fixed weight range while the shell's is
      * variable across 400–800. Inheriting drops the duplicate rather than

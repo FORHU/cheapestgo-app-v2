@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import type { MapRef } from 'react-map-gl/mapbox';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Popup } from 'react-map-gl/mapbox';
 import { X } from 'lucide-react';
 import { formatCurrency } from '@/shared/lib/format';
@@ -116,9 +117,12 @@ const MapPopup = React.memo(function MapPopup({
             {/* Image */}
             <div className="relative">
                 {image ? (
-                    <img
+                    <Image
                         src={image}
                         alt={property.name}
+                        width={240}
+                        height={96}
+                        unoptimized
                         className={`w-full object-cover ${isLandscape ? 'h-16' : 'h-24'}`}
                         loading="lazy"
                     />

@@ -40,7 +40,7 @@ describe('HotelPin photo', () => {
         const { container } = render(<HotelPin image={own} priceLabel="₩90,000" />);
         const img = photoOf(container);
 
-        expect(img.getAttribute('src')).toBe(own);
+        expect(new URL(img.src).pathname).toBe(own);
         fireEvent.error(img);
         expect(img.style.display).toBe('none');
     });

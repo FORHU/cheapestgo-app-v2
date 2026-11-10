@@ -6,7 +6,7 @@ import zh from '../zh.json';
 import { STAGES, stageFaces } from '@/features/landing/journey/stages';
 
 /**
- * The landing page's Journey — hero, the stages, the closing options — in every language the
+ * The landing page's Journey — hero and the stages — in every language the
  * storefront serves.
  *
  * Its copy used to be English literals in `Journey.tsx` and `stages.ts`, so the language selector
@@ -35,18 +35,14 @@ const argNames = (value: unknown): string[] =>
 
 /**
  * The search bar the stages mount has strings of its own, filed with the rest of its wording:
- * the stamp and the traveller panel's heading, and the stand-ins its sentence shows until
- * something is picked.
+ * the Stays and Flights questions, asked one at a time, and the traveller step's heading.
  */
 const SEARCH_BAR = [
     'landing.search.go',
     'landing.search.searchingStays',
     'landing.search.searchingFlights',
     'landing.search.whosComing',
-    'search.prose.origin',
-    'search.prose.aDate',
-    'search.prose.yourDates',
-    'search.prose.flexibleTrip',
+    ...leaves(read(en, 'search.steps'), 'search.steps'),
     // Golf's sentence, its panels, and the strip under it.
     'landing.search.searchingGolf',
     ...leaves(read(en, 'search.golf'), 'search.golf'),
@@ -65,6 +61,14 @@ const REUSED = [
     'landing.search.adults',
     'landing.search.children',
     'checkout.flight.whosFlying',
+    'search.whenFlying',
+    'search.oneWay',
+    'search.roundTrip',
+    'search.nights',
+    'search.cityAirportPlaceholder',
+    'search.noAirportsMatch',
+    'checkout.datePicker.previousMonth',
+    'checkout.datePicker.nextMonth',
 ];
 
 /** The same word in every language: a unit, not a sentence. */
@@ -82,7 +86,6 @@ describe('landing journey messages', () => {
     it('cover every stage the page can show, and the one parked for later', () => {
         const ids = [...new Set([...STAGES.flatMap(stageFaces).map((f) => f.id), 'ai'])];
         for (const id of ids) {
-            // No eyebrow: it is optional, and only the closing stage has one.
             for (const field of ['titleLead', 'titleRest', 'caption']) {
                 expect(read(en, `landing.journey.stages.${id}.${field}`), `${id}.${field}`).toBeTypeOf('string');
             }

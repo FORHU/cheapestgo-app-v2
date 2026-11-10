@@ -6,6 +6,7 @@ import { routing, isLocale } from '@/i18n/routing';
 import { HtmlLang } from '@/i18n/HtmlLang';
 import { SupportWidget } from '@/features/support/components/SupportWidget';
 import { MobileBottomNav } from '@/shared/components/common/MobileBottomNav';
+import { NavigationProgress } from '@/shared/components/common/NavigationProgress';
 import InstallPWAPrompt from '@/shared/components/pwa/InstallPWAPrompt';
 import { LoginModal } from '@/features/auth/components/login-modal';
 import { Footer } from '@/shared/components/footer';
@@ -54,10 +55,13 @@ export default async function LocaleLayout({
     // from wherever they got stuck — mid-checkout most of all. It renders nothing for a
     // signed-out visitor (ADR-0032), so it costs a marker element and no more. The rest is
     // the app shell's translated chrome; each piece positions itself, so living here rather
-    // than beside the root layout's page wrapper does not move it.
+    // than beside the root layout's page wrapper does not move it. NavigationProgress is the
+    // bar across the top while another page loads; it is here, not in the root layout, because
+    // the navigations it hears about are this segment's (src/i18n/navigation).
     return (
         <NextIntlClientProvider>
             <HtmlLang />
+            <NavigationProgress />
             {children}
             <Footer />
             <SupportWidget />

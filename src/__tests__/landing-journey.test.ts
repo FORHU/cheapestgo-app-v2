@@ -63,7 +63,7 @@ describe('stageProgress', () => {
 
 describe('STAGES', () => {
     it('is the product, in the order it is introduced', () => {
-        expect(STAGES.map(s => s.id)).toEqual(['stays', 'options']);
+        expect(STAGES.map(s => s.id)).toEqual(['stays']);
     });
 
     it('keeps the AI planner off the page, with no empty track left where it was', () => {
@@ -103,11 +103,22 @@ describe('STAGES', () => {
 });
 
 describe('JOURNEY_STOPS', () => {
-    it('is the top, a dock for each stage but the last, and the end — where the last stage settles', () => {
-        const docks = STAGES.slice(0, -1).map(s => s.from + (s.to - s.from) * STAGE_DOCK);
-        expect(JOURNEY_STOPS).toEqual([0, ...docks, 1]);
-        // One stop for the hero and one for each stage: nothing is left to scroll to after the last.
+    it('is the top, then a dock for each stage — the last one included, since it is the search', () => {
+        const docks = STAGES.map(s => s.from + (s.to - s.from) * STAGE_DOCK);
+        expect(JOURNEY_STOPS).toEqual([0, ...docks]);
+        // One stop for the hero and one for each stage: past the last, the page scrolls into the footer.
         expect(JOURNEY_STOPS).toHaveLength(STAGES.length + 1);
+    });
+
+    // The track used to run five screens, and with nothing after the search but the footer, the
+    // visitor scrolled on through empty screens before it arrived. The footer has to start rising
+    // within a notch of leaving the last stop, and not already be showing at it.
+    it('brings the footer up a notch after the last stop, with no empty screens before it', () => {
+        const lastStop = JOURNEY_STOPS[JOURNEY_STOPS.length - 1];
+        const footerEnters = 1 - 1 / JOURNEY_SCREENS;
+        expect(footerEnters, 'the footer is already showing at the last stop').toBeGreaterThanOrEqual(lastStop);
+        // In screens: a wheel notch is around a tenth of one.
+        expect((footerEnters - lastStop) * JOURNEY_SCREENS, 'empty track after the last stop').toBeLessThan(0.1);
     });
 
     it('parks every stage past its fade-in, never on the transparent edge', () => {
@@ -128,7 +139,7 @@ describe('JOURNEY_STOPS', () => {
 
 describe('currentStage', () => {
     it('finds the stage the visitor is inside', () => {
-        expect(currentStage(STAGES[1].from + 0.01)?.id).toBe('options');
+        expect(currentStage(STAGES[0].from + 0.01)?.id).toBe('stays');
     });
 
     it('is null before the first stage docks', () => {
@@ -136,9 +147,11 @@ describe('currentStage', () => {
     });
 
     it('hands off cleanly at a shared boundary — never both stages, never neither', () => {
-        const boundary = STAGES[0].to;
-        expect(boundary).toBe(STAGES[1].from);
-        expect(currentStage(boundary)?.id).toBe(STAGES[0].id);
+        for (let i = 1; i < STAGES.length; i++) {
+            const boundary = STAGES[i - 1].to;
+            expect(boundary).toBe(STAGES[i].from);
+            expect(currentStage(boundary)?.id).toBe(STAGES[i - 1].id);
+        }
     });
 });
 
@@ -157,12 +170,15 @@ describe('hasWritten', () => {
     });
 
     it('writes the lines in stage order, never ahead of the descent', () => {
-        const midFirst = STAGES[0].from + (STAGES[0].to - STAGES[0].from) * 0.5;
-        const midSecond = STAGES[1].from + (STAGES[1].to - STAGES[1].from) * 0.5;
-        expect(hasWritten(STAGES[0], midFirst)).toBe(true);    // being crossed
-        expect(hasWritten(STAGES[1], midFirst)).toBe(false);   // not reached
-        expect(hasWritten(STAGES[0], midSecond)).toBe(true);   // already passed
-        expect(hasWritten(STAGES[1], midSecond)).toBe(true);   // being crossed
+        for (let i = 1; i < STAGES.length; i++) {
+            const [a, b] = [STAGES[i - 1], STAGES[i]];
+            const midFirst = a.from + (a.to - a.from) * 0.5;
+            const midSecond = b.from + (b.to - b.from) * 0.5;
+            expect(hasWritten(a, midFirst)).toBe(true);    // being crossed
+            expect(hasWritten(b, midFirst)).toBe(false);   // not reached
+            expect(hasWritten(a, midSecond)).toBe(true);   // already passed
+            expect(hasWritten(b, midSecond)).toBe(true);   // being crossed
+        }
     });
 });
 
@@ -244,10 +260,6 @@ describe('stage sides and grounds', () => {
         for (let i = 1; i < sided.length; i++) {
             expect(sided[i].side).not.toBe(sided[i - 1].side);
         }
-    });
-
-    it('ends centred, because the last stage is a choice rather than a pitch', () => {
-        expect(STAGES[STAGES.length - 1].side).toBe('center');
     });
 
     it('gives every stage its own ground, so the descent changes temperature', () => {
@@ -431,10 +443,10 @@ describe('the search stage and its faces', () => {
     });
 
     it('has nothing to switch on a stage with a single face', () => {
-        const options = STAGES[STAGES.length - 1];
-        expect(faceOf(options, 'flights')).toBe(options);
-        expect(faceOf(options, 'golf')).toBe(options);
-        expect(stageFaces(options)).toEqual([options]);
+        const single: Stage = { ...search, faces: undefined };
+        expect(faceOf(single, 'flights')).toBe(single);
+        expect(faceOf(single, 'golf')).toBe(single);
+        expect(stageFaces(single)).toEqual([single]);
     });
 
     it('lists the faces in the order the tabs are', () => {

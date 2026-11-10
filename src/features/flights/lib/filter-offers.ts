@@ -143,6 +143,39 @@ export function offerDurationMinutes(offer: FlightOffer): number {
     return offer.sliceDurations?.[0] ?? offer.totalDuration ?? 0;
 }
 
+/** A mark on one result: the cheapest of those listed, or the fastest. */
+export type OfferHighlight = 'cheapest' | 'fastest';
+
+/**
+ * Which of the listed offers to mark as the cheapest and the fastest, measured as the sorts
+ * measure them: the price a traveller pays as the cards print it, and the outbound's time.
+ *
+ * One mark to an offer. When the cheapest is also the fastest it is marked cheapest, and the
+ * fastest mark goes to another offer only if one is just as fast — never to a slower one. On
+ * a tie the first listed takes it. A list of one has nothing to be compared with: no marks.
+ */
+export function offerHighlights(
+    offers: FlightOffer[],
+    convert: PriceConverter = AS_QUOTED,
+): Map<FlightOffer, OfferHighlight> {
+    const marks = new Map<FlightOffer, OfferHighlight>();
+    if (offers.length < 2) return marks;
+
+    const priced = offers.filter((o) => offerPricePerPerson(o) > 0);
+    const cheapest = priced.reduce<FlightOffer | undefined>(
+        (best, o) => (!best || pricePerPersonShown(o, convert) < pricePerPersonShown(best, convert) ? o : best),
+        undefined,
+    );
+    if (cheapest) marks.set(cheapest, 'cheapest');
+
+    const timed = offers.filter((o) => offerDurationMinutes(o) > 0);
+    const shortest = Math.min(...timed.map(offerDurationMinutes));
+    const fastest = timed.find((o) => offerDurationMinutes(o) === shortest && o !== cheapest);
+    if (fastest) marks.set(fastest, 'fastest');
+
+    return marks;
+}
+
 export function offerIsRefundable(offer: FlightOffer): boolean {
     return (offer.farePolicy?.isRefundable ?? offer.refundable) === true;
 }

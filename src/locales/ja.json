@@ -282,7 +282,8 @@
       "flight": "フライト",
       "dates": "日程",
       "guests": "宿泊人数",
-      "room": "客室"
+      "room": "客室",
+      "tripSummary": "旅程の概要"
     },
     "title": "お支払い",
     "userDetails": {
@@ -436,7 +437,6 @@
     "flight": {
       "cardHeld": "現在はカードの与信のみを行い、航空会社が航空券を確定した時点で請求されます。確定できなかった場合は与信が解除され、料金は発生しません。",
       "priceChanged": "航空会社が確定する前に運賃が{was}から{now}に変更されました。料金は請求されておらず、カードの与信は解除されています。新しい運賃で予約するには、もう一度お客様情報を送信してください。",
-      "offerExpired": "航空会社が確定する前にこの運賃は売り切れました。料金は請求されておらず、カードの与信は解除されています。もう一度検索してください。",
       "adultN": "大人 {n}",
       "infantN": "幼児 {n}",
       "nameHint": "お名前はパスポートの記載どおりに入力してください。",
@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "{destination}行きのフライトが確定しました。",
         "allSet": "ご予約が完了しました",
-        "confirmedSentTo": "{destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました",
+        "receiptSentTo": "領収書を{email}宛に送信しました",
+        "bagsLabel": "手荷物",
+        "departureTerminal": "出発ターミナル",
+        "arrivalTerminal": "到着ターミナル",
+        "airlinePnr": "航空会社のPNR",
+        "pnrHint": "チェックイン時にご利用ください",
         "approxTotal": "{currency}換算（概算）",
         "receiptSentRich": "領収書を<b>{email}</b>宛に送信しました。",
         "passengersCount": "{count}名",
@@ -534,10 +539,9 @@
     "alert": {
       "close": "閉じる",
       "fareChangedTitle": "運賃が変更されました",
-      "fareGoneTitle": "この運賃はご利用いただけなくなりました",
-      "searchAgain": "もう一度検索",
       "paymentTitle": "お支払いが完了しませんでした"
-    }
+    },
+    "loadingCheckout": "チェックアウトを読み込み中…"
   },
   "currencyPicker": {
     "label": "通貨を選択"
@@ -594,6 +598,8 @@
       "datePicked": "日付はこちらで選びました — 変更すると他の運賃をご覧いただけます。",
       "duration": "所要時間",
       "empty": "この日程のフライトは見つかりませんでした。",
+      "fareGoneBody": "航空会社がこの運賃の販売を終了しました。料金は請求されていません。現在販売中の運賃をご覧ください。",
+      "fareGoneTitle": "その運賃はご利用いただけなくなりました",
       "filters": "絞り込み",
       "filtersTitle": "フライトの絞り込み",
       "findingFares": "最適な運賃を検索中…",
@@ -632,7 +638,9 @@
       "currentlySelected": "選択中",
       "includesTaxes": "税・手数料込み",
       "freeCancellation": "無料キャンセル",
-      "nonRefundable": "払い戻し不可"
+      "nonRefundable": "払い戻し不可",
+      "select": "選択",
+      "flightDetails": "フライト詳細"
     },
     "itinerary": {
       "arriveAt": "到着",
@@ -1023,12 +1031,6 @@
           "titleRest": "聞くだけ。",
           "caption": "旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。"
         },
-        "options": {
-          "eyebrow": "到着",
-          "titleLead": "さあ、",
-          "titleRest": "選ぼう。",
-          "caption": "宿泊、フライト、ゴルフをひとつの場所で。"
-        },
         "golf": {
           "titleLead": "または、",
           "titleRest": "ティーオフ。",
@@ -1037,12 +1039,6 @@
       },
       "strip": {
         "from": "{price}〜"
-      },
-      "options": {
-        "staysNote": "ホテル＆宿泊施設",
-        "flightsNote": "取り扱いの全航空会社",
-        "golf": "ゴルフ",
-        "golfNote": "厳選コース、ティータイムはお問い合わせで"
       },
       "ask": {
         "placeholder": "ご希望の旅を教えてください…",
@@ -1678,7 +1674,6 @@
     "trips": "旅行",
     "createAccount": "アカウントを作成",
     "accountSettings": "アカウント設定",
-    "menu": "メニュー",
     "membersSave": "会員は10%以上割引",
     "membersSaveSubtitle": "ログイン中の対象宿泊が対象",
     "accountWorks": "アカウントはCheapestGoおよびすべてのパートナーサイトで利用できます"
@@ -2140,20 +2135,6 @@
     "chatPlaceholder": "何でも聞いてください — 航空券、ホテル、旅行の計画...",
     "hotels": "ホテル",
     "prose": {
-      "flyFrom": "出発 ",
-      "to": " 到着",
-      "stayIn": "宿泊先",
-      "onDates": "、日付 ",
-      "fromDates": "、日付 ",
-      "withTravelers": "、人数 ",
-      "anywhere": "どこか素敵な場所",
-      "sometime": "いつか近いうちに",
-      "justMe": "ひとり",
-      "ofUs": "{count}人",
-      "origin": "今いる場所",
-      "aDate": "好きな日",
-      "yourDates": "ご希望の日程",
-      "flexibleTrip": "柔軟な旅",
       "teeOffAt": "ゴルフ場",
       "onDay": "、日付 ",
       "forPlayers": "、人数 ",
@@ -2161,14 +2142,11 @@
       "firstOpenDay": "最短の空き日",
       "players": "{count}人"
     },
-    "trendingCities": "人気の都市",
     "popularAirports": "人気の空港",
     "noAirportsMatch": "「{query}」に一致する空港はありません",
-    "imFlexible": "日程は柔軟",
     "oneWay": "片道",
     "roundTrip": "往復",
     "whenFlying": "いつ出発しますか？",
-    "pickDates": "日付を選んでください",
     "nights": "{count}泊",
     "listView": "リスト表示",
     "mapView": "地図表示",
@@ -2185,6 +2163,43 @@
       "howMany": "何名でプレーしますか？",
       "fewer": "人数を減らす",
       "more": "人数を増やす"
+    },
+    "steps": {
+      "navLabel": "検索ステップ",
+      "where": "場所",
+      "when": "日程",
+      "who": "人数",
+      "from": "出発地",
+      "to": "目的地",
+      "trip": "旅程",
+      "askStay": "どこに泊まりますか？",
+      "askFrom": "どこから出発しますか？",
+      "askTo": "どこへ行きますか？",
+      "askTrip": "どのような旅程ですか？",
+      "askStayDates": "いつ泊まりますか？",
+      "placePlaceholder": "都市、エリア、ホテル名",
+      "orPickOne": "または、こちらから選ぶ",
+      "nextDates": "次へ：日程",
+      "nextDestination": "次へ：目的地",
+      "nextOrigin": "次へ：出発地",
+      "nextGuests": "次へ：人数",
+      "nextTravellers": "次へ：搭乗者",
+      "searchStays": "宿泊先を検索",
+      "searchFlights": "航空券を検索",
+      "selected": "{name}を選択中",
+      "enterHintAirport": "Enterキーでハイライト中の空港を選択",
+      "enterHintPlace": "Enterキーでハイライト中の場所を選択",
+      "fromOrigin": "{city}から出発",
+      "change": "変更",
+      "back": "戻る",
+      "datesOptional": "任意です。スキップすると日程はこちらで選びます。",
+      "noPlaceMatch": "「{query}」に一致する場所はありません",
+      "fewerAdults": "大人を減らす",
+      "moreAdults": "大人を増やす",
+      "fewerChildren": "子どもを減らす",
+      "moreChildren": "子どもを増やす",
+      "oneWayNote": "行きの便のみ",
+      "roundTripNote": "往復、帰りの日付も選択"
     }
   },
   "seo": {
@@ -2636,6 +2651,14 @@
         "declined": "お断り",
         "cancelled": "キャンセル済み"
       }
+    },
+    "search": {
+      "label": "予約を検索",
+      "placeholder": "名前・路線・予約番号で検索",
+      "clear": "検索をクリア",
+      "noMatch": "「{query}」に一致する予約はありません",
+      "noMatchHint": "ホテル名やゴルフ場名、MNLなどの空港コード、予約番号でお試しください。",
+      "results": "{count}件の予約が見つかりました"
     }
   },
   "support": {
@@ -2716,7 +2739,11 @@
     "freeCancel": "無料キャンセル",
     "back": "戻る",
     "retry": "再試行",
-    "goBack": "戻る"
+    "goBack": "戻る",
+    "loadingPage": "ページを読み込み中",
+    "theme": "テーマ",
+    "themeLight": "ライト",
+    "themeDark": "ダーク"
   },
   "account": {
     "title": "マイアカウント",
