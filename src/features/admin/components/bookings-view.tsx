@@ -102,7 +102,7 @@ export function BookingsView() {
                         ))}
                     </div>
                 ) : (
-                    <BookingsTable bookings={bookings} />
+                    <BookingsTable bookings={bookings} onChanged={() => loadBookings(page, query)} />
                 )}
             </div>
 
