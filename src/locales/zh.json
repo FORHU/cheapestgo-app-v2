@@ -282,7 +282,8 @@
       "flight": "航班",
       "dates": "日期",
       "guests": "入住人数",
-      "room": "客房"
+      "room": "客房",
+      "tripSummary": "行程摘要"
     },
     "title": "结账",
     "userDetails": {
@@ -539,7 +540,8 @@
       "close": "关闭",
       "fareChangedTitle": "票价已变动",
       "paymentTitle": "付款未成功"
-    }
+    },
+    "loadingCheckout": "正在加载结账页面…"
   },
   "currencyPicker": {
     "label": "选择货币"
@@ -1029,12 +1031,6 @@
           "titleRest": "直接问。",
           "caption": "告诉我们您的行程，我们会为您报出合适的住宿与路线价格。"
         },
-        "options": {
-          "eyebrow": "抵达",
-          "titleLead": "现在",
-          "titleRest": "做出选择。",
-          "caption": "住宿、航班与高尔夫，一站搞定。"
-        },
         "golf": {
           "titleLead": "或者",
           "titleRest": "去开球。",
@@ -1043,12 +1039,6 @@
       },
       "strip": {
         "from": "{price} 起"
-      },
-      "options": {
-        "staysNote": "酒店与民宿",
-        "flightsNote": "覆盖所有可订航空公司",
-        "golf": "高尔夫",
-        "golfNote": "精选球场，开球时间可咨询"
       },
       "ask": {
         "placeholder": "描述您想要的旅行…",
@@ -2145,20 +2135,6 @@
     "chatPlaceholder": "有什么都可以问——机票、酒店、行程规划...",
     "hotels": "酒店",
     "prose": {
-      "flyFrom": "出发 ",
-      "to": " 到达",
-      "stayIn": "住宿",
-      "onDates": "，日期 ",
-      "fromDates": "，日期 ",
-      "withTravelers": "，人数 ",
-      "anywhere": "某个好去处",
-      "sometime": "近期某天",
-      "justMe": "我一个人",
-      "ofUs": "{count} 人",
-      "origin": "您所在的地方",
-      "aDate": "某一天",
-      "yourDates": "您的出行日期",
-      "flexibleTrip": "灵活的行程",
       "teeOffAt": "球场",
       "onDay": "，日期 ",
       "forPlayers": "，人数 ",
@@ -2166,14 +2142,11 @@
       "firstOpenDay": "最早可订日",
       "players": "{count} 人"
     },
-    "trendingCities": "热门城市",
     "popularAirports": "热门机场",
     "noAirportsMatch": "没有与“{query}”匹配的机场",
-    "imFlexible": "日期灵活",
     "oneWay": "单程",
     "roundTrip": "往返",
     "whenFlying": "您打算什么时候出发？",
-    "pickDates": "请选择日期",
     "nights": "{count} 晚",
     "listView": "列表视图",
     "mapView": "地图视图",
@@ -2190,6 +2163,43 @@
       "howMany": "几位球员？",
       "fewer": "减少人数",
       "more": "增加人数"
+    },
+    "steps": {
+      "navLabel": "搜索步骤",
+      "where": "地点",
+      "when": "日期",
+      "who": "人数",
+      "from": "出发地",
+      "to": "目的地",
+      "trip": "行程",
+      "askStay": "您想住在哪里？",
+      "askFrom": "您从哪里出发？",
+      "askTo": "您要飞往哪里？",
+      "askTrip": "您要哪种行程？",
+      "askStayDates": "您什么时候入住？",
+      "placePlaceholder": "城市、区域或酒店名称",
+      "orPickOne": "或从这里选择",
+      "nextDates": "下一步：日期",
+      "nextDestination": "下一步：目的地",
+      "nextOrigin": "下一步：出发地",
+      "nextGuests": "下一步：入住人数",
+      "nextTravellers": "下一步：乘客",
+      "searchStays": "搜索住宿",
+      "searchFlights": "搜索航班",
+      "selected": "已选择 {name}",
+      "enterHintAirport": "按 Enter 选择高亮的机场",
+      "enterHintPlace": "按 Enter 选择高亮的地点",
+      "fromOrigin": "从{city}出发",
+      "change": "更改",
+      "back": "返回",
+      "datesOptional": "可选。跳过的话，我们会为您选好日期。",
+      "noPlaceMatch": "没有与“{query}”匹配的地点",
+      "fewerAdults": "减少成人",
+      "moreAdults": "增加成人",
+      "fewerChildren": "减少儿童",
+      "moreChildren": "增加儿童",
+      "oneWayNote": "仅去程航班",
+      "roundTripNote": "往返，含返程日期"
     }
   },
   "seo": {

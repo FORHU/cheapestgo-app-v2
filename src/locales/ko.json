@@ -282,7 +282,8 @@
       "flight": "항공편",
       "dates": "날짜",
       "guests": "투숙객",
-      "room": "객실"
+      "room": "객실",
+      "tripSummary": "여정 요약"
     },
     "title": "결제",
     "userDetails": {
@@ -539,7 +540,8 @@
       "close": "닫기",
       "fareChangedTitle": "요금이 변경되었습니다",
       "paymentTitle": "결제가 완료되지 않았습니다"
-    }
+    },
+    "loadingCheckout": "결제 페이지를 불러오는 중…"
   },
   "currencyPicker": {
     "label": "통화 선택"
@@ -1029,12 +1031,6 @@
           "titleRest": "그냥 물어보세요.",
           "caption": "여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요."
         },
-        "options": {
-          "eyebrow": "도착",
-          "titleLead": "이제",
-          "titleRest": "선택하세요.",
-          "caption": "숙소, 항공편, 골프까지 한곳에서."
-        },
         "golf": {
           "titleLead": "또는",
           "titleRest": "티오프하세요.",
@@ -1043,12 +1039,6 @@
       },
       "strip": {
         "from": "{price}부터"
-      },
-      "options": {
-        "staysNote": "호텔 및 숙소",
-        "flightsNote": "연결 가능한 모든 항공사",
-        "golf": "골프",
-        "golfNote": "엄선한 골프장, 티타임은 문의로"
       },
       "ask": {
         "placeholder": "원하는 여행을 설명해 주세요…",
@@ -2145,20 +2135,6 @@
     "chatPlaceholder": "무엇이든 물어보세요 — 항공, 호텔, 여행 계획...",
     "hotels": "호텔",
     "prose": {
-      "flyFrom": "출발 ",
-      "to": " 도착",
-      "stayIn": "숙소",
-      "onDates": ", 날짜 ",
-      "fromDates": ", 날짜 ",
-      "withTravelers": ", 인원 ",
-      "anywhere": "어딘가 멋진 곳",
-      "sometime": "언젠가 곧",
-      "justMe": "혼자",
-      "ofUs": "{count}명",
-      "origin": "내가 있는 곳",
-      "aDate": "원하는 날",
-      "yourDates": "원하는 일정",
-      "flexibleTrip": "유연한 여행",
       "teeOffAt": "골프장",
       "onDay": ", 날짜 ",
       "forPlayers": ", 인원 ",
@@ -2166,14 +2142,11 @@
       "firstOpenDay": "가장 빠른 날",
       "players": "{count}명"
     },
-    "trendingCities": "인기 도시",
     "popularAirports": "인기 공항",
     "noAirportsMatch": "“{query}”와(과) 일치하는 공항이 없습니다",
-    "imFlexible": "날짜 미정",
     "oneWay": "편도",
     "roundTrip": "왕복",
     "whenFlying": "언제 출발하시나요?",
-    "pickDates": "날짜를 선택하세요",
     "nights": "{count}박",
     "listView": "목록 보기",
     "mapView": "지도 보기",
@@ -2190,6 +2163,43 @@
       "howMany": "몇 분이 라운드하시나요?",
       "fewer": "인원 줄이기",
       "more": "인원 늘리기"
+    },
+    "steps": {
+      "navLabel": "검색 단계",
+      "where": "장소",
+      "when": "날짜",
+      "who": "인원",
+      "from": "출발",
+      "to": "도착",
+      "trip": "여정",
+      "askStay": "어디에서 묵고 싶으세요?",
+      "askFrom": "어디에서 출발하세요?",
+      "askTo": "어디로 가세요?",
+      "askTrip": "어떤 여정인가요?",
+      "askStayDates": "언제 묵으세요?",
+      "placePlaceholder": "도시, 지역 또는 호텔 이름",
+      "orPickOne": "또는 여기서 고르세요",
+      "nextDates": "다음: 날짜",
+      "nextDestination": "다음: 도착지",
+      "nextOrigin": "다음: 출발지",
+      "nextGuests": "다음: 인원",
+      "nextTravellers": "다음: 탑승객",
+      "searchStays": "숙소 검색",
+      "searchFlights": "항공편 검색",
+      "selected": "{name} 선택됨",
+      "enterHintAirport": "Enter를 누르면 강조된 공항이 선택됩니다",
+      "enterHintPlace": "Enter를 누르면 강조된 장소가 선택됩니다",
+      "fromOrigin": "{city}에서 출발",
+      "change": "변경",
+      "back": "이전",
+      "datesOptional": "선택 사항입니다. 건너뛰면 날짜를 골라 드립니다.",
+      "noPlaceMatch": "“{query}”와(과) 일치하는 장소가 없습니다",
+      "fewerAdults": "성인 줄이기",
+      "moreAdults": "성인 늘리기",
+      "fewerChildren": "아동 줄이기",
+      "moreChildren": "아동 늘리기",
+      "oneWayNote": "가는 항공편만",
+      "roundTripNote": "왕복, 돌아오는 날짜까지"
     }
   },
   "seo": {

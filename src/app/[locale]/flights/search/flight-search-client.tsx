@@ -337,7 +337,9 @@ export function FlightSearchClient() {
             checkoutCurrency,
             searchQuery,
         );
-        router.push(`/flights/book?${qs.toString()}`);
+        // Straight to checkout. The `/flights/book` hop in between rendered nothing while it handed
+        // over, and the layout's footer was all a phone showed until checkout arrived.
+        router.push(`/checkout?${qs.toString()}`);
     }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency, userCurrency, searchQuery]);
 
     // ─── Search effect ─────────────────────────────────────────────────────────

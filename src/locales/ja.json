@@ -282,7 +282,8 @@
       "flight": "フライト",
       "dates": "日程",
       "guests": "宿泊人数",
-      "room": "客室"
+      "room": "客室",
+      "tripSummary": "旅程の概要"
     },
     "title": "お支払い",
     "userDetails": {
@@ -539,7 +540,8 @@
       "close": "閉じる",
       "fareChangedTitle": "運賃が変更されました",
       "paymentTitle": "お支払いが完了しませんでした"
-    }
+    },
+    "loadingCheckout": "チェックアウトを読み込み中…"
   },
   "currencyPicker": {
     "label": "通貨を選択"
@@ -1029,12 +1031,6 @@
           "titleRest": "聞くだけ。",
           "caption": "旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。"
         },
-        "options": {
-          "eyebrow": "到着",
-          "titleLead": "さあ、",
-          "titleRest": "選ぼう。",
-          "caption": "宿泊、フライト、ゴルフをひとつの場所で。"
-        },
         "golf": {
           "titleLead": "または、",
           "titleRest": "ティーオフ。",
@@ -1043,12 +1039,6 @@
       },
       "strip": {
         "from": "{price}〜"
-      },
-      "options": {
-        "staysNote": "ホテル＆宿泊施設",
-        "flightsNote": "取り扱いの全航空会社",
-        "golf": "ゴルフ",
-        "golfNote": "厳選コース、ティータイムはお問い合わせで"
       },
       "ask": {
         "placeholder": "ご希望の旅を教えてください…",
@@ -2145,20 +2135,6 @@
     "chatPlaceholder": "何でも聞いてください — 航空券、ホテル、旅行の計画...",
     "hotels": "ホテル",
     "prose": {
-      "flyFrom": "出発 ",
-      "to": " 到着",
-      "stayIn": "宿泊先",
-      "onDates": "、日付 ",
-      "fromDates": "、日付 ",
-      "withTravelers": "、人数 ",
-      "anywhere": "どこか素敵な場所",
-      "sometime": "いつか近いうちに",
-      "justMe": "ひとり",
-      "ofUs": "{count}人",
-      "origin": "今いる場所",
-      "aDate": "好きな日",
-      "yourDates": "ご希望の日程",
-      "flexibleTrip": "柔軟な旅",
       "teeOffAt": "ゴルフ場",
       "onDay": "、日付 ",
       "forPlayers": "、人数 ",
@@ -2166,14 +2142,11 @@
       "firstOpenDay": "最短の空き日",
       "players": "{count}人"
     },
-    "trendingCities": "人気の都市",
     "popularAirports": "人気の空港",
     "noAirportsMatch": "「{query}」に一致する空港はありません",
-    "imFlexible": "日程は柔軟",
     "oneWay": "片道",
     "roundTrip": "往復",
     "whenFlying": "いつ出発しますか？",
-    "pickDates": "日付を選んでください",
     "nights": "{count}泊",
     "listView": "リスト表示",
     "mapView": "地図表示",
@@ -2190,6 +2163,43 @@
       "howMany": "何名でプレーしますか？",
       "fewer": "人数を減らす",
       "more": "人数を増やす"
+    },
+    "steps": {
+      "navLabel": "検索ステップ",
+      "where": "場所",
+      "when": "日程",
+      "who": "人数",
+      "from": "出発地",
+      "to": "目的地",
+      "trip": "旅程",
+      "askStay": "どこに泊まりますか？",
+      "askFrom": "どこから出発しますか？",
+      "askTo": "どこへ行きますか？",
+      "askTrip": "どのような旅程ですか？",
+      "askStayDates": "いつ泊まりますか？",
+      "placePlaceholder": "都市、エリア、ホテル名",
+      "orPickOne": "または、こちらから選ぶ",
+      "nextDates": "次へ：日程",
+      "nextDestination": "次へ：目的地",
+      "nextOrigin": "次へ：出発地",
+      "nextGuests": "次へ：人数",
+      "nextTravellers": "次へ：搭乗者",
+      "searchStays": "宿泊先を検索",
+      "searchFlights": "航空券を検索",
+      "selected": "{name}を選択中",
+      "enterHintAirport": "Enterキーでハイライト中の空港を選択",
+      "enterHintPlace": "Enterキーでハイライト中の場所を選択",
+      "fromOrigin": "{city}から出発",
+      "change": "変更",
+      "back": "戻る",
+      "datesOptional": "任意です。スキップすると日程はこちらで選びます。",
+      "noPlaceMatch": "「{query}」に一致する場所はありません",
+      "fewerAdults": "大人を減らす",
+      "moreAdults": "大人を増やす",
+      "fewerChildren": "子どもを減らす",
+      "moreChildren": "子どもを増やす",
+      "oneWayNote": "行きの便のみ",
+      "roundTripNote": "往復、帰りの日付も選択"
     }
   },
   "seo": {

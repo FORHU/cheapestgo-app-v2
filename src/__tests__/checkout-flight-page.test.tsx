@@ -121,6 +121,9 @@ function mockOffer(offer: unknown = FLIGHT_OFFER) {
 const renderPage = () =>
     render(<NextIntlClientProvider locale="en" messages={en as never}><CheckoutPage /></NextIntlClientProvider>);
 
+/** The trip summary: the right-hand column on a wide screen, the bar above the form on a phone. */
+const summary = () => screen.getByRole('region', { name: 'Trip summary' });
+
 /** Fills passenger `n` (0-based) by the labels a traveller reads. Contact details are the lead's only. */
 function fillPassenger(n = 0, dob = '1990-01-01', country = 'PH') {
     const type = (label: RegExp, value: string) =>
@@ -501,7 +504,7 @@ describe('what the traveller is shown, and what the card is held for', () => {
         // arrives, so an element held across that would be a detached one.
         await waitFor(() => {
             // The fare line and the total: 250.00 + 22.40, as one figure each.
-            expect(screen.getAllByText('USD 272.40')).toHaveLength(2);
+            expect(within(summary()).getAllByText('USD 272.40')).toHaveLength(2);
         });
         expect(screen.queryByText('Service fee')).not.toBeInTheDocument();
         expect(screen.queryByText('USD 22.40')).not.toBeInTheDocument();
@@ -527,14 +530,14 @@ describe('what the traveller is shown, and what the card is held for', () => {
 
         await waitFor(() => expect(get).toHaveBeenCalled());
         expect(screen.queryByText('Service fee')).not.toBeInTheDocument();
-        expect(screen.getByText('USD 250')).toBeInTheDocument();
+        expect(within(summary()).getByText('USD 250')).toBeInTheDocument();
     });
 
     it('asks the server to hold the card only if the fare is still the one that was shown', async () => {
         // The web checkout sent no fare to compare, so a fare that rose between the search and
         // the card was never caught here and went on to be refused after the card.
         renderPage();
-        await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+        await waitFor(() => expect(within(summary()).getAllByText('USD 272.40')).toHaveLength(2));
         fillPassenger();
         fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
@@ -569,12 +572,12 @@ describe('what the traveller is shown, and what the card is held for', () => {
         it('quotes again when another currency is picked, and shows that quote instead', async () => {
             mockOfferByCurrency();
             const view = render(page());
-            await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+            await waitFor(() => expect(within(summary()).getAllByText('USD 272.40')).toHaveLength(2));
 
             query = withCurrency('PHP');
             view.rerender(page());
 
-            await waitFor(() => expect(screen.getAllByText('PHP 16,100.00')).toHaveLength(2));
+            await waitFor(() => expect(within(summary()).getAllByText('PHP 16,100.00')).toHaveLength(2));
             expect(screen.queryByText('USD 272.40')).not.toBeInTheDocument();
         });
 
@@ -583,12 +586,12 @@ describe('what the traveller is shown, and what the card is held for', () => {
             get.mockRejectedValue(new Error('airline unreachable'));
             const view = render(page());
             // Re-queried: the summary is rebuilt as the page settles, so a held element goes stale.
-            await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+            await waitFor(() => expect(within(summary()).getByText('USD 250')).toBeInTheDocument());
 
             query = withCurrency('PHP');
             view.rerender(page());
 
-            await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+            await waitFor(() => expect(within(summary()).getByText('USD 250')).toBeInTheDocument());
             expect(screen.queryByText('PHP 250')).not.toBeInTheDocument();
         });
 
@@ -613,7 +616,7 @@ describe('what the traveller is shown, and what the card is held for', () => {
 
                 await act(async () => { offer.resolve(FLIGHT_OFFER); });
 
-                await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+                await waitFor(() => expect(within(summary()).getAllByText('USD 272.40')).toHaveLength(2));
                 expect(bones()).toHaveLength(0);
                 expect(screen.getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument();
             });
@@ -622,7 +625,7 @@ describe('what the traveller is shown, and what the card is held for', () => {
                 const php = deferred();
                 get.mockImplementation(async (path: string) => (path.includes('currency=PHP') ? php.promise : FLIGHT_OFFER));
                 const view = render(page());
-                await waitFor(() => expect(screen.getAllByText('USD 272.40')).toHaveLength(2));
+                await waitFor(() => expect(within(summary()).getAllByText('USD 272.40')).toHaveLength(2));
                 expect(bones()).toHaveLength(0);
 
                 query = withCurrency('PHP');
@@ -634,14 +637,14 @@ describe('what the traveller is shown, and what the card is held for', () => {
                 await waitFor(() => expect(screen.getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument());
 
                 await act(async () => { php.resolve(PHP_OFFER); });
-                await waitFor(() => expect(screen.getAllByText('PHP 16,100.00')).toHaveLength(2));
+                await waitFor(() => expect(within(summary()).getAllByText('PHP 16,100.00')).toHaveLength(2));
                 expect(bones()).toHaveLength(0);
             });
 
             it('stops drawing skeleton when the offer cannot be read, and falls back to the link\'s fare', async () => {
                 get.mockRejectedValue(new Error('airline unreachable'));
                 renderPage();
-                await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+                await waitFor(() => expect(within(summary()).getByText('USD 250')).toBeInTheDocument());
                 expect(bones()).toHaveLength(0);
             });
 
@@ -665,7 +668,7 @@ describe('what the traveller is shown, and what the card is held for', () => {
             get.mockRejectedValue(new Error('airline unreachable'));
             query = new URLSearchParams({ ...FLIGHT_QUERY, currency: 'KRW', fareCurrency: 'USD' }).toString();
             renderPage();
-            await waitFor(() => expect(screen.getByText('USD 250')).toBeInTheDocument());
+            await waitFor(() => expect(within(summary()).getByText('USD 250')).toBeInTheDocument());
             expect(screen.queryByText('KRW 250')).not.toBeInTheDocument();
         });
 
@@ -673,7 +676,7 @@ describe('what the traveller is shown, and what the card is held for', () => {
             mockOfferByCurrency();
             query = withCurrency('PHP');
             renderPage();
-            await waitFor(() => expect(screen.getAllByText('PHP 16,100.00')).toHaveLength(2));
+            await waitFor(() => expect(within(summary()).getAllByText('PHP 16,100.00')).toHaveLength(2));
             fillPassenger();
             fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
 
@@ -921,6 +924,45 @@ describe('after the card', () => {
 
         expect(await screen.findByText('Passenger name is invalid. Your card has not been charged.')).toBeInTheDocument();
         expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
+    });
+});
+
+describe('on a phone', () => {
+    // jsdom applies no media queries, so these read what the phone is given: a bar that names the
+    // trip and its total, and the summary it opens and closes. Where the two sit is CSS, checked
+    // in a browser.
+    const bar = () => screen.getByRole('button', { name: /MNL → NRT/ });
+
+    it('names the trip, who is flying and what it costs in a bar, closed to start with', async () => {
+        renderPage();
+
+        await waitFor(() => expect(bar()).toHaveTextContent('USD 272.40'));
+        expect(bar()).toHaveTextContent('1 passenger');
+        expect(bar()).toHaveAttribute('aria-expanded', 'false');
+        expect(bar()).toHaveAttribute('aria-controls', summary().id);
+        expect(summary()).toHaveAttribute('data-open', 'false');
+    });
+
+    it('opens to the whole itinerary, and closes again', async () => {
+        renderPage();
+        await waitFor(() => expect(bar()).toHaveTextContent('USD 272.40'));
+
+        fireEvent.click(bar());
+        expect(bar()).toHaveAttribute('aria-expanded', 'true');
+        expect(summary()).toHaveAttribute('data-open', 'true');
+        expect(within(summary()).getByText('Ninoy Aquino International Airport (MNL)')).toBeInTheDocument();
+
+        fireEvent.click(bar());
+        expect(summary()).toHaveAttribute('data-open', 'false');
+    });
+
+    it('waits for the quote rather than showing the link\'s fare under its name', async () => {
+        // Never answers: the quote is still on its way.
+        get.mockImplementation(() => new Promise(() => {}));
+        renderPage();
+
+        expect(bar()).not.toHaveTextContent('USD 250');
+        expect(bar()).toHaveTextContent('MNL → NRT');
     });
 });
 

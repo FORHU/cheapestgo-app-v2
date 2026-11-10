@@ -145,7 +145,8 @@ describe('a fare still on sale', () => {
 
         await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
         const [path, qs] = String(push.mock.calls[0][0]).split('?');
-        expect(path).toBe('/flights/book');
+        // Straight to checkout: the `/flights/book` hop in between drew an empty page.
+        expect(path).toBe('/checkout');
         expect(new URLSearchParams(qs).get('offerId')).toBe('off_old');
         expect(new URLSearchParams(qs).get('search')).toBe(SEARCH);
     });

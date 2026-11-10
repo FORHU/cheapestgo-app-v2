@@ -338,15 +338,7 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.journey.stages.ai.titleLead` | Or | 아니면 | または、 | 或者 |
 | `landing.journey.stages.ai.titleRest` | just ask. | 그냥 물어보세요. | 聞くだけ。 | 直接问。 |
 | `landing.journey.stages.ai.caption` | Tell us the trip. We'll price the stays and routes that fit. | 여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요. | 旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。 | 告诉我们您的行程，我们会为您报出合适的住宿与路线价格。 |
-| `landing.journey.stages.options.eyebrow` | ARRIVAL | 도착 | 到着 | 抵达 |
-| `landing.journey.stages.options.titleLead` | Now | 이제 | さあ、 | 现在 |
-| `landing.journey.stages.options.titleRest` | choose. | 선택하세요. | 選ぼう。 | 做出选择。 |
-| `landing.journey.stages.options.caption` | Stays, flights and golf, all in one place. | 숙소, 항공편, 골프까지 한곳에서. | 宿泊、フライト、ゴルフをひとつの場所で。 | 住宿、航班与高尔夫，一站搞定。 |
 | `landing.journey.strip.from` | from {price} | {price}부터 | {price}〜 | {price} 起 |
-| `landing.journey.options.staysNote` | Hotels & homes | 호텔 및 숙소 | ホテル＆宿泊施設 | 酒店与民宿 |
-| `landing.journey.options.flightsNote` | Every carrier we reach | 연결 가능한 모든 항공사 | 取り扱いの全航空会社 | 覆盖所有可订航空公司 |
-| `landing.journey.options.golf` | Golf | 골프 | ゴルフ | 高尔夫 |
-| `landing.journey.options.golfNote` | Curated courses, tee times on request | 엄선한 골프장, 티타임은 문의로 | 厳選コース、ティータイムはお問い合わせで | 精选球场，开球时间可咨询 |
 | `landing.journey.ask.placeholder` | Describe the trip you want… | 원하는 여행을 설명해 주세요… | ご希望の旅を教えてください… | 描述您想要的旅行… |
 | `landing.journey.ask.label` | Describe the trip you want | 원하는 여행을 설명해 주세요 | ご希望の旅を教えてください | 描述您想要的旅行 |
 | `landing.journey.ask.submit` | Ask | 물어보기 | 聞く | 提问 |
@@ -359,10 +351,6 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.search.searchingStays` | Searching hotels… | 호텔 검색 중… | ホテルを検索中… | 正在搜索酒店… |
 | `landing.search.searchingFlights` | Searching flights… | 항공편 검색 중… | フライトを検索中… | 正在搜索航班… |
 | `landing.search.whosComing` | Who's coming? | 누가 묵으시나요? | ご宿泊者はどなたですか？ | 谁来入住？ |
-| `search.prose.origin` | wherever you are | 내가 있는 곳 | 今いる場所 | 您所在的地方 |
-| `search.prose.aDate` | a date | 원하는 날 | 好きな日 | 某一天 |
-| `search.prose.yourDates` | your dates | 원하는 일정 | ご希望の日程 | 您的出行日期 |
-| `search.prose.flexibleTrip` | a flexible trip | 유연한 여행 | 柔軟な旅 | 灵活的行程 |
 
 ## golf
 
@@ -619,6 +607,60 @@ so it carries the checkout's weight. Written by Claude (2026-11-10).
 |-----|---------|--------|--------|------|
 | `flights.results.fareGoneTitle` | That fare is no longer available | 해당 요금은 더 이상 이용할 수 없습니다 | その運賃はご利用いただけなくなりました | 该票价已不可用 |
 | `flights.results.fareGoneBody` | The airline has stopped selling it. You have not been charged — these are the fares on sale now. | 항공사가 이 요금의 판매를 중단했습니다. 결제되지 않았으며, 지금 판매 중인 요금을 보여 드립니다. | 航空会社がこの運賃の販売を終了しました。料金は請求されていません。現在販売中の運賃をご覧ください。 | 航空公司已停止销售该票价。您未被扣款，以下是当前在售的票价。 |
+
+## Landing search — one question at a time
+
+The Stays and Flights search on the landing page, asked a step at a time (Claude Design's "Search Step by
+Step" and "Flight Search Step by Step"). The step labels are deliberately short: on a narrow phone only
+the current one shows. Written by Claude (2026-11-10).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `search.steps.navLabel` | Search steps | 검색 단계 | 検索ステップ | 搜索步骤 |
+| `search.steps.where` | Where | 장소 | 場所 | 地点 |
+| `search.steps.when` | When | 날짜 | 日程 | 日期 |
+| `search.steps.who` | Who | 인원 | 人数 | 人数 |
+| `search.steps.from` | From | 출발 | 出発地 | 出发地 |
+| `search.steps.to` | To | 도착 | 目的地 | 目的地 |
+| `search.steps.askStay` | Where do you want to stay? | 어디에서 묵고 싶으세요? | どこに泊まりますか？ | 您想住在哪里？ |
+| `search.steps.askFrom` | Where are you flying from? | 어디에서 출발하세요? | どこから出発しますか？ | 您从哪里出发？ |
+| `search.steps.askTo` | Where are you flying to? | 어디로 가세요? | どこへ行きますか？ | 您要飞往哪里？ |
+| `search.steps.askStayDates` | When are you staying? | 언제 묵으세요? | いつ泊まりますか？ | 您什么时候入住？ |
+| `search.steps.placePlaceholder` | City, area, or hotel name | 도시, 지역 또는 호텔 이름 | 都市、エリア、ホテル名 | 城市、区域或酒店名称 |
+| `search.steps.orPickOne` | Or pick one | 또는 여기서 고르세요 | または、こちらから選ぶ | 或从这里选择 |
+| `search.steps.nextDates` | Next: dates | 다음: 날짜 | 次へ：日程 | 下一步：日期 |
+| `search.steps.nextDestination` | Next: destination | 다음: 도착지 | 次へ：目的地 | 下一步：目的地 |
+| `search.steps.nextGuests` | Next: guests | 다음: 인원 | 次へ：人数 | 下一步：入住人数 |
+| `search.steps.nextTravellers` | Next: travellers | 다음: 탑승객 | 次へ：搭乗者 | 下一步：乘客 |
+| `search.steps.searchStays` | Search stays | 숙소 검색 | 宿泊先を検索 | 搜索住宿 |
+| `search.steps.searchFlights` | Search flights | 항공편 검색 | 航空券を検索 | 搜索航班 |
+| `search.steps.selected` | {name} selected | {name} 선택됨 | {name}を選択中 | 已选择 {name} |
+| `search.steps.enterHintAirport` | Press Enter to pick the highlighted airport | Enter를 누르면 강조된 공항이 선택됩니다 | Enterキーでハイライト中の空港を選択 | 按 Enter 选择高亮的机场 |
+| `search.steps.enterHintPlace` | Press Enter to pick the highlighted place | Enter를 누르면 강조된 장소가 선택됩니다 | Enterキーでハイライト中の場所を選択 | 按 Enter 选择高亮的地点 |
+| `search.steps.fromOrigin` | From {city} | {city}에서 출발 | {city}から出発 | 从{city}出发 |
+| `search.steps.change` | Change | 변경 | 変更 | 更改 |
+| `search.steps.back` | Back | 이전 | 戻る | 返回 |
+| `search.steps.datesOptional` | Optional — skip it and we'll pick dates for you. | 선택 사항입니다. 건너뛰면 날짜를 골라 드립니다. | 任意です。スキップすると日程はこちらで選びます。 | 可选。跳过的话，我们会为您选好日期。 |
+| `search.steps.noPlaceMatch` | No places match “{query}” | “{query}”와(과) 일치하는 장소가 없습니다 | 「{query}」に一致する場所はありません | 没有与“{query}”匹配的地点 |
+| `search.steps.fewerAdults` | Fewer adults | 성인 줄이기 | 大人を減らす | 减少成人 |
+| `search.steps.moreAdults` | More adults | 성인 늘리기 | 大人を増やす | 增加成人 |
+| `search.steps.fewerChildren` | Fewer children | 아동 줄이기 | 子どもを減らす | 减少儿童 |
+| `search.steps.moreChildren` | More children | 아동 늘리기 | 子どもを増やす | 增加儿童 |
+| `search.steps.trip` | Trip | 여정 | 旅程 | 行程 |
+| `search.steps.askTrip` | What kind of trip is it? | 어떤 여정인가요? | どのような旅程ですか？ | 您要哪种行程？ |
+| `search.steps.nextOrigin` | Next: departure | 다음: 출발지 | 次へ：出発地 | 下一步：出发地 |
+| `search.steps.oneWayNote` | Just the flight there | 가는 항공편만 | 行きの便のみ | 仅去程航班 |
+| `search.steps.roundTripNote` | There and back, with a return date | 왕복, 돌아오는 날짜까지 | 往復、帰りの日付も選択 | 往返，含返程日期 |
+
+## Checkout on a phone — loading, and the trip summary above the form
+
+What a phone shows while checkout loads (it used to be the footer alone), and the name of the trip
+summary, which a phone folds into a bar above the form. Written by Claude (2026-11-10).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `checkout.loadingCheckout` | Loading checkout… | 결제 페이지를 불러오는 중… | チェックアウトを読み込み中… | 正在加载结账页面… |
+| `checkout.summary.tripSummary` | Trip summary | 여정 요약 | 旅程の概要 | 行程摘要 |
 
 ## Moving between pages
 

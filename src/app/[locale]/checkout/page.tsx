@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useId, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -21,6 +21,7 @@ import { DuplicateFlightModal, type DuplicateFlight } from '@/features/checkout/
 import { CheckoutAlertDialog, type CheckoutAlert } from '@/features/checkout/components/checkout-alert-dialog';
 import { CheckoutToolbar } from '@/features/checkout/components/checkout-toolbar';
 import { SkeletonBar } from '@/features/checkout/components/skeleton-bar';
+import { CheckoutSkeleton } from '@/features/checkout/components/checkout-skeleton';
 import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
 import { formatMoney } from '@/features/checkout/lib/format-money';
 import { airportLabel, formatDateTime, groupSegmentsIntoSlices } from '@/features/flights/lib/flight-utils';
@@ -740,6 +741,9 @@ function CheckoutContent() {
     const [submitting, setSubmitting] = useState(false);
     /** A warning that stops the flight checkout — shown as a dialog, gone once closed. */
     const [flightAlert, setFlightAlert] = useState<CheckoutAlert | null>(null);
+    /** On a phone the trip summary is folded into a bar above the form; this is whether it is open. */
+    const [tripOpen, setTripOpen] = useState(false);
+    const summaryId = useId();
     const closeFlightAlert = useCallback(() => setFlightAlert(null), []);
     /** A flight from the same airport on the same day is already booked: shown as a dialog the
      *  traveller closes, not in the error box. */
@@ -1146,6 +1150,12 @@ function CheckoutContent() {
                     background:linear-gradient(to top,${palette.bg} 72%,transparent);
                 }
             }
+            /* On a phone the trip summary sits above the form, folded into the bar that names the
+               trip and its total; it opens under the bar. A wide screen keeps it open beside the form. */
+            @media (max-width:1023px){
+                .cg-trip{margin-top:8px}
+                .cg-trip[data-open="false"]{display:none}
+            }
             /* The phone number sits inside the field already drawn around it; a fill of its own
                would square off that field's rounded corners. */
             .cg-phone .cg-field:-webkit-autofill,
@@ -1261,9 +1271,10 @@ function CheckoutContent() {
                 border: `1px solid ${palette.summaryBorder}`, background: palette.summaryBg,
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12,
             }}>
-                <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+                <div style={{ flex: '1 1 160px', minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: palette.title }}>{tAll('checkout.signInToComplete')}</div>
-                    <div style={{ fontSize: 13, lineHeight: 1.45, color: palette.muted, marginTop: 2 }}>{tAll('checkout.signInBannerDesc')}</div>
+                    {/* The first thing a phone gives up: the screen is for the form. */}
+                    <div className="max-sm:hidden" style={{ fontSize: 13, lineHeight: 1.45, color: palette.muted, marginTop: 2 }}>{tAll('checkout.signInBannerDesc')}</div>
                 </div>
                 <button
                     onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
@@ -1276,6 +1287,41 @@ function CheckoutContent() {
                     {tAll('checkout.signInArrow')}
                 </button>
             </div>
+        );
+    }
+
+    // ── Trip bar (a phone's summary, folded) ──────────────────────────────────
+    // The trip, who is flying and what it comes to, above the form where a phone used to show them
+    // only after every field. The total is the summary's own: the card's hold, else the quote, else
+    // the link's fare — and skeleton while a quote in the currency on show is still coming.
+    function TripBar() {
+        const quoting = flightOfferLoading && !held && (!flightPrice || flightPrice.currency !== flightCurrency);
+        const total = flightPrice ? formatMoney(flightPrice.total, flightPrice.currency) : `${linkCurrency} ${totalAmount.toLocaleString()}`;
+        const details = [departureDate ? fmtDate(departureDate) : '', tAll('checkout.flight.receipt.passengersCount', { count: passengers.length })]
+            .filter(Boolean).join(' · ');
+        return (
+            <button
+                type="button"
+                // `flex` as a class, not an inline display: an inline one would outrank `lg:hidden`,
+                // and a wide screen, which shows the summary itself, would show the bar as well.
+                className="flex lg:hidden"
+                aria-expanded={tripOpen}
+                aria-controls={summaryId}
+                onClick={() => setTripOpen(o => !o)}
+                style={{
+                    width: '100%', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12,
+                    border: 'none', background: palette.surface, color: palette.title, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+            >
+                <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>{origin} → {destination}</span>
+                    <span style={{ display: 'block', fontSize: 13, color: palette.muted, marginTop: 2 }}>{details}</span>
+                </span>
+                {quoting
+                    ? <SkeletonBar palette={palette} width={84} height={16} />
+                    : <span style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>{total}</span>}
+                <ChevronDown size={18} aria-hidden style={{ flexShrink: 0, color: palette.muted, transform: tripOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+            </button>
         );
     }
 
@@ -1448,6 +1494,10 @@ function CheckoutContent() {
         // A contact detail or a single answer takes the left column, as on the hotel form;
         // on a phone the half is too narrow, so it takes the row.
         const half = 'col-span-2 sm:col-span-1';
+        // Two short answers that belong together — a birthday and a gender, a passport's number and
+        // its expiry — share a row on a phone too, from 360px, where each still has room for a
+        // date. Below that each takes its own.
+        const pair = 'col-span-2 min-[360px]:col-span-1';
 
         return (
             <div style={rootStyle}>
@@ -1461,7 +1511,7 @@ function CheckoutContent() {
                         </div>
 
                         <div key={`heading-${step}`} className={`lg:col-start-1 lg:row-start-1${slideClass}`}>
-                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
+                            <h1 className="font-bold tracking-[-0.01em] lg:whitespace-nowrap" style={{ fontSize: 'clamp(28px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                                 {step === 'payment' ? t('paymentDetailsTitle') : t('completeYourBooking')}
                             </h1>
                             {step === 'form' && (
@@ -1471,7 +1521,7 @@ function CheckoutContent() {
                             )}
                         </div>
 
-                        <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
+                        <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 max-lg:order-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
                             {flightAlert && (
                                 <CheckoutAlertDialog
                                     alert={flightAlert}
@@ -1516,7 +1566,7 @@ function CheckoutContent() {
                                                     <input id={id('lastName')} type="text" aria-required="true" autoComplete={i === 0 ? 'family-name' : 'off'} value={p.lastName} onChange={e => onPassenger(i, 'lastName', e.target.value)} placeholder={example(EXAMPLE_LAST_NAME)} className="cg-field" style={mkField(palette, !!err('lastName'))} />
                                                     <ErrText msg={err('lastName')} />
                                                 </div>
-                                                <div className={half}>
+                                                <div className={pair}>
                                                     <Label palette={palette} htmlFor={id('dateOfBirth')} required>{tAll('checkout.userDetails.dateOfBirth')}</Label>
                                                     {/* Only the birthdays the airline accepts for this passenger's type, on the day they fly. */}
                                                     <DateField id={id('dateOfBirth')} value={p.dateOfBirth} onChange={v => onPassenger(i, 'dateOfBirth', v)}
@@ -1524,7 +1574,7 @@ function CheckoutContent() {
                                                         palette={palette} className="cg-field" style={mkField(palette, !!err('dateOfBirth'))} />
                                                     <ErrText msg={err('dateOfBirth')} />
                                                 </div>
-                                                <div className={half}>
+                                                <div className={pair}>
                                                     <Label palette={palette} htmlFor={id('gender')} required>{tAll('checkout.userDetails.gender')}</Label>
                                                     {/* Required by the check above and sent with the booking, but the
                                                         control was missing, so the form could never be submitted. */}
@@ -1570,12 +1620,12 @@ function CheckoutContent() {
 
                                             <div style={groupTitleStyle}>{t('flight.passportTitle')}</div>
                                             <div style={fieldGrid}>
-                                                <div className={half}>
+                                                <div className={pair}>
                                                     <Label palette={palette} htmlFor={id('passportNumber')} required>{tAll('checkout.userDetails.passportNumber')}</Label>
                                                     <input id={id('passportNumber')} type="text" aria-required="true" autoComplete="off" value={p.passportNumber} onChange={e => onPassenger(i, 'passportNumber', e.target.value)} placeholder={t('flight.passportPlaceholder')} className="cg-field" style={mkField(palette, !!err('passportNumber'))} />
                                                     <ErrText msg={err('passportNumber')} />
                                                 </div>
-                                                <div className={half}>
+                                                <div className={pair}>
                                                     <Label palette={palette} htmlFor={id('passportExpiry')} required>{tAll('checkout.userDetails.passportExpiry')}</Label>
                                                     <DateField id={id('passportExpiry')} value={p.passportExpiry} onChange={v => onPassenger(i, 'passportExpiry', v)}
                                                         {...passportExpiryBounds(departureDate, todayIso)} openTo="day"
@@ -1631,9 +1681,14 @@ function CheckoutContent() {
                             </p>
                         </div>
 
-                        {/* Right: summary, under the steps */}
-                        <aside className="lg:col-start-2 lg:row-start-2 mt-10 lg:mt-0" style={{ paddingTop: step === 'form' ? 50 : 80 }}>
-                            <SummaryCard />
+                        {/* The trip summary. On a wide screen, the column beside the form under the steps;
+                            on a phone, above the form — it came after every field — folded into a bar that
+                            names the trip and its total, and opens to the itinerary. */}
+                        <aside className={`lg:col-start-2 lg:row-start-2 max-lg:order-1 mt-6 lg:mt-0 ${step === 'form' ? 'lg:pt-[50px]' : 'lg:pt-[80px]'}`}>
+                            <TripBar />
+                            <div id={summaryId} role="region" aria-label={t('summary.tripSummary')} data-open={tripOpen} className="cg-trip">
+                                <SummaryCard />
+                            </div>
                         </aside>
                     </div>
                 </div>
@@ -1871,17 +1926,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
     return (
-        <Suspense
-            fallback={
-                <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" style={{ animation: 'spin .8s linear infinite' }}>
-                        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
-                        <circle cx="12" cy="12" r="9" fill="none" stroke="#FF6B4B" strokeWidth="3" strokeDasharray="16 100" strokeLinecap="round" />
-                    </svg>
-                </div>
-            }
-        >
+        <Suspense fallback={<CheckoutSkeleton />}>
             <CheckoutContent />
         </Suspense>
     );

@@ -85,7 +85,7 @@ function Mosaic({ t, images }: { t: number; images: string[] }) {
     );
 }
 
-/** One place, held. The descent has stopped moving; the choice is the only thing left. */
+/** One place, held. */
 function Still({ t, image, strength = 0.6, onError }: { t: number; image: string; strength?: number; onError?: () => void }) {
     return (
         <img
@@ -93,7 +93,7 @@ function Still({ t, image, strength = 0.6, onError }: { t: number; image: string
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             // Barely moves — just enough that the frame is not frozen while the visitor
-            // reads four options.
+            // fills in the search.
             style={{ opacity: strength, transform: `scale(${1.03 + t * 0.02})` }}
             loading="lazy"
             decoding="async"

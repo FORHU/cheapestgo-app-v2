@@ -35,7 +35,8 @@
     ".next-airanggo/types/**/*.ts",
     ".next-diag/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    ".next-steps/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

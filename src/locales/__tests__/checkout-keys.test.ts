@@ -148,6 +148,8 @@ const USED = [
     'checkout.alert.close',
     'checkout.alert.fareChangedTitle',
     'checkout.alert.paymentTitle',
+    'checkout.loadingCheckout',
+    'checkout.summary.tripSummary',
 ];
 
 describe('checkout messages', () => {

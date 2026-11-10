@@ -282,7 +282,8 @@
       "flight": "Flight",
       "dates": "Dates",
       "guests": "Guests",
-      "room": "Room"
+      "room": "Room",
+      "tripSummary": "Trip summary"
     },
     "title": "Checkout",
     "userDetails": {
@@ -539,7 +540,8 @@
       "close": "Close",
       "fareChangedTitle": "The fare changed",
       "paymentTitle": "Your payment didn't go through"
-    }
+    },
+    "loadingCheckout": "Loading checkout…"
   },
   "currencyPicker": {
     "label": "Select currency"
@@ -1029,12 +1031,6 @@
           "titleRest": "just ask.",
           "caption": "Tell us the trip. We'll price the stays and routes that fit."
         },
-        "options": {
-          "eyebrow": "ARRIVAL",
-          "titleLead": "Now",
-          "titleRest": "choose.",
-          "caption": "Stays, flights and golf, all in one place."
-        },
         "golf": {
           "titleLead": "Or",
           "titleRest": "tee off.",
@@ -1043,12 +1039,6 @@
       },
       "strip": {
         "from": "from {price}"
-      },
-      "options": {
-        "staysNote": "Hotels & homes",
-        "flightsNote": "Every carrier we reach",
-        "golf": "Golf",
-        "golfNote": "Curated courses, tee times on request"
       },
       "ask": {
         "placeholder": "Describe the trip you want…",
@@ -2145,20 +2135,6 @@
     "chatPlaceholder": "Ask anything — flights, hotels, trip planning...",
     "hotels": "Hotels",
     "prose": {
-      "flyFrom": "Fly me from ",
-      "to": " to",
-      "stayIn": "Find me a stay in",
-      "onDates": ", on ",
-      "fromDates": ", from ",
-      "withTravelers": ", with ",
-      "anywhere": "somewhere amazing",
-      "sometime": "sometime soon",
-      "justMe": "just me",
-      "ofUs": "{count} of us",
-      "origin": "wherever you are",
-      "aDate": "a date",
-      "yourDates": "your dates",
-      "flexibleTrip": "a flexible trip",
       "teeOffAt": "Tee off at",
       "onDay": ", on ",
       "forPlayers": ", for ",
@@ -2166,14 +2142,11 @@
       "firstOpenDay": "the first open day",
       "players": "{count, plural, one {# player} other {# players}}"
     },
-    "trendingCities": "Popular cities",
     "popularAirports": "Popular airports",
     "noAirportsMatch": "No airports match “{query}”",
-    "imFlexible": "I'm flexible",
     "oneWay": "One-way",
     "roundTrip": "Round-trip",
     "whenFlying": "When are you flying?",
-    "pickDates": "Pick your dates",
     "nights": "{count, plural, one {# night} other {# nights}}",
     "listView": "List View",
     "mapView": "Map View",
@@ -2190,6 +2163,43 @@
       "howMany": "How many players?",
       "fewer": "Fewer players",
       "more": "More players"
+    },
+    "steps": {
+      "navLabel": "Search steps",
+      "where": "Where",
+      "when": "When",
+      "who": "Who",
+      "from": "From",
+      "to": "To",
+      "trip": "Trip",
+      "askStay": "Where do you want to stay?",
+      "askFrom": "Where are you flying from?",
+      "askTo": "Where are you flying to?",
+      "askTrip": "What kind of trip is it?",
+      "askStayDates": "When are you staying?",
+      "placePlaceholder": "City, area, or hotel name",
+      "orPickOne": "Or pick one",
+      "nextDates": "Next: dates",
+      "nextDestination": "Next: destination",
+      "nextOrigin": "Next: departure",
+      "nextGuests": "Next: guests",
+      "nextTravellers": "Next: travellers",
+      "searchStays": "Search stays",
+      "searchFlights": "Search flights",
+      "selected": "{name} selected",
+      "enterHintAirport": "Press Enter to pick the highlighted airport",
+      "enterHintPlace": "Press Enter to pick the highlighted place",
+      "fromOrigin": "From {city}",
+      "change": "Change",
+      "back": "Back",
+      "datesOptional": "Optional — skip it and we'll pick dates for you.",
+      "noPlaceMatch": "No places match “{query}”",
+      "fewerAdults": "Fewer adults",
+      "moreAdults": "More adults",
+      "fewerChildren": "Fewer children",
+      "moreChildren": "More children",
+      "oneWayNote": "Just the flight there",
+      "roundTripNote": "There and back, with a return date"
     }
   },
   "seo": {
