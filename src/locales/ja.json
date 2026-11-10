@@ -436,7 +436,6 @@
     "flight": {
       "cardHeld": "現在はカードの与信のみを行い、航空会社が航空券を確定した時点で請求されます。確定できなかった場合は与信が解除され、料金は発生しません。",
       "priceChanged": "航空会社が確定する前に運賃が{was}から{now}に変更されました。料金は請求されておらず、カードの与信は解除されています。新しい運賃で予約するには、もう一度お客様情報を送信してください。",
-      "offerExpired": "航空会社が確定する前にこの運賃は売り切れました。料金は請求されておらず、カードの与信は解除されています。もう一度検索してください。",
       "adultN": "大人 {n}",
       "infantN": "幼児 {n}",
       "nameHint": "お名前はパスポートの記載どおりに入力してください。",
@@ -539,8 +538,6 @@
     "alert": {
       "close": "閉じる",
       "fareChangedTitle": "運賃が変更されました",
-      "fareGoneTitle": "この運賃はご利用いただけなくなりました",
-      "searchAgain": "もう一度検索",
       "paymentTitle": "お支払いが完了しませんでした"
     }
   },
@@ -599,6 +596,8 @@
       "datePicked": "日付はこちらで選びました — 変更すると他の運賃をご覧いただけます。",
       "duration": "所要時間",
       "empty": "この日程のフライトは見つかりませんでした。",
+      "fareGoneBody": "航空会社がこの運賃の販売を終了しました。料金は請求されていません。現在販売中の運賃をご覧ください。",
+      "fareGoneTitle": "その運賃はご利用いただけなくなりました",
       "filters": "絞り込み",
       "filtersTitle": "フライトの絞り込み",
       "findingFares": "最適な運賃を検索中…",
@@ -642,21 +641,19 @@
       "flightDetails": "フライト詳細"
     },
     "itinerary": {
+      "arriveAt": "到着",
+      "departFrom": "出発",
+      "flightDuration": "飛行時間",
       "layoverLabel": "乗り継ぎ",
+      "layoverValue": "{airport} で {duration}",
       "legLabel": "区間 {number}",
       "nonstop": "直行",
       "outbound": "往路",
       "return": "復路",
       "stopCount": "経由{count}回",
       "terminal": "ターミナル {terminal}",
-      "terminalTba": "ターミナル未定",
-      "oneStopIn": "{place}で1回乗り継ぎ",
-      "totalTrip": "総所要時間",
-      "layoverIn": "{place}で{duration}の乗り継ぎ",
-      "sameAirport": "同じ空港・移動なし",
-      "changeAirports": "空港の移動あり：{from}→{to}",
-      "footnote": "時刻はすべて現地時間です。",
-      "footnoteTerminals": "ターミナルは出発が近づくと確定します。時刻はすべて現地時間です。"
+      "terminalUnavailable": "ターミナル情報は出発が近づくと表示されます",
+      "totalFlightDuration": "総飛行時間"
     },
     "filters": {
       "cheapest": "最安",

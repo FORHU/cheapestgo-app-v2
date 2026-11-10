@@ -24,6 +24,7 @@ import { SkeletonBar } from '@/features/checkout/components/skeleton-bar';
 import { useFlightOffer } from '@/features/checkout/hooks/use-flight-offer';
 import { formatMoney } from '@/features/checkout/lib/format-money';
 import { airportLabel, formatDateTime, groupSegmentsIntoSlices } from '@/features/flights/lib/flight-utils';
+import { fareGoneSearchHref } from '@/features/flights/lib/flight-checkout-query';
 import { birthDateBounds, passportExpiryBounds } from '@/features/checkout/lib/flight-date-bounds';
 import { DateField } from '@/features/checkout/components/date-field';
 import { AutocompleteSelectField } from '@/features/checkout/components/autocomplete-select-field';
@@ -721,8 +722,11 @@ function CheckoutContent() {
     // The offer, read once and quoted in the currency on show — again when the selector changes
     // it. Its quote is what the traveller is shown before committing to anything, and the receipt
     // draws its itinerary from it afterwards.
-    const { offer: flightOffer, loading: flightOfferLoading } = useFlightOffer(mode === 'flight' ? offerId : null, flightCurrency);
+    const { offer: flightOffer, loading: flightOfferLoading, gone: flightOfferGone } = useFlightOffer(mode === 'flight' ? offerId : null, flightCurrency);
     const quote = flightOffer?.quote ?? null;
+    /** The search this flight was picked from, run again: where a fare that has gone sends the
+     *  traveller — wherever the browser happened to be before (a sign-in, another tab) aside. */
+    const fareGoneHref = fareGoneSearchHref(searchParams);
 
     // ── Date helpers ──
     const nights = nightsBetween(checkIn, checkOut);
@@ -919,13 +923,10 @@ function CheckoutContent() {
                     backToDetails();
                     break;
                 case 'offer_expired':
-                    // Nothing on this page can book it now: the way on is a new search.
-                    setFlightAlert({
-                        title: t('alert.fareGoneTitle'),
-                        message: t('flight.offerExpired'),
-                        action: { label: t('alert.searchAgain'), onClick: () => router.back() },
-                    });
+                    // Nothing on this page can book it now: the hold is released, and the way on
+                    // is the traveller's search, run again for the fares there are now.
                     backToDetails();
+                    router.replace(fareGoneHref);
                     break;
                 case 'refused':
                     setFlightAlert({ title: t('failed.title'), message: failure.message || t('failed.released') });
@@ -940,7 +941,14 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [flightSessionId, t, router]);
+    }, [flightSessionId, t, router, fareGoneHref]);
+
+    // Opened on a fare the airline no longer has: nothing here can book it. On the details step
+    // only — the offer is read again whenever the currency changes, and once the flight is paid
+    // for, an ordered offer is gone too: that is the receipt, or a confirm still on its way.
+    useEffect(() => {
+        if (flightOfferGone && flightStep === 'form') router.replace(fareGoneHref);
+    }, [flightOfferGone, flightStep, fareGoneHref, router]);
 
     // The same Stripe form serves both; what happens after a card is authorised does not.
     const handleStripeSuccess = mode === 'flight' ? handleFlightPaid : hotel.onCardAuthorised;
@@ -1015,6 +1023,12 @@ function CheckoutContent() {
                 });
                 return;
             }
+            // The airline no longer sells it. Nothing is held yet; the traveller's search, run
+            // again, has the fares there are now.
+            if (e?.code === 'OFFER_EXPIRED' || e?.code === 'FARE_UNAVAILABLE') {
+                router.replace(fareGoneHref);
+                return;
+            }
             setFlightAlert({
                 title: t('failed.title'),
                 message: err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
@@ -1022,7 +1036,7 @@ function CheckoutContent() {
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t, fareGoneHref]);
     const closeDuplicateFlight = useCallback(() => setDuplicateFlight(null), []);
 
     // ── Price helpers ──

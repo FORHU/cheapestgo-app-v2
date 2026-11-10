@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, X, CalendarClock, Clock, SearchX, SlidersHorizontal } from 'lucide-react';
+import { Plane, X, CalendarClock, Clock, SearchX, SlidersHorizontal, RefreshCw } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { createPortal } from 'react-dom';
 import { StateScreen, stateActionClass, stateSecondaryClass } from '@/shared/components/StateScreen';
@@ -28,7 +28,7 @@ import { formatPrice } from '@/features/flights/lib/flight-utils';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
 import type { FlightOffer } from '@/shared/types';
-import { flightCheckoutQuery } from '@/features/flights/lib/flight-checkout-query';
+import { FARE_GONE_PARAM, flightCheckoutQuery } from '@/features/flights/lib/flight-checkout-query';
 import { CURRENCIES } from '@/shared/components/common/CurrencySelector';
 import { useUserCurrency } from '@/shared/stores/search.store';
 
@@ -211,6 +211,20 @@ export function FlightSearchClient() {
 
     const bundleHotelId = sp.get('bundleHotelId');
 
+    /** This search, as its URL has it — without the note below, which is about how they got here. */
+    const searchQuery = useMemo(() => {
+        const q = new URLSearchParams(sp.toString());
+        q.delete(FARE_GONE_PARAM);
+        return q.toString();
+    }, [sp]);
+    /**
+     * The search a picked fare turned out to have gone on. The note that says so is shown on that
+     * search only: a new route or date is a new search, with nothing to apologise for.
+     */
+    const [fareGoneOn, setFareGoneOn] = useState<string | null>(null);
+    // Sent back by a checkout whose fare had gone (`fareGoneSearchHref`), or gone when picked here.
+    const fareGone = sp.get(FARE_GONE_PARAM) === '1' || fareGoneOn === searchQuery;
+
     const [state, setState] = useState<SearchStatus>({ status: 'loading' });
     const [retryKey, setRetryKey] = useState(0);
     const abortRef = useRef<AbortController | null>(null);
@@ -276,10 +290,18 @@ export function FlightSearchClient() {
         let chosen = offer;
         try {
             setRevalidating(offer.offerId);
-            const check = await http.post<{ priceChanged?: boolean; newPrice?: number }>(
+            const check = await http.post<{ priceChanged?: boolean; newPrice?: number; offerExpired?: boolean }>(
                 '/api/flights/revalidate',
                 { provider: offer.provider, flightPayload: offer },
             );
+
+            // The airline no longer has it, and the offers beside it are as old as it is: search
+            // again, here, rather than send anyone to a checkout that cannot book it.
+            if (check.offerExpired) {
+                setFareGoneOn(searchQuery);
+                setRetryKey((k) => k + 1);
+                return;
+            }
 
             if (check.priceChanged && typeof check.newPrice === 'number') {
                 // In the currency the card showed it in, so the new figure reads against the old.
@@ -313,9 +335,10 @@ export function FlightSearchClient() {
             { adults: Number(params.adults) || 1, children: Number(params.children) || 0, infants: Number(params.infants) || 0 },
             bundleHotelId,
             checkoutCurrency,
+            searchQuery,
         );
         router.push(`/flights/book?${qs.toString()}`);
-    }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency, userCurrency]);
+    }, [router, params.adults, params.children, params.infants, bundleHotelId, checkoutCurrency, userCurrency, searchQuery]);
 
     // ─── Search effect ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -544,6 +567,16 @@ export function FlightSearchClient() {
 
             <main className={cn('flex-1 pt-3 pb-24 md:pb-28', SHELL_GUTTER)}>
                 <div className={cn('w-full', SHELL_CAP)}>
+                    {/* Above every state, a failed search's included: it says why they are here. */}
+                    {fareGone && (
+                        <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 md:px-5 md:py-4 dark:border-amber-800 dark:bg-amber-950/30">
+                            <RefreshCw size={16} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">{tAll('flights.results.fareGoneTitle')}</p>
+                                <p className="mt-0.5 text-xs text-amber-700/90 md:text-sm dark:text-amber-300/80">{tAll('flights.results.fareGoneBody')}</p>
+                            </div>
+                        </div>
+                    )}
                     {state.status === 'timeout' && (
                         <div className="flex justify-center py-10"><TimeoutBanner onRetry={handleRetry} /></div>
                     )}

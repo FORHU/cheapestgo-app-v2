@@ -1,41 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Clock } from 'lucide-react';
 import type { FlightOffer, NormalizedSegment, SegmentEnd } from '@/shared/types';
 import { cn } from '@/shared/lib/cn';
 import {
-    cabinLabel, dayOffset, formatDuration, formatFlightDate, formatTime, groupSegmentsBySlice, layoverMinutes,
+    airportLabel, cabinLabel, dayOffset, formatDateTime, formatDuration, formatTime,
+    groupSegmentsBySlice, layoverMinutes,
 } from '../lib/flight-utils';
 
-/*
- * The flight-by-flight itinerary, as a timeline: each direction under its route, date, stops
- * and cabin; then, down a rail, every stop's clock and airport, each flight between its two
- * stops, and the wait between two flights.
- *
- * It sits in places of very different widths — under a results card, in the checkout's summary
- * column, on a booking's page — so it reads the width it is given (a container query), not the
- * screen's. Narrow, the flight is a line between its stops; from 36rem wide (`@xl:`) it is a
- * box beside them and the heading carries the trip's totals.
- *
- * The rail is drawn in the brand's colours: the blue-to-cyan gradient of the results card's
- * route line for a flight, the brand blue dashed for a wait on the ground. Type is the site's.
- */
+// v1's flight-by-flight itinerary (`FlightItineraryTimeline`), in the flight card's
+// materials: each flight as two ends either side of its duration, each end
+// carrying what a traveller needs at that airport.
 
-const TITLE    = 'text-slate-900 dark:text-slate-50';
-const TEXT     = 'text-slate-700 dark:text-slate-100';
-const MUTED    = 'text-slate-500 dark:text-slate-400';
-const HAIRLINE = 'border-slate-200 dark:border-white/10';
-
-/** A stop on the rail: a ring where a flight leaves, filled where it lands. */
-const DOT = 'size-2.5 shrink-0 rounded-full mt-[5px] @xl:size-3 @xl:mt-1.5';
-const DOT_DEPART = 'border-2 border-blue-600 dark:border-blue-400';
-const DOT_ARRIVE = 'bg-blue-600 dark:bg-blue-400';
-/** In the air: the brand gradient. */
-const RAIL_FLYING = 'mt-[3px] w-0.5 flex-1 rounded-full bg-linear-to-b from-blue-600 to-cyan-500 @xl:mt-1 dark:from-blue-500 dark:to-cyan-400';
-/** On the ground between two flights: the brand blue, dashed. */
-const RAIL_WAITING = 'mt-[3px] w-0 flex-1 border-l-2 border-dashed border-blue-500/60 @xl:mt-1 dark:border-blue-400/60';
+const TITLE = 'text-slate-900 dark:text-slate-50';
+const TEXT  = 'text-slate-700 dark:text-slate-100';
+const MUTED = 'text-slate-500 dark:text-slate-400';
 
 /**
  * How the itinerary reads its timestamps. An offer's are Local Airport Time, digits read as
@@ -44,8 +24,7 @@ const RAIL_WAITING = 'mt-[3px] w-0 flex-1 border-l-2 border-dashed border-blue-5
  */
 export interface ItineraryClock {
     time: (iso?: string) => string;
-    /** The day a direction leaves, for its heading: "Wed, Nov 25, 2026". */
-    date: (iso: string | undefined, locale: string) => string;
+    dateTime: (iso: string | undefined, locale: string) => string;
     /** Whole days from a departure to its arrival — the "+1". */
     dayOffset: (from?: string, to?: string) => number;
     /** Minutes on the ground between a landing and the next take-off. */
@@ -54,106 +33,133 @@ export interface ItineraryClock {
 
 export const AIRPORT_CLOCK: ItineraryClock = {
     time: formatTime,
-    date: formatFlightDate,
+    dateTime: formatDateTime,
     dayOffset,
     layover: layoverMinutes,
 };
 
-/** Where a stop is, for a heading: the city, else the airport's name, else its code. */
-function placeName(end: SegmentEnd | undefined, code: string): string {
-    return end?.city || end?.airportName || end?.airport || code;
-}
+/**
+ * A list of independent facts, one to a line. The departure's hang off bullets on
+ * the left; the arrival mirrors it, flush right with its dot after the words. An
+ * absent fact (no aircraft quoted) is left out rather than shown as an empty line.
+ */
+function FactList({ items, align }: { items: React.ReactNode[]; align: 'left' | 'right' }) {
+    const shown = items.filter((item) => item !== undefined && item !== null && item !== '');
+    if (shown.length === 0) return null;
+    const right = align === 'right';
 
-/** The airline's mark, small: the code holds the disc when there is no logo. */
-function AirlineMark({ code }: { code: string }) {
-    const [failed, setFailed] = useState(false);
-    const iata = (code || '').toUpperCase().slice(0, 3);
     return (
-        <span aria-hidden className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-black/5 @xl:size-7">
-            {iata && !failed ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={`https://pics.avs.io/80/80/${iata}.png`} alt="" className="size-full object-contain p-px" onError={() => setFailed(true)} />
-            ) : (
-                <span className="text-[8px] font-bold text-slate-600 @xl:text-[10px]">{iata}</span>
+        <ul
+            className={cn(
+                'mt-1 flex flex-col gap-0.5 text-[12px] leading-snug md:text-[13px]',
+                TEXT,
+                right
+                    ? 'list-none items-end text-right'
+                    : 'list-disc items-start ps-[18px] text-left marker:text-slate-400 dark:marker:text-slate-500',
             )}
-        </span>
-    );
-}
-
-/** A stop's clock, with the "+1" of a landing on a later day. */
-function StopTime({ clock, at, days = 0 }: { clock: ItineraryClock; at?: string; days?: number }) {
-    return (
-        <span className={cn('col-start-1 text-[15px] leading-5 font-bold whitespace-nowrap @xl:text-[18px] @xl:leading-6', TITLE)}>
-            {clock.time(at)}
-            {days > 0 && <sup className={cn('ml-0.5 text-[11px] font-medium @xl:text-[12px]', MUTED)}>+{days}</sup>}
-        </span>
-    );
-}
-
-/** A stop: the city and code, then the airport and its terminal. */
-function Stop({ end, code, className }: { end: SegmentEnd | undefined; code: string; className?: string }) {
-    const t = useTranslations('flights.itinerary');
-    const airportCode = end?.airport || code;
-    const place = placeName(end, code);
-    const heading = place !== airportCode ? `${place} (${airportCode})` : airportCode;
-    const airport = end?.airportName && end.airportName !== place ? end.airportName : null;
-    const terminal = end?.terminal ? t('terminal', { terminal: end.terminal }) : t('terminalTba');
-
-    return (
-        <div className={cn('col-start-3 min-w-0', className)}>
-            <p className={cn('text-[14px] leading-5 font-semibold @xl:text-[15px] @xl:leading-6', TITLE)}>{heading}</p>
-            <p className={cn('text-[12px] leading-snug @xl:text-[13px]', MUTED)}>{[airport, terminal].filter(Boolean).join(' · ')}</p>
-        </div>
+        >
+            {shown.map((item, i) => (
+                <li key={i} className={right ? 'flex items-center gap-1.5' : undefined}>
+                    <span>{item}</span>
+                    {/* A list marker cannot sit on the right, so the arrival's dot is drawn. */}
+                    {right && <span aria-hidden className="size-[5px] shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />}
+                </li>
+            ))}
+        </ul>
     );
 }
 
 /**
- * The flight between two stops: airline and number, aircraft and cabin, time in the air.
- * Narrow, a line on the rail between the stops; wide, a box beside them both.
+ * One end of a flight: the clock, the airport in full, then the date and time, the
+ * terminal, the cabin and flight, the aircraft — under DEPART FROM or ARRIVE AT.
  */
-function Leg({ segment }: { segment: NormalizedSegment }) {
-    const title = [segment.airlineName, segment.flightNumber].filter(Boolean).join(' · ') || segment.airline;
-    const detail = [segment.aircraft, cabinLabel(segment.cabinClass)].filter(Boolean).join(' · ');
-    const duration = formatDuration(segment.duration);
+function EndColumn({
+    end, code, segment, departedAt, label, align, clock,
+}: {
+    end: SegmentEnd | undefined;
+    code: string;
+    segment: NormalizedSegment;
+    /** For the arrival end: when this flight left, for the "+1" on an overnight landing. */
+    departedAt?: string;
+    label: string;
+    align: 'left' | 'right';
+    clock: ItineraryClock;
+}) {
+    const t = useTranslations('flights.itinerary');
+    const locale = useLocale();
+    const days = align === 'right' ? clock.dayOffset(departedAt, end?.time) : 0;
+
+    // Kept italic when the airline has not named one yet, so "we don't know" still
+    // reads differently from a confirmed terminal.
+    const terminal = end?.terminal
+        ? t('terminal', { terminal: end.terminal })
+        : <em>{t('terminalUnavailable')}</em>;
 
     return (
-        <div
-            className={cn(
-                'col-start-3 flex items-center gap-2 pb-3.5',
-                '@xl:col-start-4 @xl:row-span-2 @xl:mb-7 @xl:gap-3 @xl:self-center @xl:rounded-xl @xl:bg-slate-50 @xl:px-3.5 @xl:py-3 @xl:dark:bg-white/5',
-            )}
-        >
-            <AirlineMark code={segment.airline} />
-            <div className="min-w-0 flex-1">
-                <p className={cn('text-[12px] leading-snug font-semibold @xl:text-[13px]', TEXT)}>{title}</p>
-                {detail && <p className={cn('text-[12px] leading-snug', MUTED)}>{detail}</p>}
-            </div>
-            {duration && <span className={cn('shrink-0 text-[12px] whitespace-nowrap @xl:text-[13px]', TEXT)}>{duration}</span>}
+        <div className={cn('flex w-[38%] shrink-0 flex-col sm:w-[34%]', align === 'left' ? 'items-start text-left' : 'items-end text-right')}>
+            <span className={cn('text-lg leading-none font-semibold tracking-[-0.01em] whitespace-nowrap md:text-2xl', TITLE)}>
+                {clock.time(end?.time)}
+                {days > 0 && <sup className={cn('ml-0.5 text-[12px] font-medium', MUTED)}>+{days}</sup>}
+            </span>
+            <span className={cn('mt-1.5 text-[12px] leading-snug md:text-[13px]', TEXT)}>{airportLabel(end, code)}</span>
+            <span className={cn('mt-3 text-[11px] tracking-[0.13em] uppercase md:text-[12px]', MUTED)}>{label}</span>
+            <FactList
+                align={align}
+                items={[
+                    clock.dateTime(end?.time, locale),
+                    terminal,
+                    `${cabinLabel(segment.cabinClass)} ${segment.flightNumber ?? ''}`.trim(),
+                    segment.aircraft,
+                ]}
+            />
         </div>
     );
 }
 
-/** The wait between two flights, and whether it means crossing to another airport. */
-function Layover({ minutes, from, to }: { minutes: number; from: NormalizedSegment; to: NormalizedSegment }) {
+function LegRow({ segment, clock }: { segment: NormalizedSegment; clock: ItineraryClock }) {
     const t = useTranslations('flights.itinerary');
-    const sameAirport = (from.arrival?.airport || from.destination) === (to.departure?.airport || to.origin);
+    const duration = formatDuration(segment.duration);
 
     return (
-        <div className="col-start-3 pb-3.5 @xl:col-span-2 @xl:pb-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[12px] leading-snug font-semibold text-amber-800 @xl:px-3 @xl:text-[13px] dark:bg-amber-500/15 dark:text-amber-300">
-                <Clock className="size-3 shrink-0 @xl:size-[13px]" aria-hidden />
-                <span>
-                    {t('layoverIn', { duration: formatDuration(minutes), place: placeName(to.departure, to.origin) })}
-                    {sameAirport
-                        ? <span className="hidden @xl:inline"> · {t('sameAirport')}</span>
-                        : <> · {t('changeAirports', { from: from.destination, to: to.origin })}</>}
-                </span>
+        <div className="flex items-start justify-between gap-2 md:gap-4">
+            <EndColumn end={segment.departure} code={segment.origin} segment={segment} label={t('departFrom')} align="left" clock={clock} />
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 pt-1.5">
+                {duration && (
+                    <div className={cn('text-center text-[11px] md:text-[12px]', MUTED)}>
+                        <span>{t('flightDuration')}</span> <span className={TEXT}>{duration}</span>
+                    </div>
+                )}
+                <span className="w-full border-t border-dotted border-blue-500/70" />
+            </div>
+            <EndColumn
+                end={segment.arrival}
+                code={segment.destination}
+                segment={segment}
+                departedAt={segment.departure?.time}
+                label={t('arriveAt')}
+                align="right"
+                clock={clock}
+            />
+        </div>
+    );
+}
+
+/** The wait between two flights — a pill, because it is what a traveller scanning a connection most needs to see. */
+function LayoverNote({ minutes, airport }: { minutes: number; airport: string }) {
+    const t = useTranslations('flights.itinerary');
+    return (
+        <div className="flex flex-col items-center gap-1.5 text-center">
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-amber-800 uppercase dark:bg-amber-500/15 dark:text-amber-300">
+                {t('layoverLabel')}
+            </span>
+            <span className={cn('text-[12px] md:text-[13px]', TEXT)}>
+                {t('layoverValue', { duration: formatDuration(minutes), airport })}
             </span>
         </div>
     );
 }
 
-/** Flight by flight, each direction under its route, day, stops and cabin. */
+/** Flight by flight, each direction under its own name and run time. */
 export function FlightItinerary({ offer, className, clock = AIRPORT_CLOCK }: {
     /** An offer, or anything shaped like its flights — a booking's, through `bookingItinerary`. */
     offer: Pick<FlightOffer, 'segments' | 'sliceDurations'>;
@@ -161,101 +167,47 @@ export function FlightItinerary({ offer, className, clock = AIRPORT_CLOCK }: {
     clock?: ItineraryClock;
 }) {
     const t = useTranslations('flights.itinerary');
-    const locale = useLocale();
     const slices = groupSegmentsBySlice(offer.segments ?? []);
-    const terminalsPending = slices.some(({ segments }) =>
-        segments.some((s) => !s.departure?.terminal || !s.arrival?.terminal));
 
     return (
-        <div className={cn('@container', className)}>
-            <div className="flex flex-col gap-8">
-                {slices.map(({ index, segments }, i) => {
-                    const first = segments[0];
-                    const last = segments[segments.length - 1];
-                    if (!first || !last) return null;
+        <div className={cn('flex flex-col gap-7', className)}>
+            {slices.map(({ index, segments }, i) => {
+                // "Outbound" only means something beside a return, so a
+                // single leg goes unnamed — the card above already says it.
+                const label = slices.length === 2
+                    ? t(i === 0 ? 'outbound' : 'return')
+                    : t('legLabel', { number: i + 1 });
+                // The provider's own figure for this direction, never the
+                // offer-wide total: an outbound and a return rarely match.
+                const total = offer.sliceDurations?.[index];
 
-                    // "Outbound" only means something beside a return, so a single
-                    // direction goes unnamed — the card above already says where it goes.
-                    const label = slices.length === 2
-                        ? t(i === 0 ? 'outbound' : 'return')
-                        : t('legLabel', { number: i + 1 });
-                    const stops = segments.length - 1;
-                    const stopsText = stops === 0
-                        ? t('nonstop')
-                        : stops === 1
-                            ? t('oneStopIn', { place: placeName(first.arrival, first.destination) })
-                            : t('stopCount', { count: stops });
-                    // The provider's own figure for this direction, never the offer-wide total.
-                    const total = offer.sliceDurations?.[index];
-                    const waiting = segments.slice(1).reduce((sum, seg, k) =>
-                        sum + (clock.layover(segments[k].arrival?.time, seg.departure?.time) ?? 0), 0);
-
-                    return (
-                        <section key={index}>
-                            <div className="flex items-start justify-between gap-3 @xl:items-end @xl:gap-6">
-                                <div className="min-w-0">
-                                    {slices.length > 1 && (
-                                        <p className={cn('mb-1 text-[11px] tracking-[0.13em] uppercase', MUTED)}>{label}</p>
-                                    )}
-                                    <h4 className={cn('text-[17px] leading-tight font-bold tracking-[-0.01em] @xl:text-[20px]', TITLE)}>
-                                        {placeName(first.departure, first.origin)} → {placeName(last.arrival, last.destination)}
-                                    </h4>
-                                    <p className={cn('mt-1 text-[12px] @xl:text-[13px]', MUTED)}>
-                                        {[clock.date(first.departure?.time, locale), stopsText, cabinLabel(first.cabinClass)].filter(Boolean).join(' · ')}
-                                    </p>
-                                </div>
-                                <dl className="flex shrink-0 gap-7 text-right @xl:text-left">
-                                    {total != null && total > 0 && (
-                                        <div>
-                                            <dt className={cn('sr-only text-[11px] @xl:not-sr-only', MUTED)}>{t('totalTrip')}</dt>
-                                            <dd className={cn('text-[12px] @xl:text-[15px] @xl:font-bold', TEXT)}>{formatDuration(total)}</dd>
-                                        </div>
-                                    )}
-                                    {waiting > 0 && (
-                                        <div className="hidden @xl:block">
-                                            <dt className={cn('text-[11px]', MUTED)}>{t('layoverLabel')}</dt>
-                                            <dd className={cn('text-[15px] font-bold', TEXT)}>{formatDuration(waiting)}</dd>
-                                        </div>
-                                    )}
-                                </dl>
+                return (
+                    <div key={index} className="flex flex-col gap-5">
+                        {slices.length > 1 && (
+                            <div className="flex flex-wrap items-baseline gap-x-3 text-[12px]">
+                                <span className={cn('tracking-[0.13em] uppercase', MUTED)}>{label}</span>
+                                {total != null && total > 0 && (
+                                    <span className={MUTED}>
+                                        {t('totalFlightDuration')} <span className={TEXT}>{formatDuration(total)}</span>
+                                    </span>
+                                )}
                             </div>
-
-                            <div className="mt-4 grid grid-cols-[minmax(3.25rem,auto)_16px_minmax(0,1fr)] gap-x-2.5 @xl:mt-5 @xl:grid-cols-[minmax(4rem,auto)_16px_minmax(0,1.2fr)_minmax(0,1fr)] @xl:gap-x-4">
-                                {segments.map((seg, j) => {
-                                    const next = segments[j + 1];
-                                    const wait = next ? clock.layover(seg.arrival?.time, next.departure?.time) : null;
-                                    const showWait = next != null && wait != null;
-                                    return (
-                                        <React.Fragment key={`${index}-${j}`}>
-                                            <StopTime clock={clock} at={seg.departure?.time} />
-                                            {/* Narrow, the flight's own line on the rail is a row of its own, so the
-                                                line runs down beside it too. */}
-                                            <span aria-hidden className="col-start-2 row-span-2 flex flex-col items-center @xl:row-span-1">
-                                                <span className={cn(DOT, DOT_DEPART)} />
-                                                <span className={RAIL_FLYING} />
-                                            </span>
-                                            <Stop end={seg.departure} code={seg.origin} className="pb-3.5 @xl:pb-7" />
-                                            <Leg segment={seg} />
-
-                                            <StopTime clock={clock} at={seg.arrival?.time} days={clock.dayOffset(seg.departure?.time, seg.arrival?.time)} />
-                                            <span aria-hidden className={cn('col-start-2 flex flex-col items-center', showWait && 'row-span-2')}>
-                                                <span className={cn(DOT, DOT_ARRIVE)} />
-                                                {next && <span className={RAIL_WAITING} />}
-                                            </span>
-                                            <Stop end={seg.arrival} code={seg.destination} className={next ? 'pb-3 @xl:pb-4' : undefined} />
-                                            {showWait && <Layover minutes={wait} from={seg} to={next} />}
-                                        </React.Fragment>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    );
-                })}
-            </div>
-
-            <p className={cn('mt-4 border-t pt-3 text-[11px] @xl:mt-[22px] @xl:pt-3.5 @xl:text-[12px]', HAIRLINE, MUTED)}>
-                {terminalsPending ? t('footnoteTerminals') : t('footnote')}
-            </p>
+                        )}
+                        {segments.map((seg, j) => {
+                            const prev = segments[j - 1];
+                            const lay = prev ? clock.layover(prev.arrival?.time, seg.departure?.time) : null;
+                            return (
+                                <React.Fragment key={`${index}-${j}`}>
+                                    {lay != null && (
+                                        <LayoverNote minutes={lay} airport={seg.departure?.airportName || seg.origin} />
+                                    )}
+                                    <LegRow segment={seg} clock={clock} />
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                );
+            })}
         </div>
     );
 }

@@ -436,7 +436,6 @@
     "flight": {
       "cardHeld": "现在仅对您的银行卡进行预授权，航空公司确认机票后才会扣款。若无法确认，预授权将被解除，您无需支付任何费用。",
       "priceChanged": "在航空公司确认之前，票价已从 {was} 变为 {now}。您未被扣款，银行卡预授权已解除。如需按新票价预订，请重新提交您的信息。",
-      "offerExpired": "在航空公司确认之前，该票价已售罄。您未被扣款，银行卡预授权已解除。请重新搜索。",
       "adultN": "成人 {n}",
       "infantN": "婴儿 {n}",
       "nameHint": "请按照护照上的写法填写姓名。",
@@ -539,8 +538,6 @@
     "alert": {
       "close": "关闭",
       "fareChangedTitle": "票价已变动",
-      "fareGoneTitle": "该票价已不可用",
-      "searchAgain": "重新搜索",
       "paymentTitle": "付款未成功"
     }
   },
@@ -599,6 +596,8 @@
       "datePicked": "这个日期是我们为您选择的 — 更改日期可查看其他票价。",
       "duration": "飞行时长",
       "empty": "该日期暂无可用航班。",
+      "fareGoneBody": "航空公司已停止销售该票价。您未被扣款，以下是当前在售的票价。",
+      "fareGoneTitle": "该票价已不可用",
       "filters": "筛选",
       "filtersTitle": "航班筛选",
       "findingFares": "正在寻找最优票价…",
@@ -642,21 +641,19 @@
       "flightDetails": "航班详情"
     },
     "itinerary": {
+      "arriveAt": "抵达",
+      "departFrom": "出发",
+      "flightDuration": "飞行时长",
       "layoverLabel": "中转",
+      "layoverValue": "在 {airport} 中转 {duration}",
       "legLabel": "第 {number} 段",
       "nonstop": "直飞",
       "outbound": "去程",
       "return": "回程",
       "stopCount": "{count} 次经停",
       "terminal": "{terminal} 号航站楼",
-      "terminalTba": "航站楼待定",
-      "oneStopIn": "在{place}中转 1 次",
-      "totalTrip": "总行程时间",
-      "layoverIn": "在{place}中转 {duration}",
-      "sameAirport": "同一机场，无需转场",
-      "changeAirports": "需换机场：{from} → {to}",
-      "footnote": "所有时间均为当地时间。",
-      "footnoteTerminals": "航站楼将在临近出发时确认。所有时间均为当地时间。"
+      "terminalUnavailable": "航站楼信息将在临近出发时提供",
+      "totalFlightDuration": "总飞行时长"
     },
     "filters": {
       "cheapest": "最便宜",

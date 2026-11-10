@@ -119,14 +119,6 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `flights.results.checkingFare` | Checking the fare is still available… | 요금이 아직 유효한지 확인하는 중… | 運賃がまだ有効か確認しています… | 正在确认该票价是否仍然有效… |
 | `flights.card.select` | Select | 선택 | 選択 | 选择 |
 | `flights.card.flightDetails` | Flight details | 항공편 상세 정보 | フライト詳細 | 航班详情 |
-| `flights.itinerary.terminalTba` | Terminal TBA | 터미널 미정 | ターミナル未定 | 航站楼待定 |
-| `flights.itinerary.oneStopIn` | 1 stop in {place} | {place} 1회 경유 | {place}で1回乗り継ぎ | 在{place}中转 1 次 |
-| `flights.itinerary.totalTrip` | Total trip | 총 소요 시간 | 総所要時間 | 总行程时间 |
-| `flights.itinerary.layoverIn` | {duration} layover in {place} | {place}에서 {duration} 경유 | {place}で{duration}の乗り継ぎ | 在{place}中转 {duration} |
-| `flights.itinerary.sameAirport` | same airport, no transfer | 같은 공항, 이동 없음 | 同じ空港・移動なし | 同一机场，无需转场 |
-| `flights.itinerary.changeAirports` | change airports, {from} to {to} | 공항 이동: {from} → {to} | 空港の移動あり：{from}→{to} | 需换机场：{from} → {to} |
-| `flights.itinerary.footnote` | Times are local. | 모든 시간은 현지 시간입니다. | 時刻はすべて現地時間です。 | 所有时间均为当地时间。 |
-| `flights.itinerary.footnoteTerminals` | Terminals are confirmed closer to departure. Times are local. | 터미널은 출발이 가까워지면 확정됩니다. 모든 시간은 현지 시간입니다. | ターミナルは出発が近づくと確定します。時刻はすべて現地時間です。 | 航站楼将在临近出发时确认。所有时间均为当地时间。 |
 | `flights.results.clearFilters` | Clear filters | 필터 초기화 | 絞り込みをクリア | 清除筛选 |
 | `flights.topBar.swap` | Swap origin and destination | 출발지와 도착지 바꾸기 | 出発地と到着地を入れ替える | 交换出发地和目的地 |
 | `flights.topBar.changeTrip` | Change dates and travellers | 날짜 및 여행자 변경 | 日程と人数を変更 | 更改日期和出行人数 |
@@ -281,7 +273,6 @@ can be under review after its payment was taken.
 |---|---|---|---|---|
 | `checkout.flight.cardHeld` | Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing. | 지금은 카드 승인만 진행되며, 항공사가 항공권을 확정한 후에 결제됩니다. 확정되지 않으면 승인이 해제되며 비용이 청구되지 않습니다. | 現在はカードの与信のみを行い、航空会社が航空券を確定した時点で請求されます。確定できなかった場合は与信が解除され、料金は発生しません。 | 现在仅对您的银行卡进行预授权，航空公司确认机票后才会扣款。若无法确认，预授权将被解除，您无需支付任何费用。 |
 | `checkout.flight.priceChanged` | The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare. | 항공사가 확정하기 전에 요금이 {was}에서 {now}(으)로 변경되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 새 요금으로 예약하려면 정보를 다시 제출해 주세요. | 航空会社が確定する前に運賃が{was}から{now}に変更されました。料金は請求されておらず、カードの与信は解除されています。新しい運賃で予約するには、もう一度お客様情報を送信してください。 | 在航空公司确认之前，票价已从 {was} 变为 {now}。您未被扣款，银行卡预授权已解除。如需按新票价预订，请重新提交您的信息。 |
-| `checkout.flight.offerExpired` | This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again. | 항공사가 확정하기 전에 이 요금이 매진되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 다시 검색해 주세요. | 航空会社が確定する前にこの運賃は売り切れました。料金は請求されておらず、カードの与信は解除されています。もう一度検索してください。 | 在航空公司确认之前，该票价已售罄。您未被扣款，银行卡预授权已解除。请重新搜索。 |
 | `checkout.flight.settling.description` | The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued. | 항공사에서 항공권을 확정하고 있습니다. 몇 분 정도 걸릴 수 있으며, 발권되는 즉시 내 여행에 표시됩니다. | 航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。 | 航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。 |
 | `checkout.flight.needsReview.title` | We're confirming this with the airline | 항공사와 예약을 확인하고 있습니다 | 航空会社に予約を確認しています | 正在与航空公司确认预订 |
 | `checkout.flight.needsReview.description` | Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed. | 담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다. | 担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。 | 我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。 |
@@ -608,17 +599,26 @@ Claude (2026-11-06).
 
 ## Checkout — warnings shown as dialogs
 
-The titles and buttons of the dialogs the checkout's warnings are shown in (a fare that sold out
-or changed, a declined card). The messages under them are the existing `checkout.flight.*` and
+The titles and buttons of the dialogs the checkout's warnings are shown in (a fare that changed,
+a declined card). The messages under them are the existing `checkout.flight.*` and
 `checkout.failed.*` strings. Written by Claude (2026-11-06).
 
 | Key | English | 한국어 | 日本語 | 中文 |
 |-----|---------|--------|--------|------|
 | `checkout.alert.close` | Close | 닫기 | 閉じる | 关闭 |
 | `checkout.alert.fareChangedTitle` | The fare changed | 요금이 변경되었습니다 | 運賃が変更されました | 票价已变动 |
-| `checkout.alert.fareGoneTitle` | This fare is no longer available | 이 요금은 더 이상 이용할 수 없습니다 | この運賃はご利用いただけなくなりました | 该票价已不可用 |
-| `checkout.alert.searchAgain` | Search again | 다시 검색 | もう一度検索 | 重新搜索 |
 | `checkout.alert.paymentTitle` | Your payment didn't go through | 결제가 완료되지 않았습니다 | お支払いが完了しませんでした | 付款未成功 |
+
+## Flight results — a fare that had gone
+
+Shown over a new search when the fare the traveller picked is no longer on sale: they were sent
+back from the checkout, or it had gone by the time they picked it. It says whether money moved,
+so it carries the checkout's weight. Written by Claude (2026-11-10).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `flights.results.fareGoneTitle` | That fare is no longer available | 해당 요금은 더 이상 이용할 수 없습니다 | その運賃はご利用いただけなくなりました | 该票价已不可用 |
+| `flights.results.fareGoneBody` | The airline has stopped selling it. You have not been charged — these are the fares on sale now. | 항공사가 이 요금의 판매를 중단했습니다. 결제되지 않았으며, 지금 판매 중인 요금을 보여 드립니다. | 航空会社がこの運賃の販売を終了しました。料金は請求されていません。現在販売中の運賃をご覧ください。 | 航空公司已停止销售该票价。您未被扣款，以下是当前在售的票价。 |
 
 ## Moving between pages
 

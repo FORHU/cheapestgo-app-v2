@@ -83,7 +83,6 @@ const USED = [
     'checkout.failed.tryAgain',
     'checkout.flight.cardHeld',
     'checkout.flight.priceChanged',
-    'checkout.flight.offerExpired',
     'checkout.flight.settling.description',
     'checkout.flight.needsReview.title',
     'checkout.flight.needsReview.description',
@@ -148,8 +147,6 @@ const USED = [
     'checkout.validation.specialRequestsTooLong',
     'checkout.alert.close',
     'checkout.alert.fareChangedTitle',
-    'checkout.alert.fareGoneTitle',
-    'checkout.alert.searchAgain',
     'checkout.alert.paymentTitle',
 ];
 

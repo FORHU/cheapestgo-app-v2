@@ -1,6 +1,6 @@
 import type { FlightBooking, FlightOffer, NormalizedSegment } from '@/shared/types';
 import type { ItineraryClock } from '@/features/flights/components/flight-itinerary';
-import { formatBookingDate, formatBookingTime } from '@/features/flights/lib/flight-utils';
+import { formatBookingDateTime, formatBookingTime } from '@/features/flights/lib/flight-utils';
 
 /**
  * A booked flight in the shape the results page's itinerary draws (`FlightItinerary`).
@@ -74,7 +74,7 @@ function bookingLayover(arrival?: string, departure?: string): number | null {
 /** A booking's timestamps, read the way the rest of the trips screens read them. */
 export const BOOKING_CLOCK: ItineraryClock = {
     time: formatBookingTime,
-    date: formatBookingDate,
+    dateTime: formatBookingDateTime,
     dayOffset: bookingDayOffset,
     layover: bookingLayover,
 };

@@ -18,6 +18,7 @@ import en from '@/locales/en.json';
 let query = '';
 const push = vi.fn();
 const back = vi.fn();
+const replace = vi.fn();
 const post = vi.fn();
 const get = vi.fn();
 const auth: { user: unknown; isLoading: boolean } = { user: { email: 'juan@example.com', first_name: '', last_name: '' }, isLoading: false };
@@ -30,7 +31,7 @@ vi.mock('@/i18n/navigation', () => ({
     Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode } & Record<string, unknown>) => (
         <a href={href} {...rest}>{children}</a>
     ),
-    useRouter: () => ({ push, back, replace: vi.fn() }),
+    useRouter: () => ({ push, back, replace }),
 }));
 vi.mock('@/shared/lib/http', () => ({
     http: { post: (...a: unknown[]) => post(...a), get: (...a: unknown[]) => get(...a) },
@@ -913,16 +914,6 @@ describe('after the card', () => {
         expect(screen.getByRole('button', { name: /continue to payment/i })).toBeInTheDocument();
     });
 
-    it('says the fare sold out, that nothing was charged, and goes back to the details', async () => {
-        api(() => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
-
-        await payForFlight();
-
-        expect(await screen.findByText(/sold out before the airline could confirm it/i)).toBeInTheDocument();
-        expect(screen.getByText(/hold on your card has been released/i)).toBeInTheDocument();
-        expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
-    });
-
     it('relays any other refusal in the server\'s words, and goes back to the details', async () => {
         api(() => { throw httpError(400, { error: 'DUFFEL_ORDER_FAILED', message: 'Passenger name is invalid. Your card has not been charged.' }); });
 
@@ -930,6 +921,78 @@ describe('after the card', () => {
 
         expect(await screen.findByText('Passenger name is invalid. Your card has not been charged.')).toBeInTheDocument();
         expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
+    });
+});
+
+describe('a fare that has gone', () => {
+    /** The search the flight was picked from, as the results page sends it. */
+    const SEARCH = 'origin=Tokyo&destination=NRT&depart=2026-12-01&adults=1';
+    /** That search, run again, with the note saying why the traveller is back. */
+    const SEARCH_AGAIN = `/flights/search?${SEARCH}&fareGone=1`;
+
+    beforeEach(() => { query = new URLSearchParams({ ...FLIGHT_QUERY, search: SEARCH }).toString(); });
+
+    it('sends the traveller back to their search when the checkout opens on it', async () => {
+        get.mockImplementation(async () => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
+
+        renderPage();
+
+        await waitFor(() => expect(replace).toHaveBeenCalledWith(SEARCH_AGAIN));
+    });
+
+    it('stays put when the airline only could not be reached to check it', async () => {
+        get.mockImplementation(async () => { throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'x' }); });
+
+        renderPage();
+
+        await waitFor(() => expect(get).toHaveBeenCalled());
+        expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('leaves the receipt alone once the flight is booked, though its offer is gone by then', async () => {
+        const page = () => <NextIntlClientProvider locale="en" messages={en as never}><CheckoutPage /></NextIntlClientProvider>;
+        const view = render(page());
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+        fireEvent.click(await screen.findByRole('button', { name: /pay usd 272\.40/i }));
+        await screen.findByText(/Your flight to Tokyo is confirmed/);
+
+        // Ordered, the offer is gone at the airline — and picking a currency reads it again.
+        get.mockImplementation(async () => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
+        query = new URLSearchParams({ ...FLIGHT_QUERY, search: SEARCH, currency: 'PHP' }).toString();
+        view.rerender(page());
+        await waitFor(() => expect(get).toHaveBeenCalledWith('/flights/offers/off_1?currency=PHP'));
+        await act(async () => { /* let the refusal land */ });
+
+        expect(replace).not.toHaveBeenCalled();
+        expect(screen.getByText(/Your flight to Tokyo is confirmed/)).toBeInTheDocument();
+    });
+
+    it.each([
+        ['has gone', 410, 'OFFER_EXPIRED'],
+        ['can no longer be sold', 422, 'FARE_UNAVAILABLE'],
+    ])('sends the traveller back to their search when "Continue to payment" finds it %s', async (_, status, error) => {
+        post.mockImplementation(async (path: string) => {
+            if (path === '/flights/book') throw httpError(status, { error, message: 'This fare is no longer available.' });
+            throw new Error(`unexpected POST ${path}`);
+        });
+
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        await waitFor(() => expect(replace).toHaveBeenCalledWith(SEARCH_AGAIN));
+        expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
+    });
+
+    it('sends the traveller back to their search when it sells out after the card', async () => {
+        api(() => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
+
+        await payForFlight();
+
+        await waitFor(() => expect(replace).toHaveBeenCalledWith(SEARCH_AGAIN));
+        // Not wherever the browser happens to have been before: a sign-in, another tab's page.
+        expect(back).not.toHaveBeenCalled();
     });
 });
 
@@ -1006,17 +1069,6 @@ describe('a warning, in a dialog rather than the red box', () => {
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         return dialog;
     }
-
-    it('says the fare sold out, offers a new search, and leaves the details behind it', async () => {
-        api(() => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
-        await payForFlight();
-
-        const dialog = await warning('This fare is no longer available');
-        expect(within(dialog).getByText(/sold out before the airline could confirm it/i)).toBeInTheDocument();
-
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Search again' }));
-        expect(back).toHaveBeenCalledTimes(1);
-    });
 
     it('says the fare changed, and closing leaves the details to submit again', async () => {
         api(() => { throw httpError(409, { error: 'PRICE_CHANGED', message: 'x', oldPrice: 100, newPrice: 140, currency: 'USD' }); });
