@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useId, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown } from 'lucide-react';
@@ -36,8 +37,7 @@ import {
 } from '@/features/checkout/components/booking-state-panels';
 import { nightsBetween } from '@/shared/lib/stay';
 import { ACCENT, ACCENT_FILL, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
-import { FIELD_RADIUS, TOUCH_SIZING_QUERY, stripeAppearance } from '@/features/checkout/lib/stripe-appearance';
-import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
+import { FIELD_RADIUS, stripeAppearance } from '@/features/checkout/lib/stripe-appearance';
 import { BRAND } from '@/shared/lib/palette';
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
@@ -561,7 +561,7 @@ function ConfirmedScreen({
                 <div className="receipt-card" style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 24, overflow: 'hidden' }}>
                     {hotelImage && (
                         <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
-                            <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            <Image src={hotelImage} alt={hotelName} fill unoptimized sizes="100vw" style={{ objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
 
@@ -674,8 +674,6 @@ function CheckoutContent() {
     const { user }     = useAuthStore();
     const { theme }    = useTheme();
     const palette      = checkoutPalette(theme);
-    // The card form's sizes follow the details step's: touch sizes on a phone or a touch screen.
-    const touchSizing  = useMediaQuery(TOUCH_SIZING_QUERY);
     const countryOptions = useMemo(() => getCountryOptions(locale), [locale]);
 
     // ── Detect mode ──
@@ -1339,8 +1337,8 @@ function CheckoutContent() {
             <div style={{ position: 'sticky', top: 24 }}>
                 <div style={{ background: palette.surface, borderRadius: 12, overflow: 'hidden' }}>
                     {hotelImage && (
-                        <div style={{ height: 204, overflow: 'hidden' }}>
-                            <img src={hotelImage} alt={hotelName} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <div style={{ height: 204, overflow: 'hidden', position: 'relative' }}>
+                            <Image src={hotelImage} alt={hotelName} fill unoptimized sizes="100vw" style={{ objectFit: 'cover', display: 'block' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
 

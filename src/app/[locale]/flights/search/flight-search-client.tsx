@@ -431,7 +431,7 @@ export function FlightSearchClient() {
             clearTimeout(timeoutId);
             controller.abort();
         };
-    }, [params.origin, params.destination, params.departure, params.returnDate, params.adults, params.children, params.infants, params.cabin, params.tripType, retryKey]);
+    }, [params.origin, params.destination, params.departure, params.returnDate, params.adults, params.children, params.infants, params.cabin, params.tripType, retryKey, tAll]);
 
     const handleRetry = () => {
         setRetryKey((k) => k + 1);

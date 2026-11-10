@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { Bookmark, Plane, Building2, Trash2, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { http } from '@/shared/lib/http';
 import { StatsCard } from '@/features/admin/components/stats-card';
@@ -132,7 +133,7 @@ export function SavedTripsView() {
                                         <td className="px-3 py-1.5">
                                             <div className="flex items-center gap-3">
                                                 {trip.image_url ? (
-                                                    <img src={trip.image_url} alt={trip.title} className="w-8 h-8 rounded-lg object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                    <Image src={trip.image_url} alt={trip.title} width={32} height={32} unoptimized className="w-8 h-8 rounded-lg object-cover shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                                 ) : (
                                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${trip.type === 'flight' ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                                                         {trip.type === 'flight' ? <Plane size={14} /> : <Building2 size={14} />}

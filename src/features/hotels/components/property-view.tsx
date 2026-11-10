@@ -241,10 +241,10 @@ function PropertyContent() {
             .finally(()=> { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
-    }, [hotelId, checkIn, checkOut, adults, children]);
+    }, [hotelId, checkIn, checkOut, adults, children, t]);
 
     const content      = data?.content;
-    const rooms        = data?.rooms ?? [];
+    const rooms        = useMemo(() => data?.rooms ?? [], [data?.rooms]);
     /** Stays are off sale — the rooms are absent for our reason, not the hotel's. */
     const maintenance  = data?.maintenance === true;
     const reviewItems  = data?.reviewItems ?? [];
@@ -253,7 +253,7 @@ function PropertyContent() {
     const selectedRoom = selectedOffer?.room ?? null;
     const selectedRate = selectedOffer?.rate ?? null;
     const heroImage     = content?.images?.[0] ?? null;
-    const allImages     = content?.images ?? [];
+    const allImages     = useMemo(() => content?.images ?? [], [content?.images]);
     /**
      * What the banner pages through: the hotel's own photographs, then every
      * room shot the supplier sent.

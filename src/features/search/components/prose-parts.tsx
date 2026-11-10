@@ -419,7 +419,7 @@ function NoteFloat({ children, width = 'min(360px,88vw)', extra = {} }: {
         place();
         window.addEventListener('resize', place);
         return () => window.removeEventListener('resize', place);
-    }, []);
+    }, [extra.maxHeight]);
 
     return (
         <div ref={ref} className="imm-note" style={{
