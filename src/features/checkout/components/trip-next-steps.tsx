@@ -17,22 +17,22 @@ function NextCard({ href, icon: Icon, title, line, palette }: {
             href={href}
             className="cg-next-card"
             style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 16,
-                background: palette.surface, border: `1.5px solid ${palette.summaryBorder}`,
+                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14,
+                background: palette.surface, border: `1px solid ${palette.summaryBorder}`,
                 color: palette.title, textDecoration: 'none', transition: 'border-color .15s',
             }}
         >
             <span aria-hidden style={{
-                width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: palette.stepIdle,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: ACCENT,
+                width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: palette.stepIdle,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: palette.icon,
             }}>
-                <Icon size={20} />
+                <Icon size={16} />
             </span>
             <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>{title}</span>
-                <span style={{ display: 'block', fontSize: 14, color: palette.muted, marginTop: 2 }}>{line}</span>
+                <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>{title}</span>
+                <span style={{ display: 'block', fontSize: 13, color: palette.muted, marginTop: 2 }}>{line}</span>
             </span>
-            <ArrowRight aria-hidden size={18} color={palette.faint} style={{ flexShrink: 0 }} />
+            <ArrowRight aria-hidden size={16} color={palette.muted} style={{ flexShrink: 0 }} />
         </Link>
     );
 }
@@ -71,12 +71,14 @@ export function TripNextSteps({ palette, stay, adults, childPassengers }: TripNe
         .formatRange(new Date(`${stay.checkIn}T00:00:00Z`), new Date(`${stay.checkOut}T00:00:00Z`));
 
     return (
-        <section className="no-print" aria-labelledby="trip-next-title" style={{ marginTop: 'clamp(32px,4vw,48px)' }}>
+        // Under the receipt's trips button, past a hairline, as the form's groups are: one row per
+        // offer, stacked down the column.
+        <section className="no-print" aria-labelledby="trip-next-title" style={{ marginTop: 36, paddingTop: 24, borderTop: `1px solid ${palette.hairline}` }}>
             <style>{`.cg-next-card:hover, .cg-next-card:focus-visible { border-color: ${ACCENT} !important; }`}</style>
-            <h2 id="trip-next-title" style={{ fontSize: 20, fontWeight: 700, color: palette.title, margin: '0 0 14px' }}>
+            <h2 id="trip-next-title" style={{ fontSize: 15, fontWeight: 600, color: palette.title, margin: '0 0 14px' }}>
                 {t('title')}
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <NextCard
                     href={hotelLink(stay, adults, childPassengers)}
                     icon={BedDouble}

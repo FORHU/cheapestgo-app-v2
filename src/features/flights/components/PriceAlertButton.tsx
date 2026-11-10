@@ -96,7 +96,7 @@ export function PriceAlertButton({
         return (
             <button
                 onClick={() => { setFeedback('Sign in required'); setTimeout(() => setFeedback(''), 3000); }}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 dark:border-white/10 dark:bg-slate-900 dark:text-slate-400"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full md:h-10 md:gap-2 border border-slate-200 bg-white px-3.5 text-[12px] font-medium md:px-5 md:text-sm text-slate-500 transition-colors hover:border-slate-300 dark:border-white/10 dark:bg-slate-900 dark:text-slate-400"
                 title={tAll('flights.priceAlert.signInRequired')}
             >
                 <BadgeDollarSign size={16} />
@@ -108,7 +108,7 @@ export function PriceAlertButton({
 
     if (state === 'loading') {
         return (
-            <div className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-400 dark:border-white/10 dark:bg-slate-900">
+            <div className="inline-flex h-9 items-center gap-1.5 rounded-full md:h-10 md:gap-2 border border-slate-200 bg-white px-3.5 text-[12px] font-medium md:px-5 md:text-sm text-slate-400 dark:border-white/10 dark:bg-slate-900">
                 <Loader2 size={16} className="animate-spin" />
                 <span>{tAll('flights.priceAlert.loading')}</span>
             </div>
@@ -120,7 +120,7 @@ export function PriceAlertButton({
             <div className="flex items-center gap-1.5">
                 <button
                     onClick={removeAlert}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full md:h-10 md:gap-2 border border-emerald-200 bg-emerald-50 px-3.5 text-[12px] font-medium md:px-5 md:text-sm text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
                     title={tAll('flights.priceAlert.remove')}
                 >
                     <BellOff size={16} />
@@ -135,7 +135,7 @@ export function PriceAlertButton({
         <div className="flex items-center gap-1.5">
             <button
                 onClick={createAlert}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full md:h-10 md:gap-2 border border-slate-200 bg-white px-3.5 text-[12px] font-medium md:px-5 md:text-sm text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 title={tAll('flights.priceAlert.emailMe')}
             >
                 <BadgeDollarSign size={16} />

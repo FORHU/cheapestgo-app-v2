@@ -282,7 +282,8 @@
       "flight": "航班",
       "dates": "日期",
       "guests": "入住人数",
-      "room": "客房"
+      "room": "客房",
+      "tripSummary": "行程摘要"
     },
     "title": "结账",
     "userDetails": {
@@ -436,7 +437,6 @@
     "flight": {
       "cardHeld": "现在仅对您的银行卡进行预授权，航空公司确认机票后才会扣款。若无法确认，预授权将被解除，您无需支付任何费用。",
       "priceChanged": "在航空公司确认之前，票价已从 {was} 变为 {now}。您未被扣款，银行卡预授权已解除。如需按新票价预订，请重新提交您的信息。",
-      "offerExpired": "在航空公司确认之前，该票价已售罄。您未被扣款，银行卡预授权已解除。请重新搜索。",
       "adultN": "成人 {n}",
       "infantN": "婴儿 {n}",
       "nameHint": "请按照护照上的写法填写姓名。",
@@ -472,7 +472,12 @@
       "receipt": {
         "confirmedToDestination": "您飞往{destination}的航班已确认。",
         "allSet": "预订完成",
-        "confirmedSentTo": "您飞往{destination}的航班已确认，航班详情和收据已发送至 {email}",
+        "receiptSentTo": "收据已发送至 {email}",
+        "bagsLabel": "行李",
+        "departureTerminal": "出发航站楼",
+        "arrivalTerminal": "到达航站楼",
+        "airlinePnr": "航空公司 PNR",
+        "pnrHint": "办理值机时使用",
         "approxTotal": "约合 {currency}",
         "receiptSentRich": "收据已发送至<b>{email}</b>。",
         "passengersCount": "{count} 位乘客",
@@ -534,10 +539,9 @@
     "alert": {
       "close": "关闭",
       "fareChangedTitle": "票价已变动",
-      "fareGoneTitle": "该票价已不可用",
-      "searchAgain": "重新搜索",
       "paymentTitle": "付款未成功"
-    }
+    },
+    "loadingCheckout": "正在加载结账页面…"
   },
   "currencyPicker": {
     "label": "选择货币"
@@ -594,6 +598,8 @@
       "datePicked": "这个日期是我们为您选择的 — 更改日期可查看其他票价。",
       "duration": "飞行时长",
       "empty": "该日期暂无可用航班。",
+      "fareGoneBody": "航空公司已停止销售该票价。您未被扣款，以下是当前在售的票价。",
+      "fareGoneTitle": "该票价已不可用",
       "filters": "筛选",
       "filtersTitle": "航班筛选",
       "findingFares": "正在寻找最优票价…",
@@ -632,7 +638,9 @@
       "currentlySelected": "当前已选",
       "includesTaxes": "含税费",
       "freeCancellation": "免费取消",
-      "nonRefundable": "不可退款"
+      "nonRefundable": "不可退款",
+      "select": "选择",
+      "flightDetails": "航班详情"
     },
     "itinerary": {
       "arriveAt": "抵达",
@@ -1023,12 +1031,6 @@
           "titleRest": "直接问。",
           "caption": "告诉我们您的行程，我们会为您报出合适的住宿与路线价格。"
         },
-        "options": {
-          "eyebrow": "抵达",
-          "titleLead": "现在",
-          "titleRest": "做出选择。",
-          "caption": "住宿、航班与高尔夫，一站搞定。"
-        },
         "golf": {
           "titleLead": "或者",
           "titleRest": "去开球。",
@@ -1037,12 +1039,6 @@
       },
       "strip": {
         "from": "{price} 起"
-      },
-      "options": {
-        "staysNote": "酒店与民宿",
-        "flightsNote": "覆盖所有可订航空公司",
-        "golf": "高尔夫",
-        "golfNote": "精选球场，开球时间可咨询"
       },
       "ask": {
         "placeholder": "描述您想要的旅行…",
@@ -1678,7 +1674,6 @@
     "trips": "行程",
     "createAccount": "创建账户",
     "accountSettings": "账户设置",
-    "menu": "菜单",
     "membersSave": "会员可省夐10%或更多",
     "membersSaveSubtitle": "登录后可享选定住宿折扣",
     "accountWorks": "您的账户可在CheapestGo及所有合作站点使用"
@@ -2140,20 +2135,6 @@
     "chatPlaceholder": "有什么都可以问——机票、酒店、行程规划...",
     "hotels": "酒店",
     "prose": {
-      "flyFrom": "出发 ",
-      "to": " 到达",
-      "stayIn": "住宿",
-      "onDates": "，日期 ",
-      "fromDates": "，日期 ",
-      "withTravelers": "，人数 ",
-      "anywhere": "某个好去处",
-      "sometime": "近期某天",
-      "justMe": "我一个人",
-      "ofUs": "{count} 人",
-      "origin": "您所在的地方",
-      "aDate": "某一天",
-      "yourDates": "您的出行日期",
-      "flexibleTrip": "灵活的行程",
       "teeOffAt": "球场",
       "onDay": "，日期 ",
       "forPlayers": "，人数 ",
@@ -2161,14 +2142,11 @@
       "firstOpenDay": "最早可订日",
       "players": "{count} 人"
     },
-    "trendingCities": "热门城市",
     "popularAirports": "热门机场",
     "noAirportsMatch": "没有与“{query}”匹配的机场",
-    "imFlexible": "日期灵活",
     "oneWay": "单程",
     "roundTrip": "往返",
     "whenFlying": "您打算什么时候出发？",
-    "pickDates": "请选择日期",
     "nights": "{count} 晚",
     "listView": "列表视图",
     "mapView": "地图视图",
@@ -2185,6 +2163,43 @@
       "howMany": "几位球员？",
       "fewer": "减少人数",
       "more": "增加人数"
+    },
+    "steps": {
+      "navLabel": "搜索步骤",
+      "where": "地点",
+      "when": "日期",
+      "who": "人数",
+      "from": "出发地",
+      "to": "目的地",
+      "trip": "行程",
+      "askStay": "您想住在哪里？",
+      "askFrom": "您从哪里出发？",
+      "askTo": "您要飞往哪里？",
+      "askTrip": "您要哪种行程？",
+      "askStayDates": "您什么时候入住？",
+      "placePlaceholder": "城市、区域或酒店名称",
+      "orPickOne": "或从这里选择",
+      "nextDates": "下一步：日期",
+      "nextDestination": "下一步：目的地",
+      "nextOrigin": "下一步：出发地",
+      "nextGuests": "下一步：入住人数",
+      "nextTravellers": "下一步：乘客",
+      "searchStays": "搜索住宿",
+      "searchFlights": "搜索航班",
+      "selected": "已选择 {name}",
+      "enterHintAirport": "按 Enter 选择高亮的机场",
+      "enterHintPlace": "按 Enter 选择高亮的地点",
+      "fromOrigin": "从{city}出发",
+      "change": "更改",
+      "back": "返回",
+      "datesOptional": "可选。跳过的话，我们会为您选好日期。",
+      "noPlaceMatch": "没有与“{query}”匹配的地点",
+      "fewerAdults": "减少成人",
+      "moreAdults": "增加成人",
+      "fewerChildren": "减少儿童",
+      "moreChildren": "增加儿童",
+      "oneWayNote": "仅去程航班",
+      "roundTripNote": "往返，含返程日期"
     }
   },
   "seo": {
@@ -2636,6 +2651,14 @@
         "declined": "已拒绝",
         "cancelled": "已取消"
       }
+    },
+    "search": {
+      "label": "搜索预订",
+      "placeholder": "按名称、航线或预订编号搜索",
+      "clear": "清除搜索",
+      "noMatch": "没有与“{query}”匹配的预订",
+      "noMatchHint": "试试酒店或球场名称、MNL 等机场代码，或预订编号。",
+      "results": "找到 {count} 个预订"
     }
   },
   "support": {
@@ -2716,7 +2739,11 @@
     "freeCancel": "免费取消",
     "back": "返回",
     "retry": "重试",
-    "goBack": "返回"
+    "goBack": "返回",
+    "loadingPage": "页面加载中",
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色"
   },
   "account": {
     "title": "我的账户",

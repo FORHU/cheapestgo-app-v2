@@ -1,15 +1,17 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import React, { useMemo, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { ChevronDown, ChevronLeft, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { currencySymbol } from '@/shared/lib/format';
 import { useTheme } from '@/shared/components/ThemeContext';
 import {
     filtersPalette, FilterSection, FilterRow, FilterCheckRow, FilterSwitch, FilterField, RangeSlider,
-    type FiltersPalette,
+    FILTER_FIELD_CLASS, type FiltersPalette,
 } from '@/shared/components/ui/filter-panel';
+import { SelectField, type SelectOption } from '@/features/checkout/components/select-field';
+import { checkoutPalette } from '@/features/checkout/lib/palette';
 import type { FlightOffer } from '@/shared/types';
 import {
     DAY_END_MINUTE, DAY_START_MINUTE, DEFAULT_FLIGHT_FILTERS,
@@ -46,13 +48,51 @@ function minutesToClock(minute: number): string {
     return `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 }
 
-/** "08:30" into 510; anything that is not a clock time on one day into null. */
-function clockToMinutes(text: string): number | null {
-    const m = /^(\d{1,2}):(\d{2})$/.exec(text.trim());
-    if (!m) return null;
-    const h = Number(m[1]);
-    const min = Number(m[2]);
-    return h > 23 || min > 59 ? null : h * 60 + min;
+/**
+ * The times one end of a day window can be set to, between `from` and `to`: every half hour, the
+ * day's last minute for "until the end of the day", and wherever it stands now — the slider can
+ * leave it between two half hours, and it should still show as chosen.
+ */
+function timeOptions(from: number, to: number, current: number): SelectOption[] {
+    const marks = new Set<number>([DAY_END_MINUTE, current]);
+    for (let m = DAY_START_MINUTE; m < DAY_END_MINUTE; m += 30) marks.add(m);
+    return [...marks]
+        .filter((m) => m >= from && m <= to)
+        .sort((a, b) => a - b)
+        .map((m) => ({ value: String(m), label: minutesToClock(m) }));
+}
+
+/**
+ * One end of a day window, as a dropdown in the site's picker — the panel the checkout's
+ * date and country fields open — rather than the browser's own clock, which the system
+ * draws in its own colours. It offers only times on its own side of the other end.
+ */
+function TimeSelect({ label, value, from, to, onPick, palette }: {
+    label: string;
+    value: number;
+    from: number;
+    to: number;
+    onPick: (minute: number) => void;
+    palette: FiltersPalette;
+}) {
+    const id = useId();
+    const { theme } = useTheme();
+    return (
+        <div className="min-w-0 flex-1">
+            <SelectField
+                id={id}
+                ariaLabel={label}
+                value={String(value)}
+                options={timeOptions(from, to, value)}
+                placeholder={minutesToClock(value)}
+                onChange={(v) => onPick(Number(v))}
+                palette={checkoutPalette(theme)}
+                className={cn(FILTER_FIELD_CLASS, 'w-full text-[13px]', palette.field)}
+                panelWidth={160}
+                chevronSize={14}
+            />
+        </div>
+    );
 }
 
 /** A typed number, or null for an empty or unreadable field. */
@@ -189,7 +229,7 @@ export function FlightFilters({
         { value: 2, label: t('twoStopsPlus') },
     ];
 
-    /** A day window's two ends as clock-time fields, each held on its own side of the other. */
+    /** A day window's two ends as time dropdowns, each held on its own side of the other. */
     const timeWindow = (label: string, window: [number, number], onWindow: (next: [number, number]) => void) => (
         <div className="px-1">
             <span className={cn('mb-1.5 block text-[15px]', palette.body)}>{label}</span>
@@ -197,16 +237,13 @@ export function FlightFilters({
                 {([0, 1] as const).map((end) => (
                     <React.Fragment key={end}>
                         {end === 1 && <span className={palette.muted}>–</span>}
-                        <FilterField
-                            type="time"
-                            palette={palette}
-                            aria-label={t(end === 0 ? 'rangeFrom' : 'rangeTo', { label })}
+                        <TimeSelect
+                            label={t(end === 0 ? 'rangeFrom' : 'rangeTo', { label })}
                             value={window[end]}
-                            format={minutesToClock}
-                            parse={clockToMinutes}
-                            normalize={(v) => (end === 0 ? clamp(v, DAY_START_MINUTE, window[1]) : clamp(v, window[0], DAY_END_MINUTE))}
-                            onCommit={(v) => onWindow(end === 0 ? [v, window[1]] : [window[0], v])}
-                            className="w-full flex-1 px-2.5 text-[13px]"
+                            from={end === 0 ? DAY_START_MINUTE : window[0]}
+                            to={end === 0 ? window[1] : DAY_END_MINUTE}
+                            onPick={(v) => onWindow(end === 0 ? [v, window[1]] : [window[0], v])}
+                            palette={palette}
                         />
                     </React.Fragment>
                 ))}

@@ -1,12 +1,12 @@
 'use client';
 
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { BRAND } from '@/shared/lib/palette';
 import { useMoney } from '@/features/landing/lib/money';
 import { ImmersiveSearchBar } from '@/features/search/components/immersive-search-bar';
-import type { TrendingDest } from '@/features/search/components/immersive-search-bar';
+import type { StayPick } from '@/features/search/components/step-search';
 import type { FeaturedStay } from '@/features/landing/api/featured.api';
 import { formatCurrency } from '@/shared/lib/format';
 import { isGolfFace } from '@/features/golf/lib/last-search';
@@ -50,14 +50,12 @@ const SEARCH_STOP = STAGES.findIndex(s => s.faces?.golf) + 1;
  * a time makes that impossible rather than merely unlikely.
  */
 export function Journey({
-    trending,
     showcaseStays,
 }: {
-    trending?: TrendingDest[];
     /**
      * Promoted stay per showcase city, keyed by city name. Read from our own tables, never
-     * from a supplier — see ADR 0005. Empty is an ordinary state: the strip then names the
-     * destinations without quoting a price.
+     * from a supplier — see ADR 0005. Empty is an ordinary state: the Stays search's picture
+     * tiles then name the destinations without quoting a price.
      */
     showcaseStays: Record<string, FeaturedStay>;
 }) {
@@ -124,7 +122,7 @@ export function Journey({
                         <section key={face.id} id={`stage-${face.id}`}>
                             <StageHeading stage={face} />
                             <div className="mt-8">
-                                <StageSurface stage={face} trending={trending} stays={showcaseStays} />
+                                <StageSurface stage={face} stays={showcaseStays} />
                             </div>
                         </section>
                     ))}
@@ -222,7 +220,6 @@ export function Journey({
                     stage={active}
                     mode={mode}
                     journey={journey}
-                    trending={trending}
                     stays={showcaseStays}
                     onModeSelect={setMode}
                     journeyRef={rootRef}
@@ -316,7 +313,7 @@ function drift(shift: number, x: number, y: number): React.CSSProperties | undef
 }
 
 /** Pixels each part of a stage travels per unit of `shift`. Later lines travel further. */
-const DRIFT = { eyebrow: [0, 36], lead: [64, 70], rest: [-64, 110], caption: [0, 150], surface: [0, 190] } as const;
+const DRIFT = { lead: [64, 70], rest: [-64, 110], caption: [0, 150], surface: [0, 190] } as const;
 
 function StageHeading({ stage, t, shift = 0, docked = false }: {
     stage: StageFace;
@@ -328,26 +325,14 @@ function StageHeading({ stage, t, shift = 0, docked = false }: {
 }) {
     const tAll = useTranslations();
     // A stage's wording is in the message files, keyed by its id (see `StageFace.id`).
-    const key = (field: 'eyebrow' | 'titleLead' | 'titleRest' | 'caption') =>
-        `landing.journey.stages.${stage.id}.${field}`;
-    const copy = (field: Parameters<typeof key>[0]) => tAll(key(field));
-    // Optional: the search stage dropped its numbered "STAGE 01 · HOTELS" label, so only a
-    // stage that still has an eyebrow in the message files (the closing one) shows one.
-    const eyebrow = tAll.has(key('eyebrow')) ? copy('eyebrow') : null;
+    const copy = (field: 'titleLead' | 'titleRest' | 'caption') =>
+        tAll(`landing.journey.stages.${stage.id}.${field}`);
     const lead = copy('titleLead');
     const rest = copy('titleRest');
     const leadChars = lead.replace(/ /g, '').length;
     const totalChars = leadChars + rest.replace(/ /g, '').length;
     return (
         <div>
-            {eyebrow && (
-                <p
-                    className="mb-4 text-[11px] tracking-[0.3em] uppercase"
-                    style={{ color: BRAND.accent, ...drift(shift, ...DRIFT.eyebrow) }}
-                >
-                    {eyebrow}
-                </p>
-            )}
             {/* The hero's own treatment — bold, uppercase, tight tracking — rather than
                 the semibold mixed-case it used to carry, so every heading in the Journey
                 reads in one voice instead of the hero sounding like a different page. */}
@@ -380,64 +365,53 @@ function StageHeading({ stage, t, shift = 0, docked = false }: {
  */
 const StageSurface = memo(function StageSurface({
     stage,
-    trending,
     stays,
     onModeSelect,
 }: {
     stage: StageFace;
-    trending?: TrendingDest[];
     stays: Record<string, FeaturedStay>;
     /** Absent in the reduced-motion page, where the pills keep switching in place. */
     onModeSelect?: (mode: SearchMode) => void;
 }) {
     if (stage.id === 'stays') {
-        return <StaysSurface trending={trending} stays={stays} onModeSelect={onModeSelect} />;
+        return <StaysSurface stays={stays} onModeSelect={onModeSelect} />;
     }
     if (stage.id === 'flights') {
-        return <ImmersiveSearchBar trendingDestinations={trending} defaultMode="flights" onModeSelect={onModeSelect} />;
+        return <ImmersiveSearchBar defaultMode="flights" onModeSelect={onModeSelect} />;
     }
     if (stage.id === 'golf') {
         return <GolfSurface onModeSelect={onModeSelect} />;
     }
-    if (stage.id === 'ai') {
-        return <AskPanel />;
-    }
-    return <OptionsPanel />;
+    // The AI planner, parked off the page for now (`HIDDEN_STAGES`).
+    return <AskPanel />;
 });
 
 /**
- * The stay search with the city pills under it. A pill hands its city to the search bar, and
- * the bar reports back the destination its sentence holds, so the lit pill is always the one the
- * search will run — including after the visitor picks some other city from the dropdown.
+ * The stay search, whose first question offers the showcase cities as picture tiles — each with
+ * its photo, its country and, where one of our promoted stays is there, what a night costs.
+ *
+ * The tiles took over from the city pills that sat under the sentence; the price on them is
+ * still in the currency picked in the header, as every other price on the landing page is.
  */
 function StaysSurface({
-    trending,
     stays,
     onModeSelect,
 }: {
-    trending?: TrendingDest[];
     stays: Record<string, FeaturedStay>;
     onModeSelect?: (mode: SearchMode) => void;
 }) {
-    // A fresh object per click, so picking the same pill again still reaches the bar.
-    const [pick, setPick] = useState<{ name: string } | null>(null);
-    const [destination, setDestination] = useState<string | null>(null);
-    return (
-        // A flex gap, not `space-y-*`: that spaces by margin, and the bar's root carries an
-        // inline `margin: 0 auto` that outranks it, so GO and the pills ended up touching.
-        // Only up to 640px, where the bar drops its own padding (`--imm-pad:0px` in
-        // immersive-search-bar): above that, the padding under GO is already the gap.
-        <div className="flex flex-col gap-4 min-[641px]:gap-0">
-            <ImmersiveSearchBar
-                trendingDestinations={trending}
-                defaultMode="stays"
-                onModeSelect={onModeSelect}
-                destinationPick={pick}
-                onDestinationChange={setDestination}
-            />
-            <ShowcaseStrip stays={stays} chosen={destination} onPick={city => setPick({ name: city })} />
-        </div>
-    );
+    const tAll = useTranslations();
+    const money = useMoney();
+    const picks = useMemo<StayPick[]>(() => SHOWCASE_DESTINATIONS.map(d => {
+        const stay = stays[d.city];
+        return {
+            city: d.city,
+            countryCode: d.countryCode,
+            image: d.src,
+            price: stay ? tAll('landing.journey.strip.from', { price: money(stay.price, stay.currency) }) : undefined,
+        };
+    }), [stays, money, tAll]);
+    return <ImmersiveSearchBar defaultMode="stays" onModeSelect={onModeSelect} stayPicks={picks} />;
 }
 
 /**
@@ -470,7 +444,8 @@ const STRIP_COURSES = 4;
 const PHONE_COURSES = 2;
 
 /**
- * A few courses under the golf search, with what they cost to play — `ShowcaseStrip`'s job for golf.
+ * A few courses under the golf search, with what they cost to play — what the Stays search's picture
+ * tiles do for stays.
  * Picking one fills the sentence's course, and the lit pill is always the course GO will open.
  *
  * The fee is api-v2's, already in the currency picked in the header and only a guide: unlike the
@@ -567,7 +542,6 @@ function StagePanel({
     stage,
     mode,
     journey,
-    trending,
     stays,
     onModeSelect,
     journeyRef,
@@ -575,7 +549,6 @@ function StagePanel({
     stage: Stage;
     mode: SearchMode;
     journey: number;
-    trending?: TrendingDest[];
     stays: Record<string, FeaturedStay>;
     onModeSelect: (mode: SearchMode) => void;
     /** The Journey's root, whose bottom edge is the top of the page's footer. */
@@ -635,7 +608,7 @@ function StagePanel({
                 >
                     <StageHeading stage={face} t={t} shift={shift} docked />
                     <div className="mt-5 sm:mt-8" style={drift(shift, ...DRIFT.surface)}>
-                        <StageSurface key={face.id} stage={face} trending={trending} stays={stays} onModeSelect={onModeSelect} />
+                        <StageSurface key={face.id} stage={face} stays={stays} onModeSelect={onModeSelect} />
                     </div>
                 </div>
             </div>
@@ -659,8 +632,8 @@ const HEADER_FADE_PX = 24;
  * Keeps the last stage clear of the page's footer.
  *
  * The stage is a fixed layer and the footer is in flow under the scroll track, so scrolling
- * past the end of the journey brought the footer up underneath the stage's cards, with both
- * readable through each other. Once the footer's top edge comes within
+ * past the end of the journey brought the footer up underneath the stage, with both readable
+ * through each other. Once the footer's top edge comes within
  * `FOOTER_CLEARANCE_PX` of the stage's content, the stage moves up by exactly the overlap,
  * so from then on it scrolls with the page as if it had been in flow above the footer. Before
  * that, the footer rises into the empty band below the stage (the room a phone keeps for its
@@ -726,64 +699,6 @@ function useFooterClearance(
 }
 
 /**
- * The four destinations moving behind this stage, with what they actually cost.
- *
- * It does two jobs. It tells the visitor the backdrop is inventory rather than stock
- * photography, and picking one fills the destination of the stay search above it — so the
- * scroll and the search stay the same object rather than two things happening near each other.
- * It used to write the city to the search store, which the bar never reads: the pill lit up
- * and the sentence, and the search GO ran, still said "somewhere amazing".
- *
- * A destination with no promoted stay still appears, just without a price. Empty
- * `hotel_deals` costs the strip its figures, never its destinations.
- */
-function ShowcaseStrip({
-    stays,
-    chosen,
-    onPick,
-}: {
-    stays: Record<string, FeaturedStay>;
-    /** The destination the search will run, which lights its pill. */
-    chosen: string | null;
-    onPick: (city: string) => void;
-}) {
-    const tAll = useTranslations();
-    // In the currency picked in the header, as every other price on the landing page is.
-    const money = useMoney();
-
-    return (
-        <div className={STRIP}>
-            {SHOWCASE_DESTINATIONS.map(d => {
-                const stay = stays[d.city];
-                const isChosen = chosen === d.city;
-                return (
-                    <button
-                        key={d.city}
-                        type="button"
-                        aria-pressed={isChosen}
-                        onClick={() => onPick(d.city)}
-                        // `cursor-pointer` spelled out: Tailwind 4 leaves buttons on the
-                        // default arrow, which made the pills look like labels.
-                        className={`${STRIP_PILL} cursor-pointer transition-[filter,transform] duration-150 hover:brightness-125 active:scale-95`}
-                        style={{
-                            background: isChosen ? BRAND.primaryWash : BRAND.glass,
-                            border: `1px solid ${isChosen ? BRAND.accent : BRAND.glassBorder}`,
-                        }}
-                    >
-                        <span className="truncate text-sm font-medium text-white">{d.city}</span>
-                        {stay && (
-                            <span className="truncate text-[11px] text-white/55 sm:ml-2 sm:text-xs">
-                                {tAll('landing.journey.strip.from', { price: money(stay.price, stay.currency) })}
-                            </span>
-                        )}
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
-
-/**
  * The AI stage. A prompt, not a chat: the conversation belongs on `/ai-chat`, and this
  * hands the question over rather than trying to answer it behind a backdrop.
  */
@@ -827,42 +742,6 @@ function AskPanel() {
                     </button>
                 ))}
             </div>
-        </div>
-    );
-}
-
-/** The last stage: every way in, side by side, for a visitor who skipped the rest. */
-function OptionsPanel() {
-    const tAll = useTranslations();
-    const options: Array<{ href: string; label: string; note: string }> = [
-        { href: '/search', label: tAll('landing.search.searchMode.stays'), note: tAll('landing.journey.options.staysNote') },
-        { href: '/flights/search', label: tAll('landing.search.searchMode.flights'), note: tAll('landing.journey.options.flightsNote') },
-        { href: '/golf', label: tAll('landing.journey.options.golf'), note: tAll('landing.journey.options.golfNote') },
-    ];
-
-    const card = 'rounded-2xl p-4 backdrop-blur-md';
-    const glass = { background: BRAND.glass, border: `1px solid ${BRAND.glassBorder}` };
-
-    return (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {options.map(o => {
-                const body = (
-                    <>
-                        <p className="text-base font-semibold text-white">{o.label}</p>
-                        <p className="mt-1 text-xs text-white/60">{o.note}</p>
-                    </>
-                );
-                return (
-                    <Link
-                        key={o.label}
-                        href={o.href}
-                        className={`${card} transition-[filter] duration-150 hover:brightness-125`}
-                        style={glass}
-                    >
-                        {body}
-                    </Link>
-                );
-            })}
         </div>
     );
 }
@@ -914,8 +793,16 @@ function Odometer({ value }: { value: number }) {
 const ALTITUDE_START_FT = 38_000;
 
 /**
+ * Where the descent lands: the last stop, where the search docks. Not the end of the track,
+ * which the page never scrolls to — the footer comes up first — so a count to the track's
+ * end stopped in mid-air. A hair before the stop itself: scroll positions are whole pixels,
+ * and a snap that lands a fraction short of it read "24 FT" instead of zero.
+ */
+const TOUCHDOWN = JOURNEY_STOPS[JOURNEY_STOPS.length - 1] - 0.01;
+
+/**
  * Where the visitor is in the descent, read as altitude rather than a percentage — "ALT …
- * FT" counting down to zero at the end of the track, on the right edge as the reference has
+ * FT" counting down to zero where the search docks, on the right edge as the reference has
  * it. Replaces the Boarding Pass: this tracks the descent itself, not an accumulating trip
  * summary — each stage's own search form is still the one way to act on it.
  *
@@ -924,7 +811,8 @@ const ALTITUDE_START_FT = 38_000;
  */
 function AltitudeReadout({ journey }: { journey: number }) {
     const tAll = useTranslations();
-    const altitude = Math.round(ALTITUDE_START_FT * (1 - journey));
+    const descent = ramp(journey, 0, TOUCHDOWN);
+    const altitude = Math.round(ALTITUDE_START_FT * (1 - descent));
     return (
         <div
             aria-hidden
@@ -937,7 +825,7 @@ function AltitudeReadout({ journey }: { journey: number }) {
             <div className="relative h-32 w-px bg-white/15">
                 <div
                     className="absolute top-0 left-0 w-px"
-                    style={{ height: `${journey * 100}%`, background: BRAND.accent }}
+                    style={{ height: `${descent * 100}%`, background: BRAND.accent }}
                 />
             </div>
         </div>

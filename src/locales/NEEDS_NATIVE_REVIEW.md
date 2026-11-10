@@ -87,6 +87,12 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `trips.v2.backToMyTrips` | Back to My Bookings | 내 예약으로 돌아가기 | マイ予約に戻る | 返回我的预订 |
 | `trips.v2.downloadETicket` | Download E-Ticket | 전자항공권 다운로드 | Eチケットをダウンロード | 下载电子客票 |
 | `trips.v2.refundNotice` | Refund eligibility is subject to airline fare rules. | 환불 가능 여부는 항공사 운임 규정에 따릅니다. | 払い戻しの可否は航空会社の運賃規則に従います。 | 是否可退款取决于航空公司的票价规则。 |
+| `trips.search.label` | Search your bookings | 예약 검색 | 予約を検索 | 搜索预订 |
+| `trips.search.placeholder` | Search by name, route or reference | 이름, 노선, 예약 번호로 검색 | 名前・路線・予約番号で検索 | 按名称、航线或预订编号搜索 |
+| `trips.search.clear` | Clear search | 검색어 지우기 | 検索をクリア | 清除搜索 |
+| `trips.search.noMatch` | No bookings match “{query}” | ‘{query}’와(과) 일치하는 예약이 없습니다 | 「{query}」に一致する予約はありません | 没有与“{query}”匹配的预订 |
+| `trips.search.noMatchHint` | Try a hotel or course name, an airport code like MNL, or a booking reference. | 호텔·골프장 이름, MNL 같은 공항 코드, 예약 번호로 검색해 보세요. | ホテル名やゴルフ場名、MNLなどの空港コード、予約番号でお試しください。 | 试试酒店或球场名称、MNL 等机场代码，或预订编号。 |
+| `trips.search.results` | {count} bookings found (said by a screen reader) | 예약 {count}건을 찾았습니다 | {count}件の予約が見つかりました | 找到 {count} 个预订 |
 
 ## search
 
@@ -111,6 +117,8 @@ reads oddly there costs more than one on a marketing page. Review these first.
 | `flights.results.flightsTo` | Flights to {city} | {city}행 항공편 | {city}行きのフライト | 飞往{city}的航班 |
 | `flights.results.flightsFound` | {count} flights found | 항공편 {count}편 검색됨 | {count}件のフライトが見つかりました | 找到 {count} 个航班 |
 | `flights.results.checkingFare` | Checking the fare is still available… | 요금이 아직 유효한지 확인하는 중… | 運賃がまだ有効か確認しています… | 正在确认该票价是否仍然有效… |
+| `flights.card.select` | Select | 선택 | 選択 | 选择 |
+| `flights.card.flightDetails` | Flight details | 항공편 상세 정보 | フライト詳細 | 航班详情 |
 | `flights.results.clearFilters` | Clear filters | 필터 초기화 | 絞り込みをクリア | 清除筛选 |
 | `flights.topBar.swap` | Swap origin and destination | 출발지와 도착지 바꾸기 | 出発地と到着地を入れ替える | 交换出发地和目的地 |
 | `flights.topBar.changeTrip` | Change dates and travellers | 날짜 및 여행자 변경 | 日程と人数を変更 | 更改日期和出行人数 |
@@ -265,7 +273,6 @@ can be under review after its payment was taken.
 |---|---|---|---|---|
 | `checkout.flight.cardHeld` | Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing. | 지금은 카드 승인만 진행되며, 항공사가 항공권을 확정한 후에 결제됩니다. 확정되지 않으면 승인이 해제되며 비용이 청구되지 않습니다. | 現在はカードの与信のみを行い、航空会社が航空券を確定した時点で請求されます。確定できなかった場合は与信が解除され、料金は発生しません。 | 现在仅对您的银行卡进行预授权，航空公司确认机票后才会扣款。若无法确认，预授权将被解除，您无需支付任何费用。 |
 | `checkout.flight.priceChanged` | The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare. | 항공사가 확정하기 전에 요금이 {was}에서 {now}(으)로 변경되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 새 요금으로 예약하려면 정보를 다시 제출해 주세요. | 航空会社が確定する前に運賃が{was}から{now}に変更されました。料金は請求されておらず、カードの与信は解除されています。新しい運賃で予約するには、もう一度お客様情報を送信してください。 | 在航空公司确认之前，票价已从 {was} 变为 {now}。您未被扣款，银行卡预授权已解除。如需按新票价预订，请重新提交您的信息。 |
-| `checkout.flight.offerExpired` | This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again. | 항공사가 확정하기 전에 이 요금이 매진되었습니다. 결제되지 않았으며 카드 승인은 해제되었습니다. 다시 검색해 주세요. | 航空会社が確定する前にこの運賃は売り切れました。料金は請求されておらず、カードの与信は解除されています。もう一度検索してください。 | 在航空公司确认之前，该票价已售罄。您未被扣款，银行卡预授权已解除。请重新搜索。 |
 | `checkout.flight.settling.description` | The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued. | 항공사에서 항공권을 확정하고 있습니다. 몇 분 정도 걸릴 수 있으며, 발권되는 즉시 내 여행에 표시됩니다. | 航空会社が航空券を確定しています。数分かかる場合があります。発券され次第、マイトリップに表示されます。 | 航空公司正在确认您的机票，可能需要几分钟。出票后将立即显示在您的行程中。 |
 | `checkout.flight.needsReview.title` | We're confirming this with the airline | 항공사와 예약을 확인하고 있습니다 | 航空会社に予約を確認しています | 正在与航空公司确认预订 |
 | `checkout.flight.needsReview.description` | Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed. | 담당 팀이 항공사와 예약을 마무리하고 있습니다. 항공권이 확정되는 즉시 이메일로 알려 드리겠습니다. | 担当チームが航空会社と予約の手続きを進めています。航空券が確定次第、メールでお知らせします。 | 我们的团队正在与航空公司完成此预订。机票确认后，我们会立即通过邮件通知您。 |
@@ -282,7 +289,12 @@ matters most: a name that does not match the passport is refused at the gate.
 | `checkout.flight.nameHint` | Enter names exactly as they appear on the passport. | 여권에 표기된 것과 동일하게 이름을 입력해 주세요. | お名前はパスポートの記載どおりに入力してください。 | 请按照护照上的写法填写姓名。 |
 | `checkout.flight.contactHint` | Your e-ticket is sent here, and the airline uses this number for flight changes. | 전자 항공권은 이 이메일로 발송되며, 항공사는 운항 변경 시 이 번호로 연락합니다. | eチケットはこのメールアドレスに送信され、運航の変更時には航空会社からこの番号に連絡があります。 | 电子机票将发送至此邮箱，航班变动时航空公司会拨打此号码联系您。 |
 | `checkout.flight.receipt.allSet` | You’re all set | 예약이 완료되었습니다 | ご予約が完了しました | 预订完成 |
-| `checkout.flight.receipt.confirmedSentTo` | Your flight to {destination} is confirmed, flight details and receipt has been sent to {email} | {destination}행 항공편이 확정되었으며, 항공편 세부 정보와 영수증이 {email}(으)로 전송되었습니다 | {destination}行きのフライトが確定しました。フライトの詳細と領収書を{email}宛に送信しました | 您飞往{destination}的航班已确认，航班详情和收据已发送至 {email} |
+| `checkout.flight.receipt.receiptSentTo` | Receipt sent to {email} | 영수증이 {email}(으)로 전송되었습니다 | 領収書を{email}宛に送信しました | 收据已发送至 {email} |
+| `checkout.flight.receipt.bagsLabel` | Bags | 수하물 | 手荷物 | 行李 |
+| `checkout.flight.receipt.departureTerminal` | Departure terminal | 출발 터미널 | 出発ターミナル | 出发航站楼 |
+| `checkout.flight.receipt.arrivalTerminal` | Arrival terminal | 도착 터미널 | 到着ターミナル | 到达航站楼 |
+| `checkout.flight.receipt.airlinePnr` | Airline PNR | 항공사 PNR | 航空会社のPNR | 航空公司 PNR |
+| `checkout.flight.receipt.pnrHint` | use this at check-in | 체크인 시 사용하세요 | チェックイン時にご利用ください | 办理值机时使用 |
 | `checkout.flight.receipt.approxTotal` | Approx. in {currency} | {currency} 환산 금액(약) | {currency}換算（概算） | 约合 {currency} |
 | `checkout.flight.passportPlaceholder` | e.g. P1234567A | 예: P1234567A | 例：P1234567A | 例如：P1234567A |
 | `checkout.example` | e.g. {value} | 예: {value} | 例：{value} | 例如：{value} |
@@ -326,15 +338,7 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.journey.stages.ai.titleLead` | Or | 아니면 | または、 | 或者 |
 | `landing.journey.stages.ai.titleRest` | just ask. | 그냥 물어보세요. | 聞くだけ。 | 直接问。 |
 | `landing.journey.stages.ai.caption` | Tell us the trip. We'll price the stays and routes that fit. | 여행 계획을 알려주세요. 맞는 숙소와 경로의 가격을 알려드릴게요. | 旅のイメージを伝えてください。合う宿泊先とルートの料金をお調べします。 | 告诉我们您的行程，我们会为您报出合适的住宿与路线价格。 |
-| `landing.journey.stages.options.eyebrow` | ARRIVAL | 도착 | 到着 | 抵达 |
-| `landing.journey.stages.options.titleLead` | Now | 이제 | さあ、 | 现在 |
-| `landing.journey.stages.options.titleRest` | choose. | 선택하세요. | 選ぼう。 | 做出选择。 |
-| `landing.journey.stages.options.caption` | Stays, flights and golf, all in one place. | 숙소, 항공편, 골프까지 한곳에서. | 宿泊、フライト、ゴルフをひとつの場所で。 | 住宿、航班与高尔夫，一站搞定。 |
 | `landing.journey.strip.from` | from {price} | {price}부터 | {price}〜 | {price} 起 |
-| `landing.journey.options.staysNote` | Hotels & homes | 호텔 및 숙소 | ホテル＆宿泊施設 | 酒店与民宿 |
-| `landing.journey.options.flightsNote` | Every carrier we reach | 연결 가능한 모든 항공사 | 取り扱いの全航空会社 | 覆盖所有可订航空公司 |
-| `landing.journey.options.golf` | Golf | 골프 | ゴルフ | 高尔夫 |
-| `landing.journey.options.golfNote` | Curated courses, tee times on request | 엄선한 골프장, 티타임은 문의로 | 厳選コース、ティータイムはお問い合わせで | 精选球场，开球时间可咨询 |
 | `landing.journey.ask.placeholder` | Describe the trip you want… | 원하는 여행을 설명해 주세요… | ご希望の旅を教えてください… | 描述您想要的旅行… |
 | `landing.journey.ask.label` | Describe the trip you want | 원하는 여행을 설명해 주세요 | ご希望の旅を教えてください | 描述您想要的旅行 |
 | `landing.journey.ask.submit` | Ask | 물어보기 | 聞く | 提问 |
@@ -347,10 +351,6 @@ half has to read on its own. `landing.search.go` is the stamp on the search butt
 | `landing.search.searchingStays` | Searching hotels… | 호텔 검색 중… | ホテルを検索中… | 正在搜索酒店… |
 | `landing.search.searchingFlights` | Searching flights… | 항공편 검색 중… | フライトを検索中… | 正在搜索航班… |
 | `landing.search.whosComing` | Who's coming? | 누가 묵으시나요? | ご宿泊者はどなたですか？ | 谁来入住？ |
-| `search.prose.origin` | wherever you are | 내가 있는 곳 | 今いる場所 | 您所在的地方 |
-| `search.prose.aDate` | a date | 원하는 날 | 好きな日 | 某一天 |
-| `search.prose.yourDates` | your dates | 원하는 일정 | ご希望の日程 | 您的出行日期 |
-| `search.prose.flexibleTrip` | a flexible trip | 유연한 여행 | 柔軟な旅 | 灵活的行程 |
 
 ## golf
 
@@ -572,15 +572,6 @@ v1; these did not. Written by Claude (2026-11-04).
 | `golf.booking.extraNames.lessons` | Golf lesson | 골프 레슨 | ゴルフレッスン | 高尔夫课程 |
 | `golf.booking.extraNames.range_balls` | Bucket of range balls | 연습볼 바구니 | 練習ボール(カゴ) | 练习球(每筐) |
 
-## Landing header — mobile menu
-
-The hamburger's accessible name, read out by a screen reader; not printed. Written by Claude
-(2026-11-05).
-
-| Key | English | 한국어 | 日本語 | 中文 |
-|-----|---------|--------|--------|------|
-| `nav.menu` | Menu | 메뉴 | メニュー | 菜单 |
-
 ## Flight checkout — a flight already booked that day
 
 The dialog shown when a traveller already holds a flight leaving the same airport on the same day.
@@ -596,14 +587,98 @@ Claude (2026-11-06).
 
 ## Checkout — warnings shown as dialogs
 
-The titles and buttons of the dialogs the checkout's warnings are shown in (a fare that sold out
-or changed, a declined card). The messages under them are the existing `checkout.flight.*` and
+The titles and buttons of the dialogs the checkout's warnings are shown in (a fare that changed,
+a declined card). The messages under them are the existing `checkout.flight.*` and
 `checkout.failed.*` strings. Written by Claude (2026-11-06).
 
 | Key | English | 한국어 | 日本語 | 中文 |
 |-----|---------|--------|--------|------|
 | `checkout.alert.close` | Close | 닫기 | 閉じる | 关闭 |
 | `checkout.alert.fareChangedTitle` | The fare changed | 요금이 변경되었습니다 | 運賃が変更されました | 票价已变动 |
-| `checkout.alert.fareGoneTitle` | This fare is no longer available | 이 요금은 더 이상 이용할 수 없습니다 | この運賃はご利用いただけなくなりました | 该票价已不可用 |
-| `checkout.alert.searchAgain` | Search again | 다시 검색 | もう一度検索 | 重新搜索 |
 | `checkout.alert.paymentTitle` | Your payment didn't go through | 결제가 완료되지 않았습니다 | お支払いが完了しませんでした | 付款未成功 |
+
+## Flight results — a fare that had gone
+
+Shown over a new search when the fare the traveller picked is no longer on sale: they were sent
+back from the checkout, or it had gone by the time they picked it. It says whether money moved,
+so it carries the checkout's weight. Written by Claude (2026-11-10).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `flights.results.fareGoneTitle` | That fare is no longer available | 해당 요금은 더 이상 이용할 수 없습니다 | その運賃はご利用いただけなくなりました | 该票价已不可用 |
+| `flights.results.fareGoneBody` | The airline has stopped selling it. You have not been charged — these are the fares on sale now. | 항공사가 이 요금의 판매를 중단했습니다. 결제되지 않았으며, 지금 판매 중인 요금을 보여 드립니다. | 航空会社がこの運賃の販売を終了しました。料金は請求されていません。現在販売中の運賃をご覧ください。 | 航空公司已停止销售该票价。您未被扣款，以下是当前在售的票价。 |
+
+## Landing search — one question at a time
+
+The Stays and Flights search on the landing page, asked a step at a time (Claude Design's "Search Step by
+Step" and "Flight Search Step by Step"). The step labels are deliberately short: on a narrow phone only
+the current one shows. Written by Claude (2026-11-10).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `search.steps.navLabel` | Search steps | 검색 단계 | 検索ステップ | 搜索步骤 |
+| `search.steps.where` | Where | 장소 | 場所 | 地点 |
+| `search.steps.when` | When | 날짜 | 日程 | 日期 |
+| `search.steps.who` | Who | 인원 | 人数 | 人数 |
+| `search.steps.from` | From | 출발 | 出発地 | 出发地 |
+| `search.steps.to` | To | 도착 | 目的地 | 目的地 |
+| `search.steps.askStay` | Where do you want to stay? | 어디에서 묵고 싶으세요? | どこに泊まりますか？ | 您想住在哪里？ |
+| `search.steps.askFrom` | Where are you flying from? | 어디에서 출발하세요? | どこから出発しますか？ | 您从哪里出发？ |
+| `search.steps.askTo` | Where are you flying to? | 어디로 가세요? | どこへ行きますか？ | 您要飞往哪里？ |
+| `search.steps.askStayDates` | When are you staying? | 언제 묵으세요? | いつ泊まりますか？ | 您什么时候入住？ |
+| `search.steps.placePlaceholder` | City, area, or hotel name | 도시, 지역 또는 호텔 이름 | 都市、エリア、ホテル名 | 城市、区域或酒店名称 |
+| `search.steps.orPickOne` | Or pick one | 또는 여기서 고르세요 | または、こちらから選ぶ | 或从这里选择 |
+| `search.steps.nextDates` | Next: dates | 다음: 날짜 | 次へ：日程 | 下一步：日期 |
+| `search.steps.nextDestination` | Next: destination | 다음: 도착지 | 次へ：目的地 | 下一步：目的地 |
+| `search.steps.nextGuests` | Next: guests | 다음: 인원 | 次へ：人数 | 下一步：入住人数 |
+| `search.steps.nextTravellers` | Next: travellers | 다음: 탑승객 | 次へ：搭乗者 | 下一步：乘客 |
+| `search.steps.searchStays` | Search stays | 숙소 검색 | 宿泊先を検索 | 搜索住宿 |
+| `search.steps.searchFlights` | Search flights | 항공편 검색 | 航空券を検索 | 搜索航班 |
+| `search.steps.selected` | {name} selected | {name} 선택됨 | {name}を選択中 | 已选择 {name} |
+| `search.steps.enterHintAirport` | Press Enter to pick the highlighted airport | Enter를 누르면 강조된 공항이 선택됩니다 | Enterキーでハイライト中の空港を選択 | 按 Enter 选择高亮的机场 |
+| `search.steps.enterHintPlace` | Press Enter to pick the highlighted place | Enter를 누르면 강조된 장소가 선택됩니다 | Enterキーでハイライト中の場所を選択 | 按 Enter 选择高亮的地点 |
+| `search.steps.fromOrigin` | From {city} | {city}에서 출발 | {city}から出発 | 从{city}出发 |
+| `search.steps.change` | Change | 변경 | 変更 | 更改 |
+| `search.steps.back` | Back | 이전 | 戻る | 返回 |
+| `search.steps.datesOptional` | Optional — skip it and we'll pick dates for you. | 선택 사항입니다. 건너뛰면 날짜를 골라 드립니다. | 任意です。スキップすると日程はこちらで選びます。 | 可选。跳过的话，我们会为您选好日期。 |
+| `search.steps.noPlaceMatch` | No places match “{query}” | “{query}”와(과) 일치하는 장소가 없습니다 | 「{query}」に一致する場所はありません | 没有与“{query}”匹配的地点 |
+| `search.steps.fewerAdults` | Fewer adults | 성인 줄이기 | 大人を減らす | 减少成人 |
+| `search.steps.moreAdults` | More adults | 성인 늘리기 | 大人を増やす | 增加成人 |
+| `search.steps.fewerChildren` | Fewer children | 아동 줄이기 | 子どもを減らす | 减少儿童 |
+| `search.steps.moreChildren` | More children | 아동 늘리기 | 子どもを増やす | 增加儿童 |
+| `search.steps.trip` | Trip | 여정 | 旅程 | 行程 |
+| `search.steps.askTrip` | What kind of trip is it? | 어떤 여정인가요? | どのような旅程ですか？ | 您要哪种行程？ |
+| `search.steps.nextOrigin` | Next: departure | 다음: 출발지 | 次へ：出発地 | 下一步：出发地 |
+| `search.steps.oneWayNote` | Just the flight there | 가는 항공편만 | 行きの便のみ | 仅去程航班 |
+| `search.steps.roundTripNote` | There and back, with a return date | 왕복, 돌아오는 날짜까지 | 往復、帰りの日付も選択 | 往返，含返程日期 |
+
+## Checkout on a phone — loading, and the trip summary above the form
+
+What a phone shows while checkout loads (it used to be the footer alone), and the name of the trip
+summary, which a phone folds into a bar above the form. Written by Claude (2026-11-10).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `checkout.loadingCheckout` | Loading checkout… | 결제 페이지를 불러오는 중… | チェックアウトを読み込み中… | 正在加载结账页面… |
+| `checkout.summary.tripSummary` | Trip summary | 여정 요약 | 旅程の概要 | 行程摘要 |
+
+## Moving between pages
+
+What a screen reader calls the bar across the top of the screen while another page loads. Written
+by Claude (2026-11-09).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `common.loadingPage` | Loading page | 페이지를 불러오는 중 | ページを読み込み中 | 页面加载中 |
+
+## Phone settings sheet
+
+The bottom bar's gear opens language, currency and theme. These name the theme choice; the
+language and currency headings are the existing `common.language` and `common.currency`.
+Written by Claude (2026-11-09).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `common.theme` | Theme | 테마 | テーマ | 主题 |
+| `common.themeLight` | Light | 라이트 | ライト | 浅色 |
+| `common.themeDark` | Dark | 다크 | ダーク | 深色 |

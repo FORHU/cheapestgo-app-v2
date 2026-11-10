@@ -13,8 +13,8 @@ import ja from '@/locales/ja.json';
 /**
  * The Journey speaks the visitor's language.
  *
- * Its hero, every stage's heading and caption, the stay strip, the closing cards and the
- * altitude readout were English literals, so the language selector translated the header and
+ * Its hero, every stage's heading and caption, the stay strip and the altitude readout were
+ * English literals, so the language selector translated the header and
  * footer around a page that stayed English. These render it against the real message files.
  */
 
@@ -42,7 +42,7 @@ const golfApi = vi.hoisted(() => ({ fetchGolfCatalogue: vi.fn() }));
 vi.mock('@/features/golf/api/golf.api', () => golfApi);
 
 import { Journey } from './Journey';
-import { JOURNEY_STOPS, STAGES, STAGE_DOCK } from './stages';
+import { JOURNEY_STOPS, SHOWCASE_DESTINATIONS, STAGES, STAGE_DOCK } from './stages';
 
 const stay = {
     hotelCode: 'h1', name: 'Hotel', location: null, city: 'Seoul', countryCode: 'KR', price: 120, currency: 'USD',
@@ -56,7 +56,6 @@ const J_KO = ko.landing.journey;
 
 /** The stage mid-way through its dock: settled, nothing arriving or leaving. */
 const STAYS_DOCKED = 0.25;
-const OPTIONS_DOCKED = 0.9;
 
 beforeEach(() => {
     progress.journey = 0;
@@ -111,78 +110,45 @@ describe('Journey stages', () => {
         expect(screen.queryByText(/STAGE \d/)).not.toBeInTheDocument();
     });
 
-    it('keeps the closing stage\'s eyebrow', () => {
-        progress.journey = OPTIONS_DOCKED;
-        renderWithIntl(<Journey showcaseStays={{}} />, KO);
+    /** The picture tiles the stay search's first question offers, as the Journey hands them over. */
+    const picks = () => bar.props.stayPicks as Array<{ city: string; countryCode: string; image: string; price?: string }>;
 
-        expect(screen.getByText(J_KO.stages.options.eyebrow)).toBeInTheDocument();
-    });
-
-    it('says "from" in the visitor\'s language on the stay strip', () => {
+    it('says "from" in the visitor\'s language on the stay tiles', () => {
         progress.journey = STAYS_DOCKED;
         act(() => useSearchStore.setState({ userCurrency: 'USD' }));
         renderWithIntl(<Journey showcaseStays={showcaseStays} />, KO);
 
         const price = formatCurrency(stay.price, stay.currency);
-        expect(screen.getByText(J_KO.strip.from.replace('{price}', price))).toBeInTheDocument();
-        expect(screen.queryByText(`from ${price}`)).not.toBeInTheDocument();
+        expect(picks().find((p) => p.city === 'Seoul')?.price).toBe(J_KO.strip.from.replace('{price}', price));
     });
 
-    it('prices the stay strip in the currency picked in the header, as every other price on the page is', () => {
+    it('prices the stay tiles in the currency picked in the header, as every other price on the page is', () => {
         progress.journey = STAYS_DOCKED;
         act(() => useSearchStore.setState({ userCurrency: 'KRW' }));
         renderWithIntl(<Journey showcaseStays={showcaseStays} />);
 
         // `useMoney`'s figure, from the same conversion the landing cards use.
         const won = `${getCurrencySymbol('KRW')}${Math.round(convertCurrency(stay.price, 'USD', 'KRW')).toLocaleString('en-US')}`;
-        expect(screen.getByText(J_EN.strip.from.replace('{price}', won))).toBeInTheDocument();
-        expect(screen.queryByText(J_EN.strip.from.replace('{price}', '$120'))).not.toBeInTheDocument();
+        expect(picks().find((p) => p.city === 'Seoul')?.price).toBe(J_EN.strip.from.replace('{price}', won));
     });
 
-    it('hands a picked city to the stay search, and lights the one the search holds', () => {
+    it('offers the showcase cities to the stay search as picture tiles, unpriced where we have no stay', () => {
         progress.journey = STAYS_DOCKED;
         renderWithIntl(<Journey showcaseStays={{}} />);
-        const tokyo = () => screen.getByRole('button', { name: 'Tokyo' });
 
-        fireEvent.click(tokyo());
-        expect(bar.props.destinationPick).toEqual({ name: 'Tokyo' });
-
-        // Lit by what the search's sentence holds, not by the click: the bar reports it back.
-        expect(tokyo()).toHaveAttribute('aria-pressed', 'false');
-        act(() => (bar.props.onDestinationChange as (name: string | null) => void)('Tokyo'));
-        expect(tokyo()).toHaveAttribute('aria-pressed', 'true');
-
-        // A city picked from the dropdown instead puts the pill out again.
-        act(() => (bar.props.onDestinationChange as (name: string | null) => void)('Paris'));
-        expect(tokyo()).toHaveAttribute('aria-pressed', 'false');
-    });
-
-    it('translates the closing cards, Golf included', () => {
-        progress.journey = OPTIONS_DOCKED;
-        renderWithIntl(<Journey showcaseStays={{}} />, KO);
-
-        expect(screen.getByRole('heading', { level: 2 }).textContent)
-            .toBe(`${J_KO.stages.options.titleLead} ${J_KO.stages.options.titleRest}`);
-
-        const stays = screen.getByRole('link', { name: new RegExp(ko.landing.search.searchMode.stays) });
-        expect(within(stays).getByText(J_KO.options.staysNote)).toBeInTheDocument();
-        const flights = screen.getByRole('link', { name: new RegExp(ko.landing.search.searchMode.flights) });
-        expect(within(flights).getByText(J_KO.options.flightsNote)).toBeInTheDocument();
-
-        const golf = screen.getByRole('link', { name: new RegExp(J_KO.options.golf) });
-        expect(golf).toHaveAttribute('href', '/golf');
-        expect(screen.getByText(J_KO.options.golfNote)).toBeInTheDocument();
-        expect(screen.queryByText('Coming soon')).not.toBeInTheDocument();
-        expect(screen.queryByText('Hotels & homes')).not.toBeInTheDocument();
+        expect(bar.props.defaultMode).toBe('stays');
+        expect(picks()).toEqual(SHOWCASE_DESTINATIONS.map((d) => ({ city: d.city, countryCode: d.countryCode, image: d.src, price: undefined })));
     });
 
     it('switches language when the locale does — the same page, rendered in Japanese', () => {
-        progress.journey = OPTIONS_DOCKED;
+        progress.journey = STAYS_DOCKED;
         renderWithIntl(<Journey showcaseStays={{}} />, { locale: 'ja', messages: ja });
 
-        expect(screen.getByText(ja.landing.journey.options.golf)).toBeInTheDocument();
-        expect(screen.queryByText(J_KO.options.golf)).not.toBeInTheDocument();
-        expect(screen.queryByText('Golf')).not.toBeInTheDocument();
+        const s = ja.landing.journey.stages.stays;
+        expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(`${s.titleLead} ${s.titleRest}`);
+        expect(screen.getByText(s.caption)).toBeInTheDocument();
+        expect(screen.queryByText(J_KO.stages.stays.caption)).not.toBeInTheDocument();
+        expect(screen.queryByText(J_EN.stages.stays.caption)).not.toBeInTheDocument();
     });
 });
 
@@ -196,7 +162,6 @@ describe('Journey without motion', () => {
             `${J_KO.stages.stays.titleLead} ${J_KO.stages.stays.titleRest}`,
             `${J_KO.stages.flights.titleLead} ${J_KO.stages.flights.titleRest}`,
             `${J_KO.stages.golf.titleLead} ${J_KO.stages.golf.titleRest}`,
-            `${J_KO.stages.options.titleLead} ${J_KO.stages.options.titleRest}`,
         ]);
         expect(screen.queryByText('Find your stay.')).not.toBeInTheDocument();
     });
@@ -226,7 +191,8 @@ describe('Journey golf face', () => {
 
         expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(`${J_EN.stages.golf.titleLead} ${J_EN.stages.golf.titleRest}`);
         expect(bar.props.defaultMode).toBe('golf');
-        expect(golfApi.fetchGolfCatalogue).toHaveBeenCalledWith({ currency: 'KRW' });
+        // Asked for by an effect once the face is in, which a loaded machine can run a beat later.
+        await waitFor(() => expect(golfApi.fetchGolfCatalogue).toHaveBeenCalledWith({ currency: 'KRW' }));
         await screen.findByRole('button', { name: /Wack Wack/ });
         expect(bar.props.golfCourses).toEqual([course]);
     });

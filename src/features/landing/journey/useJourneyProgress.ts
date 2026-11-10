@@ -7,8 +7,8 @@ import { JOURNEY_SCREENS } from './stages';
 /**
  * How far the visitor has scrolled through the Journey, as 0 → 1.
  *
- * One value, computed once and passed down. Every layer — plate, label, card, the closing
- * panel — reads this same number, because two components each deriving it from
+ * One value, computed once and passed down. Every layer — plate, label, the docked search —
+ * reads this same number, because two components each deriving it from
  * `window.scrollY` drift apart by a frame and the layers visibly disagree mid-scroll.
  *
  * Updates are coalesced into one `requestAnimationFrame` per frame. The original design

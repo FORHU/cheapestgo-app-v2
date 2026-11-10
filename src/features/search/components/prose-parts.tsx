@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import { BRAND } from '@/shared/lib/palette';
 
 /**
@@ -60,6 +61,11 @@ export function Slot({ children }: { children: React.ReactNode }) {
 
 export function fmtDate(d: Date): string {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/** The day as the local calendar has it, `YYYY-MM-DD` — what a day cell is marked with. */
+function isoDay(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function sameDay(a: Date, b: Date): boolean {
@@ -126,6 +132,7 @@ interface CalendarGridProps {
 }
 
 export function CalendarGrid({ checkIn, checkOut, onSelect, accent, maxDate = null }: CalendarGridProps) {
+    const tAll = useTranslations();
     const today = startOfDay(new Date());
     const last = maxDate ? startOfDay(maxDate) : null;
     const [viewYear,  setViewYear]  = useState(today.getFullYear());
@@ -157,11 +164,11 @@ export function CalendarGrid({ checkIn, checkOut, onSelect, accent, maxDate = nu
         <div style={{ userSelect: 'none' }}>
             {/* Month nav */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <button onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: 'var(--imm-month-btn,30px)', height: 'var(--imm-month-btn,30px)', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
+                <button type="button" aria-label={tAll('checkout.datePicker.previousMonth')} onClick={e => { e.stopPropagation(); prevMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: 'var(--imm-month-btn,30px)', height: 'var(--imm-month-btn,30px)', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                 </button>
                 <span style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{monthLabel}</span>
-                <button onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: 'var(--imm-month-btn,30px)', height: 'var(--imm-month-btn,30px)', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
+                <button type="button" aria-label={tAll('checkout.datePicker.nextMonth')} onClick={e => { e.stopPropagation(); nextMonth(); }} style={{ border: 'none', background: FILL, color: '#fff', width: 'var(--imm-month-btn,30px)', height: 'var(--imm-month-btn,30px)', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: BRAND.gradientShadow }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                 </button>
             </div>
@@ -197,6 +204,7 @@ export function CalendarGrid({ checkIn, checkOut, onSelect, accent, maxDate = nu
                     return (
                         <div
                             key={i}
+                            data-day={isoDay(d)}
                             aria-disabled={isPast || undefined}
                             onClick={isPast ? undefined : e => { e.stopPropagation(); onSelect(d); }}
                             style={{
@@ -411,7 +419,7 @@ function NoteFloat({ children, width = 'min(360px,88vw)', extra = {} }: {
         place();
         window.addEventListener('resize', place);
         return () => window.removeEventListener('resize', place);
-    }, []);
+    }, [extra.maxHeight]);
 
     return (
         <div ref={ref} className="imm-note" style={{

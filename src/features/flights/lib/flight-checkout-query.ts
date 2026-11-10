@@ -14,6 +14,10 @@ import type { FlightOffer } from '@/shared/types';
  * Two currencies travel: `currency` is the one the page opens in — the traveller's own, so the
  * checkout agrees with the selector in its toolbar — and `fareCurrency` is the one `totalAmount`
  * is written in, the airline's. Without the second, picking a currency would relabel the fare.
+ *
+ * The search the flight was picked from travels too, as `search`, so a checkout whose fare has
+ * gone can run it again (`fareGoneSearchHref`). The checkout's own route is no stand-in: it is
+ * the airports of this one offer, not the "Tokyo" the traveller typed, and has no return date.
  */
 export function flightCheckoutQuery(
     offer: FlightOffer,
@@ -21,6 +25,8 @@ export function flightCheckoutQuery(
     bundleHotelId?: string | null,
     /** The currency the traveller is looking at; the airline's own when left out. */
     displayCurrency?: string | null,
+    /** The results page's query string. */
+    search?: string | null,
 ): URLSearchParams {
     const qs = new URLSearchParams();
     qs.set('offerId', offer.offerId);
@@ -38,5 +44,44 @@ export function flightCheckoutQuery(
     if (travellers.children > 0) qs.set('children', String(travellers.children));
     if (travellers.infants > 0)  qs.set('infants', String(travellers.infants));
     if (bundleHotelId)           qs.set('bundleHotelId', bundleHotelId);
+    if (search) {
+        // The note that an earlier fare had gone belongs to that visit, not to the next one.
+        const carried = new URLSearchParams(search);
+        carried.delete(FARE_GONE_PARAM);
+        const rest = carried.toString();
+        if (rest) qs.set('search', rest);
+    }
     return qs;
+}
+
+/** On the results page: the traveller was sent back because the fare they picked had gone. */
+export const FARE_GONE_PARAM = 'fareGone';
+
+/**
+ * Where a checkout sends the traveller once its fare has gone: the search they picked it from,
+ * run again — a new search, so new offers — with a note saying why they are back.
+ *
+ * A link without that search (one opened before the checkout carried it) searches the route and
+ * day it does have; one without even a route goes home. Only ever `/flights/search` or `/`,
+ * whatever `search` holds: it is read as a query string and written back as one.
+ */
+export function fareGoneSearchHref(checkout: URLSearchParams): string {
+    let qs: URLSearchParams;
+    const carried = checkout.get('search');
+    if (carried) {
+        qs = new URLSearchParams(carried);
+    } else {
+        const origin = checkout.get('origin');
+        const destination = checkout.get('destination');
+        if (!origin || !destination) return '/';
+        qs = new URLSearchParams({ origin, destination });
+        const depart = checkout.get('departureDate');
+        if (depart) qs.set('depart', depart);
+        for (const key of ['adults', 'children', 'infants', 'cabin', 'bundleHotelId']) {
+            const value = checkout.get(key);
+            if (value) qs.set(key, value);
+        }
+    }
+    qs.set(FARE_GONE_PARAM, '1');
+    return `/flights/search?${qs.toString()}`;
 }

@@ -1333,7 +1333,7 @@ export function RoomSelection({
             content: room.content,
             photos: roomPhotosOf(room),
         }));
-    }), [rooms, hotelAmenities, occupancy, checkIn, currency, nights]);
+    }), [rooms, hotelAmenities, occupancy, checkIn, currency]);
 
     const filtered = useMemo(() => {
         if (filter === 'all') return cards;

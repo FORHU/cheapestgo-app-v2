@@ -62,13 +62,18 @@ export function formatBookingTime(iso?: string): string {
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-/** "Thu, Nov 26, 2026, 7:21 PM" — a BOOKING's date and time, read the way `formatBookingTime` reads it. */
-export function formatBookingDateTime(iso: string | undefined, locale: string): string {
+/** "Thu, Nov 26, 2026" — a BOOKING's day, read the way `formatBookingTime` reads its clock. */
+export function formatBookingDate(iso: string | undefined, locale: string): string {
     if (!iso) return '';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    const date = d.toLocaleDateString(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-    return `${date}, ${formatBookingTime(iso)}`;
+    return d.toLocaleDateString(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+/** "Thu, Nov 26, 2026, 7:21 PM" — a BOOKING's date and time, read the way `formatBookingTime` reads it. */
+export function formatBookingDateTime(iso: string | undefined, locale: string): string {
+    const date = formatBookingDate(iso, locale);
+    return date ? `${date}, ${formatBookingTime(iso)}` : '';
 }
 
 /**
@@ -76,13 +81,18 @@ export function formatBookingDateTime(iso: string | undefined, locale: string): 
  * digits in the string survive, for the reason `formatTime` gives.
  */
 export function formatDateTime(iso: string | undefined, locale: string): string {
+    const date = formatFlightDate(iso, locale);
+    return date ? `${date}, ${formatTime(iso)}` : '';
+}
+
+/** "Wed, Oct 14, 2026" — an offer's day, its digits kept as written for the reason `formatTime` gives. */
+export function formatFlightDate(iso: string | undefined, locale: string): string {
     if (!iso) return '';
     const day = Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
     if (!Number.isFinite(day)) return '';
-    const date = new Date(day).toLocaleDateString(locale, {
+    return new Date(day).toLocaleDateString(locale, {
         timeZone: 'UTC', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
     });
-    return `${date}, ${formatTime(iso)}`;
 }
 
 /**

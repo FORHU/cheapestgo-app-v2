@@ -12,6 +12,7 @@ import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
 import { dayOffset, formatTime, groupSegmentsBySlice } from '../lib/flight-utils';
+import type { OfferHighlight } from '../lib/filter-offers';
 import { FlightItinerary } from './flight-itinerary';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ const CHIP     = 'bg-linear-to-r from-blue-600 to-cyan-500 text-white';
  *
  * Exported for the trip cards, which draw a booked flight the way it was found.
  */
-export function AirlineBadge({ code, name }: { code: string; name: string }) {
+export function AirlineBadge({ code, name, className }: { code: string; name: string; className?: string }) {
     const [loaded, setLoaded] = useState(false);
     const [failed, setFailed] = useState(false);
     const iata = (code ?? '').toUpperCase().slice(0, 3);
@@ -77,7 +78,10 @@ export function AirlineBadge({ code, name }: { code: string; name: string }) {
 
     return (
         <span
-            className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-500 group-hover:scale-[1.04] md:size-[120px] md:shadow-md"
+            className={cn(
+                'relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-500 group-hover:scale-[1.04] md:size-[120px] md:shadow-md',
+                className,
+            )}
         >
             {showLogo && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -152,9 +156,17 @@ export interface FlightCardProps {
     isSelected?: boolean;
     /** The fare is being checked with the airline before checkout — see handleSelect. */
     checkingPrice?: boolean;
+    /** Marked as the cheapest or the fastest of the results — on a phone, a badge by the airline. */
+    highlight?: OfferHighlight;
 }
 
-export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false, checkingPrice = false }: FlightCardProps) {
+/** The badge's colours: the cheapest in the refund line's green, the fastest in the brand's blue. */
+const HIGHLIGHT_TONE: Record<OfferHighlight, string> = {
+    cheapest: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+    fastest:  'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+};
+
+export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false, checkingPrice = false, highlight }: FlightCardProps) {
     const tAll = useTranslations();
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
@@ -227,9 +239,23 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                 : 'Refundable (fees may apply)';
     const cabin = (primary.cabinClass || 'economy').replace('_', ' ');
     const checkedBags = offer.baggage?.checkedBags ?? 0;
-    const fact = 'inline-flex items-center gap-1.5 whitespace-nowrap';
-    const time = cn('text-2xl leading-none font-semibold tracking-[-0.01em] md:text-[30px]', TITLE);
-    const code = cn('mt-1.5 text-[14px] tracking-[0.04em]', MUTED);
+    // The bags in one chip on a phone, where the desktop gives each its own line with an icon.
+    const bagsLine = offer.baggage && [
+        offer.baggage.cabinBag != null ? (offer.baggage.cabinBag ? '1 carry-on' : 'No carry-on') : null,
+        checkedBags > 0 ? `${checkedBags} checked` : 'No checked bag',
+    ].filter(Boolean).join(' · ');
+
+    // One card, two layouts. On a phone (below `md`) it is a grid: the airline, its badge and the
+    // bookmark on one line, then the times, the fare's chips, and the price over a rule. From `md`
+    // up it is the desktop's three columns — logo plate, itinerary, price — and the grid's cells
+    // are those columns' own children: the wrappers that make the columns are `display: contents`
+    // on a phone, so nothing is drawn twice. `max-md:` styles are the phone's alone.
+    const fact = 'inline-flex items-center gap-1 whitespace-nowrap md:gap-1.5';
+    const chip = 'max-md:rounded-full max-md:bg-slate-100 max-md:px-2.5 max-md:py-1 max-md:dark:bg-white/8';
+    const chipText = 'max-md:text-slate-600 max-md:dark:text-slate-300';
+    const factIcon = 'size-3 md:size-[15px]';
+    const time = cn('text-[20px] leading-none font-semibold tracking-[-0.01em] md:text-[30px]', TITLE);
+    const code = cn('mt-1 text-[11px] tracking-[0.04em] md:mt-1.5 md:text-[14px]', MUTED);
 
     return (
         <motion.article
@@ -238,102 +264,145 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
             transition={{ delay: index * 0.03, duration: 0.25 }}
             className={cn(
                 'group relative w-full overflow-hidden rounded-2xl transition-shadow duration-150',
+                // A hairline round the card on a phone, as the design draws it.
+                'max-md:border max-md:border-slate-200 max-md:dark:border-white/10',
                 SURFACE,
                 isSelected ? 'ring-2 ring-blue-500' : 'hover:shadow-lg dark:hover:shadow-black/40',
                 className,
             )}
         >
-            <div className="flex flex-col md:min-h-[205px] md:flex-row">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-2.5 px-4 pt-3.5 pb-3 md:flex md:min-h-[205px] md:flex-row md:items-stretch md:gap-0 md:p-0">
                 {/* ─── Logo plate ─── */}
-                {/* No fill of its own: the disc sits straight on the card. */}
-                <div className="relative flex h-20 shrink-0 items-center justify-center px-6 md:h-auto md:w-[240px]">
-                    <AirlineBadge code={primary.airline} name={primary.airlineName || primary.airline} />
-                    {/* The bookmark rides on the plate on a phone, where the price column is a row. */}
-                    <div className="absolute top-1/2 right-4 -translate-y-1/2 md:hidden">
-                        <SaveButton {...saveProps} variant="bookmark" />
-                    </div>
+                {/* No fill of its own: the disc sits straight on the card. On a phone, a small
+                    disc at the head of the airline's line. */}
+                <div className="col-start-1 row-start-1 md:relative md:flex md:w-[240px] md:shrink-0 md:items-center md:justify-center md:px-6">
+                    <AirlineBadge code={primary.airline} name={primary.airlineName || primary.airline} className="size-8" />
                 </div>
 
                 {/* ─── Itinerary ─── */}
-                <div className="flex min-w-0 flex-1 flex-col px-5 py-5 md:pt-7 md:pr-8 md:pb-6 md:pl-9">
-                    <h3 className={cn('text-[20px] leading-tight font-bold', TITLE)}>{primary.airlineName || primary.airline}</h3>
-                    <p className={cn('mt-1 text-[13px]', MUTED)}>
-                        {primary.flightNumber}
-                        {segments.length > 1 && ` + ${segments.length - 1} more`}
-                    </p>
+                <div className="contents md:flex md:min-w-0 md:flex-1 md:flex-col md:pt-7 md:pr-8 md:pb-6 md:pl-9">
+                    <div className="col-start-2 row-start-1 min-w-0">
+                        <h3 className={cn('text-[15px] leading-tight font-bold max-md:truncate md:text-[20px]', TITLE)}>{primary.airlineName || primary.airline}</h3>
+                        <p className={cn('mt-0.5 text-[11px] max-md:truncate md:mt-1 md:text-[13px]', MUTED)}>
+                            {primary.flightNumber}
+                            {segments.length > 1 && ` + ${segments.length - 1} more`}
+                        </p>
+                    </div>
 
-                    <div className="mt-[18px] flex items-center gap-4 md:gap-5">
+                    <div className="col-span-full row-start-2 mt-3 flex items-center gap-3 md:mt-[18px] md:gap-5">
                         <div>
                             <div className={time}>{formatTime(primary.departure?.time)}</div>
                             <div className={code}>{primary.origin}</div>
                         </div>
-                        <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-                            <span className={cn('text-[13px]', TEXT)}>{formatDuration(outboundMinutes)}</span>
+                        {/* The route line keeps its plane, on a phone as on the desktop. */}
+                        <div className="flex min-w-0 flex-1 flex-col items-center gap-1 md:gap-1.5">
+                            <span className={cn('text-[11px] md:text-[13px]', TEXT)}>{formatDuration(outboundMinutes)}</span>
                             <RouteLine stops={outboundStops} />
-                            <span className={cn('text-[13px]', MUTED)}>{stopsLabel(outboundStops)}</span>
+                            <span className={cn('text-[12px] md:text-[13px]', MUTED)}>{stopsLabel(outboundStops)}</span>
                         </div>
                         <div className="text-right">
                             <div className={time}>
                                 {formatTime(last.arrival?.time)}
-                                {arrivalDays > 0 && <sup className={cn('ml-0.5 text-[12px] font-medium', MUTED)}>+{arrivalDays}</sup>}
+                                {arrivalDays > 0 && <sup className={cn('ml-0.5 text-[11px] font-medium md:text-[12px]', MUTED)}>+{arrivalDays}</sup>}
                             </div>
                             <div className={code}>{last.destination}</div>
                         </div>
                     </div>
 
-                    <div className={cn('mt-[18px] flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[14px]', MUTED)}>
-                        <span className={cn(fact, isRefundable && 'text-emerald-600 dark:text-emerald-400')}>{refundLabel}</span>
-                        <span className={cn(fact, 'capitalize')}><Armchair size={15} />{cabin}</span>
-                        {primary.aircraft && <span className={fact}><Plane size={15} />{primary.aircraft}</span>}
+                    {/* The fare's facts: on a phone, the refund terms and the bags as two chips; on the
+                        desktop, all of them in a line with their icons. */}
+                    <div className={cn('col-span-full row-start-3 mt-3 flex flex-wrap items-center gap-1.5 text-[12px] md:mt-[18px] md:gap-x-[18px] md:gap-y-1.5 md:text-[14px]', MUTED)}>
+                        <span className={cn(fact, chip, isRefundable ? 'text-emerald-600 dark:text-emerald-400' : chipText)}>{refundLabel}</span>
+                        <span className={cn(fact, 'capitalize max-md:hidden')}><Armchair size={15} className={factIcon} />{cabin}</span>
+                        {primary.aircraft && <span className={cn(fact, 'max-md:hidden')}><Plane size={15} className={factIcon} />{primary.aircraft}</span>}
                         {offer.baggage?.cabinBag != null && (
-                            <span className={fact}>
-                                <Luggage size={15} />
+                            <span className={cn(fact, 'max-md:hidden')}>
+                                <Luggage size={15} className={factIcon} />
                                 {offer.baggage.cabinBag ? '1 carry-on bag' : 'No carry-on bag'}
                             </span>
                         )}
                         {offer.baggage && (
-                            <span className={fact}>
-                                <BaggageClaim size={15} />
+                            <span className={cn(fact, 'max-md:hidden')}>
+                                <BaggageClaim size={15} className={factIcon} />
                                 {checkedBags > 0 ? `${checkedBags} checked bag${checkedBags > 1 ? 's' : ''}` : 'No checked bag'}
                             </span>
                         )}
+                        {bagsLine && <span className={cn(fact, chip, chipText, 'md:hidden')}>{bagsLine}</span>}
                     </div>
 
+                    {/* On a phone, "Flight details" under the price opens the same panel. */}
                     <button
                         type="button"
                         onClick={() => setExpanded(!expanded)}
                         aria-expanded={expanded}
-                        className={cn('mt-3 inline-flex items-center gap-1 self-start text-[14px] transition-opacity hover:opacity-70', TEXT)}
+                        className={cn('mt-3 hidden items-center gap-1 self-start text-[14px] transition-opacity hover:opacity-70 md:inline-flex', TEXT)}
                     >
                         {expanded
                             ? 'Hide segments'
                             : offer.alternatives && offer.alternatives.length > 0
                                 ? `Show segments · ${offer.alternatives.length + 1} fare options`
                                 : 'Show segments'}
-                        {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        {expanded ? <ChevronUp size={15} className={factIcon} /> : <ChevronDown size={15} className={factIcon} />}
                     </button>
                 </div>
 
-                {/* ─── Price ─── */}
-                <div className={cn('flex shrink-0 items-center justify-between gap-3 border-t px-5 py-4 md:w-[230px] md:flex-col md:items-stretch md:border-t-0 md:border-l md:p-6', HAIRLINE)}>
-                    <div className="hidden justify-end md:flex">
-                        <SaveButton {...saveProps} variant="bookmark" />
-                    </div>
-                    <div>
-                        <p className="whitespace-nowrap">
-                            <span className={cn('text-[22px] font-bold md:text-[26px]', TITLE)}>{money(pricePerPerson, currency)}</span>
-                            <span className={cn('text-[15px]', MUTED)}> / person</span>
-                        </p>
-                        <p className={cn('mt-1 text-[13px] first-letter:uppercase', MUTED)}>{tAll('flights.card.includesTaxes')}</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => handleSelect(offer)}
-                        disabled={checkingPrice}
-                        className={cn('h-[42px] shrink-0 rounded-full px-6 text-[15px] font-medium transition-opacity hover:opacity-85 disabled:opacity-60 md:w-full', CHIP)}
+                {/* ─── Badge ─── */}
+                {/* The phone's alone: the desktop card has no place for it yet. */}
+                {highlight && (
+                    <span
+                        className={cn(
+                            'col-start-3 row-start-1 rounded-md border px-2 py-[3px] text-[10px] leading-none font-bold tracking-[0.08em] uppercase md:hidden',
+                            HIGHLIGHT_TONE[highlight],
+                        )}
                     >
-                        {checkingPrice ? 'Checking price…' : 'Select Now'}
-                    </button>
+                        {tAll(`flights.filters.${highlight}`)}
+                    </span>
+                )}
+
+                {/* ─── Price ─── */}
+                <div className={cn('contents md:flex md:w-[230px] md:shrink-0 md:flex-col md:items-stretch md:justify-between md:gap-3 md:border-l md:p-6', HAIRLINE)}>
+                    <div className="col-start-4 row-start-1 flex justify-end">
+                        {/* A bare icon on a phone, still 36px to tap; the gradient disc from `md` up. */}
+                        <SaveButton
+                            {...saveProps}
+                            variant="bookmark"
+                            className="max-md:-mr-2 max-md:bg-none max-md:text-slate-400 max-md:hover:text-slate-600 max-md:dark:text-white/60 max-md:dark:hover:text-white"
+                        />
+                    </div>
+                    <div className={cn('col-span-full row-start-4 mt-3 flex items-center justify-between gap-3 border-t pt-3 md:contents', HAIRLINE)}>
+                        <div className="min-w-0">
+                            <p className="whitespace-nowrap">
+                                <span className={cn('text-[20px] font-bold max-md:leading-tight md:text-[26px]', TITLE)}>{money(pricePerPerson, currency)}</span>
+                                <span className={cn('text-[15px] max-md:hidden', MUTED)}> / person</span>
+                            </p>
+                            <p className={cn('mt-1 text-[13px] first-letter:uppercase max-md:hidden', MUTED)}>{tAll('flights.card.includesTaxes')}</p>
+                            <button
+                                type="button"
+                                onClick={() => setExpanded(!expanded)}
+                                aria-expanded={expanded}
+                                className="mt-0.5 text-[12px] font-medium text-blue-600 transition-opacity hover:opacity-75 md:hidden dark:text-blue-400"
+                            >
+                                {tAll('flights.card.flightDetails')}
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleSelect(offer)}
+                            disabled={checkingPrice}
+                            className={cn(
+                                'h-11 shrink-0 rounded-xl px-6 text-[14px] font-semibold transition-opacity hover:opacity-85 disabled:opacity-60',
+                                'md:h-[42px] md:w-full md:rounded-full md:text-[15px] md:font-medium',
+                                CHIP,
+                            )}
+                        >
+                            {checkingPrice ? 'Checking price…' : (
+                                <>
+                                    <span className="md:hidden">{tAll('flights.card.select')}</span>
+                                    <span className="max-md:hidden">Select Now</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 

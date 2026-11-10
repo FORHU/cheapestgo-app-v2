@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { flightCheckoutQuery } from '../flight-checkout-query';
+import { flightCheckoutQuery, fareGoneSearchHref } from '../flight-checkout-query';
 import type { FlightOffer } from '@/shared/types';
 
 const offer = {
@@ -40,5 +40,59 @@ describe('flightCheckoutQuery', () => {
 
     it('carries a bundled hotel', () => {
         expect(flightCheckoutQuery(offer, { adults: 1, children: 0, infants: 0 }, 'h1').get('bundleHotelId')).toBe('h1');
+    });
+});
+
+describe('the search a flight was picked from', () => {
+    const SEARCH = 'origin=Tokyo&destination=MNL&depart=2026-12-01&return=2026-12-08&tripType=round-trip&cabin=economy&adults=2&children=0&infants=0';
+
+    it('goes to checkout with the flight, as the results page had it', () => {
+        const qs = flightCheckoutQuery(offer, { adults: 2, children: 0, infants: 0 }, null, null, SEARCH);
+        expect(qs.get('search')).toBe(SEARCH);
+    });
+
+    it('leaves behind the note that an earlier fare had gone', () => {
+        const qs = flightCheckoutQuery(offer, { adults: 1, children: 0, infants: 0 }, null, null, `${SEARCH}&fareGone=1`);
+        expect(qs.get('search')).toBe(SEARCH);
+    });
+
+    it('is left out when there is none', () => {
+        expect(flightCheckoutQuery(offer, { adults: 1, children: 0, infants: 0 }).has('search')).toBe(false);
+    });
+});
+
+describe('fareGoneSearchHref', () => {
+    const at = (query: Record<string, string>) => {
+        const href = fareGoneSearchHref(new URLSearchParams(query));
+        const [path, qs = ''] = href.split('?');
+        return { path, params: Object.fromEntries(new URLSearchParams(qs)) };
+    };
+
+    it('runs the traveller\'s own search again — return date, city names and all — and says why', () => {
+        const { path, params } = at({
+            offerId: 'off_1', origin: 'NRT', destination: 'MNL',
+            search: 'origin=Tokyo&destination=MNL&depart=2026-12-01&return=2026-12-08&tripType=round-trip&adults=2',
+        });
+        expect(path).toBe('/flights/search');
+        expect(params).toEqual({
+            origin: 'Tokyo', destination: 'MNL', depart: '2026-12-01', return: '2026-12-08',
+            tripType: 'round-trip', adults: '2', fareGone: '1',
+        });
+    });
+
+    it('searches the checkout\'s own route and day when the link carries no search', () => {
+        const { path, params } = at({
+            offerId: 'off_1', origin: 'MNL', destination: 'NRT', departureDate: '2026-12-01',
+            adults: '1', children: '1', cabin: 'business', bundleHotelId: 'h1', currency: 'USD', totalAmount: '250',
+        });
+        expect(path).toBe('/flights/search');
+        expect(params).toEqual({
+            origin: 'MNL', destination: 'NRT', depart: '2026-12-01',
+            adults: '1', children: '1', cabin: 'business', bundleHotelId: 'h1', fareGone: '1',
+        });
+    });
+
+    it('goes home when there is no route to search', () => {
+        expect(fareGoneSearchHref(new URLSearchParams({ offerId: 'off_1' }))).toBe('/');
     });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import React, { useRef, useCallback, useState } from 'react';
 import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react';
 import { POI_FILTERS, type PoiCategory } from '@/shared/config/map-discovery';
@@ -124,10 +125,13 @@ export function PoiDiscovery({ coordinates }: PoiDiscoveryProps) {
                                     className={`group/card relative shrink-0 w-36 h-24 sm:w-44 sm:h-28 rounded-2xl overflow-hidden cursor-default bg-linear-to-br ${bg} shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300`}
                                 >
                                     {/* Photo */}
-                                    <img
+                                    <Image
                                         src={gem.imageUrl}
                                         alt={gem.name}
-                                        className="absolute inset-0 w-full h-full object-cover"
+                                        fill
+                                        unoptimized
+                                        sizes="176px"
+                                        className="object-cover"
                                         loading="lazy"
                                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />

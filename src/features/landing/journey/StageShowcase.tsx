@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { BRAND } from '@/shared/lib/palette';
 import {
     STAGES,
@@ -66,10 +67,13 @@ function Mosaic({ t, images }: { t: number; images: string[] }) {
                 const shown = ramp(t, order / images.length - 0.08, order / images.length + 0.22);
                 return (
                     <div key={src} className="relative overflow-hidden">
-                        <img
+                        <Image
                             src={src}
                             alt=""
                             className="h-full w-full object-cover"
+                            width={640}
+                            height={480}
+                            sizes="33vw"
                             style={{
                                 opacity: shown * 0.55,
                                 transform: `scale(${1.08 - shown * 0.08})`,
@@ -85,15 +89,18 @@ function Mosaic({ t, images }: { t: number; images: string[] }) {
     );
 }
 
-/** One place, held. The descent has stopped moving; the choice is the only thing left. */
+/** One place, held. */
 function Still({ t, image, strength = 0.6, onError }: { t: number; image: string; strength?: number; onError?: () => void }) {
     return (
-        <img
+        <Image
             src={image}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
+            width={1920}
+            height={1080}
+            sizes="100vw"
             // Barely moves — just enough that the frame is not frozen while the visitor
-            // reads four options.
+            // fills in the search.
             style={{ opacity: strength, transform: `scale(${1.03 + t * 0.02})` }}
             loading="lazy"
             decoding="async"
@@ -118,11 +125,14 @@ function Destinations({ t, images }: { t: number; images: string[] }) {
                 const fade = slot * SEQUENCE_BLEND;
                 if (opacity <= 0.01) return null;
                 return (
-                    <img
+                    <Image
                         key={src}
                         src={src}
                         alt=""
                         className="absolute inset-0 h-full w-full object-cover will-change-transform"
+                        width={1920}
+                        height={1080}
+                        sizes="100vw"
                         style={{
                             // Not full strength: the photograph is the ground this stage
                             // stands on, and the stage's own colour reads through it.
