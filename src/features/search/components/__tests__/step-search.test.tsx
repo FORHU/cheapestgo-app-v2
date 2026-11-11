@@ -255,6 +255,49 @@ describe('flights — trip, from, to, when, who', () => {
         expect(within(list).queryByText('MNL')).not.toBeInTheDocument();
     });
 
+    it('highlights the airport already in the field, not just the first one listed', async () => {
+        useSearchStore.setState((s) => ({
+            flightState: { ...s.flightState, flights: s.flightState.flights.map((f, i) => (i === 0 ? { ...f, origin: { title: 'Seoul (ICN)', subtitle: '', type: 'city', countryCode: '' } } : f)) },
+        }));
+        const user = userEvent.setup();
+        renderWithIntl(<StepSearch mode="flights" />);
+        await user.click(screen.getByRole('button', { name: /^One-way/ }));
+        await user.click(screen.getByRole('button', { name: 'Next: departure' }));
+
+        expect(screen.getByRole('option', { name: /ICN/ })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('option', { name: /MNL/ })).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('closes the list once a popular airport is picked, and opens it again on typing', async () => {
+        autocompleteDestinations.mockResolvedValue([icn, gmp]);
+        const user = userEvent.setup();
+        renderWithIntl(<StepSearch mode="flights" />);
+        await toDestination(user);
+
+        await user.click(within(screen.getByRole('listbox')).getByText('ICN'));
+
+        expect(screen.getByRole('combobox')).toHaveValue('Seoul (ICN)');
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+
+        await user.clear(screen.getByRole('combobox'));
+        await user.type(screen.getByRole('combobox'), 'Seo');
+        expect(await screen.findByRole('option', { name: /GMP/ })).toBeInTheDocument();
+    });
+
+    it('keeps the list closed on coming back to a destination already picked', async () => {
+        const user = userEvent.setup();
+        renderWithIntl(<StepSearch mode="flights" />);
+        await toDestination(user);
+        await user.click(within(screen.getByRole('listbox')).getByText('ICN'));
+        await user.click(screen.getByRole('button', { name: 'Next: dates' }));
+
+        await user.click(screen.getByRole('button', { name: 'Back' }));
+
+        expect(screen.getByRole('combobox')).toHaveValue('Seoul (ICN)');
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
     it('lists typed airports with their codes, and Enter picks the highlighted airport', async () => {
         autocompleteDestinations.mockResolvedValue([icn, gmp]);
         const user = userEvent.setup();
