@@ -329,7 +329,7 @@ export function BarAccountButton({ tone }: { tone: 'light' | 'dark' }) {
 
 function BarAccountButtonInner({ tone }: { tone: 'light' | 'dark' }) {
     const tAll = useTranslations();
-    const { lit } = barStyles(tone);
+    const { chrome, lit } = barStyles(tone);
     const user = useAuthStore((s) => s.user);
     const checking = useAuthStore((s) => s.isLoading);
     const pathname = usePathname();
@@ -342,7 +342,11 @@ function BarAccountButtonInner({ tone }: { tone: 'light' | 'dark' }) {
         return <span aria-hidden className="block h-10 w-[92px]" />;
     }
 
-    if (user) return <SignInDropdown />;
+    // The bar's palette, not the app theme: this bar is the theme inverted against the basemap,
+    // on a page whose root is hardcoded `dark`, so the dropdown's own `dark:` skin drew white
+    // text on near-white glass over a light map. Same hand-off as the currency and language
+    // menus beside it.
+    if (user) return <SignInDropdown chrome={chrome} />;
 
     const query = searchParams?.toString();
     const redirect = pathname + (query ? `?${query}` : '');
