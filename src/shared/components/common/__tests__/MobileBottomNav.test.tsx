@@ -33,7 +33,7 @@ vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams()
 vi.mock('@/shared/auth/SignInDropdown', () => ({
     default: ({ variant }: { variant?: string }) => <div data-testid="account-panel" data-variant={variant} />,
 }));
-vi.mock('@/shared/components/ChromeToneContext', () => ({ useChromeTone: () => 'light' }));
+vi.mock('@/shared/components/ChromeToneContext', () => ({ useChromeTone: () => 'light', routeInvertsChrome: () => false }));
 vi.mock('@/shared/components/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', toggleTheme: nav.toggleTheme }) }));
 
 const ui = () => (
