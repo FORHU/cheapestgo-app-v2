@@ -12,6 +12,7 @@ import { getBrandName } from '@/shared/lib/brand.server';
 import { BrandProvider } from '@/shared/components/BrandProvider';
 import { BrandPreviewSwitcher } from '@/shared/components/BrandPreviewSwitcher';
 import PWAServiceWorkerRegistrar from '@/shared/components/pwa/PWAServiceWorkerRegistrar';
+import { THEME_SCRIPT } from '@/shared/lib/themeScript';
 
 // Plus Jakarta Sans is the app-wide typeface: one variable family covering the
 // 400–800 range, carrying both body and display weights (see globals.css, which
@@ -103,7 +104,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     prevent. Defaults to light, as the app always has. */}
                 <script
                     dangerouslySetInnerHTML={{
-                        __html: "try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light')}catch(e){document.documentElement.classList.add('light')}",
+                        __html: THEME_SCRIPT,
                     }}
                 />
                 <BrandProvider name={brand}>

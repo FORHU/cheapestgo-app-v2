@@ -121,6 +121,8 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
     const [suggestions, setSuggestions] = useState<DestinationSuggestion[]>([]);
     const [loading, setLoading] = useState(false);
     const [highlight, setHighlight] = useState(0);
+    /** An option was taken: the list stays closed until the visitor types again. */
+    const [picked, setPicked] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const listId = useId();
     /** Set when the visitor moves to a step whose field is still empty, so it takes the focus.
@@ -136,12 +138,15 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
         return '';
     }, [stay, origin, destination]);
 
-    // Arriving at a step: its field shows its answer, and nothing is listed until typed.
+    // Arriving at a step: its field shows its answer, and nothing is listed until typed. A step
+    // the visitor already chose for keeps its list closed, unless they came back to change it.
     useEffect(() => {
         setQuery(answerOf(step));
         setTyped(false);
         setSuggestions([]);
         setHighlight(0);
+        const chosen = step === 'from' ? originTouched : step === 'to' ? !!destination : step === 'where' ? !!stay : false;
+        setPicked(chosen && !focusOnArrive.current);
         if (focusOnArrive.current && isPlaceStep) inputRef.current?.focus();
         focusOnArrive.current = false;
         // Only on arriving: `answerOf` changes as answers are picked, and that must not refill the field.
@@ -173,10 +178,14 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
         if (!isPlaceStep) return [];
         if (showTyped) return excludeOrigin(suggestions, otherEnd).slice(0, MAX_OPTIONS);
         // Before anything is typed a flight offers the airports most people fly; a stay offers tiles.
-        if (mode === 'flights') return excludeOrigin(POPULAR_AIRPORTS, otherEnd).slice(0, MAX_OPTIONS);
+        if (mode === 'flights' && !picked) return excludeOrigin(POPULAR_AIRPORTS, otherEnd).slice(0, MAX_OPTIONS);
         return [];
-    }, [isPlaceStep, showTyped, suggestions, otherEnd, mode]);
-    useEffect(() => { setHighlight(0); }, [options]);
+    }, [isPlaceStep, showTyped, suggestions, otherEnd, mode, picked]);
+    // Typed suggestions point at the best match; the default list at the answer the field holds,
+    // if it is listed, and otherwise at nothing.
+    useEffect(() => {
+        setHighlight(showTyped ? 0 : options.findIndex((o) => o.title === answerOf(step)));
+    }, [options, showTyped, answerOf, step]);
 
     const pickOption = useCallback((s: DestinationSuggestion) => {
         if (step === 'where') {
@@ -193,6 +202,7 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
         }
         setTyped(false);
         setSuggestions([]);
+        setPicked(true);
     }, [step]);
 
     const pickTile = useCallback((p: StayPick) => {
@@ -301,8 +311,10 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
         if (e.key === 'ArrowUp' && options.length) { e.preventDefault(); setHighlight((h) => Math.max(0, h - 1)); return; }
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        // A list being read from: Enter takes its highlighted row. Otherwise it is "next".
-        if (showTyped && options[highlight]) { pickOption(options[highlight]!); return; }
+        // A highlighted row is taken: a typed match, or a default the visitor arrowed onto. The
+        // answer the field already holds is not taken again, so Enter on it is "next".
+        const row = options[highlight];
+        if (row && (showTyped || row.title !== answerOf(step))) { pickOption(row); return; }
         next();
     };
 
@@ -478,12 +490,12 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                                     role="combobox"
                                     aria-expanded={options.length > 0}
                                     aria-controls={listId}
-                                    aria-activedescendant={options.length ? `${listId}-${highlight}` : undefined}
+                                    aria-activedescendant={options[highlight] ? `${listId}-${highlight}` : undefined}
                                     aria-autocomplete="list"
                                     aria-label={question}
                                     value={query}
                                     placeholder={placeholder}
-                                    onChange={(e) => { setQuery(e.target.value); setTyped(true); }}
+                                    onChange={(e) => { setQuery(e.target.value); setTyped(true); setPicked(false); }}
                                     onKeyDown={onKeyDown}
                                     autoComplete="off"
                                     spellCheck={false}
