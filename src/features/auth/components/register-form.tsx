@@ -20,6 +20,9 @@ const PASSWORD_RULES: PasswordRule[] = [
     { label: 'At least one number', test: (p) => /\d/.test(p) },
 ];
 
+/** The API's cap on a name (`checkName` in api-v2), so the form stops where it would refuse. */
+const NAME_MAX = 30;
+
 function PasswordStrength({ password }: { password: string }) {
     if (!password) return null;
     return (
@@ -59,7 +62,7 @@ export function RegisterForm() {
         const e: typeof errors = {};
         if (!form.email) e.email = tAll('auth.emailRequired');
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = tAll('auth.emailInvalid');
-        if (!form.firstName) e.firstName = tAll('auth.firstNameRequired');
+        if (!form.firstName.trim()) e.firstName = tAll('auth.firstNameRequired');
         if (!form.password) e.password = tAll('auth.passwordRequired');
         else if (!PASSWORD_RULES.every((r) => r.test(form.password))) e.password = tAll('auth.passwordWeak');
         setErrors(e);
@@ -69,7 +72,14 @@ export function RegisterForm() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
-        register.mutate(form);
+        // In the API's own field names, not the form's (`RegisterBody`). The last name is
+        // optional here, and the API refuses a blank one, so an empty one is left out.
+        register.mutate({
+            email: form.email,
+            password: form.password,
+            first_name: form.firstName.trim(),
+            last_name: form.lastName.trim() || undefined,
+        });
     };
 
     return (
@@ -86,6 +96,7 @@ export function RegisterForm() {
                     icon={User}
                     error={errors.firstName}
                     autoComplete="given-name"
+                    maxLength={NAME_MAX}
                 />
                 <Input
                     id="lastName"
@@ -95,6 +106,7 @@ export function RegisterForm() {
                     placeholder={tAll('auth.lastNameShort')}
                     error={errors.lastName}
                     autoComplete="family-name"
+                    maxLength={NAME_MAX}
                 />
             </div>
 

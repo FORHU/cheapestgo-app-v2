@@ -2,7 +2,11 @@ import { http } from '@/shared/lib/http';
 import type { User } from '@/shared/types';
 
 export interface LoginBody { email: string; password: string; }
-export interface RegisterBody { email: string; password: string; firstName?: string; lastName?: string; }
+/**
+ * The names are snake_case because that is what api-v2 reads. It strips keys it does not know,
+ * so a camelCase name is dropped without an error and the account is saved nameless.
+ */
+export interface RegisterBody { email: string; password: string; first_name?: string; last_name?: string; }
 export interface AuthResponse { user: User; }
 
 /**
