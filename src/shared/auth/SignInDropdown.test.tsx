@@ -79,6 +79,61 @@ describe('the panel', () => {
     });
 });
 
+/**
+ * On the search toolbar the panel is drawn from the bar's own palette, not from a skin.
+ *
+ * That page hardcodes `dark` on its root and inverts the bar against the basemap, so a `dark:`
+ * variant resolves to the dark skin there whatever the bar is. On a light bar that was white
+ * text on a near-white glass panel over a light map — the name, email, Account Settings and
+ * Sign out all but vanished. The language and currency menus took `chrome` for this; the
+ * account menu has to as well.
+ */
+describe('the panel on a toolbar with its own palette', () => {
+    const LIGHT = {
+        surface: '#FFFFFF', text: '#0f172a', border: '#e2e8f0', menu: '#FFFFFF',
+        hover: '#f1f5f9', shadow: '0 8px 24px rgba(15,23,42,0.16)', danger: '#b91c1c',
+    };
+
+    it('is the palette\'s opaque menu ground, not translucent glass', async () => {
+        render(<SignInDropdown chrome={LIGHT} />);
+        const panel = await openPanel();
+
+        expect(panel).toHaveStyle({ background: '#FFFFFF' });
+        expect(panel.className).not.toContain('backdrop-blur');
+        expect(panel.className).not.toMatch(/bg-white\//);
+    });
+
+    it('draws name, email, settings and sign-out from the palette, with nothing that follows `dark:`', async () => {
+        render(<SignInDropdown chrome={LIGHT} />);
+        const panel = await openPanel();
+
+        expect(screen.getByText('Billy Busilan')).toHaveStyle({ color: '#0f172a' });
+        expect(screen.getByText('billy@example.com')).toHaveStyle({ color: '#0f172a' });
+        expect(screen.getByText('accountSettings').closest('a')).toHaveStyle({ color: '#0f172a' });
+        expect(screen.getByText('signOut').closest('button')).toHaveStyle({ color: '#b91c1c' });
+        expect(panel.innerHTML).not.toMatch(/dark:text-/);
+    });
+
+    it('lights a row under the cursor with the palette\'s hover fill', async () => {
+        render(<SignInDropdown chrome={LIGHT} />);
+        await openPanel();
+        const row = screen.getByText('accountSettings').closest('a') as HTMLElement;
+
+        fireEvent.mouseEnter(row);
+        expect(row).toHaveStyle({ background: '#f1f5f9' });
+        fireEvent.mouseLeave(row);
+        expect(row).not.toHaveStyle({ background: '#f1f5f9' });
+    });
+
+    it('falls back to the palette\'s own text for sign-out when it carries no danger colour', async () => {
+        const { danger: _danger, ...bare } = LIGHT;
+        render(<SignInDropdown chrome={bare} />);
+        await openPanel();
+
+        expect(screen.getByText('signOut').closest('button')).toHaveStyle({ color: '#0f172a' });
+    });
+});
+
 describe('signed out', () => {
     beforeEach(() => { auth.user = null; });
 

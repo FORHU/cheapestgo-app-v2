@@ -6,7 +6,8 @@ import { Link } from '@/i18n/navigation';
 import { usePathname } from '@/i18n/navigation';
 import { Home, List, Settings2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useChromeTone } from '@/shared/components/ChromeToneContext';
+import { routeInvertsChrome, useChromeTone } from '@/shared/components/ChromeToneContext';
+import { useTheme } from '@/shared/components/ThemeContext';
 import { SettingsPanel } from '@/shared/components/common/SettingsPanel';
 import { getNavigationPhase, subscribeNavigation } from '@/i18n/navigationProgress';
 
@@ -26,10 +27,19 @@ import { getNavigationPhase, subscribeNavigation } from '@/i18n/navigationProgre
  * The support chat button wears the same skin, so the two pieces of chrome read
  * as one set. It floats, so it takes `shadow`; the docked bar only casts upward
  * (`dockShadow`).
+ *
+ * The docked bar itself is glass, the language and currency menus' own
+ * (`SELECTOR_TONES`): a white tint over an 18px blur, 18% on dark ground and 60%
+ * on light. That is `glass`. `bar` is the solid: the support button keeps it,
+ * and so does the bar over the search map, where the chrome inverts to stand
+ * off the basemap and a tint would let the basemap straight back through.
  */
+const GLASS_BLUR = 'blur(18px) saturate(150%)';
+
 export const NAV_SKIN = {
     dark: {
         bar:        '#181C24',
+        glass:      'rgba(255,255,255,0.18)',
         border:     '1px solid rgba(255,255,255,0.06)',
         shadow:     '0 8px 30px rgba(0,0,0,0.28)',
         dockShadow: '0 -10px 30px rgba(0,0,0,0.22)',
@@ -40,6 +50,7 @@ export const NAV_SKIN = {
     },
     light: {
         bar:        '#FFFFFF',
+        glass:      'rgba(255,255,255,0.6)',
         // A white bar on a light page has no contrast of its own to sit on, so
         // it takes a hairline the dark one does not need.
         border:     '1px solid rgba(17,17,17,0.08)',
@@ -66,7 +77,11 @@ const navItems = [
 export const MobileBottomNav = () => {
     const tAll = useTranslations();
     const pathname = usePathname();
-    const skin = NAV_SKIN[useChromeTone()];
+    const tone = useChromeTone();
+    const skin = NAV_SKIN[tone];
+    const { theme } = useTheme();
+    // Inverted against the page: only the search map does that.
+    const solid = routeInvertsChrome(pathname) && tone !== theme;
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
     // The tab just tapped, lit while its page loads. Without it the old tab stays lit until the
@@ -93,17 +108,20 @@ export const MobileBottomNav = () => {
 
     return (
         <>
-            {/* Docked to the foot of the screen: flat bottom, rounded shoulders.
-                The bar's own colour runs down under the home indicator, and the
-                68px row above it stays clear of the 92px offset the support
+            {/* Docked to the foot of the screen, square and edge to edge, in the
+                menus' glass. The glass runs down under the home indicator, and
+                the 68px row above it stays clear of the 92px offset the support
                 launcher and the other floating buttons keep. */}
             <nav
                 aria-label={tAll('common.primary')}
-                className="lg:hidden fixed bottom-0 inset-x-0 z-[100] rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)]"
-                // Three longhands, not `border` plus `borderBottom: none`: React
-                // warns on mixing a shorthand with its own longhand across rerenders,
-                // and the search page rerenders this when the tone flips.
-                style={{ background: skin.bar, borderTop: skin.border, borderLeft: skin.border, borderRight: skin.border, boxShadow: skin.dockShadow }}
+                className="lg:hidden fixed bottom-0 inset-x-0 z-[100] pb-[env(safe-area-inset-bottom,0px)]"
+                style={{
+                    background: solid ? skin.bar : skin.glass,
+                    backdropFilter: solid ? undefined : GLASS_BLUR,
+                    WebkitBackdropFilter: solid ? undefined : GLASS_BLUR,
+                    borderTop: skin.border,
+                    boxShadow: skin.dockShadow,
+                }}
             >
                 <div className="flex h-[68px] items-center px-2">
                     {navItems.map((item, index) => {
@@ -124,7 +142,7 @@ export const MobileBottomNav = () => {
 
                         // Thirds rather than `justify-around`: the tap target is
                         // the whole third, not just the glyph inside it. The ring
-                        // is inset so it stays inside the bar's curved shoulders.
+                        // is inset so it stays inside the bar.
                         const slot = `group flex h-full flex-1 items-center justify-center rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-inset ${skin.ring}`;
 
                         const control = item.href === null ? (

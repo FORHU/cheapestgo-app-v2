@@ -10,7 +10,7 @@ import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useLogout } from '@/features/auth/hooks/use-auth';
 import { cn } from '@/shared/lib/cn';
-import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
+import { SELECTOR_TONES, type SelectorChrome, type SelectorVariant } from '@/shared/components/common/selector-tone';
 
 function getInitials(firstName?: string | null, lastName?: string | null, email?: string | null): string {
     const first = firstName?.[0] ?? '';
@@ -80,6 +80,13 @@ interface SignInDropdownProps {
     /** The skin of the dropdown's trigger and panel. `onDark` on a page that is dark whatever
      *  the app theme is; the default follows the theme. */
     tone?: SelectorVariant;
+    /**
+     * Draw the dropdown from these colours instead of `tone`'s classes. See `SelectorChrome` —
+     * it is for a toolbar whose colours are not the app theme's, which no `dark:` variant can
+     * follow: the search map's bar is the theme inverted, on a page that hardcodes `dark` on its
+     * root. Wins over `tone`; the `inline` variant has no panel and ignores it.
+     */
+    chrome?: SelectorChrome;
     collapsible?: boolean;
     onNavigate?: () => void;
     onToggleOpen?: (open: boolean) => void;
@@ -87,7 +94,7 @@ interface SignInDropdownProps {
     triggerClassName?: string;
 }
 
-const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', tone = 'default', collapsible = false, onNavigate, onToggleOpen, triggerClassName }) => {
+const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropdown', tone = 'default', chrome, collapsible = false, onNavigate, onToggleOpen, triggerClassName }) => {
     const tAll = useTranslations();
     const { user } = useAuthStore();
     const openAuthModal = useModalStore((state) => state.openAuthModal);
@@ -100,6 +107,33 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const skin = SKIN[tone];
+    /**
+     * Row hover, in state rather than CSS: the chrome path paints from inline styles, and an
+     * inline background outranks any `hover:` class that would otherwise cover it.
+     */
+    const [hovered, setHovered] = useState<'settings' | 'signOut' | 'createAccount' | null>(null);
+
+    /**
+     * How the panel's text is drawn. On chrome it is the palette's own colours, inline; off it,
+     * the skin's classes. Quiet text is the palette's text at 70%, which keeps its hue and
+     * still reads on the menu ground in both tones (≈7:1 light, ≈9:1 dark).
+     */
+    const ink = chrome ? {
+        title: { color: chrome.text },
+        muted: { color: chrome.text, opacity: 0.7 },
+        icon: { color: chrome.text, opacity: 0.7 },
+        hairline: { borderColor: chrome.border },
+    } : null;
+    /** A row's colour and, under the cursor, its fill — the chrome path of `skin.row`/`danger`. */
+    const rowPaint = (key: 'settings' | 'signOut' | 'createAccount', danger = false) => chrome ? {
+        style: {
+            color: danger ? (chrome.danger ?? chrome.text) : chrome.text,
+            background: hovered === key ? chrome.hover : 'transparent',
+            ...(key === 'createAccount' ? { border: `1px solid ${chrome.border}` } : null),
+        },
+        onMouseEnter: () => setHovered(key),
+        onMouseLeave: () => setHovered(null),
+    } : {};
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -208,7 +242,11 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
         exit: { opacity: 0, y: -8, scale: 0.96 },
         transition: { duration: 0.15 },
     } as const;
-    const panelClass = cn('absolute right-0 top-full mt-2 w-full min-w-[280px] overflow-hidden z-50', skin.panel);
+    const panelClass = cn('absolute right-0 top-full mt-2 w-full min-w-[280px] overflow-hidden z-50', chrome ? 'rounded-2xl' : skin.panel);
+    // The palette's opaque menu ground, as the currency and language menus on the same bar
+    // draw theirs — not glass, which lets a light basemap through the text.
+    const panelStyle = chrome ? { background: chrome.menu, border: `1px solid ${chrome.border}`, boxShadow: chrome.shadow } : undefined;
+    const triggerTone = chrome ? 'hover:opacity-80' : SELECTOR_TONES[tone].trigger;
 
     if (!mounted || !user) {
         return (
@@ -218,7 +256,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                 </button>
                 <AnimatePresence>
                     {isOpen && (
-                        <motion.div {...panelMotion} className={panelClass}>
+                        <motion.div {...panelMotion} className={panelClass} style={panelStyle}>
                             <div className={cn('p-4 text-white', FILL)}>
                                 <p className="font-medium text-[clamp(0.875rem,2vw,1rem)]">{t('membersSave')}</p>
                                 <p className="text-[clamp(0.8125rem,1.5vw,0.875rem)] text-white/85 mt-1">{t('membersSaveSubtitle')}</p>
@@ -227,12 +265,12 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                                 <button type="button" onClick={() => { handleNav(); openAuthModal('email'); }} className={cn('block w-full py-3 px-4 text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full text-center', FILL_BUTTON)}>
                                     {t('signIn')}
                                 </button>
-                                <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className={cn('block w-full py-3 px-4 text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full transition-colors text-center', skin.outlineButton)}>
+                                <Link href={getRedirectLink('/login', 'signup')} onClick={handleNav} className={cn('block w-full py-3 px-4 text-[clamp(0.8125rem,1.5vw,0.875rem)] font-medium rounded-full transition-colors text-center', !chrome && skin.outlineButton)} {...rowPaint('createAccount')}>
                                     {t('createAccount')}
                                 </Link>
                             </div>
-                            <div className={cn('border-t p-4', skin.hairline)}>
-                                <p className={cn('text-[clamp(0.6875rem,1.25vw,0.75rem)] text-center', skin.muted)}>{t('accountWorks')}</p>
+                            <div className={cn('border-t p-4', !chrome && skin.hairline)} style={ink?.hairline}>
+                                <p className={cn('text-[clamp(0.6875rem,1.25vw,0.75rem)] text-center', !chrome && skin.muted)} style={ink?.muted}>{t('accountWorks')}</p>
                             </div>
                         </motion.div>
                     )}
@@ -243,29 +281,29 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
 
     return (
         <div ref={dropdownRef} className="relative">
-            <button onClick={() => setIsOpen(!isOpen)} aria-label={t('account')} aria-expanded={isOpen} className={cn('flex items-center gap-2 p-1 rounded-full transition-colors shrink-0', SELECTOR_TONES[tone].trigger, triggerClassName)}>
+            <button onClick={() => setIsOpen(!isOpen)} aria-label={t('account')} aria-expanded={isOpen} className={cn('flex items-center gap-2 p-1 rounded-full transition-colors shrink-0', triggerTone, triggerClassName)}>
                 <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className={cn('size-7 text-[10px]', skin.avatarRing)} />
             </button>
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div {...panelMotion} className={panelClass}>
-                        <div className={cn('p-4 border-b', skin.hairline)}>
+                    <motion.div {...panelMotion} className={panelClass} style={panelStyle}>
+                        <div className={cn('p-4 border-b', !chrome && skin.hairline)} style={ink?.hairline}>
                             <div className="flex items-center gap-3">
-                                <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className={cn('size-10 text-[clamp(0.875rem,2vw,1rem)]', skin.avatarRing)} />
+                                <Avatar initials={getInitials(user.firstName, user.lastName, user.email)} className={cn('size-10 text-[clamp(0.875rem,2vw,1rem)]', !chrome && skin.avatarRing)} />
                                 <div className="min-w-0">
-                                    <p className={cn('font-medium text-sm truncate', skin.title)}>{user.firstName} {user.lastName}</p>
-                                    <p className={cn('text-xs truncate', skin.muted)}>{user.email}</p>
+                                    <p className={cn('font-medium text-sm truncate', !chrome && skin.title)} style={ink?.title}>{user.firstName} {user.lastName}</p>
+                                    <p className={cn('text-xs truncate', !chrome && skin.muted)} style={ink?.muted}>{user.email}</p>
                                 </div>
                             </div>
                         </div>
                         <div className="py-2">
-                            <Link href="/account" className={cn('flex items-center gap-3 px-4 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] transition-colors', skin.row)} onClick={handleNav}>
-                                <Settings className={cn('h-5 w-5', skin.icon)} />
+                            <Link href="/account" className={cn('flex items-center gap-3 px-4 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] transition-colors', !chrome && skin.row)} onClick={handleNav} {...rowPaint('settings')}>
+                                <Settings className={cn('h-5 w-5', !chrome && skin.icon)} style={ink?.icon} />
                                 {t('accountSettings')}
                             </Link>
                         </div>
-                        <div className={cn('border-t p-2', skin.hairline)}>
-                            <button type="button" onClick={handleSignOut} disabled={signOut.isPending} className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] rounded-lg transition-colors disabled:opacity-50', skin.danger)}>
+                        <div className={cn('border-t p-2', !chrome && skin.hairline)} style={ink?.hairline}>
+                            <button type="button" onClick={handleSignOut} disabled={signOut.isPending} className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] rounded-lg transition-colors disabled:opacity-50', !chrome && skin.danger)} {...rowPaint('signOut', true)}>
                                 <LogOut className="h-5 w-5" />
                                 {t('signOut')}
                             </button>
