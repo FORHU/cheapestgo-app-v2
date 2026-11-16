@@ -1,4 +1,5 @@
 import { http } from '@/shared/lib/http';
+import { env } from '@/shared/lib/env';
 
 /**
  * The payment back office's API client.
@@ -114,10 +115,17 @@ export const adminPaymentsApi = {
     evidence: (paymentIntentId: string) =>
         http.get<EvidencePack>(`/admin/payments/${encodeURIComponent(paymentIntentId)}/evidence`),
 
-    exportPdf: (paymentIntentId: string) =>
-        http.post<{ url: string; generatedAt: string }>(
+    /**
+     * The API stores the pack and returns a path under its own base, not a link: the download
+     * is the admin session on that route. The absolute URL is built here, from the same base the
+     * rest of this client calls, so it is right on every host.
+     */
+    exportPdf: async (paymentIntentId: string): Promise<{ url: string; generatedAt: string }> => {
+        const r = await http.post<{ path: string; generatedAt: string }>(
             `/admin/payments/${encodeURIComponent(paymentIntentId)}/evidence/export`, {},
-        ),
+        );
+        return { url: `${env.NEXT_PUBLIC_API_URL}${r.path}`, generatedAt: r.generatedAt };
+    },
 
     webhooks: (opts: { stuck?: boolean; reference?: string } = {}) =>
         http.get<{ items: Array<{

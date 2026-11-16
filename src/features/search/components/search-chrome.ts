@@ -39,6 +39,9 @@ export function sortPalette(theme: 'light' | 'dark') {
         menu:    dark ? '#0f172a' : '#FFFFFF',
         hover:   dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9',
         shadow:  dark ? '0 8px 28px rgba(0,0,0,0.55)' : '0 8px 24px rgba(15,23,42,0.16)',
+        // red-700 on white, red-300 on slate-900: both clear 4.5:1 on their own menu,
+        // which no single red does on both.
+        danger:  dark ? '#fca5a5' : '#b91c1c',
     };
 }
 

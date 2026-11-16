@@ -1,9 +1,22 @@
 import { z } from 'zod';
 
+/**
+ * `NEXT_PUBLIC_*` is inlined into the JavaScript served to every visitor, so whatever is put in
+ * this variable is public. A Stripe secret key (`sk_`), restricted key (`rk_`) or webhook secret
+ * pasted here shipped to the live host once, readable by anyone who opened the bundle — so the
+ * build fails rather than publish it. The message deliberately omits the value: build logs are
+ * far less private than the secret store.
+ */
+export const publishableKeySchema = z.string().min(1).refine(
+    (key) => key.startsWith('pk_'),
+    { message: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must be a Stripe publishable key (pk_...). '
+        + 'It is baked into public JavaScript; a secret or restricted key here would be exposed.' },
+);
+
 const schema = z.object({
     NEXT_PUBLIC_API_URL:                    z.string().url(),
     NEXT_PUBLIC_SITE_URL:                   z.string().url(),
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:     z.string().min(1),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:     publishableKeySchema,
     NEXT_PUBLIC_MAPBOX_TOKEN:               z.string().optional(),
     NEXT_PUBLIC_SENTRY_DSN:                 z.string().optional(),
     NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:   z.string().optional(),
