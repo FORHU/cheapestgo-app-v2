@@ -640,6 +640,8 @@
       "freeCancellation": "免费取消",
       "nonRefundable": "不可退款",
       "select": "选择",
+      "selectNow": "立即选择",
+      "checkingPrice": "正在确认价格…",
       "flightDetails": "航班详情"
     },
     "itinerary": {

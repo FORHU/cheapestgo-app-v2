@@ -640,6 +640,8 @@
       "freeCancellation": "Free Cancellation",
       "nonRefundable": "Non-refundable",
       "select": "Select",
+      "selectNow": "Select Now",
+      "checkingPrice": "Checking price…",
       "flightDetails": "Flight details"
     },
     "itinerary": {

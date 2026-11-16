@@ -640,6 +640,8 @@
       "freeCancellation": "무료 취소",
       "nonRefundable": "환불 불가",
       "select": "선택",
+      "selectNow": "지금 선택",
+      "checkingPrice": "요금 확인 중…",
       "flightDetails": "항공편 상세 정보"
     },
     "itinerary": {

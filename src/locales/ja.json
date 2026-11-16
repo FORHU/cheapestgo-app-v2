@@ -640,6 +640,8 @@
       "freeCancellation": "無料キャンセル",
       "nonRefundable": "払い戻し不可",
       "select": "選択",
+      "selectNow": "今すぐ選択",
+      "checkingPrice": "料金を確認中…",
       "flightDetails": "フライト詳細"
     },
     "itinerary": {
