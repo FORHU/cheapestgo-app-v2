@@ -95,6 +95,44 @@
  * `overflow: hidden` then makes the no-scroll intent explicit rather than
  * leaving it as an arithmetic coincidence.
  */
+/*
+ * Room for the support launcher. Below `lg` it floats 92px + the home indicator above the foot of
+ * the screen, 56px tall (SupportWidget), above the 96px a scrolling page keeps clear for the
+ * bottom nav — so the last thing on a page scrolled all the way down sat under it. SupportWidget
+ * marks <html> while the launcher is showing (signed in), and what pads for the nav adds this.
+ */
+html[data-support-launcher] {
+  --fab-clear: 68px;
+}
+
+/*
+ * The landing Journey before it knows its layout (Journey.tsx). Both are server-rendered; these
+ * show the one this screen will get, so its first paint is the page it keeps. The queries are
+ * `useStills`' (useJourneyProgress.ts): less motion asked for, or `SHORT_SCREEN_QUERY`.
+ */
+.journey-pending-stills {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce),
+  (max-width: 640px) and (max-height: 919.98px),
+  (min-width: 641px) and (max-width: 1023.98px) and (max-height: 1039.98px),
+  (min-width: 1024px) and (max-height: 879.98px) and (pointer: coarse) {
+  .journey-pending-docked {
+    display: none;
+  }
+  .journey-pending-stills {
+    display: block;
+  }
+  /* The landing header (only the landing page's fixed one carries the class) is see-through, drawn
+     for the docked Journey, where nothing scrolls under it. The stacked page does, and its headings
+     and searches ran through the wordmark, so on the screens that get that page it has a ground. */
+  .landing-header {
+    background: rgba(2, 6, 23, 0.82);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+}
+
 body.map-immersive {
   overflow: hidden;
 }

@@ -21,7 +21,7 @@ import ja from '@/locales/ja.json';
 const progress = vi.hoisted(() => ({ journey: 0, reduced: false }));
 
 vi.mock('./useJourneyProgress', () => ({
-    useJourneyProgress: () => ({ journey: progress.journey, trackPx: 4000, reducedMotion: progress.reduced }),
+    useJourneyProgress: () => ({ journey: progress.journey, trackPx: 4000, stills: progress.reduced }),
 }));
 const snap = vi.hoisted(() => ({ goToStop: vi.fn() }));
 vi.mock('./useSectionSnap', () => ({ useSectionSnap: () => snap.goToStop }));

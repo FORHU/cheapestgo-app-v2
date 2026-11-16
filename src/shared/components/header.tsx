@@ -52,7 +52,8 @@ const HeaderContent = () => {
   return (
     <>
       <header suppressHydrationWarning className={cn(
-        "sticky top-0 z-60 w-full border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors landscape-compact-header",
+        // pt: under the status bar in the installed app (`black-translucent`, layout.tsx), 0 in a browser.
+        "sticky top-0 z-60 w-full pt-[env(safe-area-inset-top,0px)] border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors landscape-compact-header",
       )}>
         <div suppressHydrationWarning className="max-w-[1400px] mx-auto px-4 sm:px-6 h-11 md:h-14 flex items-center justify-between landscape-compact-header">
           {/* Logo */}

@@ -123,7 +123,8 @@ export const MobileBottomNav = () => {
                     boxShadow: skin.dockShadow,
                 }}
             >
-                <div className="flex h-[68px] items-center px-2">
+                {/* Side insets for a phone on its side: the glass runs under the notch, the icons do not. */}
+                <div className="flex h-[68px] items-center pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.5rem,env(safe-area-inset-right,0px))]">
                     {navItems.map((item, index) => {
                         const isActive = index === activeIndex;
                         const Icon = item.icon;

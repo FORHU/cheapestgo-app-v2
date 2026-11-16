@@ -5,6 +5,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useKeyboardInset } from '@/shared/hooks/useKeyboardInset';
 import { sortPalette } from './search-chrome';
 
 /** Below this a search bar's panel opens as a sheet; from `md` up it hangs under its button. */
@@ -46,6 +47,9 @@ export function BarSheet({
 }) {
     const tAll = useTranslations();
     const p = sortPalette(tone);
+    // With a keyboard up the sheet stands on it, capped to the room left above it, so a field in
+    // it and what lists under that field stay on screen and scroll (useKeyboardInset).
+    const keyboard = useKeyboardInset(open);
     return createPortal(
         <AnimatePresence>
             {open && (
@@ -73,7 +77,10 @@ export function BarSheet({
                         transition={{ type: 'spring', damping: 30, stiffness: 320 }}
                         // Above the bottom nav (z-100), its own settings sheet and every floating button.
                         className="fixed inset-x-0 bottom-0 z-[130] flex max-h-[min(90dvh,calc(100dvh-48px))] flex-col rounded-t-[24px]"
-                        style={{ background: p.menu, color: p.text, border: `1px solid ${p.border}`, borderBottom: 'none', boxShadow: p.shadow }}
+                        style={{
+                            background: p.menu, color: p.text, border: `1px solid ${p.border}`, borderBottom: 'none', boxShadow: p.shadow,
+                            ...(keyboard.visibleHeight !== null && { bottom: keyboard.inset, maxHeight: keyboard.visibleHeight - 24 }),
+                        }}
                     >
                         <div aria-hidden className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full" style={{ background: p.border }} />
                         <div className="flex shrink-0 items-center justify-between px-5 pt-2 pb-1">

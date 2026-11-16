@@ -44,6 +44,15 @@ export function SupportWidget() {
         if (available && !panelOpen) void open();
     }, [openRequests, available, panelOpen, open]);
 
+    // Tells the page the launcher is floating over its foot, so scrolling pages keep their last
+    // lines clear of it (`--fab-clear`, globals.css).
+    useEffect(() => {
+        if (!available) return;
+        const root = document.documentElement;
+        root.setAttribute('data-support-launcher', '');
+        return () => root.removeAttribute('data-support-launcher');
+    }, [available]);
+
     if (!available) return null;
 
     return (
@@ -51,7 +60,7 @@ export function SupportWidget() {
         // launcher sat entirely under its Settings button — on a phone there was no way to
         // open the chat. So it rides above the nav there, at the offset the brand switcher
         // keeps on the other side, and drops to the corner where the nav is gone.
-        <div className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] z-50 flex flex-col items-end gap-3 print:hidden lg:bottom-4">
+        <div className="fixed right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] z-50 flex flex-col items-end gap-3 print:hidden lg:bottom-4">
             {panelOpen && (
                 <SupportPanel
                     reference={conversation?.reference ?? null}
