@@ -2690,7 +2690,13 @@
     "solvedNote": "Glad that helped. Write to us any time if something else comes up.",
     "attach": "Attach a file",
     "removeFile": "Remove",
-    "fileExpired": "no longer stored"
+    "fileExpired": "no longer stored",
+    "signedOut": {
+      "heading": "Sign in to chat with us",
+      "body": "We answer in the app, so we need to know who to reply to. Sign in and the chat opens right here — our replies stay in your account, so nothing gets lost.",
+      "help": "Browse the Help Centre",
+      "email": "Or email us at <address>{email}</address>"
+    }
   },
   "help": {
     "title": "Help",

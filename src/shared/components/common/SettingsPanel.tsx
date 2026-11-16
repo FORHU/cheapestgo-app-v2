@@ -2,7 +2,8 @@
 
 import React, { useId } from 'react';
 import { useTranslations } from 'next-intl';
-import { Moon, Sun } from 'lucide-react';
+import { MessageCircle, Moon, Sun } from 'lucide-react';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 import { cn } from '@/shared/lib/cn';
 import type { Locale } from '@/i18n/routing';
 import { useAuthStore } from '@/shared/stores/auth.store';
@@ -13,7 +14,7 @@ import { CURRENCIES, useCurrencySwitch } from '@/shared/components/common/Curren
 
 /**
  * What the phone's settings sheet holds (the bottom bar's gear): the language, the currency and
- * the theme, and once someone is signed in, their account — its settings and sign out.
+ * the theme, Support, and once someone is signed in, their account — its settings and sign out.
  *
  * Not sign in: that is the header's button, on every screen that has one. Language and currency
  * are here because a phone's header has no room for the menus a desktop's carries, and they
@@ -69,6 +70,7 @@ export function SettingsPanel({ onNavigate }: { onNavigate: () => void }) {
     const { theme, toggleTheme } = useTheme();
     const { locale, select: selectLocale } = useLocaleSwitch();
     const { currency, select: selectCurrency } = useCurrencySwitch();
+    const requestSupport = useSupportWidget((s) => s.requestOpen);
 
     return (
         <div className="space-y-6">
@@ -77,6 +79,18 @@ export function SettingsPanel({ onNavigate }: { onNavigate: () => void }) {
                     <SignInDropdown variant="inline" onNavigate={onNavigate} />
                 </div>
             )}
+
+            {/* Support, signed in or not (issue #41): the phone's way in from the bottom bar, as the
+                account menu is on a desktop. The sheet closes first — it sits above the widget —
+                and signed out the widget answers with its sign-in prompt. */}
+            <button
+                type="button"
+                onClick={() => { onNavigate(); requestSupport(); }}
+                className={cn(CHIP, CHIP_OFF, 'w-full justify-start gap-3 px-4')}
+            >
+                <MessageCircle className="size-4" aria-hidden />
+                {tAll('nav.support')}
+            </button>
 
             <Choices label={tAll('common.language')} columns="grid-cols-4">
                 {LANGUAGES.map(({ code, name }) => (

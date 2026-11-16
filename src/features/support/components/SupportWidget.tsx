@@ -8,20 +8,32 @@ import { Button } from '@/shared/components/ui/button';
 import { NAV_SKIN } from '@/shared/components/common/MobileBottomNav';
 import { useChromeTone } from '@/shared/components/ChromeToneContext';
 import { useSupportChat } from '@/features/support/lib/useSupportChat';
-import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
+import {
+    useSupportWidget, openSupportAfterSignIn, takeSupportAfterSignIn,
+} from '@/features/support/lib/supportWidget.store';
+import { Link } from '@/i18n/navigation';
+import { useAuthStore as useSessionStore } from '@/shared/stores/auth.store';
 import { readerView } from '@/features/support/lib/translationView';
 import { formatReopen } from '@/features/support/lib/reopenTime';
 import type { SupportAttachmentView, SupportMessageView } from '@/features/support/types';
 import { QUICK_QUESTIONS, ALWAYS_A_PERSON, type SuggestionId } from '@/features/support/lib/suggestions';
 import { attachmentHref, reportSuggestion } from '@/features/support/api/support.api';
 
+/** The address the app header linked to before it opened the chat instead. */
+const SUPPORT_EMAIL = 'support@cheapestgo.com';
+
 /**
  * The customer's Support Chat.
  *
- * Offered only to someone signed in — ADR-0032: a chat is answered inside the app, so one
- * started by a visitor with no account is one an Agent answers into a void. There is no
- * assistant here and no "talk to a human" button: ADR-0031 settled that support is answered
- * by people, so a new chat is already waiting for one.
+ * The chat itself is only for someone signed in — ADR-0032: a chat is answered inside the app,
+ * so one started by a visitor with no account is one an Agent answers into a void. The launcher
+ * is not: hiding it left a signed-out visitor with no sign that support exists and no route to it
+ * (issue #41). So a visitor gets the same button, and it opens a prompt that says what happens
+ * next — sign in and the chat is open when they are back — with the Help Centre and email for
+ * anyone who would rather not.
+ *
+ * There is no assistant here and no "talk to a human" button: ADR-0031 settled that support is
+ * answered by people, so a new chat is already waiting for one.
  */
 export function SupportWidget() {
     const t = useTranslations('support');
@@ -33,27 +45,42 @@ export function SupportWidget() {
     // The bottom nav's skin rather than the brand blue: both float over the page, so both
     // take the screen's chrome tone, and invert together on the search map.
     const skin = NAV_SKIN[useChromeTone()];
+    // The signed-out prompt, in place of the panel.
+    const [promptOpen, setPromptOpen] = useState(false);
 
-    // A page asking for the chat (useSupportWidget). Requests made before this mounted are not
-    // replayed: the widget is on every page, so there is no "before".
+    // A page asking for the chat (useSupportWidget) — the account menu, the header, "Ask about tee
+    // times". Requests made before this mounted are not replayed: the widget is on every page, so
+    // there is no "before".
     const openRequests = useSupportWidget((s) => s.openRequests);
     const answered = useRef(openRequests);
     useEffect(() => {
         if (openRequests === answered.current) return;
         answered.current = openRequests;
-        if (available && !panelOpen) void open();
+        if (!available) setPromptOpen(true);
+        else if (!panelOpen) void open();
     }, [openRequests, available, panelOpen, open]);
 
-    // Tells the page the launcher is floating over its foot, so scrolling pages keep their last
-    // lines clear of it (`--fab-clear`, globals.css).
+    // Signed in from the prompt: the prompt goes, and the chat they came for opens — here if the
+    // modal signed them in on this page, or on the page they come back to after Google or a new
+    // account (`openSupportAfterSignIn`).
     useEffect(() => {
         if (!available) return;
+        setPromptOpen(false);
+        if (takeSupportAfterSignIn()) void open();
+    }, [available, open]);
+
+    // Tells the page the launcher is floating over its foot, so scrolling pages keep their last
+    // lines clear of it (`--fab-clear`, globals.css). Always now: the launcher is there signed out too.
+    useEffect(() => {
         const root = document.documentElement;
         root.setAttribute('data-support-launcher', '');
         return () => root.removeAttribute('data-support-launcher');
-    }, [available]);
+    }, []);
 
-    if (!available) return null;
+    const expanded = available ? panelOpen : promptOpen;
+    const toggle = available
+        ? (panelOpen ? close : open)
+        : () => setPromptOpen((v) => !v);
 
     return (
         // Below `lg` the bottom nav (z-100) owns the foot of the screen, and at bottom-4 the
@@ -61,7 +88,9 @@ export function SupportWidget() {
         // open the chat. So it rides above the nav there, at the offset the brand switcher
         // keeps on the other side, and drops to the corner where the nav is gone.
         <div className="fixed right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] z-50 flex flex-col items-end gap-3 print:hidden lg:bottom-4">
-            {panelOpen && (
+            {!available && promptOpen && <SignInPrompt onClose={() => setPromptOpen(false)} />}
+
+            {available && panelOpen && (
                 <SupportPanel
                     reference={conversation?.reference ?? null}
                     messages={messages}
@@ -81,8 +110,9 @@ export function SupportWidget() {
 
             <button
                 type="button"
-                onClick={panelOpen ? close : open}
-                aria-label={panelOpen ? t('close') : t('open')}
+                onClick={toggle}
+                aria-label={expanded ? t('close') : t('open')}
+                aria-expanded={expanded}
                 className={cn(
                     'relative grid h-14 w-14 place-items-center rounded-full outline-none transition-all',
                     'focus-visible:ring-2 active:scale-[0.98]',
@@ -90,8 +120,8 @@ export function SupportWidget() {
                 )}
                 style={{ background: skin.bar, border: skin.border, boxShadow: skin.shadow, color: skin.icon }}
             >
-                {panelOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-                {!panelOpen && unread > 0 && (
+                {expanded ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+                {available && !panelOpen && unread > 0 && (
                     <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full
                                      bg-rose-600 px-1 text-xs font-semibold text-white">
                         {unread > 9 ? '9+' : unread}
@@ -99,6 +129,82 @@ export function SupportWidget() {
                 )}
             </button>
         </div>
+    );
+}
+
+/**
+ * What a signed-out visitor gets from the launcher: why the chat needs an account, and the way in.
+ *
+ * Sign in is the modal, on this page, so the chat opens the moment it closes. Create account is
+ * the full page, which lands on home when it is done; the flag opens the chat there. The Help Centre
+ * and the support address are for a visitor who wants an answer without an account — the address
+ * is the one the app header carried before it opened this.
+ */
+function SignInPrompt({ onClose }: { onClose: () => void }) {
+    const t = useTranslations('support.signedOut');
+    const tSupport = useTranslations('support');
+    const tNav = useTranslations('nav');
+    const openAuthModal = useSessionStore((s) => s.openAuthModal);
+
+    const signIn = () => {
+        openSupportAfterSignIn();
+        onClose();
+        openAuthModal('email');
+    };
+
+    return (
+        <section
+            aria-labelledby="support-signed-out-title"
+            // The chat panel's own cap: on a phone on its side there is only a strip above the
+            // launcher, and the prompt scrolls inside it rather than running off the top.
+            className="max-h-[calc(100dvh-11rem)] w-[22rem] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl
+                       lg:max-h-[calc(100dvh-7rem)] dark:border-white/10 dark:bg-slate-900"
+        >
+            <header className="flex items-start justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-white/10">
+                <h2 id="support-signed-out-title" className="text-sm font-semibold text-slate-900 dark:text-white">{tSupport('title')}</h2>
+                <button type="button" onClick={onClose} aria-label={tSupport('close')}
+                    className="rounded-lg p-1 text-slate-400 outline-none transition-all hover:text-slate-700
+                               focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:hover:text-slate-200">
+                    <X className="h-4 w-4" />
+                </button>
+            </header>
+            <div className="space-y-3 px-4 py-4">
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{t('heading')}</p>
+                {/* The way in before the why: on a phone on its side only the top of this shows. */}
+                <div className="space-y-2">
+                    <Button type="button" onClick={signIn} className="h-11 w-full rounded-xl">
+                        {tNav('signIn')}
+                    </Button>
+                    <Link
+                        href="/register"
+                        onClick={() => { openSupportAfterSignIn(); onClose(); }}
+                        className="grid h-11 w-full place-items-center rounded-xl border border-slate-200 text-sm font-semibold
+                                   text-slate-700 outline-none transition-all hover:bg-slate-50 focus-visible:ring-2
+                                   focus-visible:ring-blue-500/20 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
+                    >
+                        {tNav('createAccount')}
+                    </Link>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300">{t('body')}</p>
+            </div>
+            <div className="space-y-1 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
+                <p>
+                    <Link href="/help" onClick={onClose} className="font-medium text-slate-700 underline underline-offset-2 dark:text-slate-200">
+                        {t('help')}
+                    </Link>
+                </p>
+                <p>
+                    {t.rich('email', {
+                        address: (chunks) => (
+                            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-slate-700 underline underline-offset-2 dark:text-slate-200">
+                                {chunks}
+                            </a>
+                        ),
+                        email: SUPPORT_EMAIL,
+                    })}
+                </p>
+            </div>
+        </section>
     );
 }
 
