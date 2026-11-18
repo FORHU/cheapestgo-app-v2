@@ -704,3 +704,16 @@ says while it re-checks the fare. Both were English in every language before. Wr
 |-----|---------|--------|--------|------|
 | `flights.card.selectNow` | Select Now | 지금 선택 | 今すぐ選択 | 立即选择 |
 | `flights.card.checkingPrice` | Checking price… | 요금 확인 중… | 料金を確認中… | 正在确认价格… |
+
+## Stays filter — typing the price range
+
+The minimum and maximum fields beside the price slider, and what they say when a value will not
+do. Written by Claude (2026-11-18).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `hotels.filters.min` | Min | 최소 | 最低 | 最低 |
+| `hotels.filters.max` | Max | 최대 | 最高 | 最高 |
+| `hotels.filters.priceEmpty` | Enter a price. | 가격을 입력하세요. | 料金を入力してください。 | 请输入价格。 |
+| `hotels.filters.priceMinAboveMax` | Minimum can't be more than the maximum. | 최소 가격은 최대 가격보다 클 수 없습니다. | 最低料金は最高料金を超えられません。 | 最低价格不能高于最高价格。 |
+| `hotels.filters.priceMaxBelowMin` | Maximum can't be less than the minimum. | 최대 가격은 최소 가격보다 작을 수 없습니다. | 最高料金は最低料金を下回れません。 | 最高价格不能低于最低价格。 |

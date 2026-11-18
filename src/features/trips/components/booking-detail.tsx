@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { SpecialRequestsForm, ShareBookingForm } from './booking-self-service';
 import { DocumentLinks } from './travel-documents';
+import { isCancelled } from '../lib/documents';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -96,6 +97,10 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
     const refundable = policy?.refundableTag === 'RFN';
     const freeCancelDeadline = policy?.cancelPolicyInfos?.[0]?.cancelTime;
 
+    // Nothing left to ask the property for, or to send on: the stay is not happening. Once
+    // cancelled from this page too, before the booking is fetched again.
+    const cancelled = !!cancelledStatus || isCancelled(booking);
+
     // A booking cancelled whose refund failed can be cancelled again: that retries the money.
     const canCancel = !cancelledStatus && !!booking.booking_id
         && ['confirmed', 'pending', 'cancelled_refund_failed'].includes(booking.status);
@@ -165,8 +170,12 @@ function HotelDetail({ booking }: { booking: HotelBooking }) {
                             </div>
                         </DetailPanel>
 
-                        <SpecialRequestsForm booking={booking} />
-                        <ShareBookingForm bookingId={booking.id} defaultEmail={booking.holder_email} />
+                        {!cancelled && (
+                            <>
+                                <SpecialRequestsForm booking={booking} />
+                                <ShareBookingForm bookingId={booking.id} defaultEmail={booking.holder_email} />
+                            </>
+                        )}
                     </>
                 }
                 side={

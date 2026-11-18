@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
@@ -69,6 +69,9 @@ export function filtersPalette(tone: 'light' | 'dark') {
             '[&::-webkit-slider-thumb]:bg-linear-to-r [&::-webkit-slider-thumb]:from-blue-600 [&::-webkit-slider-thumb]:to-cyan-500 ' +
             '[&::-moz-range-thumb]:bg-linear-to-r [&::-moz-range-thumb]:from-blue-600 [&::-moz-range-thumb]:to-cyan-500',
         handle: dark ? 'bg-white/25 text-white' : 'bg-slate-300/90 text-slate-800',
+        /** A field's validation message, and the edge of the field it is about. */
+        error:       dark ? 'text-rose-300' : 'text-rose-600',
+        fieldError:  dark ? 'border-rose-400' : 'border-rose-500',
     };
 }
 
@@ -376,6 +379,129 @@ export function RangeSlider({
                 className={cn(input, thumb)}
                 style={{ zIndex: 4 }}
             />
+        </div>
+    );
+}
+
+/** How long typing has to pause before a price field applies itself. */
+export const PRICE_FIELD_SETTLE_MS = 600;
+
+type PriceSide = 'low' | 'high';
+const shown = (v: number) => String(Math.round(v));
+type PriceProblem = 'empty' | 'order';
+
+/**
+ * The slider's two ends as fields, for a budget a person already has in mind.
+ *
+ * Digits only, so a negative or a letter cannot be typed in the first place. A field applies
+ * itself once typing pauses, or at once on Enter or on leaving it — not on every keystroke,
+ * which would judge a `3` on its way to `300` against the minimum and flash an error at
+ * somebody still typing. A field the panel cannot use keeps what was typed and says why, and
+ * the results keep the last range that made sense until it is put right.
+ *
+ * A value past either end of the range is accepted; the caller clamps it, as it does the
+ * slider, and the field shows the clamped value once it is left.
+ */
+export function PriceRangeFields({
+    low, high, symbol, palette, onChange, labels,
+}: {
+    low: number; high: number;
+    symbol: string;
+    palette: FiltersPalette;
+    onChange: (low: number, high: number) => void;
+    labels: {
+        min: string; max: string;
+        minFull: string; maxFull: string;
+        empty: string; minAboveMax: string; maxBelowMin: string;
+    };
+}) {
+    const id = useId();
+    const [draft, setDraft] = useState({ low: shown(low), high: shown(high) });
+    const [editing, setEditing] = useState<PriceSide | null>(null);
+    const [problem, setProblem] = useState<{ side: PriceSide; kind: PriceProblem } | null>(null);
+    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Follow the slider and the reset, except in a field being typed in or one showing an error.
+    useEffect(() => {
+        setDraft((d) => ({
+            low:  editing === 'low'  || problem?.side === 'low'  ? d.low  : shown(low),
+            high: editing === 'high' || problem?.side === 'high' ? d.high : shown(high),
+        }));
+    }, [low, high, editing, problem]);
+
+    useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+    const commit = (side: PriceSide, text: string) => {
+        if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+        if (text === '') return setProblem({ side, kind: 'empty' });
+        const value = Number(text);
+        if (side === 'low' ? value > high : value < low) return setProblem({ side, kind: 'order' });
+        setProblem(null);
+        if (side === 'low') onChange(value, high); else onChange(low, value);
+    };
+
+    const type = (side: PriceSide, raw: string) => {
+        const text = raw.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+        setDraft((d) => ({ ...d, [side]: text }));
+        if (problem?.side === side) setProblem(null);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => commit(side, text), PRICE_FIELD_SETTLE_MS);
+    };
+
+    const message = problem && (
+        problem.kind === 'empty' ? labels.empty
+            : problem.side === 'low' ? labels.minAboveMax : labels.maxBelowMin
+    );
+
+    const field = (side: PriceSide) => {
+        const inputId = `${id}-${side}`;
+        const invalid = problem?.side === side;
+        return (
+            <div className="min-w-0 flex-1">
+                <label htmlFor={inputId} className={cn('mb-1.5 block text-[13px]', palette.muted)} aria-hidden>
+                    {side === 'low' ? labels.min : labels.max}
+                </label>
+                <div
+                    className={cn(
+                        'flex h-11 items-center gap-1 rounded-xl border px-3 transition-colors focus-within:ring-2 focus-within:ring-blue-500/60',
+                        palette.field,
+                        invalid && palette.fieldError,
+                    )}
+                >
+                    <span className={cn('shrink-0 text-[15px]', palette.muted)} aria-hidden>{symbol}</span>
+                    <input
+                        id={inputId}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete="off"
+                        enterKeyHint="done"
+                        aria-label={side === 'low' ? labels.minFull : labels.maxFull}
+                        aria-invalid={invalid || undefined}
+                        aria-describedby={invalid ? `${id}-error` : undefined}
+                        value={draft[side]}
+                        onFocus={(e) => { setEditing(side); e.currentTarget.select(); }}
+                        onChange={(e) => type(side, e.target.value)}
+                        onBlur={(e) => { commit(side, e.target.value); setEditing(null); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(side, e.currentTarget.value); } }}
+                        // 16px, not the panel's 15: iOS zooms the page into any field set smaller.
+                        className="w-full min-w-0 bg-transparent text-[16px] tabular-nums outline-none"
+                    />
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div>
+            <div className="flex items-end gap-2">
+                {field('low')}
+                <span className={cn('pb-3 text-[15px]', palette.muted)} aria-hidden>–</span>
+                {field('high')}
+            </div>
+            <p id={`${id}-error`} role="alert" className={cn('mt-1.5 min-h-[18px] text-[13px]', palette.error)}>
+                {message}
+            </p>
         </div>
     );
 }
