@@ -5,6 +5,14 @@ import { AuthLayout } from '@/features/auth/components/auth-layout';
 import { LoginForm } from '@/features/auth/components/login-form';
 import { StaffLandingRedirect } from '@/features/auth/components/staff-landing-redirect';
 
+/**
+ * Rendered per request, not prerendered: on the staff host this page is served under a nonce CSP
+ * (ADR-0006, src/shared/lib/staffSecurityHeaders.ts), and a prerendered page carries no nonce, so
+ * every script on it — the sign-in form included — would be blocked. The storefront's copy pays a
+ * render per visit for that, which a sign-in page can afford.
+ */
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata(): Promise<Metadata> {
     const t = await getTranslations();
     return { title: t('nav.signIn') };

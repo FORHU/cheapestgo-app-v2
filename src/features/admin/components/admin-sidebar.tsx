@@ -31,6 +31,7 @@ import {
     Clock,
     Flag,
     CalendarCheck,
+    Scale,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { adminGolfApi } from '@/features/golf/api/golf.api';
@@ -57,6 +58,7 @@ const NAV_GROUPS = [
             { href: '/admin/suppliers',    label: 'Suppliers',    icon: Building2 },
             { href: '/admin/revenue',      label: 'Revenue',      icon: Banknote },
             { href: '/admin/payments',     label: 'Payments',     icon: Receipt },
+            { href: '/admin/reconciliation', label: 'Reconciliation', icon: Scale },
         ],
     },
     {

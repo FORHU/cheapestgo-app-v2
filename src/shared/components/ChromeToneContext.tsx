@@ -30,8 +30,18 @@ const ChromeToneContext = React.createContext<ChromeToneValue>({
  * states but not all of them, which is exactly the search page: its map view
  * inverts, its list view does not.
  */
-function routeInvertsChrome(pathname: string): boolean {
+export function routeInvertsChrome(pathname: string): boolean {
     return pathname === '/search';
+}
+
+/**
+ * Routes that are dark whatever the app theme is: the landing page, whose own
+ * header takes the `onDark` tone for the same reason (`LandingHeader`). It never
+ * changes with the page's state, so the path says all there is to say and the
+ * page declares nothing.
+ */
+function routeIsDark(pathname: string): boolean {
+    return pathname === '/';
 }
 
 const opposite = (t: Tone): Tone => (t === 'dark' ? 'light' : 'dark');
@@ -66,6 +76,7 @@ export function useChromeTone(): Tone {
 
     if (declared === 'theme') return theme;
     if (declared) return declared;
+    if (routeIsDark(pathname)) return 'dark';
     return routeInvertsChrome(pathname) ? opposite(theme) : theme;
 }
 

@@ -21,6 +21,13 @@ import { common, support, golf } from '@/locales/en.json';
  * outright rather than negotiating a locale. Only the namespaces staff screens actually read
  * are passed — a page reaching for a third one gets the same silent throw, so add it here.
  */
+/**
+ * Every staff page renders per request. The staff host serves them under a nonce CSP (ADR-0006,
+ * src/shared/lib/staffSecurityHeaders.ts), and Next can only stamp a nonce on a page it renders
+ * now — a prerendered page's scripts carry none, and the browser blocks all of them.
+ */
+export const dynamic = 'force-dynamic';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
         <NextIntlClientProvider locale="en" messages={{ common, support, golf }}>

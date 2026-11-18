@@ -198,8 +198,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
             return withLoading(async () => {
                 const { user } = get();
                 if (!user?.email) throw new Error("No user logged in");
-                await http.post('/auth/login', { email: user.email, password: currentPassword });
-                await http.put('/auth/reset-password', { token: '__current__', password: newPassword });
+                // The API checks the current password itself. It used to be posted to
+                // /auth/login first and then sent to /auth/reset-password under a made-up
+                // token, which that endpoint has always refused.
+                await http.patch('/users/password', { currentPassword, newPassword });
+                // The API ended every session, this one included. Sign out here to match, so
+                // the caller sends the person to sign in with the new password.
+                set({ user: null });
             });
         },
 

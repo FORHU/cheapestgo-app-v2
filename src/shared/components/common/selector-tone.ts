@@ -42,6 +42,12 @@ export interface SelectorChrome {
     /** A row under the cursor, and the row already chosen. */
     hover: string;
     shadow: string;
+    /**
+     * A destructive row's text (sign out), readable on `menu`. Optional so the
+     * callers that hand in their own literal need not invent one; a menu with
+     * such a row falls back to `text` rather than to a red that may not read.
+     */
+    danger?: string;
 }
 
 interface SelectorTone {

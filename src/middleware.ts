@@ -1,5 +1,5 @@
 import createMiddleware from 'next-intl/middleware';
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { routing } from '@/i18n/routing';
 import {
     BRAND_PREVIEW_COOKIE,
@@ -10,6 +10,7 @@ import {
     parsePreviewBrand,
     resolveBrandName,
 } from '@/shared/lib/brand';
+import { newNonce, staffSecurityHeaders } from '@/shared/lib/staffSecurityHeaders';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -134,16 +135,39 @@ function koreanByDefaultResponse(request: NextRequest): NextResponse | null {
     return NextResponse.redirect(korean);
 }
 
-export default function middleware(request: NextRequest) {
-    // Before the admin check on purpose: the switch is the same for staff, and a signed-out
-    // visitor to /admin is sent on to the login page by the next request, as before.
-    const preview = brandPreviewResponse(request);
-    if (preview) return preview;
+/**
+ * The staff host's security headers for one request (ADR-0006), or null off the staff host.
+ *
+ * `requestHeaders` carries the CSP *into* the render: Next reads the nonce from the request's
+ * `Content-Security-Policy` header and stamps it on the scripts it renders. `apply` puts the same
+ * headers on whatever this middleware answers — page, redirect or not-found alike, so no response
+ * from this host leaves without them.
+ */
+function staffSecurity(request: NextRequest) {
+    const headers = staffSecurityHeaders({ nonce: newNonce(), dev: process.env.NODE_ENV !== 'production' });
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('Content-Security-Policy', headers['Content-Security-Policy']);
+    return {
+        requestHeaders,
+        apply(response: NextResponse): NextResponse {
+            for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
+            return response;
+        },
+    };
+}
 
+export default function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     // The requested hostname, port stripped — `host` carries one in development.
     const host = request.headers.get('host')?.split(':')[0]?.toLowerCase() ?? '';
     const onStaffHost = STAFF_HOST !== undefined && host === STAFF_HOST;
+    const staff = onStaffHost ? staffSecurity(request) : null;
+    const done = (response: NextResponse) => (staff ? staff.apply(response) : response);
+
+    // Before the admin check on purpose: the switch is the same for staff, and a signed-out
+    // visitor to /admin is sent on to the login page by the next request, as before.
+    const preview = brandPreviewResponse(request);
+    if (preview) return done(preview);
 
     // /admin sits outside the locale segment: it is staff-facing and English
     // only, so it neither needs a prefix nor should be rewritten into one.
@@ -164,9 +188,11 @@ export default function middleware(request: NextRequest) {
             const loginUrl = request.nextUrl.clone();
             loginUrl.pathname = '/login';
             loginUrl.search = '';
-            return NextResponse.redirect(loginUrl);
+            return done(NextResponse.redirect(loginUrl));
         }
-        return NextResponse.next();
+        return staff
+            ? done(NextResponse.next({ request: { headers: staff.requestHeaders } }))
+            : NextResponse.next();
     }
 
     // The staff host serves the back office and the door into it, and nothing else. A
@@ -181,7 +207,7 @@ export default function middleware(request: NextRequest) {
         const adminUrl = request.nextUrl.clone();
         adminUrl.pathname = '/admin';
         adminUrl.search = '';
-        return NextResponse.redirect(adminUrl);
+        return done(NextResponse.redirect(adminUrl));
     }
 
     // Not on the staff host: the door into the back office stays in the back office's English.
@@ -190,6 +216,12 @@ export default function middleware(request: NextRequest) {
         if (korean) return korean;
     }
 
+    // The staff host's sign-in page. next-intl forwards the headers of the request it is given into
+    // the render, so it is handed one carrying the CSP. Built from the URL and headers only, never
+    // the original request: copying a request moves its body, and a sign-in POST needs that body.
+    if (staff) {
+        return done(intlMiddleware(new NextRequest(request.url, { headers: staff.requestHeaders })));
+    }
     return intlMiddleware(request);
 }
 

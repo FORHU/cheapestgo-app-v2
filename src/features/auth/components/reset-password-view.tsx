@@ -10,6 +10,8 @@ import { AuthLayout } from '@/features/auth/components/auth-layout';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { http } from '@/shared/lib/http';
+import { useAuthStore } from '@/shared/auth/store';
+import { useAuthStore as useSessionAuthStore } from '@/shared/stores/auth.store';
 
 function ResetPasswordForm() {
     const tAll = useTranslations();
@@ -52,6 +54,11 @@ function ResetPasswordForm() {
         setIsLoading(true);
         try {
             await http.put<{ message: string }>('/auth/reset-password', { token, password });
+            // The API has ended every session the account held and cleared this browser's
+            // cookies. Both client stores are told too, or a header that thinks someone is
+            // signed in keeps saying so until a reload, over a session that no longer exists.
+            useSessionAuthStore.getState().setUser(null);
+            useAuthStore.getState().setUser(null);
             setSuccess(true);
             setTimeout(() => router.push('/login?reset=success'), 1500);
         } catch (err) {
@@ -69,7 +76,7 @@ function ResetPasswordForm() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">{tAll('auth.passwordUpdated')}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Your password has been reset. Redirecting you to sign in&hellip;
+                    Your password has been reset and you have been signed out everywhere. Redirecting you to sign in with the new one&hellip;
                 </p>
             </div>
         );
