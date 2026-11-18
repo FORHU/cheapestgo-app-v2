@@ -29,3 +29,32 @@ export const useSupportWidget = create<SupportWidgetRequests>((set, get) => ({
         return draft;
     },
 }));
+
+/**
+ * "Open the chat once they have signed in" — set when a signed-out visitor goes to sign in from
+ * the support prompt, so the chat they came for is open when they get back.
+ *
+ * In sessionStorage rather than the store: Google sign-in and "create account" leave the page and
+ * come back to a fresh one. It expires, so a visitor who wandered off and signed in an hour later
+ * for some other reason is not met by a chat they no longer want. Storage can be missing or throw
+ * (a private window, blocked site data); the chat then just does not open by itself.
+ */
+const AFTER_SIGN_IN_KEY = 'cg-support-after-sign-in';
+const AFTER_SIGN_IN_TTL_MS = 30 * 60 * 1000;
+
+export function openSupportAfterSignIn(now = Date.now()): void {
+    try { sessionStorage.setItem(AFTER_SIGN_IN_KEY, String(now)); } catch { /* see above */ }
+}
+
+/** True once, if a sign-in for the chat is still fresh; clears the flag either way. */
+export function takeSupportAfterSignIn(now = Date.now()): boolean {
+    try {
+        const raw = sessionStorage.getItem(AFTER_SIGN_IN_KEY);
+        if (raw === null) return false;
+        sessionStorage.removeItem(AFTER_SIGN_IN_KEY);
+        const at = Number(raw);
+        return Number.isFinite(at) && now - at >= 0 && now - at < AFTER_SIGN_IN_TTL_MS;
+    } catch {
+        return false;
+    }
+}

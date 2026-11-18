@@ -44,7 +44,7 @@ export function CheckoutSkeleton() {
 
                 <div aria-hidden className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
                     <div className="lg:col-start-1 lg:row-start-1" style={{ display: 'grid', gap: 14 }}>
-                        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                        <div className="max-lg:justify-center" style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                             {[0, 1, 2].map(i => <span key={i} style={{ width: 32, height: 32, borderRadius: '50%', background: palette.surface }} />)}
                         </div>
                         <SkeletonBar palette={palette} width="78%" height={36} />

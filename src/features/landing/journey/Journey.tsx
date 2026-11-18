@@ -63,8 +63,8 @@ export function Journey({
     // The Journey's own box. Only the track is in flow, so its bottom edge is where the page's
     // footer begins — which is what the last stage reads to get out of the footer's way.
     const rootRef = useRef<HTMLDivElement>(null);
-    const { journey, trackPx, reducedMotion } = useJourneyProgress(trackRef);
-    const goToStop = useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, reducedMotion);
+    const { journey, trackPx, stills } = useJourneyProgress(trackRef);
+    const goToStop = useSectionSnap(trackRef, JOURNEY_STOPS, trackPx, stills !== false);
     const tAll = useTranslations();
 
     // What the search stage is searching for. Held here, above the stage, so it survives the
@@ -77,8 +77,8 @@ export function Journey({
     // every resize, and a visitor who has scrolled on must not be carried back.
     const cameBack = useRef(false);
     useEffect(() => {
-        if (cameBack.current || !isGolfFace(window.location.search)) return;
-        if (reducedMotion) {
+        if (stills === null || cameBack.current || !isGolfFace(window.location.search)) return;
+        if (stills) {
             cameBack.current = true;
             document.getElementById('stage-golf')?.scrollIntoView();
         } else if (trackPx > 0) {
@@ -86,13 +86,13 @@ export function Journey({
             setMode('golf');
             goToStop(SEARCH_STOP);
         }
-    }, [reducedMotion, trackPx, goToStop]);
+    }, [stills, trackPx, goToStop]);
 
     // Every stage photograph, fetched once the page is idle. Each is otherwise first requested
     // the moment its stage mounts — partway through a glide — and pops in a beat after the
     // text, which is the one thing that makes an otherwise smooth transition look unfinished.
     useEffect(() => {
-        if (reducedMotion) return;
+        if (stills !== false) return;
         const urls = [...new Set(STAGES.flatMap(stageFaces).flatMap(f => showcaseImages(f.showcase)))];
         // Decoded as well as fetched: a large photograph that has arrived but not been decoded
         // still appears a beat after the text that sits on it.
@@ -109,27 +109,28 @@ export function Journey({
         }
         const id = window.setTimeout(load, 800);
         return () => window.clearTimeout(id);
-    }, [reducedMotion]);
+    }, [stills]);
 
-    // Reduced motion: no track, no fixed layers, no choreography. The same stages, stated
-    // in order as an ordinary page. Someone who asked for less motion still gets the product.
-    if (reducedMotion) {
-        return (
-            <>
-                <StageShowcase journey={0} mode="stays" reducedMotion />
-                <div className="relative z-[1] mx-auto w-full max-w-5xl space-y-20 px-6 py-24">
-                    {STAGES.flatMap(stageFaces).map(face => (
-                        <section key={face.id} id={`stage-${face.id}`}>
-                            <StageHeading stage={face} />
-                            <div className="mt-8">
-                                <StageSurface stage={face} stays={showcaseStays} />
-                            </div>
-                        </section>
-                    ))}
-                </div>
-            </>
-        );
-    }
+    // Stills: no track, no fixed layers, no choreography. The same stages, stated in order as
+    // an ordinary page — for someone who asked for less motion, and for a screen too short to
+    // hold a docked stage (`SHORT_SCREEN_QUERY`), where an ordinary page also scrolls a field
+    // and its suggestions clear of the keyboard as any page does.
+    const stillsPage = (
+        <>
+            <StageShowcase journey={0} mode="stays" reducedMotion />
+            <div className="relative z-[1] mx-auto w-full max-w-5xl space-y-20 px-6 pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-24">
+                {STAGES.flatMap(stageFaces).map(face => (
+                    <section key={face.id} id={`stage-${face.id}`}>
+                        <StageHeading stage={face} />
+                        <div className="mt-8">
+                            <StageSurface stage={face} stays={showcaseStays} />
+                        </div>
+                    </section>
+                ))}
+            </div>
+        </>
+    );
+    if (stills) return stillsPage;
 
     const heroOpacity = 1 - ramp(journey, 0.02, HERO_FADE_END);
     const heroOut = ramp(journey, 0, HERO_FADE_END);
@@ -138,7 +139,7 @@ export function Journey({
     // The journey ends on its last stage and the page ends with it: nothing is faded out or
     // taken down at the end of the track. The footer comes up under the fixed layers, and the
     // last stage rides up ahead of it once the two would meet — see `useFooterClearance`.
-    return (
+    const docked = (
         <div ref={rootRef}>
             <StageShowcase journey={journey} mode={mode} reducedMotion={false} />
 
@@ -235,6 +236,19 @@ export function Journey({
             */}
             {trackPx > 0 && <JourneyTrack ref={trackRef} trackPx={trackPx} />}
         </div>
+    );
+    if (stills === false) return docked;
+
+    // Not known yet — the server's render and the browser's first. Both layouts are drawn and
+    // globals.css shows the one this screen will get (`.journey-pending-*`, the same queries as
+    // `useStills`), so a phone's first paint is already the stacked page rather than the hero it
+    // would swap out a moment later. Nothing is docked yet (no stage before the visitor scrolls),
+    // so the stills' searches are the only ones mounted, as they are once the stills are chosen.
+    return (
+        <>
+            <div className="journey-pending-docked">{docked}</div>
+            <div className="journey-pending-stills">{stillsPage}</div>
+        </>
     );
 }
 
@@ -584,7 +598,7 @@ function StagePanel({
     return (
         <div
             ref={panelRef}
-            className="pointer-events-none fixed inset-0 z-[3] flex items-center-safe px-[max(1.5rem,6vw)] pt-20 pb-[calc(env(safe-area-inset-bottom,0px)+152px)] lg:pb-0"
+            className="pointer-events-none fixed inset-0 z-[3] flex items-center-safe px-[max(1.5rem,6vw)] pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-[calc(env(safe-area-inset-bottom,0px)+152px)] lg:pb-0"
             style={{ opacity }}
         >
             {/* Positioned by its left margin, as a share of the room the panel leaves — 0 flush

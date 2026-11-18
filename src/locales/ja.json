@@ -374,6 +374,7 @@
     },
     "allSet": "ご予約が完了しました！",
     "receiptSent": "ご予約が確定しました。領収書を {email} にお送りしました。",
+    "stayConfirmed": "{hotel}でのご宿泊が確定しました。",
     "nightsCount": "{count}泊",
     "guestsCount": "{count}名",
     "roomFallback": "スタンダードルーム",
@@ -640,6 +641,8 @@
       "freeCancellation": "無料キャンセル",
       "nonRefundable": "払い戻し不可",
       "select": "選択",
+      "selectNow": "今すぐ選択",
+      "checkingPrice": "料金を確認中…",
       "flightDetails": "フライト詳細"
     },
     "itinerary": {
@@ -2690,7 +2693,13 @@
     "solvedNote": "お役に立ててよかったです。他にご不明な点があればいつでもご連絡ください。",
     "attach": "ファイルを添付",
     "removeFile": "削除",
-    "fileExpired": "保存期間が終了しました"
+    "fileExpired": "保存期間が終了しました",
+    "signedOut": {
+      "heading": "ログインしてチャットでお問い合わせください",
+      "body": "返信はアプリ内でお送りするため、どなたへの返信かを確認する必要があります。ログインするとここでチャットが開き、返信はアカウントに残るので見逃すことはありません。",
+      "help": "ヘルプセンターを見る",
+      "email": "または <address>{email}</address> までメールでお問い合わせください"
+    }
   },
   "help": {
     "title": "サポート",

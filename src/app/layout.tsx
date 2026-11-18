@@ -32,9 +32,14 @@ const openSans = Open_Sans({ subsets: ['latin'], variable: '--font-open-sans', d
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cheapestgo.com';
 
+// `cover`: the page runs edge to edge — under a notch, the iPhone's home indicator and Android's
+// gesture bar — and the `env(safe-area-inset-*)` paddings around the app keep content out of
+// them. Without it those insets are 0 on iOS, and Chrome for Android keeps the page out of its
+// gesture-bar area altogether; every one of those paddings was doing nothing.
 export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
+    viewportFit: 'cover',
 };
 
 // Every string below names the brand. Served from the Korean domain under a literal
@@ -118,12 +123,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                             component and one of them (the search page's map view
                             against its list view) is a matter of client state.
                             See `.map-immersive` in globals.css. */}
-                        <div className="app-shell relative min-h-screen w-full bg-alabaster dark:bg-obsidian text-slate-900 dark:text-white transition-colors">
+                        {/* Side insets: with `viewportFit: 'cover'` a phone on its side
+                            draws the page under its notch, which these keep content out of. */}
+                        <div className="app-shell relative min-h-screen w-full pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] bg-alabaster dark:bg-obsidian text-slate-900 dark:text-white transition-colors">
                             {/* Room under the page for the bottom nav — 80px of
                                 bar plus its safe-area inset, plus air. A flat
                                 pb-24 came up short on a phone with a home
                                 indicator even before the nav grew. */}
-                            <div className="app-shell-main relative flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+96px)] lg:pb-0">
+                            <div className="app-shell-main relative flex flex-col flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+96px+var(--fab-clear,0px))] lg:pb-0">
                                 {children}
                             </div>
                         </div>

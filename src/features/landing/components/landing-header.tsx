@@ -46,7 +46,11 @@ function LandingHeaderContent({ tone }: { tone: SelectorVariant }) {
                     // page so the first wheel notch on the hero snaps to the next section, and the
                     // navbar has to stay on screen through every stage rather than scrolling away. The
                     // soft scrim keeps its white controls legible over the lighter sky/daylight stages.
-                    : 'fixed inset-x-0 top-0 z-[5] bg-linear-to-b from-[#020617]/55 to-transparent',
+                    // The safe-area insets because it is fixed, outside the app shell that pads for
+                    // them: clear of the status bar in the installed app, and of a notch on its side.
+                    // `landing-header`: on the screens that get the Journey's stacked page, which
+                    // scrolls under it, globals.css gives it a ground of its own.
+                    : 'landing-header fixed inset-x-0 top-0 z-[5] bg-linear-to-b from-[#020617]/55 to-transparent pt-[env(safe-area-inset-top,0px)] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]',
             )}
         >
             <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-6 px-6 py-[18px]">

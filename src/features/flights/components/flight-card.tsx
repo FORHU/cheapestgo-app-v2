@@ -395,10 +395,10 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                                 CHIP,
                             )}
                         >
-                            {checkingPrice ? 'Checking price…' : (
+                            {checkingPrice ? tAll('flights.card.checkingPrice') : (
                                 <>
                                     <span className="md:hidden">{tAll('flights.card.select')}</span>
-                                    <span className="max-md:hidden">Select Now</span>
+                                    <span className="max-md:hidden">{tAll('flights.card.selectNow')}</span>
                                 </>
                             )}
                         </button>

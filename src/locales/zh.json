@@ -374,6 +374,7 @@
     },
     "allSet": "预订完成！",
     "receiptSent": "预订已确认，收据已发送至 {email}。",
+    "stayConfirmed": "您在{hotel}的住宿已确认。",
     "nightsCount": "{count} 晚",
     "guestsCount": "{count} 位",
     "roomFallback": "标准房",
@@ -640,6 +641,8 @@
       "freeCancellation": "免费取消",
       "nonRefundable": "不可退款",
       "select": "选择",
+      "selectNow": "立即选择",
+      "checkingPrice": "正在确认价格…",
       "flightDetails": "航班详情"
     },
     "itinerary": {
@@ -2690,7 +2693,13 @@
     "solvedNote": "很高兴能帮到您。如还有其他问题，随时联系我们。",
     "attach": "添加文件",
     "removeFile": "移除",
-    "fileExpired": "已超过保存期限"
+    "fileExpired": "已超过保存期限",
+    "signedOut": {
+      "heading": "登录后与我们聊天",
+      "body": "我们在应用内回复，因此需要知道该回复给谁。登录后聊天会在这里直接打开，我们的回复会保存在您的账户中，不会遗漏。",
+      "help": "浏览帮助中心",
+      "email": "或发送邮件至 <address>{email}</address>"
+    }
   },
   "help": {
     "title": "客服支持",

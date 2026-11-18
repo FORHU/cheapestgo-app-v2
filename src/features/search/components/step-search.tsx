@@ -393,12 +393,24 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                    gives way on the later steps (the indicator's ticks say it); and the Enter hint,
                    which a touch keyboard has no use for, goes. */
                 @media (max-width:640px) {
-                  .ss-root { --ss-gap:10px; --ss-field-h:54px; --ss-field-size:16px; --ss-tile-h:84px; --ss-btn-h:48px; --ss-list-h:228px; --ss-row-pad:8px; --ss-cal-pad:10px; --ss-hint-size:13px; --ss-back-pad:0 16px; --ss-next-pad:0 20px; --ss-trip-pad:14px; --ss-tiles:repeat(2,minmax(0,1fr)); --imm-day-pad:2px; --imm-day-size:12px; --imm-month-btn:26px }
+                  .ss-root { --ss-gap:10px; --ss-field-h:54px; --ss-field-size:16px; --ss-tile-h:84px; --ss-btn-h:50px; --ss-list-h:228px; --ss-row-pad:8px; --ss-cal-pad:10px; --ss-hint-size:13px; --ss-back-pad:0 14px; --ss-next-pad:0 20px; --ss-trip-pad:14px; --ss-tiles:repeat(2,minmax(0,1fr)); --imm-day-pad:2px; --imm-day-size:12px; --imm-month-btn:26px }
                   /* !important: both carry an inline display, which a stylesheet rule cannot otherwise beat. */
                   .ss-context-later, .ss-hint-enter { display:none !important }
                 }
                 /* A narrow phone keeps the one step being answered named; the rest are their numbers. */
                 @media (max-width:420px) { .ss-step-label:not([data-current]) { display:none } }
+                /* Below the desktop layout, and on any touch screen (a tablet on its side), the main button is the whole width of the field above it, on
+                   every step, as golf's GO is (the bar sets --imm-go-w). It used to be as wide as its
+                   label, so it changed size from step to step, and moved right once Back appeared beside
+                   it. Back and the line saying what is chosen share the row under it, which is kept
+                   whether or not either is showing, so nothing below jumps when one turns up. */
+                @media (max-width:1023.98px), (pointer:coarse) {
+                  .ss-root { --ss-back-h:40px; --ss-sub-h:40px }
+                  /* The row's height: its 4px top padding, the button, the 12px gap (inline), the row under it. */
+                  .ss-foot { max-width:640px; align-content:flex-start; min-height:calc(4px + var(--ss-btn-h,52px) + 12px + var(--ss-sub-h)) }
+                  .ss-next { order:-1; flex:1 0 100% }
+                  .ss-hint { flex:1 1 0; min-width:0; min-height:var(--ss-sub-h); line-height:var(--ss-sub-h); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+                }
             `}</style>
 
             {/* ── Where the visitor is in it ── */}
@@ -656,14 +668,14 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
             </div>
 
             {/* ── On ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', paddingTop: '4px' }}>
+            <div className="ss-foot" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', paddingTop: '4px' }}>
                 {stepIndex > 0 && (
                     <button
                         type="button"
                         className="ss-back"
                         onClick={() => goTo(stepIndex - 1)}
                         style={{
-                            height: 'var(--ss-btn-h,52px)', padding: 'var(--ss-back-pad,0 20px)', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '8px',
+                            flexShrink: 0, height: 'var(--ss-back-h,var(--ss-btn-h,52px))', padding: 'var(--ss-back-pad,0 20px)', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '8px',
                             border: `1px solid ${BRAND.glassBorder}`, background: 'rgba(2,6,23,.35)', backdropFilter: 'blur(24px)',
                             color: 'rgba(255,255,255,.88)', fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)',
                         }}
@@ -679,7 +691,7 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                     aria-disabled={searching || undefined}
                     style={{
                         position: 'relative', height: 'var(--ss-btn-h,52px)', padding: 'var(--ss-next-pad,0 26px)', borderRadius: '9999px',
-                        display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: FILL, color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: 'none', background: FILL, color: '#fff',
                         boxShadow: '0 16px 30px -10px rgba(37,99,235,.55)', fontWeight: 700, fontSize: '15px',
                         cursor: searching ? 'progress' : 'pointer', fontFamily: 'var(--font-sans)',
                     }}
@@ -698,7 +710,9 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                         <>{nextLabel}<ArrowRight size={18} aria-hidden /></>
                     )}
                 </button>
-                {hint && <div aria-live="polite" className={enterHint ? 'ss-hint-enter' : undefined} style={{ color: 'rgba(255,255,255,.62)', fontSize: 'var(--ss-hint-size,14px)' }}>{hint}</div>}
+                {/* Always there, so the live region exists before it has anything to say, and the
+                    row under the button keeps its height while it is empty. */}
+                <div aria-live="polite" className={enterHint ? 'ss-hint ss-hint-enter' : 'ss-hint'} style={{ color: 'rgba(255,255,255,.62)', fontSize: 'var(--ss-hint-size,14px)' }}>{hint}</div>
             </div>
         </div>
     );

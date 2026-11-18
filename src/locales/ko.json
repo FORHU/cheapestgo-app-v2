@@ -374,6 +374,7 @@
     },
     "allSet": "예약이 완료되었습니다!",
     "receiptSent": "예약이 확정되었습니다. 영수증을 {email}로 보내 드렸습니다.",
+    "stayConfirmed": "{hotel} 숙박이 확정되었습니다.",
     "nightsCount": "{count}박",
     "guestsCount": "{count}명",
     "roomFallback": "스탠다드 룸",
@@ -640,6 +641,8 @@
       "freeCancellation": "무료 취소",
       "nonRefundable": "환불 불가",
       "select": "선택",
+      "selectNow": "지금 선택",
+      "checkingPrice": "요금 확인 중…",
       "flightDetails": "항공편 상세 정보"
     },
     "itinerary": {
@@ -2690,7 +2693,13 @@
     "solvedNote": "도움이 되었다니 다행입니다. 궁금한 점이 생기면 언제든 문의해 주세요.",
     "attach": "파일 첨부",
     "removeFile": "삭제",
-    "fileExpired": "보관 기간 만료"
+    "fileExpired": "보관 기간 만료",
+    "signedOut": {
+      "heading": "로그인하고 채팅으로 문의하세요",
+      "body": "답변은 앱에서 드리기 때문에 누구에게 답해야 하는지 알아야 합니다. 로그인하면 바로 여기에서 채팅이 열리고, 답변은 계정에 남아 놓치지 않습니다.",
+      "help": "도움말 센터 보기",
+      "email": "또는 <address>{email}</address>로 이메일을 보내 주세요"
+    }
   },
   "help": {
     "title": "고객지원",

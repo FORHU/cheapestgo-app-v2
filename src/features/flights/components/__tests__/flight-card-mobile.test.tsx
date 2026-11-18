@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import en from '@/locales/en.json';
+import ko from '@/locales/ko.json';
 import { ROUND_TRIP } from './fixtures';
 
 /**
@@ -53,5 +54,16 @@ describe('the flight card on a phone', () => {
         renderCard();
         const select = screen.getByText('Select').closest('button');
         expect(select).toBe(screen.getByText('Select Now').closest('button'));
+    });
+
+    it("says both labels in the page's language, not the desktop one in English", () => {
+        render(
+            <NextIntlClientProvider locale="ko" messages={ko as never}>
+                <FlightCard offer={ROUND_TRIP} />
+            </NextIntlClientProvider>,
+        );
+        const select = screen.getByText('선택').closest('button');
+        expect(select).toBe(screen.getByText('지금 선택').closest('button'));
+        expect(screen.queryByText('Select Now')).toBeNull();
     });
 });

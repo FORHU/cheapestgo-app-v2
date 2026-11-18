@@ -14,6 +14,7 @@ import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { cn } from '@/shared/lib/cn';
 import { useBrandWordmark } from '@/shared/components/BrandProvider';
 import { useTranslations } from 'next-intl';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 
 const HeaderContent = () => {
   // Split from the brand being shown rather than at module scope: a deployment with the brand
@@ -31,6 +32,7 @@ const HeaderContent = () => {
   const { triggerInstall } = usePWAInstall();
   const t = useTranslations('nav');
   const tTheme = useTranslations('theme');
+  const requestSupport = useSupportWidget((s) => s.requestOpen);
 
   useEffect(() => {
     setMounted(true);
@@ -52,7 +54,8 @@ const HeaderContent = () => {
   return (
     <>
       <header suppressHydrationWarning className={cn(
-        "sticky top-0 z-60 w-full border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors landscape-compact-header",
+        // pt: under the status bar in the installed app (`black-translucent`, layout.tsx), 0 in a browser.
+        "sticky top-0 z-60 w-full pt-[env(safe-area-inset-top,0px)] border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-obsidian/70 backdrop-blur-xl transition-colors landscape-compact-header",
       )}>
         <div suppressHydrationWarning className="max-w-[1400px] mx-auto px-4 sm:px-6 h-11 md:h-14 flex items-center justify-between landscape-compact-header">
           {/* Logo */}
@@ -88,10 +91,11 @@ const HeaderContent = () => {
               {t('trips')}
             </Link>
 
-            {/* Support */}
-            <a href="mailto:support@cheapestgo.com" className="hidden xs:flex min-h-9 items-center gap-1 px-2 py-1 text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
+            {/* Support — the chat, not a mailto: signed out, the widget answers with its sign-in
+                prompt, which still carries the address for anyone who would rather email. */}
+            <button type="button" onClick={() => requestSupport()} className="hidden xs:flex min-h-9 items-center gap-1 px-2 py-1 text-xs font-normal text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
               {t('support')}
-            </a>
+            </button>
 
             {/* Theme Toggle */}
             <button

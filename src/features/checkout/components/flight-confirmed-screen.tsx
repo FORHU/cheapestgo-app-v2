@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { toast } from 'sonner';
-import { Check, Copy, CopyCheck, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { ACCENT_FILL, type Palette } from '@/features/checkout/lib/palette';
 import { BRAND } from '@/shared/lib/palette';
 import { airportLabel, formatDateTimeLocale, groupSegmentsIntoSlices } from '@/features/flights/lib/flight-utils';
@@ -11,79 +10,16 @@ import type { FlightOffer, NormalizedSegment } from '@/shared/types';
 import { formatMoney } from '@/features/checkout/lib/format-money';
 import { arrivalStay } from '@/features/checkout/lib/trip-next-steps';
 import { CheckoutToolbar } from './checkout-toolbar';
+import { DoneSteps, Fact, MONO, ReceiptPrintStyles, ReferenceBox, textBtn, useCopy } from './receipt-parts';
 import { SkeletonBar } from './skeleton-bar';
 import { TripNextSteps } from './trip-next-steps';
 import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
 
-/** Prices, times and references: tabular figures, so they line up and read as data. */
-const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
-/** The form's field corners (`FIELD_RADIUS` on the checkout page), so a box shown here reads as
- *  one of the form's. */
-const FIELD_RADIUS = 14;
-
-// ─── Small pieces ───────────────────────────────────────────────────────────────
-
-/** The box a field is drawn in on the form, without the input: the same height, fill, hairline
- *  and corners, but no hover or focus ring, since there is nothing here to type into. */
-function fieldBox(palette: Palette): React.CSSProperties {
-    return {
-        display: 'flex', alignItems: 'center', minWidth: 0, height: 'var(--cg-field-h)', padding: '0 16px',
-        borderRadius: FIELD_RADIUS, border: `1px solid ${palette.fieldLine}`, background: palette.fieldBg,
-        color: palette.text, fontSize: 'var(--cg-field-fs)', boxSizing: 'border-box',
-    };
-}
-
-const ellipsis: React.CSSProperties = { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
-
-/** One fact about the booking: a quiet caption over its value. A `dt`/`dd` pair, so it reads as
- *  a label and its value. */
-function Fact({ label, children, palette }: { label: string; children: React.ReactNode; palette: Palette }) {
-    return (
-        <div style={{ minWidth: 0 }}>
-            <dt style={{ fontSize: 'var(--cg-label-fs)', color: palette.muted }}>{label}</dt>
-            <dd style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600, color: palette.title, overflowWrap: 'anywhere' }}>{children}</dd>
-        </div>
-    );
-}
-
 /** A terminal as the boards write it: "2" becomes "T2"; a name the airline already spelled out
  *  is left as it is. */
 const shortTerminal = (terminal: string) => (/^\d/.test(terminal) ? `T${terminal}` : terminal);
-
-/**
- * The checkout's three steps, every one of them done. The form's bar marks only the step in hand;
- * once the booking is confirmed there is no step in hand, and the bar says instead that all three
- * are behind the traveller: each disc filled and ticked, the hairlines between them in the same
- * blue. Same geometry as the form's (32px discs, its `--step-gap` connectors, 12px captions), so
- * the bar does not jump when the confirmation replaces the payment step.
- */
-const STEP_KEYS = ['steps.details', 'steps.payment', 'steps.verification'] as const;
-
-function DoneSteps({ palette }: { palette: Palette }) {
-    const t = useTranslations('checkout');
-    return (
-        <ol style={{ display: 'flex', alignItems: 'flex-start', listStyle: 'none', margin: 0, padding: 0 }}>
-            {STEP_KEYS.map((key, i) => (
-                <li key={key} style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, width: 32, flexShrink: 0 }}>
-                        <div style={{
-                            width: 32, height: 32, borderRadius: '50%', background: BRAND.primaryStrong, color: '#fff',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                            <Check aria-hidden size={16} strokeWidth={2.5} />
-                        </div>
-                        <div style={{ fontSize: 12, color: palette.text, whiteSpace: 'nowrap' }}>{t(key)}</div>
-                    </div>
-                    {i < STEP_KEYS.length - 1 && (
-                        <div aria-hidden style={{ width: 'clamp(40px,6vw,90px)', height: 1, marginTop: 16, background: BRAND.primaryStrong }} />
-                    )}
-                </li>
-            ))}
-        </ol>
-    );
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -153,9 +89,7 @@ export function FlightConfirmedScreen({
     const tAll = useTranslations();
     const t = useTranslations('checkout');
     const locale = useLocale();
-    const [copied, setCopied] = useState<CopyTarget | null>(null);
-    const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    useEffect(() => () => clearTimeout(copiedTimer.current), []);
+    const { copied, copy } = useCopy<CopyTarget>();
 
     // The receipt states what the card was charged, in the currency it was charged in — that is a
     // fact, and it does not move with the selector. The selector's currency gets a second line, an
@@ -190,48 +124,13 @@ export function FlightConfirmedScreen({
     const departTerminal = firstSegment?.departure.terminal;
     const arriveTerminal = lastOutbound?.arrival.terminal;
 
-    const handleCopy = async (value: string, target: CopyTarget) => {
-        try {
-            await navigator.clipboard.writeText(value);
-            setCopied(target);
-            toast.success(tAll('checkout.flight.receipt.copyReferenceDone'));
-            clearTimeout(copiedTimer.current);
-            copiedTimer.current = setTimeout(() => setCopied(null), 2000);
-        } catch {
-            // Clipboard access denied or unavailable — the reference is still on screen to
-            // select by hand (a click selects all of it), so this fails quietly rather than with
-            // an error the traveller can do nothing about.
-        }
-    };
-
     const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 14, fontSize: 13, color: palette.text };
     const rule = (margin: string) => <div aria-hidden style={{ height: 1, background: palette.cardLine, margin }} />;
-    // A quiet action beside the main one: text, but a 44px target.
-    const textBtn = (color: string): React.CSSProperties => ({
-        display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 8px', border: 'none',
-        background: 'transparent', color, fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-    });
     const caption: React.CSSProperties = { fontSize: 'var(--cg-label-fs)', color: palette.muted };
     const skeletonValue = <span aria-hidden style={{ display: 'block', paddingTop: 4 }}><SkeletonBar palette={palette} width={96} height={14} /></span>;
 
-    /** A reference in the form's box, picked whole by one click, with its own Copy. The button is
-     *  named "Copy" and described by the caption above, so the two read apart. */
     const referenceBox = (value: string, target: CopyTarget, captionId: string, extra?: React.CSSProperties) => (
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <div title={value} style={{ ...fieldBox(palette), flex: 1, fontFamily: MONO, color: palette.title, userSelect: 'all', ...extra }}>
-                <span style={ellipsis}>{value}</span>
-            </div>
-            <button
-                type="button"
-                onClick={() => handleCopy(value, target)}
-                aria-describedby={captionId}
-                className="no-print"
-                style={{ ...fieldBox(palette), flexShrink: 0, gap: 8, color: palette.title, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-                {copied === target ? <CopyCheck aria-hidden size={15} /> : <Copy aria-hidden size={15} />}
-                {copied === target ? tAll('checkout.flight.receipt.copyReferenceDone') : tAll('checkout.flight.receipt.copyReference')}
-            </button>
-        </div>
+        <ReferenceBox value={value} copied={copied === target} onCopy={() => copy(value, target)} captionId={captionId} palette={palette} valueStyle={extra} />
     );
 
     /** One end of a flight: what it is, the airport by full name and code, the day and the clock,
@@ -249,26 +148,21 @@ export function FlightConfirmedScreen({
 
     return (
         <div className="cg-receipt" style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
-            <style>{`
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: #fff !important; }
-                    .cg-receipt, .cg-receipt * { color: #000 !important; box-shadow: none !important; }
-                    .cg-receipt { background: #fff !important; }
-                    .receipt-card { background: #fff !important; border: 1px solid #ddd !important; }
-                }
-            `}</style>
+            <ReceiptPrintStyles />
 
             <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(20px,4vw,44px) clamp(16px,4vw,44px) 80px' }}>
                 <CheckoutToolbar palette={palette} backLabel={backLabel} onBack={onBack} />
 
                 {/* The form's grid: the form's column on the left, the steps and the summary on the right. */}
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
-                    <div className="no-print lg:col-start-2 lg:row-start-1 flex lg:justify-center mb-8 lg:mb-0 lg:pt-1.5">
+                    {/* Stacked on a phone the order is: heading, steps, the flight card, then the
+                        details — what happened first, then the trip, then the paperwork. The
+                        `max-lg:order-*` classes set it; the wide layout places by grid cell. */}
+                    <div className="no-print lg:col-start-2 lg:row-start-1 flex justify-center max-lg:order-2 max-lg:mt-6 mb-8 lg:mb-0 lg:pt-1.5">
                         <DoneSteps palette={palette} />
                     </div>
 
-                    <div className="lg:col-start-1 lg:row-start-1">
+                    <div className="lg:col-start-1 lg:row-start-1 max-lg:order-1">
                         <h1 className="font-bold tracking-[-0.01em]" style={{ fontSize: 'clamp(32px,4.4vw,60px)', lineHeight: 1.05, color: palette.title, margin: 0 }}>
                             {tAll('checkout.flight.receipt.allSet')}
                         </h1>
@@ -281,7 +175,7 @@ export function FlightConfirmedScreen({
                     </div>
 
                     {/* What the traveller needs at the airport */}
-                    <div className="lg:col-start-1 lg:row-start-2 min-w-0" style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${palette.hairline}` }}>
+                    <div className="lg:col-start-1 lg:row-start-2 max-lg:order-4 min-w-0" style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${palette.hairline}` }}>
                         <dl
                             aria-busy={loadingItinerary || undefined}
                             style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '20px 24px', margin: 0 }}
@@ -343,7 +237,7 @@ export function FlightConfirmedScreen({
                     </div>
 
                     {/* Right: the summary, under the steps, as through the checkout */}
-                    <aside className="lg:col-start-2 lg:row-start-2 lg:row-span-2 mt-10 lg:mt-0 lg:pt-[28px]">
+                    <aside className="lg:col-start-2 lg:row-start-2 lg:row-span-2 max-lg:order-3 lg:pt-[28px]">
                         <div style={{ position: 'sticky', top: 24 }}>
                             <div className="receipt-card" style={{ background: palette.surface, borderRadius: 12, padding: '18px 30px 26px' }}>
                                 <div style={{ fontWeight: 700, fontSize: 17, color: palette.title }}>{origin} → {destination}</div>
@@ -408,7 +302,7 @@ export function FlightConfirmedScreen({
                     </aside>
 
                     {/* Where to go next */}
-                    <div className="no-print lg:col-start-1 lg:row-start-3 min-w-0" style={{ marginTop: 32 }}>
+                    <div className="no-print lg:col-start-1 lg:row-start-3 max-lg:order-5 min-w-0" style={{ marginTop: 32 }}>
                         {/* The form's main action, in the same place: a full-width pill in the brand gradient. */}
                         <button
                             type="button"

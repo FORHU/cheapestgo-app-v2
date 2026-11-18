@@ -101,6 +101,16 @@ export function ImmersiveSearchBar({
                     --imm-caret:1.2rem; --imm-go-h:50px;
                   }
                 }
+                /* Below the desktop layout, and on any touch screen, golf's GO is the column's full
+                   width, capped where the Stays and Flights field and button are, so the main button
+                   is one size on every tab (step-search.tsx, same queries). */
+                @media (max-width:1023.98px), (pointer:coarse) {
+                  .imm-bar { --imm-go-w:100%; --imm-go-max:640px; }
+                }
+                /* …and one height: step-search.tsx's button is 52px here (50px on a phone, above). */
+                @media (min-width:641px) and (max-width:1023.98px), (min-width:1024px) and (pointer:coarse) {
+                  .imm-bar { --imm-go-h:52px; }
+                }
             `}</style>
 
             <div className="imm-bar" style={{ width: '100%', maxWidth: '900px', position: 'relative', margin: '0 auto' }}>

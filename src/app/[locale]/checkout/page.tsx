@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ArrowLeft, Check, Download, Calendar, MapPin, Users, ChevronDown } from 'lucide-react';
+import { MapPin, ChevronDown } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { http } from '@/shared/lib/http';
@@ -18,6 +18,7 @@ import type { HotelDisplay, HotelCheckoutState } from '@/features/checkout/lib/h
 import { buildHotelGuestPayload, validateHotelGuestForm, type HotelGuestForm } from '@/features/checkout/lib/hotel-guest-form';
 import { readFlightConfirmError } from '@/features/checkout/lib/flight-confirm-errors';
 import { FlightConfirmedScreen } from '@/features/checkout/components/flight-confirmed-screen';
+import { HotelConfirmedScreen } from '@/features/checkout/components/hotel-confirmed-screen';
 import { DuplicateFlightModal, type DuplicateFlight } from '@/features/checkout/components/duplicate-flight-modal';
 import { CheckoutAlertDialog, type CheckoutAlert } from '@/features/checkout/components/checkout-alert-dialog';
 import { CheckoutToolbar } from '@/features/checkout/components/checkout-toolbar';
@@ -36,7 +37,7 @@ import {
     BookingFailedPanel, MultiRoomNotice, PriceMovedPanel, RoomUnavailablePanel, SettlingPanel, SupplierDownPanel,
 } from '@/features/checkout/components/booking-state-panels';
 import { nightsBetween } from '@/shared/lib/stay';
-import { ACCENT, ACCENT_FILL, GREEN, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
+import { ACCENT_FILL, DANGER, checkoutPalette, type Palette } from '@/features/checkout/lib/palette';
 import { FIELD_RADIUS, stripeAppearance } from '@/features/checkout/lib/stripe-appearance';
 import { BRAND } from '@/shared/lib/palette';
 
@@ -470,194 +471,6 @@ function StripePaymentForm({
                 </PrimaryBtn>
             </div>
         </>
-    );
-}
-
-// ─── Confirmation receipt screen (hotel) ───────────────────────────────────────
-// The flight equivalent is `FlightConfirmedScreen`, a separate component: the two no longer
-// share one layout — see its file for why.
-
-function ConfirmedScreen({
-    palette, bookingId, hotelName, hotelAddress, hotelCity, hotelCountry, hotelImage,
-    checkIn, checkOut, guestName, guestEmail, adults, roomName,
-    currency, nightlyPrice, nights, fee, total,
-    onHome, onTrips,
-}: {
-    palette:      Palette;
-    bookingId:    string | null;
-    hotelName:    string;
-    hotelAddress: string;
-    hotelCity:    string;
-    hotelCountry: string;
-    hotelImage:   string;
-    checkIn:      string;
-    checkOut:     string;
-    guestName:    string;
-    guestEmail:   string;
-    adults:       number;
-    roomName:     string;
-    currency:     string;
-    nightlyPrice: number;
-    nights:       number | null;
-    fee:          number;
-    total:        number;
-    onHome:       () => void;
-    onTrips:      () => void;
-}) {
-    const tAll = useTranslations();
-    const t = useTranslations('checkout');
-    const fmtDate = (d: string) => d
-        ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
-        : '';
-    const shortDate = (d: string) => d
-        ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : '';
-
-    const addressLine = [hotelAddress, hotelCity, hotelCountry].filter(Boolean).join(', ');
-    // The reference is the booking's, or there is none to show. This used to mint a random one
-    // when it had none — a receipt for a booking that does not exist.
-    const ref = bookingId;
-
-    return (
-        <div style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
-            <style>{`
-                @keyframes fsStamp{0%{transform:scale(.4) rotate(-20deg);opacity:0}60%{transform:scale(1.12) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-6deg);opacity:1}}
-                @keyframes spin{to{transform:rotate(360deg)}}
-                @media print {
-                    .no-print { display: none !important; }
-                    body { background: #fff !important; color: #000 !important; }
-                    .receipt-card { background: #fff !important; border: 1px solid #ddd !important; color: #000 !important; box-shadow: none !important; }
-                    .receipt-card * { color: #000 !important; }
-                }
-            `}</style>
-
-            <div style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(20px,4vw,48px)', paddingBottom: 80 }}>
-                <button
-                    className="no-print"
-                    onClick={onHome}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: palette.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8, padding: 0 }}
-                >
-                    <ArrowLeft size={15} /> {tAll('property.breadcrumbHome')}
-                </button>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '32px 0 24px' }}>
-                    <div style={{ width: 100, height: 100, borderRadius: '50%', background: GREEN, border: '3px dashed rgba(255,255,255,.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', animation: 'fsStamp .6s ease', flexShrink: 0 }}>
-                        <Check size={24} strokeWidth={3} />
-                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', marginTop: 2 }}>{t('booked')}</div>
-                    </div>
-                    <div style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontWeight: 600, fontSize: 28, color: palette.title, marginTop: 20 }}>
-                        {t('allSet')}
-                    </div>
-                    <div style={{ fontSize: 13, color: palette.muted, marginTop: 6 }}>
-                        {t('receiptSent', { email: guestEmail })}
-                    </div>
-                </div>
-
-                <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('bookingReference')}</div>
-                    <div style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, letterSpacing: '.08em', color: ACCENT }}>{ref}</div>
-                </div>
-
-                <div className="receipt-card" style={{ background: palette.summaryBg, border: `1px solid ${palette.summaryBorder}`, borderRadius: 24, overflow: 'hidden' }}>
-                    {hotelImage && (
-                        <div style={{ height: 180, overflow: 'hidden', position: 'relative' }}>
-                            <Image src={hotelImage} alt={hotelName} fill unoptimized sizes="100vw" style={{ objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        </div>
-                    )}
-
-                    <div style={{ padding: 28 }}>
-                        <div style={{ fontWeight: 800, fontSize: 20, color: palette.title, marginBottom: 4 }}>
-                            {hotelName}
-                        </div>
-                        {addressLine && (
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, fontSize: 12, color: palette.muted, marginBottom: 20 }}>
-                                <MapPin size={12} style={{ marginTop: 1, flexShrink: 0 }} />
-                                <span>{addressLine}</span>
-                            </div>
-                        )}
-
-                        <div style={{ height: 1, background: palette.hairline, margin: '0 0 20px' }} />
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginBottom: 24 }}>
-                            <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('checkIn')}</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Calendar size={13} color={ACCENT} />
-                                    {shortDate(checkIn)}
-                                </div>
-                                <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkIn)}</div>
-                            </div>
-                            <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('checkOut')}</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Calendar size={13} color={ACCENT} />
-                                    {shortDate(checkOut)}
-                                </div>
-                                <div style={{ fontSize: 11, color: palette.faint, marginTop: 2 }}>{fmtDate(checkOut)}</div>
-                            </div>
-                            <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{t('guestLabel')}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Users size={13} color={ACCENT} />
-                                    {guestName}
-                                </div>
-                                <div style={{ fontSize: 11, color: palette.muted, marginTop: 2 }}>{t('guestsCount', { count: adults })}</div>
-                            </div>
-                            <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 4 }}>{tAll('checkout.success.room')}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: palette.title, lineHeight: 1.3 }}>{roomName || t('roomFallback')}</div>
-                                {nights && <div style={{ fontSize: 11, color: palette.muted, marginTop: 2 }}>{t('nightsCount', { count: nights })}</div>}
-                            </div>
-                        </div>
-
-                        <div style={{ height: 1, background: palette.hairline, margin: '0 0 20px' }} />
-
-                        <div style={{ marginBottom: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: palette.faint, textTransform: 'uppercase', marginBottom: 12 }}>{t('priceBreakdown')}</div>
-                            {nights && nightlyPrice > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
-                                    <span>{currency} {Math.round(nightlyPrice).toLocaleString()} × {t('nightsCount', { count: nights })}</span>
-                                    <span style={{ fontWeight: 600 }}>{currency} {(nightlyPrice * nights).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                                </div>
-                            )}
-                            {fee > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: palette.soft, marginBottom: 8 }}>
-                                    <span>{t('serviceFee')}</span>
-                                    <span style={{ fontWeight: 600 }}>{currency} {fee.toLocaleString()}</span>
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 800, color: palette.title, paddingTop: 12, borderTop: `1px solid ${palette.hairline}` }}>
-                                <span>{t('totalPaid')}</span>
-                                <span style={{ color: GREEN }}>{currency} {total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 28, alignItems: 'center' }}>
-                    <button
-                        onClick={() => window.print()}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 100, border: `1.5px solid ${palette.summaryBorder}`, background: palette.fieldBg, color: palette.title, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                        <Download size={15} /> {tAll('checkout.success.downloadReceipt')}
-                    </button>
-                    <div style={{ display: 'flex', gap: 12 }}>
-                        <button
-                            onClick={onHome}
-                            style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: ACCENT_FILL, boxShadow: BRAND.gradientShadow, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
-                        >
-                            {t('planAnotherTrip')}
-                        </button>
-                        <button
-                            onClick={onTrips}
-                            style={{ padding: '12px 24px', borderRadius: 100, border: `1.5px solid ${palette.summaryBorder}`, background: 'transparent', color: palette.title, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
-                        >
-                            {t('success.viewMyTrips')}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     );
 }
 
@@ -1199,7 +1012,7 @@ function CheckoutContent() {
         }
         return (
             <div className={slideClass.trim() || undefined} style={{ overflowX: 'clip' }}>
-            <ConfirmedScreen
+            <HotelConfirmedScreen
                 palette={palette}
                 bookingId={hotelState.reference ?? null}
                 hotelName={hotelName}
@@ -1218,6 +1031,8 @@ function CheckoutContent() {
                 nights={nights}
                 fee={fee}
                 total={total}
+                backLabel={tAll('property.v2.goBack')}
+                onBack={() => router.back()}
                 onHome={() => router.push('/')}
                 onTrips={() => router.push('/trips')}
             />
@@ -1261,11 +1076,14 @@ function CheckoutContent() {
     // A quiet plate in the summary card's tones, with the sign-in as a secondary button beside the
     // words (under them on a phone): an accent-tinted box between the heading and the first field
     // read as a warning, and pulled the eye off the form.
-    function AuthBanner() {
+    // `className` goes on a wrapper: the plate's own inline `display: flex` would beat a
+    // `hidden` class put on it directly.
+    function AuthBanner({ className, gapBelow = 32 }: { className?: string; gapBelow?: number } = {}) {
         if (user) return null;
         return (
+            <div className={className}>
             <div style={{
-                marginBottom: 32, padding: '14px 16px', borderRadius: 16,
+                marginBottom: gapBelow, padding: '14px 16px', borderRadius: 16,
                 border: `1px solid ${palette.summaryBorder}`, background: palette.summaryBg,
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12,
             }}>
@@ -1284,6 +1102,7 @@ function CheckoutContent() {
                 >
                     {tAll('checkout.signInArrow')}
                 </button>
+            </div>
             </div>
         );
     }
@@ -1504,7 +1323,7 @@ function CheckoutContent() {
                     <CheckoutToolbar palette={palette} backLabel={flightBackLabel} onBack={handleBack} />
 
                     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
-                        <div className="lg:col-start-2 lg:row-start-1 flex lg:justify-center mb-8 lg:mb-0 lg:pt-1.5">
+                        <div className="lg:col-start-2 lg:row-start-1 flex justify-center mb-8 lg:mb-0 lg:pt-1.5">
                             <ProgressBar step={step} palette={palette} />
                         </div>
 
@@ -1727,7 +1546,7 @@ function CheckoutContent() {
                     steps over the summary on the right, as drawn. Stacked, the steps
                     lead: they say where you are before the heading says what to do. */}
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,645px)_minmax(300px,370px)] lg:justify-between gap-x-[clamp(40px,8vw,130px)]">
-                    <div className="lg:col-start-2 lg:row-start-1 flex lg:justify-center mb-8 lg:mb-0 lg:pt-1.5">
+                    <div className="lg:col-start-2 lg:row-start-1 flex justify-center mb-8 lg:mb-0 lg:pt-1.5">
                         <ProgressBar step={step} palette={palette} />
                     </div>
 
@@ -1744,7 +1563,7 @@ function CheckoutContent() {
                         )}
                     </div>
 
-                    <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
+                    <div key={`body-${step}`} className={`lg:col-start-1 lg:row-start-2 max-lg:order-2 min-w-0${slideClass}`} style={{ marginTop: step === 'form' ? 30 : 26 }}>
                         {hotelAlert && (
                             <CheckoutAlertDialog alert={hotelAlert} palette={palette} onClose={hotel.dismissNotice} />
                         )}
@@ -1784,7 +1603,8 @@ function CheckoutContent() {
                             />
                         )}
 
-                        <AuthBanner />
+                        {/* On a phone the sign-in leads the summary instead (in the aside below). */}
+                        <AuthBanner className="max-lg:hidden" />
 
                         {/* Step 1: guest details */}
                         {step === 'form' && hotelState.phase !== 'unavailable' && hotelState.phase !== 'failed' && (
@@ -1910,8 +1730,13 @@ function CheckoutContent() {
                         </p>
                     </div>
 
-                    {/* Right: summary, under the steps */}
-                    <aside className="lg:col-start-2 lg:row-start-2 mt-10 lg:mt-0" style={{ paddingTop: step === 'form' ? 50 : 80 }}>
+                    {/* Right: summary, under the steps. On a phone it comes above the form,
+                        under the heading, so the stay being booked is seen before any field —
+                        as the flight checkout already does. */}
+                    <aside className={`lg:col-start-2 lg:row-start-2 max-lg:order-1 mt-6 lg:mt-0 ${step === 'form' ? 'lg:pt-[50px]' : 'lg:pt-[80px]'}`}>
+                        {/* Phone only: signing in comes before the stay — it decides whether the
+                            booking can go through at all. On a wide screen it stays over the form. */}
+                        <AuthBanner className="lg:hidden" gapBelow={16} />
                         <SummaryCard />
                     </aside>
                 </div>
