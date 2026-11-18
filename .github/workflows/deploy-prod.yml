@@ -1,0 +1,41 @@
+name: Deploy Production
+
+# Push to `main` -> production (cheapestgo-v2-app on the production box).
+#
+# Thin by design: deploy-dev.yml already resolves instance, ports, container name, SSM
+# path and image architecture from the target environment's own variables, so calling it
+# keeps one implementation rather than a second copy that drifts.
+#
+# `secrets: inherit` is required. A reusable workflow is passed no secrets by default, and
+# the called job selects the `production` environment itself.
+#
+# app-v2 is a frontend: NEXT_PUBLIC_* values are inlined into the browser bundle at BUILD
+# time, so the production image is built from production's variables and cannot be
+# promoted from a dev build. That is why this deploys by building, not by retagging.
+#
+# NOTE ON SCOPE: deploy-dev.yml still deploys *dev* on a push to main, so a merge updates
+# both. Drop `main` from that workflow's push branches if main should only reach production.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or SHA to deploy (blank = main)"
+        required: false
+
+# No `concurrency:` here on purpose — the called workflow already groups on
+# forhu-cheapestgo-app-production, and repeating it in the caller deadlocks the caller
+# against the job it is waiting for.
+
+jobs:
+  production:
+    uses: ./.github/workflows/deploy-dev.yml
+    with:
+      environment: production
+      ref: ${{ inputs.ref || '' }}
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
