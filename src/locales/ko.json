@@ -374,6 +374,7 @@
     },
     "allSet": "예약이 완료되었습니다!",
     "receiptSent": "예약이 확정되었습니다. 영수증을 {email}로 보내 드렸습니다.",
+    "stayConfirmed": "{hotel} 숙박이 확정되었습니다.",
     "nightsCount": "{count}박",
     "guestsCount": "{count}명",
     "roomFallback": "스탠다드 룸",

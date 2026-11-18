@@ -374,6 +374,7 @@
     },
     "allSet": "You're all set!",
     "receiptSent": "Your booking is confirmed. A receipt has been sent to {email}.",
+    "stayConfirmed": "Your stay at {hotel} is confirmed.",
     "nightsCount": "{count, plural, one {# night} other {# nights}}",
     "guestsCount": "{count, plural, one {# guest} other {# guests}}",
     "roomFallback": "Standard Room",

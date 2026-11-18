@@ -374,6 +374,7 @@
     },
     "allSet": "预订完成！",
     "receiptSent": "预订已确认，收据已发送至 {email}。",
+    "stayConfirmed": "您在{hotel}的住宿已确认。",
     "nightsCount": "{count} 晚",
     "guestsCount": "{count} 位",
     "roomFallback": "标准房",

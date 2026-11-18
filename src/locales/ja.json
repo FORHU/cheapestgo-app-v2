@@ -374,6 +374,7 @@
     },
     "allSet": "ご予約が完了しました！",
     "receiptSent": "ご予約が確定しました。領収書を {email} にお送りしました。",
+    "stayConfirmed": "{hotel}でのご宿泊が確定しました。",
     "nightsCount": "{count}泊",
     "guestsCount": "{count}名",
     "roomFallback": "スタンダードルーム",
