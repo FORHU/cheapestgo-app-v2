@@ -12,6 +12,7 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import en from '@/locales/en.json';
+import { useSearchStore } from '@/shared/stores/search.store';
 
 // ── the world around the page ────────────────────────────────────────────────
 
@@ -177,6 +178,12 @@ const confirmCalls = () => post.mock.calls.filter((c) => c[0] === '/flights/conf
 
 beforeEach(() => {
     vi.clearAllMocks();
+    // The traveller's picked currency, stated rather than inherited. These tests check that a
+    // receipt stays in the charged currency and gains an estimate in the picked one, which only
+    // means anything when the two differ — the offers here are USD. It used to come from the
+    // store's hardcoded `KRW` default; that default is now per-brand (USD on CheapestGo), so
+    // relying on it made this file's premise depend on which brand was built.
+    useSearchStore.setState({ userCurrency: 'KRW' });
     rates.live = false;
     stripeMock.confirmPayment.mockImplementation(async () => ({ paymentIntent: { id: 'pi_1', status: 'requires_capture' } }));
     auth.user = { email: 'juan@example.com', first_name: '', last_name: '' };

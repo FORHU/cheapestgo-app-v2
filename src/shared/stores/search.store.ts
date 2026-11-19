@@ -127,6 +127,21 @@ const initialFlightState: FlightState = {
     passengers: { adults: 1, children: 0, infants: 0 },
 };
 
+/**
+ * What money and market a visitor starts on, before they pick anything.
+ *
+ * Build-time, per brand, exactly as v1 does it (`src/stores/searchStore.ts`): AirangGo is
+ * built with KRW/KR and CheapestGo with USD/US. These were hardcoded to `KRW`/`KR` here,
+ * which is right for one brand and wrong for the other — CheapestGo opened every new visitor
+ * in Korean won, and `userCountry` is sent on as the traveller's market, so TravelgateX was
+ * quoting Korean-market rates to everyone (`gKR hKR` in the offer id).
+ *
+ * The fallback is USD/US rather than the brand's, because a build that forgot to set these
+ * should look obviously unconfigured rather than quietly serve another brand's currency.
+ */
+const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? 'USD';
+const DEFAULT_COUNTRY  = process.env.NEXT_PUBLIC_DEFAULT_COUNTRY  ?? 'US';
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 export const useSearchStore = create<SearchState>()(
     persist(
@@ -135,8 +150,8 @@ export const useSearchStore = create<SearchState>()(
             destinationQuery: '',
             dates: initialDates,
             travelers: initialTravelers,
-            userCurrency: 'KRW',
-            userCountry: 'KR',
+            userCurrency: DEFAULT_CURRENCY,
+            userCountry: DEFAULT_COUNTRY,
             distanceUnit: null,
             recentSearches: [],
             activeDropdown: null,
@@ -311,6 +326,28 @@ export const useSearchStore = create<SearchState>()(
                 searchMode: s.searchMode,
                 flightState: s.flightState,
             }) as SearchState,
+            /**
+             * Without this, the hardcoded `KRW`/`KR` above outlives the fix.
+             *
+             * `userCurrency` is persisted, so every visitor who has already loaded the site is
+             * carrying `KRW` in localStorage and would keep it forever — on CheapestGo that is
+             * the wrong currency, and clearing browser data is not a fix anyone will perform.
+             * Bumping the version resets the two fields to this build's defaults once, and
+             * leaves recent searches and the rest of the stored state alone. v1 learned the
+             * same lesson; see the `version: 2` migration in its `src/stores/searchStore.ts`.
+             *
+             * A visitor's own pick made after this ships is kept: it is written at version 1
+             * and the migration only runs on state stored at an older version.
+             */
+            version: 1,
+            migrate: (persisted, version) => {
+                const state = (persisted ?? {}) as Partial<SearchState>;
+                if (version < 1) {
+                    state.userCurrency = DEFAULT_CURRENCY;
+                    state.userCountry  = DEFAULT_COUNTRY;
+                }
+                return state as SearchState;
+            },
         }
     )
 );

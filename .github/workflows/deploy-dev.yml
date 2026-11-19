@@ -223,6 +223,12 @@ jobs:
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || vars.DEV_NEXT_PUBLIC_SITE_URL }}
             NEXT_PUBLIC_BRAND_NAME=${{ vars.NEXT_PUBLIC_BRAND_NAME }}
             NEXT_PUBLIC_LOCALE=${{ vars.NEXT_PUBLIC_LOCALE }}
+            # The money and market a visitor starts on, per brand: AirangGo KRW/KR,
+            # CheapestGo USD/US. Build args, not runtime env — the store reads them at
+            # module scope, so a value supplied at `docker run` arrives after the bundle
+            # has already been built with the fallback baked in.
+            NEXT_PUBLIC_DEFAULT_CURRENCY=${{ vars.NEXT_PUBLIC_DEFAULT_CURRENCY }}
+            NEXT_PUBLIC_DEFAULT_COUNTRY=${{ vars.NEXT_PUBLIC_DEFAULT_COUNTRY }}
             NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
             NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}

@@ -26,6 +26,11 @@ ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_BRAND_NAME
 ARG NEXT_PUBLIC_LOCALE
+# The currency and market a visitor starts on, per brand (AirangGo KRW/KR, CheapestGo USD/US).
+# Read at module scope by the search store, so Next inlines them at build time — supplying
+# them at `docker run` is too late and the store silently keeps its USD/US fallback.
+ARG NEXT_PUBLIC_DEFAULT_CURRENCY
+ARG NEXT_PUBLIC_DEFAULT_COUNTRY
 ARG NEXT_PUBLIC_MAPBOX_TOKEN
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_SENTRY_DSN
