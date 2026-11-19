@@ -44,7 +44,7 @@ on:
         # and neither can be changed by editing the other's values.
         description: "Target environment"
         type: choice
-        options: [dev, production]
+        options: [dev, production, production-airanggo]
         default: dev
       ref:
         # No default: this project deploys from `staging`, not the default branch,
