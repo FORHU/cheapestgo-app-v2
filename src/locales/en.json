@@ -374,6 +374,7 @@
     },
     "allSet": "You're all set!",
     "receiptSent": "Your booking is confirmed. A receipt has been sent to {email}.",
+    "stayConfirmed": "Your stay at {hotel} is confirmed.",
     "nightsCount": "{count, plural, one {# night} other {# nights}}",
     "guestsCount": "{count, plural, one {# guest} other {# guests}}",
     "roomFallback": "Standard Room",
@@ -640,6 +641,8 @@
       "freeCancellation": "Free Cancellation",
       "nonRefundable": "Non-refundable",
       "select": "Select",
+      "selectNow": "Select Now",
+      "checkingPrice": "Checking price…",
       "flightDetails": "Flight details"
     },
     "itinerary": {
@@ -803,6 +806,11 @@
       "adjustPrice": "Adjust Price",
       "minPerNight": "Minimum price per night",
       "maxPerNight": "Maximum price per night",
+      "min": "Min",
+      "max": "Max",
+      "priceEmpty": "Enter a price.",
+      "priceMinAboveMax": "Minimum can't be more than the maximum.",
+      "priceMaxBelowMin": "Maximum can't be less than the minimum.",
       "hide": "Hide filters",
       "show": "Show filters",
       "close": "Close filters",
@@ -2690,7 +2698,13 @@
     "solvedNote": "Glad that helped. Write to us any time if something else comes up.",
     "attach": "Attach a file",
     "removeFile": "Remove",
-    "fileExpired": "no longer stored"
+    "fileExpired": "no longer stored",
+    "signedOut": {
+      "heading": "Sign in to chat with us",
+      "body": "We answer in the app, so we need to know who to reply to. Sign in and the chat opens right here — our replies stay in your account, so nothing gets lost.",
+      "help": "Browse the Help Centre",
+      "email": "Or email us at <address>{email}</address>"
+    }
   },
   "help": {
     "title": "Help",

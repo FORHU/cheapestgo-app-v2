@@ -6,6 +6,9 @@ import { LogoWordmark } from './logo-wordmark';
 import { CHROME_LINK, FOOTER_LINKS } from '@/features/landing/lib/chrome-links';
 import { useBrandName } from '@/shared/components/BrandProvider';
 
+/** FORHU's headquarters, from the company profile (forhu.ai). */
+const FORHU_ADDRESS = '30 Wall Street, 8th Floor, New York, NY 10005, United States';
+
 /**
  * The landing page's own footer: one row of wordmark, links and the legal line,
  * stacking to a left-aligned column below 760px.
@@ -37,8 +40,10 @@ export function LandingFooter({ tone = 'onDark' }: { tone?: 'default' | 'onDark'
                         ))}
                     </nav>
 
+                    {/* The operating company's registered address (FORHU, New York HQ), not a
+                        city picked for flavour. A proper address, so it is not translated. */}
                     <span className="text-xs text-[#64748b]">
-                        © {new Date().getFullYear()} {brand} · Manila
+                        © {new Date().getFullYear()} {brand} · {FORHU_ADDRESS}
                     </span>
                 </div>
             </div>

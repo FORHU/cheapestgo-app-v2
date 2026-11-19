@@ -220,7 +220,8 @@ const MAP_CHROME_GUTTER   = 'px-4 sm:px-8 lg:px-12 xl:px-20';
 const MAP_CHROME_GUTTER_L = 'pl-4 sm:pl-8 lg:pl-12 xl:pl-20';
 const MAP_CHROME_GUTTER_W = 'w-4 sm:w-8 lg:w-12 xl:w-20';
 
-const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:pb-7';
+/** `--fab-clear`: more room when the support launcher floats over the foot of the list (globals.css). */
+const RAIL_PAD_B_MOBILE = 'pb-[calc(env(safe-area-inset-bottom,0px)+104px+var(--fab-clear,0px))] lg:pb-7';
 /** The same clearance as an offset, for anything that floats rather than pads. */
 const RAIL_BOTTOM_MOBILE = 'bottom-[calc(env(safe-area-inset-bottom,0px)+104px)] lg:bottom-7';
 /** How much a selected card grows. */

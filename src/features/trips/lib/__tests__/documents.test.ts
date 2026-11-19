@@ -6,7 +6,7 @@
  * airport with a number the airline cannot act on.
  */
 import { describe, it, expect } from 'vitest';
-import { availableDocuments, isTicketed, pendingReason, supplierReference, ticketNumbers } from '../documents';
+import { availableDocuments, isCancelled, isTicketed, pendingReason, supplierReference, ticketNumbers } from '../documents';
 import type { FlightBooking, HotelBooking } from '@/shared/types';
 
 const flight = (over: Partial<FlightBooking> = {}): FlightBooking => ({
@@ -71,5 +71,21 @@ describe('the hotel voucher', () => {
     it('falls back to the voucher code rather than showing nothing', () => {
         expect(supplierReference(hotel({ voucher_code: 'VC-99' }))).toBe('VC-99');
         expect(supplierReference(hotel())).toBeNull();
+    });
+});
+
+describe('a cancelled booking', () => {
+    it('counts every cancelled and refunded state, refund failures included', () => {
+        for (const status of ['cancelled', 'cancelled_refunded', 'cancelled_refund_failed', 'cancelled_provider_missing', 'refunded']) {
+            expect(isCancelled(hotel({ status: status as HotelBooking['status'] }))).toBe(true);
+        }
+    });
+
+    it('leaves live and finished bookings alone', () => {
+        for (const status of ['pending', 'confirmed', 'completed']) {
+            expect(isCancelled(hotel({ status: status as HotelBooking['status'] }))).toBe(false);
+        }
+        expect(isCancelled(flight({ status: 'ticketed' }))).toBe(false);
+        expect(isCancelled(flight({ status: 'cancel_requested' }))).toBe(true);
     });
 });

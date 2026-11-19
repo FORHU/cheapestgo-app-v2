@@ -46,8 +46,12 @@ export function supplierReference(b: HotelBooking): string | null {
     return b.provider_metadata?.supplierRef ?? b.voucher_code ?? null;
 }
 
-/** Cancelled bookings keep their receipt — it is the evidence of what was charged. */
-function isCancelled(b: AnyBooking): boolean {
+/**
+ * A booking that is no longer going ahead, refunded or not. Cancelled bookings keep their
+ * receipt — it is the evidence of what was charged — and lose everything that acts on the
+ * trip itself.
+ */
+export function isCancelled(b: Pick<AnyBooking, 'status'>): boolean {
     return String(b.status).startsWith('cancel') || String(b.status) === 'refunded';
 }
 

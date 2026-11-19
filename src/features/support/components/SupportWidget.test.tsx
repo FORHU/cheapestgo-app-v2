@@ -2,9 +2,8 @@
  * The widget, rendered.
  *
  * The reducer's tests cover what the transcript should contain; these cover that the thing on
- * screen is wired to it at all. A signed-out page renders nothing here by design (ADR-0032),
- * which looks identical to a widget that never mounted — so the mounting is asserted from the
- * other side, with someone signed in.
+ * screen is wired to it at all. A signed-out visitor gets the launcher but not the chat
+ * (ADR-0032, issue #41): it opens a sign-in prompt, and the chat opens once they are signed in.
  */
 
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -15,6 +14,7 @@ import { SupportWidget } from '@/features/support/components/SupportWidget';
 import en from '@/locales/en.json';
 import { useAuthStore } from '@/shared/auth/store';
 import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
+import { useAuthStore as useSessionStore } from '@/shared/stores/auth.store';
 
 const conversation = {
     id: 'c1', reference: 'CG-4821', status: 'waiting_human', locale: 'ko',
@@ -59,10 +59,59 @@ describe('SupportWidget', () => {
         signedIn(true);
     });
 
-    it('offers nothing to a visitor with no account (ADR-0032)', () => {
-        signedIn(false);
-        renderWidget();
-        expect(screen.queryByRole('button', { name: /open support chat/i })).toBeNull();
+    describe('signed out (issue #41)', () => {
+        beforeEach(() => {
+            signedIn(false);
+            sessionStorage.clear();
+            useSessionStore.setState({ isAuthModalOpen: false });
+        });
+
+        it('still shows the launcher, so support is visibly there', () => {
+            renderWidget();
+            expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument();
+        });
+
+        it('opens a prompt that says what happens next, never the chat (ADR-0032)', async () => {
+            renderWidget();
+            await userEvent.click(screen.getByRole('button', { name: /open support chat/i }));
+            expect(screen.getByRole('heading', { name: 'Support' })).toBeInTheDocument();
+            expect(screen.getByText('Sign in to chat with us')).toBeInTheDocument();
+            expect(screen.getByRole('link', { name: 'Browse the Help Centre' })).toHaveAttribute('href', '/help');
+            expect(screen.getByRole('link', { name: 'support@cheapestgo.com' }))
+                .toHaveAttribute('href', 'mailto:support@cheapestgo.com');
+            expect(screen.queryByRole('textbox')).toBeNull();
+            expect(api.fetchConversation).not.toHaveBeenCalled();
+        });
+
+        it('answers a request from elsewhere on the page with the same prompt', async () => {
+            renderWidget();
+            act(() => useSupportWidget.getState().requestOpen());
+            expect(await screen.findByText('Sign in to chat with us')).toBeInTheDocument();
+        });
+
+        it('opens the chat once they sign in from the prompt', async () => {
+            const view = renderWidget();
+            await userEvent.click(screen.getByRole('button', { name: /open support chat/i }));
+            await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+            expect(useSessionStore.getState().isAuthModalOpen).toBe(true);
+            expect(screen.queryByText('Sign in to chat with us')).toBeNull();
+
+            act(() => signedIn(true));
+            view.rerender(
+                <NextIntlClientProvider locale="en" messages={en as never}>
+                    <SupportWidget />
+                </NextIntlClientProvider>,
+            );
+            await waitFor(() => expect(screen.getByRole('textbox', { name: /type your message/i })).toBeInTheDocument());
+            expect(api.fetchConversation).toHaveBeenCalled();
+        });
+
+        it('does not open the chat for someone who signed in some other way', async () => {
+            renderWidget();
+            act(() => signedIn(true));
+            await waitFor(() => expect(screen.getByRole('button', { name: /open support chat/i })).toBeInTheDocument());
+            expect(screen.queryByRole('textbox')).toBeNull();
+        });
     });
 
     it('offers itself to someone signed in', () => {

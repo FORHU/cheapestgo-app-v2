@@ -6,7 +6,7 @@ import { ChevronLeft, SlidersHorizontal, Star } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useTheme } from '@/shared/components/ThemeContext';
 import { currencySymbol } from '@/shared/lib/format';
-import { filtersPalette, FilterSection, FilterRow, RangeSlider } from '@/shared/components/ui/filter-panel';
+import { filtersPalette, FilterSection, FilterRow, RangeSlider, PriceRangeFields } from '@/shared/components/ui/filter-panel';
 
 /**
  * The five options the design lists. `cheapest` and `price-low` are the same
@@ -190,12 +190,7 @@ export function HotelFilters({
                         {/* Price */}
                         <FilterSection label="Price / Night" open={open.price} onToggle={section('price')} palette={palette}>
                             <div className="px-1">
-                                <div className="flex items-baseline justify-between gap-2">
-                                    <span className={cn('text-[15px]', palette.body)}>{tAll('hotels.filters.adjustPrice')}</span>
-                                    <span className={cn('text-[15px] whitespace-nowrap', palette.body)}>
-                                        {sym}{Math.round(filters.minPrice).toLocaleString()}-{Math.round(filters.maxPrice).toLocaleString()}
-                                    </span>
-                                </div>
+                                <span className={cn('text-[15px]', palette.body)}>{tAll('hotels.filters.adjustPrice')}</span>
 
                                 <div className="mt-6">
                                     <RangeSlider
@@ -207,6 +202,26 @@ export function HotelFilters({
                                         lowLabel={tAll('hotels.filters.minPerNight')}
                                         highLabel={tAll('hotels.filters.maxPerNight')}
                                         onChange={(lo, hi) => onChange({ minPrice: lo, maxPrice: hi })}
+                                    />
+                                </div>
+
+                                {/* The same two ends, typed: for a budget a person already has. */}
+                                <div className="mt-5">
+                                    <PriceRangeFields
+                                        low={filters.minPrice}
+                                        high={filters.maxPrice}
+                                        symbol={sym}
+                                        palette={palette}
+                                        onChange={(lo, hi) => onChange({ minPrice: lo, maxPrice: hi })}
+                                        labels={{
+                                            min:         tAll('hotels.filters.min'),
+                                            max:         tAll('hotels.filters.max'),
+                                            minFull:     tAll('hotels.filters.minPerNight'),
+                                            maxFull:     tAll('hotels.filters.maxPerNight'),
+                                            empty:       tAll('hotels.filters.priceEmpty'),
+                                            minAboveMax: tAll('hotels.filters.priceMinAboveMax'),
+                                            maxBelowMin: tAll('hotels.filters.priceMaxBelowMin'),
+                                        }}
                                     />
                                 </div>
                             </div>

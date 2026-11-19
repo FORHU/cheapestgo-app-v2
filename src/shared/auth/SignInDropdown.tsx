@@ -2,13 +2,14 @@
 
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, Settings, ChevronDown, MessageCircle } from 'lucide-react';
 import { useAuthStore, useAuthStore as useModalStore } from '@/shared/stores/auth.store';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useLogout } from '@/features/auth/hooks/use-auth';
+import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 import { cn } from '@/shared/lib/cn';
 import { SELECTOR_TONES, type SelectorChrome, type SelectorVariant } from '@/shared/components/common/selector-tone';
 
@@ -111,7 +112,11 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
      * Row hover, in state rather than CSS: the chrome path paints from inline styles, and an
      * inline background outranks any `hover:` class that would otherwise cover it.
      */
-    const [hovered, setHovered] = useState<'settings' | 'signOut' | 'createAccount' | null>(null);
+    const [hovered, setHovered] = useState<'settings' | 'support' | 'signOut' | 'createAccount' | null>(null);
+    // Support lives in the account menu as in V1, beside the floating launcher (issue #41). Signed
+    // out, the widget answers with its sign-in prompt rather than the chat. Not in the `inline`
+    // variant: that is the phone's settings sheet, which carries its own row for everyone.
+    const requestSupport = useSupportWidget((s) => s.requestOpen);
 
     /**
      * How the panel's text is drawn. On chrome it is the palette's own colours, inline; off it,
@@ -125,7 +130,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
         hairline: { borderColor: chrome.border },
     } : null;
     /** A row's colour and, under the cursor, its fill — the chrome path of `skin.row`/`danger`. */
-    const rowPaint = (key: 'settings' | 'signOut' | 'createAccount', danger = false) => chrome ? {
+    const rowPaint = (key: 'settings' | 'support' | 'signOut' | 'createAccount', danger = false) => chrome ? {
         style: {
             color: danger ? (chrome.danger ?? chrome.text) : chrome.text,
             background: hovered === key ? chrome.hover : 'transparent',
@@ -171,6 +176,7 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
     }, [variant]);
 
     const handleNav = () => { setIsOpen(false); setIsInlineOpen(false); onNavigate?.(); };
+    const openSupport = () => { handleNav(); requestSupport(); };
     const handleSignOut = () => {
         handleNav();
         signOut.mutate();
@@ -269,6 +275,12 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                                     {t('createAccount')}
                                 </Link>
                             </div>
+                            <div className={cn('border-t p-2', !chrome && skin.hairline)} style={ink?.hairline}>
+                                <button type="button" onClick={openSupport} className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] rounded-lg transition-colors', !chrome && skin.row)} {...rowPaint('support')}>
+                                    <MessageCircle className={cn('h-5 w-5', !chrome && skin.icon)} style={ink?.icon} />
+                                    {t('support')}
+                                </button>
+                            </div>
                             <div className={cn('border-t p-4', !chrome && skin.hairline)} style={ink?.hairline}>
                                 <p className={cn('text-[clamp(0.6875rem,1.25vw,0.75rem)] text-center', !chrome && skin.muted)} style={ink?.muted}>{t('accountWorks')}</p>
                             </div>
@@ -301,6 +313,10 @@ const SignInDropdownContent: React.FC<SignInDropdownProps> = ({ variant = 'dropd
                                 <Settings className={cn('h-5 w-5', !chrome && skin.icon)} style={ink?.icon} />
                                 {t('accountSettings')}
                             </Link>
+                            <button type="button" onClick={openSupport} className={cn('w-full flex items-center gap-3 px-4 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] transition-colors', !chrome && skin.row)} {...rowPaint('support')}>
+                                <MessageCircle className={cn('h-5 w-5', !chrome && skin.icon)} style={ink?.icon} />
+                                {t('support')}
+                            </button>
                         </div>
                         <div className={cn('border-t p-2', !chrome && skin.hairline)} style={ink?.hairline}>
                             <button type="button" onClick={handleSignOut} disabled={signOut.isPending} className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-[clamp(0.8125rem,1.5vw,0.875rem)] rounded-lg transition-colors disabled:opacity-50', !chrome && skin.danger)} {...rowPaint('signOut', true)}>

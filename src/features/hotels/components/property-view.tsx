@@ -215,10 +215,8 @@ function PropertyContent() {
      * the `offerId` that checkout books against.
      */
     const [selectedOffer, setSelectedOffer] = useState<SelectedOffer | null>(null);
-    /** Which of the banner images is showing, and which way the last page went
-     *  (−1 prev, +1 next) so the crossfade can lean that direction. */
+    /** Which of the banner images is showing. */
     const [heroIndex, setHeroIndex] = useState(0);
-    const [heroDir, setHeroDir] = useState(1);
     /** The banner src that has finished decoding — anything else shows the
      *  loading shimmer until its own `onLoad`. */
     const [loadedHeroSrc, setLoadedHeroSrc] = useState<string | null>(null);
@@ -397,7 +395,20 @@ function PropertyContent() {
         <div style={rootStyle}>
 
             {/* ── Hero ──────────────────────────────────────────────────────── */}
-            <div style={{ position: 'relative', height: '100vh', minHeight: 320, overflow: 'hidden' }}>
+            {/* Full screen from tablet up; on phones a shorter banner so the
+                price and details start within the first screen instead of
+                a whole viewport of photo. `svh` keeps it steady while the
+                mobile URL bar shows and hides. */}
+            <div
+                className="h-[58svh] min-h-[380px] md:h-screen md:min-h-[320px]"
+                // While a photo animates (scale + drift) the browser draws it on its
+                // own GPU layer, and `overflow: hidden` alone clips that layer on a
+                // rounded pixel edge — at a fractional banner height (58svh) a 1px
+                // strip of the undarkened photo shows along the bottom. Making the
+                // banner a layer itself (`translateZ`) and clipping with a
+                // clip-path keeps every child clipped on the same edge.
+                style={{ position: 'relative', overflow: 'hidden', clipPath: 'inset(0)', transform: 'translateZ(0)', isolation: 'isolate' }}
+            >
                 {/* The plate every image sits on: a dark ground, and while the
                     current src is still decoding, a slow shimmer over it so a
                     blank banner never reads as "broken". */}
@@ -424,13 +435,16 @@ function PropertyContent() {
                             src={heroShown}
                             alt={content.name ?? ''}
                             onLoad={() => setLoadedHeroSrc(heroShown)}
-                            initial={{ opacity: 0, scale: 1.06, x: heroDir * 18 }}
-                            animate={{ opacity: heroLoaded ? 1 : 0, scale: heroLoaded ? 1 : 1.06, x: 0 }}
-                            exit={{ opacity: 0, scale: 1.04, x: heroDir * -18 }}
+                            // Fade and zoom only, never a sideways drift: the drift (18px)
+                            // outran the zoom's overhang (~8–12px on a phone), baring a
+                            // strip of the dark plate along the banner's edge mid-slide.
+                            // A scale that never drops below 1 always covers the frame.
+                            initial={{ opacity: 0, scale: 1.06 }}
+                            animate={{ opacity: heroLoaded ? 1 : 0, scale: heroLoaded ? 1 : 1.06 }}
+                            exit={{ opacity: 0, scale: 1.04 }}
                             transition={{
                                 opacity: { duration: 0.5, ease: 'easeInOut' },
                                 scale:   { duration: 0.7, ease: 'easeOut' },
-                                x:       { duration: 0.5, ease: 'easeOut' },
                             }}
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -439,7 +453,9 @@ function PropertyContent() {
                 {/* Deeper and reaching further up than before — the name and
                     address below are now twice their old size, and need more
                     of the photo's bottom darkened to stay legible over it. */}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(2,6,23,.18) 0%,rgba(2,6,23,.42) 35%,rgba(2,6,23,.96) 100%)' }} />
+                {/* Bottom edge overshoots by 2px (clipped by the banner) so no
+                    sliver of the moving photo can peek out under the shade. */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: -2, background: 'linear-gradient(180deg,rgba(2,6,23,.18) 0%,rgba(2,6,23,.42) 35%,rgba(2,6,23,.96) 100%)' }} />
 
                 {/* Back. Over the photo rather than in the page below it — the
                     banner is the first thing on screen, and a control to leave
@@ -507,7 +523,7 @@ function PropertyContent() {
                 {heroCount > 1 && (
                     <>
                         <motion.button
-                            onClick={() => { setHeroDir(-1); setHeroIndex(i => (i - 1 + heroCount) % heroCount); }}
+                            onClick={() => setHeroIndex(i => (i - 1 + heroCount) % heroCount)}
                             aria-label={t('v2.previousPhoto')}
                             className="left-5 sm:left-8 lg:left-12"
                             style={HERO_ARROW}
@@ -517,7 +533,7 @@ function PropertyContent() {
                             <ChevronLeft size={34} strokeWidth={2.25} />
                         </motion.button>
                         <motion.button
-                            onClick={() => { setHeroDir(1); setHeroIndex(i => (i + 1) % heroCount); }}
+                            onClick={() => setHeroIndex(i => (i + 1) % heroCount)}
                             aria-label={t('v2.nextPhoto')}
                             className="right-5 sm:right-8 lg:right-12"
                             style={HERO_ARROW}
@@ -561,7 +577,7 @@ function PropertyContent() {
                             {heroImages.map((src, i) => (
                                 <button
                                     key={src}
-                                    onClick={() => { setHeroDir(i >= heroIndex ? 1 : -1); setHeroIndex(i); }}
+                                    onClick={() => setHeroIndex(i)}
                                     aria-label={`Photo ${i + 1} of ${heroCount}`}
                                     aria-current={i === heroIndex || undefined}
                                     className="relative before:absolute before:-inset-2 before:content-['']"

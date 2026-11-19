@@ -276,7 +276,10 @@ function CoursePanel({
 
     return (
         <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1.5px solid rgba(255,255,255,0.14)', paddingBottom: '10px', marginBottom: '18px' }}>
+            {/* Held at the top while the courses scroll under it: in the phone's sheet, with the
+                keyboard up, a filter that scrolled away with the list was a field you could not see
+                while typing into it. Painted in the panel's own ground so the rows pass behind it. */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 1, background: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1.5px solid rgba(255,255,255,0.14)', paddingTop: '6px', paddingBottom: '10px', marginBottom: '18px' }}>
                 <span style={{ display: 'flex', color: 'rgba(241,245,249,0.42)', flexShrink: 0 }}><SearchMiniIcon /></span>
                 <input
                     type="text"

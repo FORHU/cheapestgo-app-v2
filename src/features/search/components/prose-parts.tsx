@@ -4,6 +4,7 @@ import React, { useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { BRAND } from '@/shared/lib/palette';
+import { useKeyboardInset } from '@/shared/hooks/useKeyboardInset';
 
 /**
  * The pieces every fill-in-the-blank search sentence on the landing page is made of: the token
@@ -347,6 +348,11 @@ export function NotePanel(props: {
 function NoteSheet({ children, extra = {} }: { children: React.ReactNode; extra?: React.CSSProperties }) {
     // The desktop panel's height cap does not apply to a sheet, which sets its own.
     const { maxHeight: _maxHeight, ...rest } = extra;
+    // The course panel's filter takes the focus as the sheet opens, which brings the keyboard up
+    // over the foot of the screen. The sheet stands on the keyboard rather than under it, capped to
+    // the room left, so the filter and the courses it finds stay on screen and scroll.
+    const keyboard = useKeyboardInset();
+    const raised = keyboard.visibleHeight !== null;
     return createPortal(
         <>
             {/* `touch-action: none`: a drag on the dimmed page would otherwise scroll the
@@ -359,20 +365,25 @@ function NoteSheet({ children, extra = {} }: { children: React.ReactNode; extra?
             <div
                 className="imm-note imm-sheet"
                 style={{
-                    position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: SHEET_Z,
-                    maxHeight: 'min(82dvh, calc(100dvh - 64px))',
+                    position: 'fixed', left: 0, right: 0, bottom: raised ? keyboard.inset : 0, zIndex: SHEET_Z,
+                    maxHeight: raised ? `${keyboard.visibleHeight! - 24}px` : 'min(82dvh, calc(100dvh - 64px))',
                     overflowY: 'auto', overscrollBehavior: 'contain',
                     background: '#0f172a',
                     borderRadius: '24px 24px 0 0',
                     border: '1px solid rgba(255,255,255,0.10)', borderBottom: 'none',
                     boxShadow: '0 -24px 50px -12px rgba(0,0,0,0.65)',
-                    padding: '10px 20px calc(22px + env(safe-area-inset-bottom, 0px))',
+                    // The home indicator's inset only while the sheet is on the foot of the screen;
+                    // standing on a keyboard, there is no indicator under it.
+                    // No top padding (the handle carries that space): a filter held at the top of the
+                    // scroll (the course panel's) then sits on the sheet's edge, with no gap above it
+                    // for the rows passing under it to show through.
+                    padding: raised ? '0 20px 16px' : '0 20px calc(22px + env(safe-area-inset-bottom, 0px))',
                     fontFamily: 'var(--font-sans)', fontSize: '15px', lineHeight: '1.4', color: '#f1f5f9',
                     ...SHEET_VARS,
                     ...rest,
                 }}
             >
-                <div aria-hidden style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.22)', margin: '0 auto 16px' }} />
+                <div aria-hidden style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.22)', margin: '10px auto 16px' }} />
                 {children}
             </div>
         </>,
@@ -462,6 +473,10 @@ function NoteFloat({ children, width = 'min(360px,88vw)', extra = {} }: {
  * The GO pill. Under the sentence and exactly as wide as its longest line (`width`), so the pill
  * reads as the sentence's own last line: fill the tokens, then hit GO. Full width until measured.
  *
+ * Below the desktop layout the bar overrides that (`--imm-go-w`, `--imm-go-max`): there the pill
+ * is the full width of the column, as the Stays and Flights button is. Sized to the sentence it
+ * changed width with every choice, and never matched the button on the other two tabs.
+ *
  * v1's gradient with white ink. While searching the pill stops pulsing and holds still: its
  * spinner turns and a sheen runs across it (`.imm-stamp[aria-busy]`) instead. `aria-disabled`
  * rather than `disabled` while searching, so the button keeps keyboard focus; the caller ignores a
@@ -489,7 +504,7 @@ export function GoPill({ onClick, searching, shake, width, label, searchingLabel
             style={{
                 position: 'relative', overflow: 'hidden',
                 alignSelf: 'flex-start', flexShrink: 0,
-                width: width ? `${width}px` : '100%', maxWidth: '680px',
+                width: width ? `var(--imm-go-w,${width}px)` : '100%', maxWidth: 'var(--imm-go-max,680px)',
                 height: 'var(--imm-go-h,56px)', borderRadius: '9999px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                 color: '#fff', fontFamily: 'var(--font-sans)', fontWeight: 700,

@@ -682,3 +682,38 @@ Written by Claude (2026-11-09).
 | `common.theme` | Theme | 테마 | テーマ | 主题 |
 | `common.themeLight` | Light | 라이트 | ライト | 浅色 |
 | `common.themeDark` | Dark | 다크 | ダーク | 深色 |
+
+## Support for a signed-out visitor
+
+What the support button says to someone not signed in: why the chat needs an account, and the
+Help Centre and email for anyone who would rather not. Written by Claude (2026-11-16).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `support.signedOut.heading` | Sign in to chat with us | 로그인하고 채팅으로 문의하세요 | ログインしてチャットでお問い合わせください | 登录后与我们聊天 |
+| `support.signedOut.body` | We answer in the app, so we need to know who to reply to. Sign in and the chat opens right here — our replies stay in your account, so nothing gets lost. | 답변은 앱에서 드리기 때문에 누구에게 답해야 하는지 알아야 합니다. 로그인하면 바로 여기에서 채팅이 열리고, 답변은 계정에 남아 놓치지 않습니다. | 返信はアプリ内でお送りするため、どなたへの返信かを確認する必要があります。ログインするとここでチャットが開き、返信はアカウントに残るので見逃すことはありません。 | 我们在应用内回复，因此需要知道该回复给谁。登录后聊天会在这里直接打开，我们的回复会保存在您的账户中，不会遗漏。 |
+| `support.signedOut.help` | Browse the Help Centre | 도움말 센터 보기 | ヘルプセンターを見る | 浏览帮助中心 |
+| `support.signedOut.email` | Or email us at <address>{email}</address> | 또는 <address>{email}</address>로 이메일을 보내 주세요 | または <address>{email}</address> までメールでお問い合わせください | 或发送邮件至 <address>{email}</address> |
+
+## Flight results card — the main button
+
+The wide layout's label (the narrow one is the existing `flights.card.select`) and what the button
+says while it re-checks the fare. Both were English in every language before. Written by Claude (2026-11-16).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `flights.card.selectNow` | Select Now | 지금 선택 | 今すぐ選択 | 立即选择 |
+| `flights.card.checkingPrice` | Checking price… | 요금 확인 중… | 料金を確認中… | 正在确认价格… |
+
+## Stays filter — typing the price range
+
+The minimum and maximum fields beside the price slider, and what they say when a value will not
+do. Written by Claude (2026-11-18).
+
+| Key | English | 한국어 | 日本語 | 中文 |
+|-----|---------|--------|--------|------|
+| `hotels.filters.min` | Min | 최소 | 最低 | 最低 |
+| `hotels.filters.max` | Max | 최대 | 最高 | 最高 |
+| `hotels.filters.priceEmpty` | Enter a price. | 가격을 입력하세요. | 料金を入力してください。 | 请输入价格。 |
+| `hotels.filters.priceMinAboveMax` | Minimum can't be more than the maximum. | 최소 가격은 최대 가격보다 클 수 없습니다. | 最低料金は最高料金を超えられません。 | 最低价格不能高于最高价格。 |
+| `hotels.filters.priceMaxBelowMin` | Maximum can't be less than the minimum. | 최대 가격은 최소 가격보다 작을 수 없습니다. | 最高料金は最低料金を下回れません。 | 最高价格不能低于最低价格。 |

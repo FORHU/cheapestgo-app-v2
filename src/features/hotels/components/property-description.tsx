@@ -338,7 +338,7 @@ function ChipGroup({
                 // `relative`, so a chip's `offsetTop` is measured against this
                 // list rather than against whatever happens to be positioned
                 // above it.
-                className={cn('relative flex flex-wrap', pill ? 'gap-3' : 'gap-2', disclosure && 'overflow-hidden')}
+                className={cn('relative flex flex-wrap', pill ? 'gap-2 sm:gap-3' : 'gap-2', disclosure && 'overflow-hidden')}
                 style={disclosure ? {
                     height: heights ? (showAll ? heights.full : heights.collapsed) : undefined,
                     transition: reduceMotion ? 'none' : `height ${CHIP_REVEAL.duration}s cubic-bezier(${EASE.join(',')})`,
@@ -363,7 +363,11 @@ function ChipGroup({
                                 'inline-flex items-center rounded-full',
                                 palette.chip,
                                 pill
-                                    ? 'h-[54px] min-w-[clamp(150px,13vw,200px)] justify-center gap-2 px-6 text-[15px] whitespace-nowrap'
+                                    // Phones get a compact chip (38px, no floor width) so
+                                    // two or three share a row instead of one 54px slab
+                                    // each; `sm` and up keep the design's full size.
+                                    // They are labels, not buttons, so 44px targets don't apply.
+                                    ? 'h-[38px] justify-center gap-1.5 px-4 text-[14px] whitespace-nowrap sm:h-[54px] sm:min-w-[clamp(150px,13vw,200px)] sm:gap-2 sm:px-6 sm:text-[15px]'
                                     : 'gap-3 px-6 py-3 text-[16px] sm:text-[17px]',
                             )}
                         >
