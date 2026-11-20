@@ -41,7 +41,8 @@
       "orDivider": "または",
       "terms": "ログインすることで{terms}と{privacy}に同意したものとみなされます。",
       "termsLink": "利用規約",
-      "privacyLink": "プライバシーポリシー"
+      "privacyLink": "プライバシーポリシー",
+      "invalidCredentials": "入力情報に一致するアカウントが見つかりませんでした"
     },
     "forgotPasswordQ": "パスワードをお忘れですか？",
     "createOne": "アカウントを作成",
@@ -64,6 +65,8 @@
     "noResetToken": "再設定トークンが見つかりません。メールに記載のリンクをご利用ください。",
     "resetPassword": "パスワードを再設定",
     "atLeast8": "8文字以上",
+    "atLeastOneUppercase": "大文字を1文字以上",
+    "atLeastOneNumber": "数字を1つ以上",
     "repeatPassword": "パスワードを再入力",
     "notUsedBefore": "これまでに使用していないものを選んでください",
     "firstNameShort": "名",
@@ -646,6 +649,13 @@
       "checkingPrice": "料金を確認中…",
       "flightDetails": "フライト詳細"
     },
+    "durationParts": {
+      "hoursMinutes": "{hours}時間 {minutes}分",
+      "minutesOnly": "{minutes}分"
+    },
+    "errors": {
+      "upstreamUnavailable": "航空会社に接続して運賃を確認できませんでした。しばらくしてからもう一度お試しください。"
+    },
     "itinerary": {
       "arriveAt": "到着",
       "departFrom": "出発",
@@ -703,6 +713,7 @@
       "selectAllAirports": "すべての空港を選択",
       "showAll": "すべて表示",
       "showLess": "表示を減らす",
+      "showCount": "{count}便を表示",
       "sortBy": "並び替え",
       "stops": "乗り継ぎ",
       "times": "時刻",

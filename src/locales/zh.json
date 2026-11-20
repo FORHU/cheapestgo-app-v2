@@ -41,7 +41,8 @@
       "orDivider": "或",
       "terms": "登录即表示您同意我们的{terms}和{privacy}。",
       "termsLink": "服务条款",
-      "privacyLink": "隐私政策"
+      "privacyLink": "隐私政策",
+      "invalidCredentials": "找不到与这些信息匹配的账户"
     },
     "forgotPasswordQ": "忘记密码？",
     "createOne": "创建账户",
@@ -64,6 +65,8 @@
     "noResetToken": "未找到重置令牌，请使用发送到您邮箱的链接。",
     "resetPassword": "重置密码",
     "atLeast8": "至少 8 个字符",
+    "atLeastOneUppercase": "至少包含一个大写字母",
+    "atLeastOneNumber": "至少包含一个数字",
     "repeatPassword": "请再次输入密码",
     "notUsedBefore": "请选择一个您未在此使用过的密码",
     "firstNameShort": "名",
@@ -646,6 +649,13 @@
       "checkingPrice": "正在确认价格…",
       "flightDetails": "航班详情"
     },
+    "durationParts": {
+      "hoursMinutes": "{hours}小时{minutes}分",
+      "minutesOnly": "{minutes}分"
+    },
+    "errors": {
+      "upstreamUnavailable": "无法联系航空公司核实此票价。请稍后重试。"
+    },
     "itinerary": {
       "arriveAt": "抵达",
       "departFrom": "出发",
@@ -703,6 +713,7 @@
       "selectAllAirports": "选择所有机场",
       "showAll": "显示全部",
       "showLess": "收起",
+      "showCount": "显示{count}个航班",
       "sortBy": "排序方式",
       "stops": "中转",
       "times": "时间",

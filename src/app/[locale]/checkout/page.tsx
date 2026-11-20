@@ -846,12 +846,14 @@ function CheckoutContent() {
             }
             setFlightAlert({
                 title: t('failed.title'),
-                message: err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
+                message: e?.code === 'UPSTREAM_UNAVAILABLE'
+                    ? tAll('flights.errors.upstreamUnavailable')
+                    : err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
             });
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t, fareGoneHref]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t, tAll, fareGoneHref]);
     const closeDuplicateFlight = useCallback(() => setDuplicateFlight(null), []);
 
     // ── Price helpers ──
