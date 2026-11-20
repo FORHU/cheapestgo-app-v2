@@ -96,6 +96,22 @@ describe('the payment receipt', () => {
         expect(screen.getByText(/•••• 4242/)).toBeInTheDocument();
         expect(container.textContent).not.toMatch(/\d{13,19}/);
     });
+
+    it('prints no ticket number before the airline has issued one, and says it is waiting', () => {
+        const { container } = wrap(<PaymentReceipt booking={flight({
+            status: 'confirmed', ticket_numbers: [], ticketed_at: null,
+            passengers: [{ first_name: 'Juan', last_name: 'Dela Cruz', ticket_number: '0011234567890' }],
+        })} />);
+        expect(screen.getByText(/awaiting issue by the airline/i)).toBeInTheDocument();
+        expect(container.textContent).not.toMatch(/001\s?1234567890/);
+    });
+
+    it('prints an issued ticket the way airlines do, beside the flights it covers', () => {
+        wrap(<PaymentReceipt booking={flight()} />);
+        expect(screen.getByText('001 1234567890')).toBeInTheDocument();
+        expect(screen.getByText('7C 2104')).toBeInTheDocument();
+        expect(screen.getByText('DELA CRUZ/JUAN', { selector: 'dd' })).toBeInTheDocument();
+    });
 });
 
 describe('which documents a booking offers', () => {

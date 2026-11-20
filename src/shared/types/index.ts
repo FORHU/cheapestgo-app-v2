@@ -384,6 +384,9 @@ export interface FlightBooking {
     ticket_numbers?: string[];
     booking_reference?: string;
     provider_order_id?: string;
+    /** What went back to the card after a cancellation — a Decimal column, so it may arrive as a string. */
+    refund_amount?: number | string | null;
+    refund_currency?: string | null;
 }
 
 export type AnyBooking = HotelBooking | FlightBooking;

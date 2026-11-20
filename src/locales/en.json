@@ -247,7 +247,8 @@
       "viewMyTrips": "View My Trips",
       "whatsNext": "What's Next",
       "openingDestination": "Opening your destination…",
-      "downloadReceipt": "Download receipt"
+      "downloadReceipt": "Download receipt",
+      "printReceipt": "Print receipt"
     },
     "summary": {
       "adult": "Adult",
@@ -2852,6 +2853,62 @@
       "untilTime": "Until {time}"
     },
     "receipt": {
+      "titleItinerary": "Payment receipt & itinerary",
+      "issuedOn": "Issued {date}",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "introFlight": "This is your record of payment and of the itinerary it covers. Keep it for expense claims and for any question about this booking. Your e-ticket is a separate document, issued by the airline.",
+      "introHotel": "This is your record of payment for the stay below. Keep it for expense claims and for any question about this booking. Your hotel voucher is a separate document.",
+      "sections": {
+        "passengerBooking": "Passenger and booking information",
+        "passengers": "Passengers",
+        "travel": "Travel information",
+        "stay": "Stay",
+        "farePayment": "Fare and payment",
+        "important": "Important information"
+      },
+      "leadPassenger": "Lead passenger",
+      "airlineReference": "Airline reference (PNR)",
+      "ticketStatus": "Ticket",
+      "ticketIssuedOn": "Issued {date}",
+      "ticketPending": "Awaiting issue by the airline",
+      "tripType": "Trip",
+      "tripTypes": {
+        "oneWay": "One-way",
+        "roundTrip": "Round trip",
+        "multiCity": "Multi-city"
+      },
+      "name": "Name",
+      "paxType": "Type",
+      "paxTypes": {
+        "adult": "Adult",
+        "child": "Child",
+        "infant": "Infant"
+      },
+      "eticketNumber": "E-ticket number",
+      "seat": "Seat",
+      "pending": "Pending",
+      "flight": "Flight",
+      "departArrive": "Depart / arrive",
+      "airportTerminal": "Airport / terminal",
+      "cabin": "Class",
+      "outbound": "Outbound",
+      "return": "Return",
+      "terminal": "Terminal {terminal}",
+      "segConfirmed": "Confirmed",
+      "segCancelled": "Cancelled",
+      "localTimes": "All times are local to each airport.",
+      "currency": "Currency",
+      "cancellationFee": "Cancellation fee {amount}",
+      "refundedAmount": "Refunded",
+      "totalInclTaxes": "Total paid (incl. taxes and fees)",
+      "notices": {
+        "checkIn": "Check in with the airline to get your boarding pass. Online check-in usually opens 24–48 hours before departure.",
+        "airport": "Arrive at the airport at least 3 hours before an international flight and 2 hours before a domestic one. Check-in desks usually close 45–60 minutes before departure.",
+        "names": "Bring the passport or ID used to book. The names on it must match this booking.",
+        "liquids": "Check with your departure airport for restrictions on liquids, aerosols and gels in hand baggage.",
+        "baggage": "Your baggage allowance is set by your fare. Confirm it with the airline before you travel."
+      },
       "title": "Payment receipt",
       "paid": "Payment successful",
       "receiptNumber": "Receipt number",
