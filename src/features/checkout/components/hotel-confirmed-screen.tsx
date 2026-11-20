@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Download, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { ACCENT_FILL, type Palette } from '@/features/checkout/lib/palette';
 import { BRAND } from '@/shared/lib/palette';
 import { formatMoney } from '@/features/checkout/lib/format-money';
@@ -10,7 +10,7 @@ import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
 import { CheckoutToolbar } from './checkout-toolbar';
-import { DoneSteps, Fact, MONO, ReceiptPrintStyles, ReferenceBox, textBtn, useCopy } from './receipt-parts';
+import { DoneSteps, Fact, MONO, ReceiptActions, ReceiptPrintStyles, ReferenceBox, textBtn, useCopy } from './receipt-parts';
 
 interface HotelConfirmedScreenProps {
     palette:      Palette;
@@ -59,6 +59,7 @@ export function HotelConfirmedScreen({
     const t = useTranslations('checkout');
     const locale = useLocale();
     const { copied, copy } = useCopy<'reference'>();
+    const receiptRef = useRef<HTMLDivElement>(null);
 
     // As on the flight receipt: the charge is a fact in the currency charged; the selector's
     // currency is a second, approximate line, only once rates are live and only when it differs.
@@ -80,7 +81,7 @@ export function HotelConfirmedScreen({
     const sub: React.CSSProperties = { fontSize: 13, fontWeight: 400, color: palette.muted, marginTop: 2 };
 
     return (
-        <div className="cg-receipt" style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
+        <div ref={receiptRef} className="cg-receipt" style={{ minHeight: '100vh', background: palette.bg, color: palette.text }}>
             <ReceiptPrintStyles />
 
             <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(20px,4vw,44px) clamp(16px,4vw,44px) 80px' }}>
@@ -218,9 +219,7 @@ export function HotelConfirmedScreen({
                             {tAll('checkout.flight.receipt.viewBookings')}
                         </button>
                         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0 20px', marginTop: 8 }}>
-                            <button type="button" onClick={() => window.print()} style={textBtn(palette.title)}>
-                                <Download aria-hidden size={15} /> {tAll('checkout.success.downloadReceipt')}
-                            </button>
+                            <ReceiptActions palette={palette} receipt={receiptRef} reference={bookingId} />
                             <button type="button" onClick={onHome} style={textBtn(palette.icon)}>
                                 {t('planAnotherTrip')}
                             </button>
