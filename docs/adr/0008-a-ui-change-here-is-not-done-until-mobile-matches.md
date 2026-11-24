@@ -31,38 +31,6 @@ So: this pull request merges once the mobile one exists and is approved, and the
 request then bumps its pin to the resulting merge commit and lands. The products disagree for
 the minutes in between, which is the price of not deadlocking.
 
-## The gate
-
-Built in #32. The manifest is `mirrored-screens.json` at the repository root, and
-`.github/workflows/mirrored-screens.yml` runs `scripts/mirrored-screens.ts` on every pull
-request — again whenever its description or labels change, so fixing a red check never takes a
-new commit. Branch protection should require its job, **Mobile parity (ADR-0008)**.
-
-**Linking** means the mobile pull request's full URL in this pull request's description:
-`https://github.com/FORHU/cheapest-go-mobile/pull/<number>`. Not `FORHU/cheapest-go-mobile#123`,
-which reads the same whether 123 is an issue or a pull request — and linking the mobile *issue*
-is the likeliest way to get this wrong. A link inside an HTML comment does not count, so a
-template's example cannot satisfy the check. Approval is not checked: the mobile pull request is
-approved after this one is opened, and a check that went red waiting for it would never be
-re-run.
-
-**The exemption label is `mobile-parity-exempt`**, for a change that does not reach what the
-screen shows or does: a refactor, a test, a renamed import. The check still passes, with a
-warning naming the screens it leaves diverging. `is:pr label:mobile-parity-exempt` lists every
-use, and that list is the signal the next section asks someone to watch.
-
-**A screen is added in the slice that brings it to parity, never before.** An entry blocks web
-pull requests until mobile follows, so an entry for unfinished mobile work blocks the web team
-on work that does not exist yet. Each names the screen, the paths here that make it up, and the
-Flutter files that mirror it. Patterns are written from the repository root: `*` stays within
-one folder, `**` crosses any number, and everything else is literal, so `[locale]` and
-`(dashboard)` are those folders rather than glob character classes. The check fails when a
-pattern matches no file, so a screen that moves cannot leave its entry guarding nothing.
-
-**It gates paths, so it covers a screen's own files.** A shared file that every screen imports
-would block every pull request. Copy and tokens reach mobile another way — through its pinned
-V2 commit (mobile's ADR-0002) — and are not this check's business.
-
 ## Consequences
 
 Web velocity now pays for mobile consistency. A change to a mirrored screen needs a Dart change
