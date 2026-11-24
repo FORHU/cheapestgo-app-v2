@@ -617,6 +617,20 @@ function HotelSearchContent() {
      */
     const [pricesUnavailable, setPricesUnavailable] = useState(false);
     /**
+     * The response body is still open.
+     *
+     * Not the same as `status`, and that is the point. The server sends `done` while it is
+     * still collecting, and `status` goes to `'done'` there on purpose so the spinner does
+     * not revive for the hotels that follow — but a `remove` chunk arrives *after* `done` and
+     * prunes stays that could not be priced. So the count settled, announced itself as final,
+     * and then fell: a client compared two screenshots of the same search and reported 132
+     * stays against 5, and asked whether the two brands shared a database. They do — the two
+     * numbers were one search, read at two moments.
+     *
+     * Only the count reads this. Everything else still keys off `status`.
+     */
+    const [streamOpen, setStreamOpen] = useState(false);
+    /**
      * Stays are off sale. Distinct from an empty result and from `pricesUnavailable`:
      * those are facts about a destination, this is a fact about us, and only this one
      * should replace the page rather than annotate it.
@@ -728,6 +742,7 @@ function HotelSearchContent() {
         let collecting  = false;
         const ctrl = new AbortController();
         setStatus('loading');
+        setStreamOpen(true);
         setHotels([]);
         setPricesUnavailable(false);
         setSelectedId(null);
@@ -771,7 +786,7 @@ function HotelSearchContent() {
                 credentials: 'include',
             });
 
-            if (!res.ok || !res.body) { if (!cancelled) setStatus('error'); return; }
+            if (!res.ok || !res.body) { if (!cancelled) { setStatus('error'); setStreamOpen(false); } return; }
 
             const reader  = res.body.getReader();
             const decoder = new TextDecoder();
@@ -840,11 +855,16 @@ function HotelSearchContent() {
                     } catch { /* skip */ }
                 }
             }
-            if (!cancelled) setStatus(accumulated > 0 ? 'done' : 'error');
+            if (!cancelled) {
+                setStatus(accumulated > 0 ? 'done' : 'error');
+                // The body has closed, so no further prune can arrive and the count is
+                // finally entitled to call itself final.
+                setStreamOpen(false);
+            }
         };
 
-        run().catch(err => { if (!cancelled && err?.name !== 'AbortError') setStatus('error'); });
-        return () => { cancelled = true; ctrl.abort(); };
+        run().catch(err => { if (!cancelled && err?.name !== 'AbortError') setStatus('error'); if (!cancelled) setStreamOpen(false); });
+        return () => { cancelled = true; ctrl.abort(); setStreamOpen(false); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchKey]);
 
@@ -1852,7 +1872,11 @@ function HotelSearchContent() {
                                         <span className="whitespace-nowrap text-[11.5px] font-semibold md:text-[13px]" style={{ color: chrome.text }}>
                                             {/* While streaming this counts places being checked, not stays found.
                                                 "107+ Stays" collapsing to 2 is the difference between the two. */}
-                                            {isStreaming ? t('v2.checkingCount', { count }) : t('v2.staysCount', { count })}
+                                            {/* `streamOpen` as well as `isStreaming`: the server
+                                                sends `done` while still collecting, and a prune
+                                                lands after it. Reading only the status let the
+                                                count announce itself as final and then fall. */}
+                                            {(isStreaming || streamOpen) ? t('v2.checkingCount', { count }) : t('v2.staysCount', { count })}
                                         </span>
                                     </div>
 
