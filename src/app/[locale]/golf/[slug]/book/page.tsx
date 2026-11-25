@@ -3,6 +3,18 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { GolfBookView } from '@/features/golf/components/golf-book-view';
 
+/**
+ * This whole page is driven by `searchParams` (`teeTime`, `players`, `date`) and calls
+ * `notFound()` off them below. Without forcing the route fully dynamic, Next.js may prefetch a
+ * static shell of this route for the `<Link>` that sends a customer here (tee-time-picker.tsx) —
+ * a prefetch request that carries the path but not the query string. That shell render sees
+ * `searchParams.teeTime` as empty, hits the same `notFound()`, and the client router cache can
+ * then serve that cached not-found result for the real navigation that follows, even though the
+ * real URL has a perfectly valid teeTime. `flights/search/page.tsx` is the same shape of page
+ * (entirely searchParams-driven) and carries the same fix.
+ */
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata(): Promise<Metadata> {
     const t = await getTranslations('golf.booking');
     return {

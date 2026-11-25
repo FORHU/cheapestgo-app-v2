@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Clock, CreditCard, Flag, XCircle, type LucideIcon } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Clock, CreditCard, Flag, XCircle, type LucideIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LandingHeader } from '@/features/landing/components/landing-header';
@@ -12,7 +12,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { cn } from '@/shared/lib/cn';
 import { useSupportWidget } from '@/features/support/lib/supportWidget.store';
 import { cancelGolfBooking, fetchGolfBooking } from '@/features/golf/api/golf.api';
-import { GolfBookingSummary } from '@/features/golf/components/golf-booking-summary';
+import { DetailPanel, DetailRow, usePaidEstimate } from '@/features/trips/components/booking-card-parts';
 import { formatExtrasParam } from '@/features/golf/lib/extras';
 import { money, teeTimeLabels } from '@/features/golf/lib/format';
 import type { GolfBooking } from '@/features/golf/types';
@@ -125,28 +125,70 @@ export function GolfBookingView({ reference }: { reference: string }) {
                         return `${date} ${time}`;
                     };
                     const refunded = b.refundAmount > 0;
+                    // A card was actually submitted for every status but these two — a hold still
+                    // waiting on payment, or one that ran out before it was paid. Only then is there
+                    // a payment method or a booked-on date to show; the amount itself is shown
+                    // regardless, as a neutral fact, never as a claim that it was charged.
+                    const paid = b.status !== 'held' && b.status !== 'expired';
+                    const { date: teeDate, time: teeTime } = teeTimeLabels(b.startsAt, b.course.timezone, locale);
+                    const bookedOnLabel = new Date(b.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
                     return (
                         <>
-                            <h1 className="mb-5 text-lg font-bold text-slate-900 md:text-2xl dark:text-slate-50">{t('yourBooking')}</h1>
+                            <div className="mb-5">
+                                <h1 className="text-lg font-bold text-slate-900 md:text-2xl dark:text-slate-50">{t('yourBooking')}</h1>
+                                <p className="mt-0.5 text-xs text-slate-500 md:text-sm dark:text-white/55">
+                                    {t('reference')}: <span className="font-mono font-semibold tracking-wider">{b.reference}</span>
+                                </p>
+                            </div>
                             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-                                <div className="h-fit space-y-5 rounded-2xl bg-white p-5 shadow-sm sm:p-6 dark:bg-slate-900">
-                                    <div className="flex items-start gap-3">
-                                        <Icon size={26} className={cn('mt-0.5 shrink-0', tone)} aria-hidden />
-                                        <div>
-                                            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">{t(`status.${key}.title`)}</h2>
-                                            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                                                {b.status === 'cancelled' && refunded
-                                                    ? t('refunded', { amount: money(b.refundAmount, b.currency, locale) })
-                                                    : t(`status.${key}.body`, { deadline: dateTime(b.decideBy), holdEnds: dateTime(b.holdExpiresAt) })}
-                                            </p>
+                                <div className="space-y-5">
+                                    <div className="rounded-[20px] bg-white p-5 shadow-sm sm:p-6 dark:bg-slate-900">
+                                        <div className="flex items-start gap-3">
+                                            <Icon size={26} className={cn('mt-0.5 shrink-0', tone)} aria-hidden />
+                                            <div>
+                                                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">{t(`status.${key}.title`)}</h2>
+                                                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                                                    {b.status === 'cancelled' && refunded
+                                                        ? t('refunded', { amount: money(b.refundAmount, b.currency, locale) })
+                                                        : t(`status.${key}.body`, { deadline: dateTime(b.decideBy), holdEnds: dateTime(b.holdExpiresAt) })}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <dl className="space-y-1.5 border-t border-slate-100 pt-4 text-sm dark:border-white/10">
-                                        <Detail label={t('reference')} value={b.reference} />
-                                        <Detail label={t('leadName')} value={b.leadName} />
-                                        <Detail label={t('email')} value={b.contactEmail} />
-                                    </dl>
+                                    <DetailPanel title={t('bookingDetails')} icon={Calendar}>
+                                        <div className="mb-3 border-b border-slate-100 pb-3 dark:border-white/10">
+                                            <p className="text-[15px] font-semibold text-slate-900 dark:text-white">{b.course.name}</p>
+                                            <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">{b.course.city}, {b.course.country}</p>
+                                        </div>
+                                        <DetailRow label={t('date')} value={teeDate} />
+                                        <DetailRow label={t('time')} value={teeTime} />
+                                        <DetailRow label={t('players')} value={String(b.players)} />
+                                        <DetailRow label={t('leadName')} value={b.leadName} />
+                                        <DetailRow label={t('email')} value={b.contactEmail} />
+                                    </DetailPanel>
+
+                                    {b.extras.length > 0 && (
+                                        <DetailPanel title={t('extrasHeading')} icon={Flag}>
+                                            {b.extras.map((e) => (
+                                                <DetailRow
+                                                    key={e.code}
+                                                    label={t('extraLine', { name: t(`extraNames.${e.code}`), count: e.quantity })}
+                                                    value={money(e.total, b.currency, locale)}
+                                                />
+                                            ))}
+                                        </DetailPanel>
+                                    )}
+                                </div>
+
+                                <div className="space-y-5 lg:sticky lg:top-24">
+                                    <DetailPanel title={t('payment')} icon={CreditCard}>
+                                        <DetailRow label={t('total')} value={<span className="text-[16px] font-bold">{money(b.total, b.currency, locale)}</span>} />
+                                        {paid && <PaidEstimateRow amount={b.total} currency={b.currency} />}
+                                        {paid && <DetailRow label={t('paymentMethod')} value={t('cardStripe')} />}
+                                        {paid && <DetailRow label={t('bookedOn')} value={bookedOnLabel} />}
+                                        {refunded && <DetailRow label={t('refundedAmount')} value={money(b.refundAmount, b.currency, locale)} />}
+                                    </DetailPanel>
 
                                     {(b.status === 'requested' || b.status === 'confirmed') && (
                                         <Cancellation
@@ -158,27 +200,19 @@ export function GolfBookingView({ reference }: { reference: string }) {
                                     )}
 
                                     {b.status === 'held' && (
-                                        <Link
-                                            href={`/golf/${b.course.slug}/book?teeTime=${b.teeTimeId}&players=${b.players}${b.extras.length > 0 ? `&extras=${formatExtrasParam(b.extras)}` : ''}`}
-                                            className={stateActionClass}
-                                        >{t('finishPaying')}</Link>
+                                        <div className="rounded-[20px] bg-white p-5 shadow-sm dark:bg-slate-900">
+                                            <Link
+                                                href={`/golf/${b.course.slug}/book?teeTime=${b.teeTimeId}&players=${b.players}${b.extras.length > 0 ? `&extras=${formatExtrasParam(b.extras)}` : ''}`}
+                                                className={stateActionClass}
+                                            >{t('finishPaying')}</Link>
+                                        </div>
                                     )}
                                     {(b.status === 'expired' || b.status === 'declined' || b.status === 'cancelled') && (
-                                        <Link href={`/golf/${b.course.slug}`} className={stateActionClass}>{t('pickAnother')}</Link>
+                                        <div className="rounded-[20px] bg-white p-5 shadow-sm dark:bg-slate-900">
+                                            <Link href={`/golf/${b.course.slug}`} className={stateActionClass}>{t('pickAnother')}</Link>
+                                        </div>
                                     )}
                                 </div>
-
-                                <GolfBookingSummary
-                                    course={b.course}
-                                    startsAt={b.startsAt}
-                                    timezone={b.course.timezone}
-                                    players={b.players}
-                                    currency={b.currency}
-                                    greenFee={b.greenFee}
-                                    extras={b.extras}
-                                    serviceFee={b.serviceFee}
-                                    total={b.total}
-                                />
                             </div>
                         </>
                     );
@@ -189,6 +223,15 @@ export function GolfBookingView({ reference }: { reference: string }) {
 }
 
 const OUTLINE = 'inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:text-slate-200 dark:hover:border-white/30';
+
+/** The payment panel's "Approx. in [currency]" row — its own component so `usePaidEstimate`
+ *  (a hook) is only ever called while this is actually mounted, never behind a plain condition
+ *  inside `GolfBookingView` itself. */
+function PaidEstimateRow({ amount, currency }: { amount: number; currency: string }) {
+    const estimate = usePaidEstimate(amount, currency);
+    if (!estimate) return null;
+    return <DetailRow label={estimate.label} value={estimate.amount} />;
+}
 
 /**
  * The way out of a booking. It asks first and says what comes back, because a refund takes days to
@@ -230,7 +273,7 @@ function Cancellation({ booking: b, until, onCancelled, onMovedOn }: {
 
     if (!b.cancellable) {
         return (
-            <div className="space-y-3 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-white/10 dark:text-slate-300">
+            <div className="space-y-3 rounded-[20px] bg-white p-5 text-sm text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
                 <p>{t('freeCancelEnded', { date: until })}</p>
                 <button
                     type="button"
@@ -242,7 +285,7 @@ function Cancellation({ booking: b, until, onCancelled, onMovedOn }: {
     }
 
     return (
-        <div className="space-y-3 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-white/10 dark:text-slate-300">
+        <div className="space-y-3 rounded-[20px] bg-white p-5 text-sm text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
             {!isRequest && <p>{t('freeCancelUntil', { date: until })}</p>}
 
             {!asking ? (
@@ -269,15 +312,6 @@ function Cancellation({ booking: b, until, onCancelled, onMovedOn }: {
             )}
 
             {error && <p role="alert" className="text-rose-600 dark:text-rose-400">{error}</p>}
-        </div>
-    );
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-slate-500 dark:text-slate-400">{label}</dt>
-            <dd className="text-right font-medium break-all text-slate-800 dark:text-slate-100">{value}</dd>
         </div>
     );
 }

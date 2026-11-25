@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "node scripts/test.cjs run",
+    "test:watch": "node scripts/test.cjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.8.1",

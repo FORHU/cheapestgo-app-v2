@@ -32,6 +32,7 @@ import {
     Flag,
     CalendarCheck,
     Scale,
+    FlaskConical,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { adminGolfApi } from '@/features/golf/api/golf.api';
@@ -87,6 +88,7 @@ const NAV_GROUPS = [
             { href: '/admin/stripe',       label: 'Stripe',       icon: CreditCard },
             { href: '/admin/duffel',       label: 'Duffel',       icon: Plane },
             { href: '/admin/travelgatex',  label: 'TravelgateX',  icon: Globe },
+            { href: '/admin/golf-api-demo', label: 'Golf API (Mock)', icon: FlaskConical },
             { href: '/admin/mobile',       label: 'Mobile App',   icon: Smartphone },
             { href: '/admin/crons',        label: 'Crons',        icon: Clock },
         ],

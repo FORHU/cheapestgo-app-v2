@@ -306,14 +306,26 @@ export const useSearchStore = create<SearchState>()(
             storage: {
                 getItem: (name) => {
                     if (typeof window === 'undefined') return null;
-                    const str = localStorage.getItem(name);
-                    return str ? JSON.parse(str) : null;
+                    try {
+                        const str = window.localStorage?.getItem(name);
+                        return str ? JSON.parse(str) : null;
+                    } catch {
+                        return null;
+                    }
                 },
                 setItem: (name, value) => {
-                    if (typeof window !== 'undefined') localStorage.setItem(name, JSON.stringify(value));
+                    if (typeof window !== 'undefined') {
+                        try {
+                            window.localStorage?.setItem(name, JSON.stringify(value));
+                        } catch {}
+                    }
                 },
                 removeItem: (name) => {
-                    if (typeof window !== 'undefined') localStorage.removeItem(name);
+                    if (typeof window !== 'undefined') {
+                        try {
+                            window.localStorage?.removeItem(name);
+                        } catch {}
+                    }
                 },
             },
             partialize: (s) => ({

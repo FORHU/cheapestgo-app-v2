@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { AlertCircle, ArrowLeft, Clock, Flag, ShieldCheck } from 'lucide-react';
@@ -19,9 +19,13 @@ import { checkoutPalette, DANGER } from '@/features/checkout/lib/palette';
 import { fetchTeeTimeQuote, startGolfBooking } from '@/features/golf/api/golf.api';
 import { GolfBookingSummary } from '@/features/golf/components/golf-booking-summary';
 import { GolfExtrasPicker } from '@/features/golf/components/golf-extras-picker';
+import { GolfServicesPicker } from '@/features/golf/components/golf-services-picker';
 import { formatExtrasParam, parseExtrasParam } from '@/features/golf/lib/extras';
 import { money, teeTimeLabels } from '@/features/golf/lib/format';
+import { golfServiceBookingBody, golfServiceInvoiceLines, type GolfServiceLine } from '@/features/golf/lib/golf-services-pricing';
 import type { GolfExtraChoice, GolfExtraCode, GolfExtraLine, StartedGolfBooking, TeeTimeQuote } from '@/features/golf/types';
+import { golfMockApi } from '@/features/golf-api-demo/api/golfMockApi.client';
+import type { MockServiceBooking } from '@/features/golf-api-demo/types';
 
 type HttpError = Error & { status?: number; code?: string; body?: Record<string, unknown> };
 type Load =
@@ -103,6 +107,13 @@ export function GolfBookView({ slug, teeTimeId, players, date, extras = '' }: { 
     const [notice, setNotice] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Golf Services (api-v2's separate mock catalog): pure selection state, reported up by the
+    // picker. Locked in and actually submitted to golfMockApi only once the tee time's own hold
+    // is taken below — the same moment extras lock in. Never read by startGolfBooking/Stripe.
+    const [serviceLines, setServiceLines] = useState<GolfServiceLine[]>([]);
+    const [submittedServices, setSubmittedServices] = useState<Array<{ line: GolfServiceLine; booking: MockServiceBooking | null }>>([]);
+    const submittedForRef = useRef<string | null>(null);
+
     // On the day and party in hand. Its links replace this page: a checkout left behind is what the
     // browser's Back would find, with its tee time held or gone by then.
     const backToCourse = `/golf/${slug}?${date ? `date=${date}&` : ''}players=${players}`;
@@ -161,7 +172,7 @@ export function GolfBookView({ slug, teeTimeId, players, date, extras = '' }: { 
     };
 
     const begin = async () => {
-        if (load.status !== 'ready' || busy || repricing) return;
+        if (load.status !== 'ready' || busy || repricing || !user) return;
         const name = leadName.trim();
         if (!name) { setError(t('leadNameRequired')); return; }
         setBusy(true);
@@ -178,6 +189,19 @@ export function GolfBookView({ slug, teeTimeId, players, date, extras = '' }: { 
                 return;
             }
             setStarted(out);
+            // Selected Golf Services lock in here too, the same moment as extras — one request per
+            // selected line against api-v2's separate mock catalog, never touching this real hold.
+            // Guarded so a given hold never submits its services twice (no duplicate charges there).
+            if (serviceLines.length > 0 && submittedForRef.current !== out.reference) {
+                submittedForRef.current = out.reference;
+                const courseId = load.quote.course.slug;
+                const results = await Promise.allSettled(serviceLines.map((line) =>
+                    golfMockApi.bookService(line.service.id, golfServiceBookingBody(line, { leadName: name, contactEmail: user.email, courseId, currency: load.quote.currency }))));
+                setSubmittedServices(serviceLines.map((line, i) => {
+                    const r = results[i];
+                    return { line, booking: r.status === 'fulfilled' ? r.value.data : null };
+                }));
+            }
         } catch (e) {
             const err = e as HttpError;
             if (err?.code === 'PRICE_CHANGED') {
@@ -262,6 +286,12 @@ export function GolfBookView({ slug, teeTimeId, players, date, extras = '' }: { 
                                         onChange={choose}
                                     />
                                 )}
+                                {!started && user && (
+                                    <GolfServicesPicker currency={load.quote.currency} onSelectionChange={setServiceLines} />
+                                )}
+                                {started && submittedServices.length > 0 && (
+                                    <GolfServicesSubmitted submitted={submittedServices} />
+                                )}
                                 <div className="rounded-2xl bg-white p-5 shadow-sm sm:p-6 dark:bg-slate-900">
                                     {!started ? (
                                         <div className="space-y-5">
@@ -323,11 +353,43 @@ export function GolfBookView({ slug, teeTimeId, players, date, extras = '' }: { 
                                 extras={started?.extras ?? load.quote.extras}
                                 serviceFee={started?.serviceFee ?? load.quote.serviceFee}
                                 total={started?.total ?? load.quote.total}
+                                services={golfServiceInvoiceLines(serviceLines)}
+                                servicesCurrency={serviceLines[0]?.service.currency}
                             />
                         </div>
                     )
                 )}
             </main>
+        </div>
+    );
+}
+
+/** What each selected Golf Service turned into, once the hold locked them in — api-v2's own reference and total, read back exactly as it answered, never recomputed here. */
+function GolfServicesSubmitted({ submitted }: { submitted: Array<{ line: GolfServiceLine; booking: MockServiceBooking | null }> }) {
+    const t = useTranslations('golf.booking.services');
+    const locale = useLocale();
+    return (
+        <div className="rounded-2xl bg-white p-5 shadow-sm sm:p-6 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-50">{t('heading')}</h2>
+            <ul className="mt-3 divide-y divide-slate-100 dark:divide-white/10">
+                {submitted.map(({ line, booking }) => (
+                    <li key={line.service.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                        <span className="text-slate-700 dark:text-slate-200">{line.service.name}</span>
+                        {booking ? (
+                            <span className="text-right text-xs text-slate-500 dark:text-slate-400">
+                                <span className="font-mono">{booking.reference}</span>{' · '}
+                                {(() => {
+                                    const total = booking.displayTotal ?? booking.total;
+                                    const currency = booking.displayCurrency ?? booking.currency;
+                                    return total != null ? money(total, currency, locale) : t('quotePending');
+                                })()}
+                            </span>
+                        ) : (
+                            <span className="text-xs text-rose-600 dark:text-rose-400">{t('error')}</span>
+                        )}
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }

@@ -112,6 +112,48 @@ describe('GolfBookingView', () => {
         renderWithIntl(<GolfBookingView reference="CG-ABC123" />);
         expect(await screen.findByRole('button', { name: en.golf.retry })).toBeInTheDocument();
     });
+
+    it('shows the course, tee time and players in a booking-details panel', async () => {
+        renderWithIntl(<GolfBookingView reference="CG-ABC123" />);
+        await screen.findByText('CG-ABC123');
+        expect(screen.getByText(B.bookingDetails)).toBeInTheDocument();
+        expect(screen.getByText('Fuji Lakeside')).toBeInTheDocument();
+        expect(screen.getByText('Gotemba, Japan')).toBeInTheDocument();
+        expect(screen.getByText('2')).toBeInTheDocument(); // players
+    });
+
+    it('shows a payment method and booked-on date once a card was actually submitted (requested)', async () => {
+        renderWithIntl(<GolfBookingView reference="CG-ABC123" />);
+        await screen.findByText('CG-ABC123');
+        expect(screen.getByText(B.payment)).toBeInTheDocument();
+        expect(screen.getByText(B.paymentMethod)).toBeInTheDocument();
+        expect(screen.getByText(B.cardStripe)).toBeInTheDocument();
+        expect(screen.getByText(B.bookedOn)).toBeInTheDocument();
+    });
+
+    it.each(['held', 'expired'] as const)('never shows a payment method or booked-on date for a %s booking — nothing was charged', async (status) => {
+        api.fetchGolfBooking.mockResolvedValueOnce(booking({ status }));
+        renderWithIntl(<GolfBookingView reference="CG-ABC123" />);
+        await screen.findByText('CG-ABC123');
+        expect(screen.queryByText(B.paymentMethod)).toBeNull();
+        expect(screen.queryByText(B.bookedOn)).toBeNull();
+        // The amount itself is still shown, as a neutral fact — just not claimed as paid.
+        expect(screen.getByText('₩204,124')).toBeInTheDocument();
+    });
+
+    it('shows the refunded amount as its own fact once a cancelled booking was actually refunded', async () => {
+        api.fetchGolfBooking.mockResolvedValueOnce(booking({ status: 'cancelled', closeReason: 'cancelled_by_customer', refundAmount: 204124, cancellable: false }));
+        renderWithIntl(<GolfBookingView reference="CG-ABC123" />);
+        await screen.findByText('CG-ABC123');
+        expect(screen.getByText(B.refundedAmount)).toBeInTheDocument();
+        expect(screen.getAllByText('₩204,124').length).toBeGreaterThanOrEqual(2); // the total, and the refund
+    });
+
+    it('never shows a refunded-amount row when nothing was refunded', async () => {
+        renderWithIntl(<GolfBookingView reference="CG-ABC123" />);
+        await screen.findByText('CG-ABC123');
+        expect(screen.queryByText(B.refundedAmount)).toBeNull();
+    });
 });
 
 describe('GolfBookingView cancelling', () => {
