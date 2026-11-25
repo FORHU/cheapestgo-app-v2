@@ -10,9 +10,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Check, Copy, CopyCheck } from 'lucide-react';
+import { Check, Copy, CopyCheck, Download, Loader2, Printer } from 'lucide-react';
 import type { Palette } from '@/features/checkout/lib/palette';
 import { BRAND } from '@/shared/lib/palette';
+import { pdfFilename, useSavePdf } from '@/shared/lib/receipt-pdf';
 
 /** Prices, times and references: tabular figures, so they line up and read as data. */
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
@@ -143,6 +144,10 @@ export function ReceiptPrintStyles() {
                 .cg-receipt { background: #fff !important; }
                 .receipt-card { background: #fff !important; border: 1px solid #ddd !important; }
             }
+            /* The downloaded PDF is the printed copy, so it takes the same overrides. */
+            html[data-pdf] .cg-receipt, html[data-pdf] .cg-receipt * { color: #000 !important; box-shadow: none !important; }
+            html[data-pdf] .cg-receipt { background: #fff !important; }
+            html[data-pdf] .receipt-card { background: #fff !important; border: 1px solid #ddd !important; }
         `}</style>
     );
 }
@@ -152,3 +157,41 @@ export const textBtn = (color: string): React.CSSProperties => ({
     display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, padding: '0 8px', border: 'none',
     background: 'transparent', color, fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
 });
+
+/**
+ * Download and Print, side by side. Download saves the printed copy as a PDF without opening the
+ * print dialog (`receipt-pdf.ts`); Print is still there for anyone who wants paper.
+ *
+ * `receipt` is the element print would print — the screen's root — and `reference` names the file.
+ */
+export function ReceiptActions({ palette, receipt, reference }: {
+    palette:   Palette;
+    receipt:   React.RefObject<HTMLElement | null>;
+    reference: string | null;
+}) {
+    const tAll = useTranslations();
+    const { save, busy, failed } = useSavePdf();
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => save(receipt.current, pdfFilename('Receipt', reference))}
+                disabled={busy}
+                aria-busy={busy}
+                style={{ ...textBtn(palette.title), cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}
+            >
+                {busy ? <Loader2 aria-hidden size={15} className="animate-spin" /> : <Download aria-hidden size={15} />}
+                {busy ? tAll('trips.invoice.generating') : tAll('checkout.success.downloadReceipt')}
+            </button>
+            <button type="button" onClick={() => window.print()} style={textBtn(palette.title)}>
+                <Printer aria-hidden size={15} /> {tAll('checkout.success.printReceipt')}
+            </button>
+            {failed && (
+                <p role="status" style={{ flexBasis: '100%', textAlign: 'center', fontSize: 13, color: palette.muted, margin: 0 }}>
+                    {tAll('trips.invoice.pdfError')}
+                </p>
+            )}
+        </>
+    );
+}

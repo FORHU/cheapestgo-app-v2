@@ -1034,6 +1034,22 @@ describe('a fare that has gone', () => {
         expect(screen.queryByTestId('payment-element')).not.toBeInTheDocument();
     });
 
+    it('translates an unavailable flight provider instead of showing the API message', async () => {
+        post.mockImplementation(async (path: string) => {
+            if (path === '/flights/book') {
+                throw httpError(503, { error: 'UPSTREAM_UNAVAILABLE', message: 'Duffel is unavailable.' });
+            }
+            throw new Error(`unexpected POST ${path}`);
+        });
+
+        renderPage();
+        fillPassenger();
+        fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }));
+
+        expect(await screen.findByText("We couldn't reach the airline to check this fare. Please try again shortly.")).toBeInTheDocument();
+        expect(screen.queryByText('Duffel is unavailable.')).not.toBeInTheDocument();
+    });
+
     it('sends the traveller back to their search when it sells out after the card', async () => {
         api(() => { throw httpError(410, { error: 'OFFER_EXPIRED', message: 'x' }); });
 

@@ -41,7 +41,8 @@
       "orDivider": "或",
       "terms": "登录即表示您同意我们的{terms}和{privacy}。",
       "termsLink": "服务条款",
-      "privacyLink": "隐私政策"
+      "privacyLink": "隐私政策",
+      "invalidCredentials": "找不到与这些信息匹配的账户"
     },
     "forgotPasswordQ": "忘记密码？",
     "createOne": "创建账户",
@@ -64,6 +65,8 @@
     "noResetToken": "未找到重置令牌，请使用发送到您邮箱的链接。",
     "resetPassword": "重置密码",
     "atLeast8": "至少 8 个字符",
+    "atLeastOneUppercase": "至少包含一个大写字母",
+    "atLeastOneNumber": "至少包含一个数字",
     "repeatPassword": "请再次输入密码",
     "notUsedBefore": "请选择一个您未在此使用过的密码",
     "firstNameShort": "名",
@@ -247,7 +250,8 @@
       "room": "房型",
       "total": "总计",
       "whatsNext": "接下来",
-      "downloadReceipt": "下载收据"
+      "downloadReceipt": "下载收据",
+      "printReceipt": "打印收据"
     },
     "summary": {
       "adult": "位成人",
@@ -645,6 +649,13 @@
       "checkingPrice": "正在确认价格…",
       "flightDetails": "航班详情"
     },
+    "durationParts": {
+      "hoursMinutes": "{hours}小时{minutes}分",
+      "minutesOnly": "{minutes}分"
+    },
+    "errors": {
+      "upstreamUnavailable": "无法联系航空公司核实此票价。请稍后重试。"
+    },
     "itinerary": {
       "arriveAt": "抵达",
       "departFrom": "出发",
@@ -702,6 +713,7 @@
       "selectAllAirports": "选择所有机场",
       "showAll": "显示全部",
       "showLess": "收起",
+      "showCount": "显示{count}个航班",
       "sortBy": "排序方式",
       "stops": "中转",
       "times": "时间",
@@ -2852,6 +2864,62 @@
       "untilTime": "截至 {time}"
     },
     "receipt": {
+      "titleItinerary": "付款收据及行程单",
+      "issuedOn": "开具日期 {date}",
+      "cancelled": "已取消",
+      "refunded": "已退款",
+      "introFlight": "这是本次预订的付款记录及其所含行程。请妥善保存，用于报销或咨询本预订相关问题。电子客票是由航空公司出具的另一份文件。",
+      "introHotel": "这是以下住宿的付款记录。请妥善保存，用于报销或咨询本预订相关问题。酒店入住凭证是另一份文件。",
+      "sections": {
+        "passengerBooking": "乘客及预订信息",
+        "passengers": "乘客",
+        "travel": "航班信息",
+        "stay": "住宿",
+        "farePayment": "票价及付款",
+        "important": "重要信息"
+      },
+      "leadPassenger": "主要乘客",
+      "airlineReference": "航空公司订座记录（PNR）",
+      "ticketStatus": "客票",
+      "ticketIssuedOn": "{date} 出票",
+      "ticketPending": "等待航空公司出票",
+      "tripType": "行程",
+      "tripTypes": {
+        "oneWay": "单程",
+        "roundTrip": "往返",
+        "multiCity": "多程"
+      },
+      "name": "姓名",
+      "paxType": "类型",
+      "paxTypes": {
+        "adult": "成人",
+        "child": "儿童",
+        "infant": "婴儿"
+      },
+      "eticketNumber": "电子客票号",
+      "seat": "座位",
+      "pending": "待出票",
+      "flight": "航班",
+      "departArrive": "出发 / 到达",
+      "airportTerminal": "机场 / 航站楼",
+      "cabin": "舱位",
+      "outbound": "去程",
+      "return": "回程",
+      "terminal": "{terminal} 号航站楼",
+      "segConfirmed": "已确认",
+      "segCancelled": "已取消",
+      "localTimes": "所有时间均为各机场当地时间。",
+      "currency": "币种",
+      "cancellationFee": "取消费 {amount}",
+      "refundedAmount": "退款金额",
+      "totalInclTaxes": "实付总额（含税费）",
+      "notices": {
+        "checkIn": "请向航空公司办理值机以获取登机牌。网上值机通常在起飞前24–48小时开放。",
+        "airport": "国际航班请至少提前3小时、国内航班至少提前2小时到达机场。值机柜台通常在起飞前45–60分钟关闭。",
+        "names": "请携带预订时使用的护照或身份证件，证件上的姓名须与本预订一致。",
+        "liquids": "有关手提行李中液体、气雾剂和凝胶的限制，请向出发机场咨询。",
+        "baggage": "行李额度由您的票价决定，请在出行前向航空公司确认。"
+      },
       "title": "付款收据",
       "paid": "支付成功",
       "receiptNumber": "收据编号",

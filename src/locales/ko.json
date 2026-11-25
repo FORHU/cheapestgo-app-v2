@@ -41,7 +41,8 @@
       "orDivider": "또는",
       "terms": "로그인 시 {terms} 및 {privacy}에 동의하게 됩니다.",
       "termsLink": "이용약관",
-      "privacyLink": "개인정보처리방침"
+      "privacyLink": "개인정보처리방침",
+      "invalidCredentials": "입력하신 정보와 일치하는 계정을 찾을 수 없습니다"
     },
     "forgotPasswordQ": "비밀번호를 잊으셨나요?",
     "createOne": "계정 만들기",
@@ -64,6 +65,8 @@
     "noResetToken": "재설정 토큰을 찾을 수 없습니다. 이메일로 보내드린 링크를 사용해 주세요.",
     "resetPassword": "비밀번호 재설정",
     "atLeast8": "8자 이상",
+    "atLeastOneUppercase": "대문자를 하나 이상 포함",
+    "atLeastOneNumber": "숫자를 하나 이상 포함",
     "repeatPassword": "비밀번호를 다시 입력하세요",
     "notUsedBefore": "이전에 사용하지 않은 비밀번호를 선택하세요",
     "firstNameShort": "이름",
@@ -247,7 +250,8 @@
       "room": "객실",
       "total": "합계",
       "whatsNext": "다음 단계",
-      "downloadReceipt": "영수증 다운로드"
+      "downloadReceipt": "영수증 다운로드",
+      "printReceipt": "영수증 인쇄"
     },
     "summary": {
       "adult": "명",
@@ -645,6 +649,13 @@
       "checkingPrice": "요금 확인 중…",
       "flightDetails": "항공편 상세 정보"
     },
+    "durationParts": {
+      "hoursMinutes": "{hours}시간 {minutes}분",
+      "minutesOnly": "{minutes}분"
+    },
+    "errors": {
+      "upstreamUnavailable": "항공사에 연락해 요금을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요."
+    },
     "itinerary": {
       "arriveAt": "도착",
       "departFrom": "출발",
@@ -702,6 +713,7 @@
       "selectAllAirports": "모든 공항 선택",
       "showAll": "모두 보기",
       "showLess": "간략히 보기",
+      "showCount": "항공편 {count}편 보기",
       "sortBy": "정렬 기준",
       "stops": "경유",
       "times": "시간대",
@@ -2852,6 +2864,62 @@
       "untilTime": "{time}까지"
     },
     "receipt": {
+      "titleItinerary": "결제 영수증 및 여정표",
+      "issuedOn": "발행일 {date}",
+      "cancelled": "취소됨",
+      "refunded": "환불됨",
+      "introFlight": "이 예약의 결제 내역과 해당 여정에 대한 기록입니다. 경비 정산 및 예약 관련 문의를 위해 보관해 주세요. 전자항공권은 항공사가 발행하는 별도의 문서입니다.",
+      "introHotel": "아래 숙박에 대한 결제 기록입니다. 경비 정산 및 예약 관련 문의를 위해 보관해 주세요. 호텔 바우처는 별도의 문서입니다.",
+      "sections": {
+        "passengerBooking": "탑승객 및 예약 정보",
+        "passengers": "탑승객",
+        "travel": "항공편 정보",
+        "stay": "숙박",
+        "farePayment": "요금 및 결제",
+        "important": "중요 안내"
+      },
+      "leadPassenger": "대표 탑승객",
+      "airlineReference": "항공사 예약번호(PNR)",
+      "ticketStatus": "항공권",
+      "ticketIssuedOn": "{date} 발권",
+      "ticketPending": "항공사 발권 대기 중",
+      "tripType": "여정",
+      "tripTypes": {
+        "oneWay": "편도",
+        "roundTrip": "왕복",
+        "multiCity": "다구간"
+      },
+      "name": "이름",
+      "paxType": "구분",
+      "paxTypes": {
+        "adult": "성인",
+        "child": "소아",
+        "infant": "유아"
+      },
+      "eticketNumber": "전자항공권 번호",
+      "seat": "좌석",
+      "pending": "대기 중",
+      "flight": "항공편",
+      "departArrive": "출발 / 도착",
+      "airportTerminal": "공항 / 터미널",
+      "cabin": "좌석 등급",
+      "outbound": "가는 편",
+      "return": "오는 편",
+      "terminal": "터미널 {terminal}",
+      "segConfirmed": "확정",
+      "segCancelled": "취소됨",
+      "localTimes": "모든 시간은 각 공항의 현지 시간입니다.",
+      "currency": "통화",
+      "cancellationFee": "취소 수수료 {amount}",
+      "refundedAmount": "환불 금액",
+      "totalInclTaxes": "총 결제 금액(세금 및 수수료 포함)",
+      "notices": {
+        "checkIn": "항공사에서 체크인하여 탑승권을 받으세요. 온라인 체크인은 보통 출발 24~48시간 전에 시작됩니다.",
+        "airport": "국제선은 출발 3시간 전, 국내선은 2시간 전까지 공항에 도착하세요. 체크인 카운터는 보통 출발 45~60분 전에 마감됩니다.",
+        "names": "예약에 사용한 여권 또는 신분증을 지참하세요. 신분증의 이름이 예약과 일치해야 합니다.",
+        "liquids": "기내 반입 수하물의 액체, 에어로졸, 젤 제한 사항은 출발 공항에 확인하세요.",
+        "baggage": "수하물 허용량은 요금에 따라 다릅니다. 여행 전 항공사에 확인하세요."
+      },
       "title": "결제 영수증",
       "paid": "결제 완료",
       "receiptNumber": "영수증 번호",

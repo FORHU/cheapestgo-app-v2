@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import type { FlightOffer, NormalizedSegment, SegmentEnd } from '@/shared/types';
 import { cn } from '@/shared/lib/cn';
 import {
-    airportLabel, cabinLabel, dayOffset, formatDateTime, formatDuration, formatTime,
+    airportLabel, cabinTranslationKey, dayOffset, formatDateTime, formatDuration, formatTime,
     groupSegmentsBySlice, layoverMinutes,
 } from '../lib/flight-utils';
 
@@ -86,6 +86,7 @@ function EndColumn({
     clock: ItineraryClock;
 }) {
     const t = useTranslations('flights.itinerary');
+    const tAll = useTranslations();
     const locale = useLocale();
     const days = align === 'right' ? clock.dayOffset(departedAt, end?.time) : 0;
 
@@ -108,7 +109,7 @@ function EndColumn({
                 items={[
                     clock.dateTime(end?.time, locale),
                     terminal,
-                    `${cabinLabel(segment.cabinClass)} ${segment.flightNumber ?? ''}`.trim(),
+                    `${tAll(cabinTranslationKey(segment.cabinClass))} ${segment.flightNumber ?? ''}`.trim(),
                     segment.aircraft,
                 ]}
             />
@@ -118,7 +119,11 @@ function EndColumn({
 
 function LegRow({ segment, clock }: { segment: NormalizedSegment; clock: ItineraryClock }) {
     const t = useTranslations('flights.itinerary');
-    const duration = formatDuration(segment.duration);
+    const tAll = useTranslations();
+    const duration = formatDuration(segment.duration, {
+        hoursMinutes: (hours, minutes) => tAll('flights.durationParts.hoursMinutes', { hours, minutes }),
+        minutesOnly: (minutes) => tAll('flights.durationParts.minutesOnly', { minutes }),
+    });
 
     return (
         <div className="flex items-start justify-between gap-2 md:gap-4">
@@ -147,13 +152,20 @@ function LegRow({ segment, clock }: { segment: NormalizedSegment; clock: Itinera
 /** The wait between two flights — a pill, because it is what a traveller scanning a connection most needs to see. */
 function LayoverNote({ minutes, airport }: { minutes: number; airport: string }) {
     const t = useTranslations('flights.itinerary');
+    const tAll = useTranslations();
     return (
         <div className="flex flex-col items-center gap-1.5 text-center">
             <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-amber-800 uppercase dark:bg-amber-500/15 dark:text-amber-300">
                 {t('layoverLabel')}
             </span>
             <span className={cn('text-[12px] md:text-[13px]', TEXT)}>
-                {t('layoverValue', { duration: formatDuration(minutes), airport })}
+                {t('layoverValue', {
+                    duration: formatDuration(minutes, {
+                        hoursMinutes: (hours, remaining) => tAll('flights.durationParts.hoursMinutes', { hours, minutes: remaining }),
+                        minutesOnly: (remaining) => tAll('flights.durationParts.minutesOnly', { minutes: remaining }),
+                    }),
+                    airport,
+                })}
             </span>
         </div>
     );
@@ -167,6 +179,7 @@ export function FlightItinerary({ offer, className, clock = AIRPORT_CLOCK }: {
     clock?: ItineraryClock;
 }) {
     const t = useTranslations('flights.itinerary');
+    const tAll = useTranslations();
     const slices = groupSegmentsBySlice(offer.segments ?? []);
 
     return (
@@ -188,7 +201,13 @@ export function FlightItinerary({ offer, className, clock = AIRPORT_CLOCK }: {
                                 <span className={cn('tracking-[0.13em] uppercase', MUTED)}>{label}</span>
                                 {total != null && total > 0 && (
                                     <span className={MUTED}>
-                                        {t('totalFlightDuration')} <span className={TEXT}>{formatDuration(total)}</span>
+                                        {t('totalFlightDuration')}{' '}
+                                        <span className={TEXT}>
+                                            {formatDuration(total, {
+                                                hoursMinutes: (hours, minutes) => tAll('flights.durationParts.hoursMinutes', { hours, minutes }),
+                                                minutesOnly: (minutes) => tAll('flights.durationParts.minutesOnly', { minutes }),
+                                            })}
+                                        </span>
                                     </span>
                                 )}
                             </div>

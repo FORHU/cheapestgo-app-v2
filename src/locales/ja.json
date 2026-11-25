@@ -41,7 +41,8 @@
       "orDivider": "または",
       "terms": "ログインすることで{terms}と{privacy}に同意したものとみなされます。",
       "termsLink": "利用規約",
-      "privacyLink": "プライバシーポリシー"
+      "privacyLink": "プライバシーポリシー",
+      "invalidCredentials": "入力情報に一致するアカウントが見つかりませんでした"
     },
     "forgotPasswordQ": "パスワードをお忘れですか？",
     "createOne": "アカウントを作成",
@@ -64,6 +65,8 @@
     "noResetToken": "再設定トークンが見つかりません。メールに記載のリンクをご利用ください。",
     "resetPassword": "パスワードを再設定",
     "atLeast8": "8文字以上",
+    "atLeastOneUppercase": "大文字を1文字以上",
+    "atLeastOneNumber": "数字を1つ以上",
     "repeatPassword": "パスワードを再入力",
     "notUsedBefore": "これまでに使用していないものを選んでください",
     "firstNameShort": "名",
@@ -247,7 +250,8 @@
       "room": "客室",
       "total": "合計",
       "whatsNext": "次のステップ",
-      "downloadReceipt": "領収書をダウンロード"
+      "downloadReceipt": "領収書をダウンロード",
+      "printReceipt": "領収書を印刷"
     },
     "summary": {
       "adult": "名",
@@ -645,6 +649,13 @@
       "checkingPrice": "料金を確認中…",
       "flightDetails": "フライト詳細"
     },
+    "durationParts": {
+      "hoursMinutes": "{hours}時間 {minutes}分",
+      "minutesOnly": "{minutes}分"
+    },
+    "errors": {
+      "upstreamUnavailable": "航空会社に接続して運賃を確認できませんでした。しばらくしてからもう一度お試しください。"
+    },
     "itinerary": {
       "arriveAt": "到着",
       "departFrom": "出発",
@@ -702,6 +713,7 @@
       "selectAllAirports": "すべての空港を選択",
       "showAll": "すべて表示",
       "showLess": "表示を減らす",
+      "showCount": "{count}便を表示",
       "sortBy": "並び替え",
       "stops": "乗り継ぎ",
       "times": "時刻",
@@ -2852,6 +2864,62 @@
       "untilTime": "{time}まで"
     },
     "receipt": {
+      "titleItinerary": "支払い領収書・旅程表",
+      "issuedOn": "発行日 {date}",
+      "cancelled": "キャンセル済み",
+      "refunded": "返金済み",
+      "introFlight": "このご予約のお支払いと、その対象となる旅程の記録です。経費精算やご予約に関するお問い合わせのために保管してください。eチケットは航空会社が発行する別の書類です。",
+      "introHotel": "以下のご滞在のお支払い記録です。経費精算やご予約に関するお問い合わせのために保管してください。ホテルバウチャーは別の書類です。",
+      "sections": {
+        "passengerBooking": "搭乗者・予約情報",
+        "passengers": "搭乗者",
+        "travel": "フライト情報",
+        "stay": "ご滞在",
+        "farePayment": "運賃・お支払い",
+        "important": "重要なお知らせ"
+      },
+      "leadPassenger": "代表搭乗者",
+      "airlineReference": "航空会社予約番号（PNR）",
+      "ticketStatus": "チケット",
+      "ticketIssuedOn": "{date} 発券",
+      "ticketPending": "航空会社の発券待ち",
+      "tripType": "旅程",
+      "tripTypes": {
+        "oneWay": "片道",
+        "roundTrip": "往復",
+        "multiCity": "周遊"
+      },
+      "name": "氏名",
+      "paxType": "区分",
+      "paxTypes": {
+        "adult": "大人",
+        "child": "小児",
+        "infant": "幼児"
+      },
+      "eticketNumber": "eチケット番号",
+      "seat": "座席",
+      "pending": "未発行",
+      "flight": "便名",
+      "departArrive": "出発／到着",
+      "airportTerminal": "空港／ターミナル",
+      "cabin": "クラス",
+      "outbound": "往路",
+      "return": "復路",
+      "terminal": "ターミナル {terminal}",
+      "segConfirmed": "確定",
+      "segCancelled": "キャンセル済み",
+      "localTimes": "時刻はすべて各空港の現地時間です。",
+      "currency": "通貨",
+      "cancellationFee": "キャンセル料 {amount}",
+      "refundedAmount": "返金額",
+      "totalInclTaxes": "お支払い総額（税・手数料込み）",
+      "notices": {
+        "checkIn": "搭乗券は航空会社でチェックインして受け取ってください。オンラインチェックインは通常、出発の24〜48時間前に開始します。",
+        "airport": "国際線は出発の3時間前、国内線は2時間前までに空港へお越しください。チェックインカウンターは通常、出発の45〜60分前に締め切られます。",
+        "names": "ご予約に使用したパスポートまたは身分証明書をお持ちください。記載の氏名はご予約と一致している必要があります。",
+        "liquids": "機内持ち込み手荷物の液体・エアゾール・ジェル類の制限については、出発空港にご確認ください。",
+        "baggage": "受託手荷物の許容量は運賃によって異なります。ご旅行前に航空会社にご確認ください。"
+      },
       "title": "支払い領収書",
       "paid": "お支払い完了",
       "receiptNumber": "領収書番号",

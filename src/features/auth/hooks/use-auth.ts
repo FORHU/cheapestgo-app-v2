@@ -36,9 +36,11 @@ function returnPath(): string {
 export function useLogin({
     redirectAfterLogin = true,
     onSuccess,
+    invalidCredentialsMessage,
 }: {
     redirectAfterLogin?: boolean;
     onSuccess?: () => void;
+    invalidCredentialsMessage?: string;
 } = {}) {
     const { setUser } = useAuthStore();
     const setSessionUser = useSessionStore((s) => s.setUser);
@@ -54,7 +56,12 @@ export function useLogin({
             onSuccess?.();
         },
         onError: (err: Error) => {
-            toast.error(err.message || 'Invalid email or password.');
+            const code = typeof err === 'object' && err !== null && 'code' in err
+                ? err.code
+                : undefined;
+            toast.error(code === 'INVALID_CREDENTIALS'
+                ? invalidCredentialsMessage || err.message
+                : err.message || invalidCredentialsMessage || 'Sign in failed. Please try again.');
         },
     });
 }

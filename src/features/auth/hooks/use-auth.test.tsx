@@ -64,6 +64,20 @@ describe('auth hooks keep the header store in step', () => {
         expect(push).not.toHaveBeenCalled();
     });
 
+    it('uses the localized copy for invalid credentials', async () => {
+        authApi.login.mockRejectedValue(Object.assign(new Error('Invalid credentials'), {
+            code: 'INVALID_CREDENTIALS',
+        }));
+        const { result } = renderHook(
+            () => useLogin({ invalidCredentialsMessage: 'Localized invalid credentials' }),
+            { wrapper },
+        );
+
+        result.current.mutate({ email: 'billy@example.com', password: 'wrong-password' });
+
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Localized invalid credentials'));
+    });
+
     it('signing up reaches it', async () => {
         authApi.register.mockResolvedValue({ user: apiUser });
         const { result } = renderHook(() => useRegister(), { wrapper });

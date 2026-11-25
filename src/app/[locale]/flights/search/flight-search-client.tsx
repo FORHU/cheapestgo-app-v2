@@ -500,7 +500,7 @@ export function FlightSearchClient() {
                         </div>
                         <FlightFilters {...panelProps} />
                         <Button fullWidth className="mt-6" onClick={() => setMobileFiltersOpen(false)}>
-                            Show {filteredOffers.length} {filteredOffers.length === 1 ? 'flight' : 'flights'}
+                            {tAll('flights.filtersPanel.showCount', { count: filteredOffers.length })}
                         </Button>
                     </motion.div>
                 </motion.div>

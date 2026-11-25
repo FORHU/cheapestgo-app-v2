@@ -12,6 +12,7 @@ import { fetchBooking } from '@/features/trips/lib/bookings-api';
 import { formatCurrency } from '@/shared/lib/format';
 import type { HotelBooking, FlightBooking } from '@/shared/types';
 import { nightsBetween } from '@/shared/lib/stay';
+import { pdfFilename } from '@/shared/lib/receipt-pdf';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,7 +41,6 @@ function fmtDate(dateStr: string): string {
  */
 function ReceiptActions() {
     const tAll = useTranslations();
-    const brand = useBrandName();
     const params       = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const bookingId    = params?.id ?? '';
@@ -63,7 +63,7 @@ function ReceiptActions() {
             const url = URL.createObjectURL(await res.blob());
             const a   = document.createElement('a');
             a.href     = url;
-            a.download = `${brand}-Receipt-INV-${bookingId.slice(0, 8).toUpperCase()}.pdf`;
+            a.download = pdfFilename('Receipt', `INV-${bookingId.slice(0, 8).toUpperCase()}`);
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

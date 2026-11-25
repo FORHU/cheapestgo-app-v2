@@ -10,33 +10,34 @@ import { useRegister } from '../hooks/use-auth';
 import { SocialLoginButtons } from './social-login-buttons';
 
 interface PasswordRule {
-    label: string;
+    labelKey: 'auth.atLeast8' | 'auth.atLeastOneUppercase' | 'auth.atLeastOneNumber';
     test: (p: string) => boolean;
 }
 
 const PASSWORD_RULES: PasswordRule[] = [
-    { label: 'At least 8 characters', test: (p) => p.length >= 8 },
-    { label: 'At least one uppercase letter', test: (p) => /[A-Z]/.test(p) },
-    { label: 'At least one number', test: (p) => /\d/.test(p) },
+    { labelKey: 'auth.atLeast8', test: (p) => p.length >= 8 },
+    { labelKey: 'auth.atLeastOneUppercase', test: (p) => /[A-Z]/.test(p) },
+    { labelKey: 'auth.atLeastOneNumber', test: (p) => /\d/.test(p) },
 ];
 
 /** The API's cap on a name (`checkName` in api-v2), so the form stops where it would refuse. */
 const NAME_MAX = 30;
 
 function PasswordStrength({ password }: { password: string }) {
+    const tAll = useTranslations();
     if (!password) return null;
     return (
         <div className="mt-2 space-y-1">
             {PASSWORD_RULES.map((rule) => {
                 const ok = rule.test(password);
                 return (
-                    <div key={rule.label} className="flex items-center gap-1.5 text-[10px]">
+                    <div key={rule.labelKey} className="flex items-center gap-1.5 text-[10px]">
                         {ok
                             ? <Check size={11} className="text-emerald-500" />
                             : <X size={11} className="text-slate-300 dark:text-slate-600" />
                         }
                         <span className={ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>
-                            {rule.label}
+                            {tAll(rule.labelKey)}
                         </span>
                     </div>
                 );

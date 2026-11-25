@@ -542,8 +542,8 @@ function CheckoutContent() {
 
     // ── Date helpers ──
     const nights = nightsBetween(checkIn, checkOut);
-    const fmtDate = (d: string) => d
-        ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const fmtFlightDate = (d: string) => d
+        ? new Date(d + 'T00:00:00').toLocaleDateString(locale, { month: 'short', day: 'numeric' })
         : '';
 
     // ── State ──
@@ -846,12 +846,14 @@ function CheckoutContent() {
             }
             setFlightAlert({
                 title: t('failed.title'),
-                message: err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
+                message: e?.code === 'UPSTREAM_UNAVAILABLE'
+                    ? tAll('flights.errors.upstreamUnavailable')
+                    : err instanceof Error && err.message ? err.message : 'Booking failed. Please try again.',
             });
         } finally {
             setSubmitting(false);
         }
-    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t, fareGoneHref]);
+    }, [passengers, contactPhoneCode, user, router, offerId, flightCurrency, flightOffer, totalAmount, origin, departureDate, t, tAll, fareGoneHref]);
     const closeDuplicateFlight = useCallback(() => setDuplicateFlight(null), []);
 
     // ── Price helpers ──
@@ -1114,7 +1116,7 @@ function CheckoutContent() {
     function TripBar() {
         const quoting = flightOfferLoading && !held && (!flightPrice || flightPrice.currency !== flightCurrency);
         const total = flightPrice ? formatMoney(flightPrice.total, flightPrice.currency) : `${linkCurrency} ${totalAmount.toLocaleString()}`;
-        const details = [departureDate ? fmtDate(departureDate) : '', tAll('checkout.flight.receipt.passengersCount', { count: passengers.length })]
+        const details = [fmtFlightDate(departureDate), tAll('checkout.flight.receipt.passengersCount', { count: passengers.length })]
             .filter(Boolean).join(' · ');
         return (
             <button
@@ -1219,7 +1221,7 @@ function CheckoutContent() {
                                 {/* The offer's own itinerary once it is read: each end by the airport's full
                                     name and code, with the day and the clock it leaves or lands. Until then
                                     (or when it could not be read) the date the link carried. */}
-                                {slices.length === 0 && departureDate && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{fmtDate(departureDate)}</div>}
+                                {slices.length === 0 && departureDate && <div style={{ fontSize: 13, color: palette.text, marginTop: 4 }}>{fmtFlightDate(departureDate)}</div>}
                                 {cabin && <div style={{ fontSize: 13, color: palette.soft, marginTop: slices.length === 0 ? 0 : 4 }}>{cabin}</div>}
                                 {slices.map((segs, idx) => {
                                     const first = segs[0];

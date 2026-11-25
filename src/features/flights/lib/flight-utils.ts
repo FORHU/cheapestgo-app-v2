@@ -120,11 +120,28 @@ export function airportLabel(end: SegmentEnd | undefined, fallbackCode: string):
     return name && name !== code ? `${name} (${code})` : code;
 }
 
-export function formatDuration(minutes?: number): string {
+export function formatDuration(minutes?: number, messages?: {
+    hoursMinutes: (hours: number, minutes: number) => string;
+    minutesOnly: (minutes: number) => string;
+}): string {
     if (!minutes) return '';
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
+    if (messages) return h > 0 ? messages.hoursMinutes(h, m) : messages.minutesOnly(m);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+export function cabinTranslationKey(cabinClass?: string):
+    | 'landing.search.cabinClass.economy'
+    | 'landing.search.cabinClass.premiumEconomy'
+    | 'landing.search.cabinClass.business'
+    | 'landing.search.cabinClass.first' {
+    switch (cabinClass) {
+        case 'premium_economy': return 'landing.search.cabinClass.premiumEconomy';
+        case 'business': return 'landing.search.cabinClass.business';
+        case 'first': return 'landing.search.cabinClass.first';
+        default: return 'landing.search.cabinClass.economy';
+    }
 }
 
 export function providerLabel(provider: string): string {

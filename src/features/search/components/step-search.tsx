@@ -365,6 +365,10 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
     }, [locale]);
 
     const placeholder = mode === 'flights' ? tAll('search.cityAirportPlaceholder') : t('placePlaceholder');
+    /// A lookup is in flight for something worth looking up. Separate from `loading` so the
+    /// panel does not open on the first letter, before anything has been asked for.
+    const searchingPlaces = isPlaceStep && showTyped && loading;
+
     const noMatch = showTyped && !loading && options.length === 0
         ? (mode === 'flights' ? tAll('search.noAirportsMatch', { query: query.trim() }) : t('noPlaceMatch', { query: query.trim() }))
         : null;
@@ -514,9 +518,35 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                                     style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', color: '#fff', fontSize: 'var(--ss-field-size,19px)', fontFamily: 'var(--font-sans)' }}
                                 />
                             </div>
-                            {(options.length > 0 || noMatch) && (
+                            {/* `searching` as well, which is what the client's "feels like it is
+                                not working" was: the panel appeared only once results existed,
+                                so from the first keystroke until they arrived — the 280ms
+                                debounce plus the round trip — the field answered with nothing
+                                at all. `loading` was already tracked here and never shown. The
+                                destination input on the results page has had a spinner all
+                                along (`destination-input.tsx`); this one had none. */}
+                            {(options.length > 0 || noMatch || searchingPlaces) && (
                                 <div style={{ borderTop: `1px solid ${BRAND.glassBorder}`, padding: '8px' }}>
-                                    {noMatch ? (
+                                    {searchingPlaces ? (
+                                        <div
+                                            aria-live="polite"
+                                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', fontSize: '14px', color: 'rgba(255,255,255,.65)' }}
+                                        >
+                                            <span
+                                                aria-hidden
+                                                style={{
+                                                    width: '14px',
+                                                    height: '14px',
+                                                    borderRadius: '50%',
+                                                    border: '2px solid rgba(255,255,255,.25)',
+                                                    borderTopColor: 'rgba(255,255,255,.85)',
+                                                    animation: 'ssSpin .7s linear infinite',
+                                                    flexShrink: 0,
+                                                }}
+                                            />
+                                            {tAll('landing.search.searching')}
+                                        </div>
+                                    ) : noMatch ? (
                                         <div style={{ padding: '12px 14px', fontSize: '14px', color: 'rgba(255,255,255,.65)' }}>{noMatch}</div>
                                     ) : (
                                         <ul id={listId} role="listbox" aria-label={question} style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 'var(--ss-list-h,320px)', overflowY: 'auto' }}>

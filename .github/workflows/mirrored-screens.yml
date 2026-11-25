@@ -1,0 +1,46 @@
+name: Mirrored screens
+
+# ADR-0008: a pull request that changes a screen the Flutter app mirrors is not done until mobile
+# matches. `mirrored-screens.json` says which screens those are; scripts/mirrored-screens.ts
+# decides, and this only runs it.
+#
+# Its own workflow rather than a step in ci.yml, because it has to run again when the description
+# or the labels change — linking the mobile pull request or adding the exemption label is how a
+# red check is fixed — and those edits should not rebuild and retest the whole app.
+on:
+  pull_request:
+    branches: ['**']
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+# It reads the event and the history, and writes nothing back.
+permissions:
+  contents: read
+
+# A burst of label or description edits needs only the last answer.
+concurrency:
+  group: mirrored-screens-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    # The name branch protection requires.
+    name: Mobile parity (ADR-0008)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Full history: the check compares the pull request's base with its head, and a shallow
+      # clone holds neither.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # No install step. Node 24 runs the TypeScript as written, and the script needs nothing
+      # but Node and git.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # The description is read from the event file by the script, never interpolated into this
+      # command: it is text that anyone opening a pull request controls.
+      - name: Check the mirrored screens
+        run: node scripts/mirrored-screens.ts

@@ -11,19 +11,11 @@ import { SaveButton } from './SaveButton';
 import { useUserCurrency } from '@/shared/stores/search.store';
 import { convertForDisplay } from '@/shared/lib/currency';
 import { useLiveRates } from '@/shared/lib/use-live-rates';
-import { dayOffset, formatTime, groupSegmentsBySlice } from '../lib/flight-utils';
+import { cabinTranslationKey, dayOffset, formatDuration, formatTime, groupSegmentsBySlice } from '../lib/flight-utils';
 import type { OfferHighlight } from '../lib/filter-offers';
 import { FlightItinerary } from './flight-itinerary';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-
-function formatDuration(minutes?: number): string {
-    if (!minutes) return '';
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
 
 function formatPrice(amount: number, currency: string): string {
     return new Intl.NumberFormat('en-US', {
@@ -168,6 +160,10 @@ const HIGHLIGHT_TONE: Record<OfferHighlight, string> = {
 
 export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, isSelected = false, checkingPrice = false, highlight }: FlightCardProps) {
     const tAll = useTranslations();
+    const formatFlightDuration = (minutes?: number) => formatDuration(minutes, {
+        hoursMinutes: (hours, mins) => tAll('flights.durationParts.hoursMinutes', { hours, minutes: mins }),
+        minutesOnly: (mins) => tAll('flights.durationParts.minutesOnly', { minutes: mins }),
+    });
     const router = useRouter();
     const [expanded, setExpanded] = useState(false);
 
@@ -218,7 +214,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
     const saveProps = {
         type: 'flight' as const,
         title: `${primary.origin} → ${last.destination} · ${primary.departure?.time?.slice(0, 10) ?? ''}`,
-        subtitle: `${primary.airlineName || primary.airline} · ${formatDuration(outboundMinutes)} · ${stopsLabel(outboundStops)}`,
+        subtitle: `${primary.airlineName || primary.airline} · ${formatFlightDuration(outboundMinutes)} · ${stopsLabel(outboundStops)}`,
         price: offer.price.total,
         currency: offer.price.currency,
         imageUrl: `https://pics.avs.io/40/40/${(primary.airline || '').toUpperCase()}.png`,
@@ -237,12 +233,18 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
             : penalty != null && penalty > 0
                 ? `Refundable (est. fee: ${money(penalty, fp?.refundPenaltyCurrency ?? 'USD')})`
                 : 'Refundable (fees may apply)';
-    const cabin = (primary.cabinClass || 'economy').replace('_', ' ');
+    const cabin = tAll(cabinTranslationKey(primary.cabinClass));
     const checkedBags = offer.baggage?.checkedBags ?? 0;
     // The bags in one chip on a phone, where the desktop gives each its own line with an icon.
     const bagsLine = offer.baggage && [
-        offer.baggage.cabinBag != null ? (offer.baggage.cabinBag ? '1 carry-on' : 'No carry-on') : null,
-        checkedBags > 0 ? `${checkedBags} checked` : 'No checked bag',
+        offer.baggage.cabinBag != null
+            ? (offer.baggage.cabinBag
+                ? tAll('checkout.flight.receipt.carryOnBag')
+                : tAll('checkout.flight.summary.noCarryOnBag'))
+            : null,
+        checkedBags > 0
+            ? tAll('checkout.flight.receipt.checkedBagsCount', { count: checkedBags })
+            : tAll('checkout.flight.summary.noCheckedBag'),
     ].filter(Boolean).join(' · ');
 
     // One card, two layouts. On a phone (below `md`) it is a grid: the airline, its badge and the
@@ -296,7 +298,7 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                         </div>
                         {/* The route line keeps its plane, on a phone as on the desktop. */}
                         <div className="flex min-w-0 flex-1 flex-col items-center gap-1 md:gap-1.5">
-                            <span className={cn('text-[11px] md:text-[13px]', TEXT)}>{formatDuration(outboundMinutes)}</span>
+                            <span className={cn('text-[11px] md:text-[13px]', TEXT)}>{formatFlightDuration(outboundMinutes)}</span>
                             <RouteLine stops={outboundStops} />
                             <span className={cn('text-[12px] md:text-[13px]', MUTED)}>{stopsLabel(outboundStops)}</span>
                         </div>
@@ -324,7 +326,9 @@ export function FlightCard({ offer, adults = 1, className, index = 0, onSelect, 
                         {offer.baggage && (
                             <span className={cn(fact, 'max-md:hidden')}>
                                 <BaggageClaim size={15} className={factIcon} />
-                                {checkedBags > 0 ? `${checkedBags} checked bag${checkedBags > 1 ? 's' : ''}` : 'No checked bag'}
+                                {checkedBags > 0
+                                    ? tAll('checkout.flight.receipt.checkedBagsCount', { count: checkedBags })
+                                    : tAll('checkout.flight.summary.noCheckedBag')}
                             </span>
                         )}
                         {bagsLine && <span className={cn(fact, chip, chipText, 'md:hidden')}>{bagsLine}</span>}

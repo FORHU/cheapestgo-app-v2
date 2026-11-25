@@ -19,6 +19,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void } = {}) {
     const login = useLogin({
         redirectAfterLogin: !onSuccess,
         onSuccess,
+        invalidCredentialsMessage: tAll('auth.signIn.invalidCredentials'),
     });
 
     const validate = () => {
