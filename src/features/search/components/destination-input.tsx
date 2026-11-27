@@ -8,7 +8,6 @@ import { MapPin, History, Plane, Building2, Globe, X, Hotel } from 'lucide-react
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
-import { env } from '@/shared/lib/env';
 import type { Destination } from '@/shared/types';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
 import { useTrendingDestinations } from '@/features/search/hooks/useTrendingDestinations';
