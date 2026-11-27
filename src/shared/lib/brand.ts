@@ -145,6 +145,21 @@ export interface BrandProfile {
     logo:    string;
     /** The square mark structured data names as the logo. */
     icon:    string;
+    /**
+     * Whether the chrome offers a language and currency to pick from.
+     *
+     * A brand serving one audience in one currency spends two controls in its header saying
+     * so, and every visitor it has already agrees with both. AirangGo is Korean, priced in
+     * won, and its header read "KR" and "KRW" to people who are in Korea paying in won.
+     *
+     * This hides the controls, and deliberately nothing else. The app still routes all four
+     * locales and `/en`, `/ja` and `/zh` still answer on this brand's domain — a visitor who
+     * wants English can still be sent an English link, and a search engine still sees the
+     * alternates. What goes is the invitation to choose, not the choice.
+     *
+     * Turn it back on here, in one place, if the brand ever sells outside Korea.
+     */
+    offersLocaleAndCurrency: boolean;
 }
 
 const CHEAPESTGO_PROFILE: BrandProfile = {
@@ -152,6 +167,7 @@ const CHEAPESTGO_PROFILE: BrandProfile = {
     favicon: '/Fav_Icon_Light.png',
     logo:    '/Web_Logo_Light.png',
     icon:    '/icon-192.png',
+    offersLocaleAndCurrency: true,
 };
 
 const AIRANGGO_PROFILE: BrandProfile = {
@@ -159,6 +175,7 @@ const AIRANGGO_PROFILE: BrandProfile = {
     favicon: '/Airang_Fav.png',
     logo:    '/Airanggo_transparent.png',
     icon:    '/Airang_Fav.png',
+    offersLocaleAndCurrency: false,
 };
 
 /** A brand with no art of its own gets CheapestGo's, as every brand did before this existed. */
