@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { env } from '@/shared/lib/env';
 import type { Destination } from '@/shared/types';
 import { autocompleteDestinations } from '@/features/search/api/destinations.api';
+import { useTrendingDestinations } from '@/features/search/hooks/useTrendingDestinations';
 import {
     useSearchStore,
     useDestinationQuery,
@@ -43,12 +44,6 @@ function getIcon(type: Destination['type']) {
     }
 }
 
-interface TrendingDestination {
-    city: string;
-    countryCode: string;
-    countryName: string;
-    imageUrl: string;
-}
 
 export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: DestinationInputProps) {
     const tAll = useTranslations();
@@ -66,15 +61,9 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
     const isFlightField = segmentIndex !== undefined && field !== undefined;
     const activeQuery = isFlightField ? localQuery : query;
 
-    const { data: trendingData } = useQuery<TrendingDestination[]>({
-        queryKey: ['trending-destinations'],
-        queryFn: () =>
-            fetch(`${env.NEXT_PUBLIC_API_URL}/hotels/trending`)
-                .then(r => r.json())
-                .then((res: { success: boolean; data: TrendingDestination[] }) => res.success ? res.data : []),
-        staleTime: 30 * 60 * 1000,
-        enabled: !isFlightField,
-    });
+    // Shared with the landing stepper, so both fields offer the same places. See
+    // `useTrendingDestinations`.
+    const { data: trendingData } = useTrendingDestinations(!isFlightField);
 
     const [debouncedQuery, setDebouncedQuery] = useState(activeQuery);
     useEffect(() => {
@@ -84,13 +73,31 @@ export function DestinationInput({ forceOpen, onSelect, segmentIndex, field }: D
 
     const { data: suggestions = [], isFetching } = useQuery<Destination[]>({
         queryKey: ['autocomplete', isFlightField ? 'flights' : 'destinations', debouncedQuery],
-        queryFn: () => autocompleteDestinations(
-            debouncedQuery,
-            isFlightField ? 'flights' : 'hotels',
-        ),
+        /**
+         * The signal is forwarded so a superseded lookup is dropped rather than paid for;
+         * React Query cancels it as soon as the key changes, which is on the next keystroke.
+         *
+         * A `null` means the lookup failed, and failing is what this throws on — with
+         * `placeholderData` below, an error leaves the previous suggestions on screen, where
+         * returning an empty array would wipe them and read as "no such place".
+         */
+        queryFn: async ({ signal }) => {
+            const found = await autocompleteDestinations(
+                debouncedQuery,
+                isFlightField ? 'flights' : 'hotels',
+                undefined,
+                signal,
+            );
+            if (found) return found;
+            throw new Error('Destination suggestions could not be loaded');
+        },
         enabled: debouncedQuery.length >= 2,
         staleTime: 5 * 60 * 1000,
         placeholderData: (prev) => prev,
+        // An abort resolves to `null` here rather than surfacing as a cancellation, so React
+        // Query cannot tell one from a genuine failure. Retrying a suggestion nobody is
+        // waiting for any more is worse than not retrying one somebody is.
+        retry: false,
     });
 
     const isOpen = forceOpen || activeDropdown === dropdownKey;
