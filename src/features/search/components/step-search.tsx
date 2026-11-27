@@ -3,11 +3,12 @@
 import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
-import { ArrowLeft, ArrowLeftRight, ArrowRight, Check, MapPin, PlaneTakeoff, Search } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, ArrowRight, Check, Clock, MapPin, PlaneTakeoff, Search } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchStore } from '@/shared/stores/search.store';
 import { autocompleteDestinations, type DestinationSuggestion } from '@/features/search/api/destinations.api';
 import { POPULAR_AIRPORTS } from '@/features/search/lib/popular-airports';
+import { useTrendingDestinations } from '@/features/search/hooks/useTrendingDestinations';
 import { excludeOrigin } from '@/features/search/lib/exclude-origin';
 import { isoDate } from '@/features/landing/lib/links';
 import { nightsBetween } from '@/shared/lib/stay';
@@ -161,18 +162,41 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
     }, [step]);
 
     const debounce = useRef<ReturnType<typeof setTimeout>>();
+    /**
+     * Which lookup the answer on screen is allowed to come from.
+     *
+     * A debounce thins keystrokes; it does not order the replies. Typing "ceb" then "cebu"
+     * sends two lookups, and if the first is the slower of the two it lands last and puts the
+     * answer to "ceb" under a field reading "cebu". Rare while every request took seventeen
+     * seconds and ordinary now that most take a fraction of one, because the spread between
+     * a cached reply and an uncached one is what decides it.
+     *
+     * The counter settles that, and the AbortController stops the loser being paid for at all.
+     */
+    const lookup = useRef(0);
+    const inFlight = useRef<AbortController>();
     useEffect(() => {
         clearTimeout(debounce.current);
         const q = query.trim();
         if (!typed || q.length < 2) { setSuggestions([]); setLoading(false); return; }
         setLoading(true);
         debounce.current = setTimeout(async () => {
+            inFlight.current?.abort();
+            const mine = ++lookup.current;
+            const ctl  = new AbortController();
+            inFlight.current = ctl;
             try {
-                setSuggestions(await autocompleteDestinations(q, mode === 'flights' ? 'flights' : 'hotels'));
+                const found = await autocompleteDestinations(
+                    q, mode === 'flights' ? 'flights' : 'hotels', undefined, ctl.signal,
+                );
+                // `null` is "we could not find out", and the places already listed stand.
+                // Emptying the panel on a dropped request turns one flaky connection into a
+                // field that looks broken.
+                if (found && mine === lookup.current) setSuggestions(found);
             } catch {
-                setSuggestions([]);
+                // autocompleteDestinations does not throw; this is belt and braces.
             } finally {
-                setLoading(false);
+                if (mine === lookup.current) setLoading(false);
             }
         }, 280);
         return () => clearTimeout(debounce.current);
@@ -217,6 +241,39 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
         setQuery(p.city);
         setTyped(false);
     }, []);
+
+    /**
+     * What to offer before anything is typed.
+     *
+     * This field used to answer an empty query with four photographs and nothing else, while
+     * the destination field on the results page had been offering recent searches and trending
+     * places all along — two pickers for the same job, disagreeing about what exists. The
+     * tiles stay; they are the editorial part. These are the two that know something about
+     * this particular visitor, or about where everyone else is going.
+     *
+     * Recents come from the same store the other field writes them to, so a destination picked
+     * there is offered here, which is the point of sharing it rather than copying it.
+     */
+    const recentStays = useSearchStore((s) => s.recentSearches);
+    const { data: trending } = useTrendingDestinations(mode === 'stays');
+
+    const quickPicks = useMemo(() => {
+        if (mode !== 'stays') return [];
+        // Seeded with the tiles, so nowhere is offered twice on the same panel — a chip reading
+        // "Seoul" directly above a photograph of Seoul is two answers to one question.
+        const seen = new Set<string>(picks.map((p) => p.city.toLowerCase()));
+        const out: Array<{ city: string; sub: string; recent: boolean }> = [];
+        const add = (city: string | undefined, sub: string, recent: boolean) => {
+            const name = (city ?? '').trim();
+            if (!name || seen.has(name.toLowerCase()) || out.length >= 8) return;
+            seen.add(name.toLowerCase());
+            out.push({ city: name, sub, recent });
+        };
+        // Theirs first: somewhere they have already been looking beats somewhere popular.
+        for (const r of recentStays.slice(0, 4)) add(r.title, r.subtitle ?? '', true);
+        for (const d of trending ?? []) add(d.city, d.countryName || d.countryCode, false);
+        return out;
+    }, [mode, picks, recentStays, trending]);
 
     // ── Moving between steps ─────────────────────────────────────────────────
     const [shake, setShake] = useState(false);
@@ -534,7 +591,13 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                                 along (`destination-input.tsx`); this one had none. */}
                             {(options.length > 0 || noMatch || searchingPlaces) && (
                                 <div style={{ borderTop: `1px solid ${BRAND.glassBorder}`, padding: '8px' }}>
-                                    {searchingPlaces ? (
+                                    {/* Only when there is nothing to show yet. Replacing a list
+                                        that is already on screen with a spinner takes an answer
+                                        away from someone who can read it, on every keystroke —
+                                        and the answer usually comes back the same. Once there
+                                        are places, the refresh happens underneath them and they
+                                        dim rather than disappear. */}
+                                    {searchingPlaces && options.length === 0 ? (
                                         <div
                                             aria-live="polite"
                                             style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', fontSize: '14px', color: 'rgba(255,255,255,.65)' }}
@@ -556,7 +619,19 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                                     ) : noMatch ? (
                                         <div style={{ padding: '12px 14px', fontSize: '14px', color: 'rgba(255,255,255,.65)' }}>{noMatch}</div>
                                     ) : (
-                                        <ul id={listId} role="listbox" aria-label={question} style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 'var(--ss-list-h,320px)', overflowY: 'auto' }}>
+                                        <ul
+                                            id={listId}
+                                            role="listbox"
+                                            aria-label={question}
+                                            aria-busy={searchingPlaces || undefined}
+                                            style={{
+                                                listStyle: 'none', margin: 0, padding: 0,
+                                                maxHeight: 'var(--ss-list-h,320px)', overflowY: 'auto',
+                                                // Still the previous answer, and said so rather than implied.
+                                                opacity: searchingPlaces ? 0.55 : 1,
+                                                transition: 'opacity .15s ease',
+                                            }}
+                                        >
                                             {options.map((s, i) => {
                                                 const code = s.code ?? codeOf(s.title);
                                                 const active = i === highlight;
@@ -589,6 +664,35 @@ export function StepSearch({ mode, picks = [] }: { mode: StepMode; picks?: StayP
                                 </div>
                             )}
                         </div>
+
+                        {/* Where this visitor was looking, and where everyone else is going.
+                            Chips rather than another grid: the stage has to keep the question,
+                            the field and the button on one screen, which is the same reason the
+                            list above is capped. */}
+                        {step === 'where' && !showTyped && quickPicks.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                                {quickPicks.map((p) => (
+                                    <button
+                                        key={p.city}
+                                        type="button"
+                                        onClick={() => pickTile({ city: p.city } as StayPick)}
+                                        title={p.sub || undefined}
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                            padding: '7px 12px', borderRadius: '999px', cursor: 'pointer',
+                                            fontSize: '13px', color: '#fff',
+                                            background: 'rgba(255,255,255,.08)',
+                                            border: `1px solid ${BRAND.glassBorder}`,
+                                        }}
+                                    >
+                                        {p.recent
+                                            ? <Clock size={13} aria-hidden style={{ opacity: .65 }} />
+                                            : <MapPin size={13} aria-hidden style={{ opacity: .65 }} />}
+                                        {p.city}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Picture tiles, for people still deciding — until something is typed. */}
                         {step === 'where' && !showTyped && picks.length > 0 && (

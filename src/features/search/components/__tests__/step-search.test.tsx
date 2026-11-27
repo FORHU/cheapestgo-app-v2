@@ -100,7 +100,9 @@ describe('stays — where, then when, then who', () => {
 
         await user.type(screen.getByPlaceholderText('City, area, or hotel name'), 'Seo');
         await screen.findByRole('option', { name: /Seogwipo/ });
-        expect(autocompleteDestinations).toHaveBeenLastCalledWith('Seo', 'hotels');
+        // The third argument is the locale, the fourth the AbortSignal that drops this
+        // lookup if another keystroke supersedes it.
+        expect(autocompleteDestinations).toHaveBeenLastCalledWith('Seo', 'hotels', undefined, expect.any(AbortSignal));
         // The tiles give way to the list while there is something typed.
         expect(screen.queryByText('Or pick one')).not.toBeInTheDocument();
         expect(screen.getByRole('option', { name: /Seoul/ })).toHaveAttribute('aria-selected', 'true');
@@ -306,7 +308,7 @@ describe('flights — trip, from, to, when, who', () => {
 
         await user.type(screen.getByPlaceholderText('Search cities, airports…'), 'Seo');
         await screen.findByRole('option', { name: /GMP/ });
-        expect(autocompleteDestinations).toHaveBeenLastCalledWith('Seo', 'flights');
+        expect(autocompleteDestinations).toHaveBeenLastCalledWith('Seo', 'flights', undefined, expect.any(AbortSignal));
         expect(screen.getByText('Press Enter to pick the highlighted airport')).toBeInTheDocument();
 
         await user.keyboard('{Enter}');
@@ -502,5 +504,58 @@ it('waits for typing to settle before asking for suggestions', async () => {
     renderWithIntl(<StepSearch mode="stays" picks={PICKS} />);
     await user.type(screen.getByPlaceholderText('City, area, or hotel name'), 'Seoul');
     await waitFor(() => expect(autocompleteDestinations).toHaveBeenCalledTimes(1));
-    expect(autocompleteDestinations).toHaveBeenCalledWith('Seoul', 'hotels');
+    expect(autocompleteDestinations).toHaveBeenCalledWith('Seoul', 'hotels', undefined, expect.any(AbortSignal));
+});
+
+/**
+ * What the panel does while it is between answers.
+ *
+ * A debounce thins keystrokes; it does not order the replies, and it cannot tell a lookup that
+ * failed from one that found nothing. Both of those used to end the same way — the list on
+ * screen replaced by something worse than what it already had.
+ */
+describe('while the next answer is still coming', () => {
+    it('does not let a slow earlier reply land over a later one', async () => {
+        const user = userEvent.setup();
+        // The reply to the short query is held back until after the longer one has answered,
+        // which is what a cached "seoul" beside an uncached "seo" actually looks like.
+        let releaseFirst: (v: unknown) => void = () => {};
+        autocompleteDestinations
+            .mockImplementationOnce(() => new Promise(r => { releaseFirst = r; }))
+            .mockResolvedValue([seogwipo]);
+
+        renderWithIntl(<StepSearch mode="stays" picks={PICKS} />);
+        const field = screen.getByPlaceholderText('City, area, or hotel name');
+
+        await user.type(field, 'Seo');
+        await waitFor(() => expect(autocompleteDestinations).toHaveBeenCalledTimes(1));
+        await user.type(field, 'gwi');
+        await screen.findByRole('option', { name: /Seogwipo/ });
+
+        releaseFirst([seoulCity]);
+        await act(async () => {});
+
+        // The answer to "Seo" is discarded: the field says "Seogwipo".
+        expect(screen.queryByRole('option', { name: /^Seoul/ })).not.toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /Seogwipo/ })).toBeInTheDocument();
+    });
+
+    it('keeps the places already listed when a lookup fails', async () => {
+        const user = userEvent.setup();
+        autocompleteDestinations.mockResolvedValueOnce([seoulCity, seogwipo]);
+
+        renderWithIntl(<StepSearch mode="stays" picks={PICKS} />);
+        const field = screen.getByPlaceholderText('City, area, or hotel name');
+
+        await user.type(field, 'Seo');
+        await screen.findByRole('option', { name: /Seogwipo/ });
+
+        // `null` is the api module's "could not find out" — a dropped request, not an answer.
+        autocompleteDestinations.mockResolvedValue(null);
+        await user.type(field, 'u');
+        await waitFor(() => expect(autocompleteDestinations).toHaveBeenCalledTimes(2));
+        await act(async () => {});
+
+        expect(screen.getByRole('option', { name: /Seogwipo/ })).toBeInTheDocument();
+    });
 });
