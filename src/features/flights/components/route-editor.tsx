@@ -62,11 +62,16 @@ export function RouteEditor({
         if (!typed) { setResults([]); setLoading(false); return; }
         let live = true;
         setLoading(true);
+        const ctl = new AbortController();
         const id = setTimeout(async () => {
-            const found = await autocompleteDestinations(query, 'flights');
-            if (live) { setResults(found); setLoading(false); setActiveIndex(-1); }
+            const found = await autocompleteDestinations(query, 'flights', undefined, ctl.signal);
+            if (!live) return;
+            // `null` is a lookup that failed or was dropped, not an answer — the airports
+            // already listed are still the best thing to show.
+            if (found) { setResults(found); setActiveIndex(-1); }
+            setLoading(false);
         }, 200);
-        return () => { live = false; clearTimeout(id); };
+        return () => { live = false; ctl.abort(); clearTimeout(id); };
     }, [query, typed]);
 
     const close = useCallback(() => {

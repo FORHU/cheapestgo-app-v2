@@ -11,6 +11,8 @@ import { useAuthStore } from '@/shared/auth/store';
 import { usePWAInstall } from '@/contexts/PWAInstallContext';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
+import { useBrandName } from '@/shared/components/BrandProvider';
+import { brandProfile } from '@/shared/lib/brand';
 import { cn } from '@/shared/lib/cn';
 import { useBrandWordmark } from '@/shared/components/BrandProvider';
 import { useTranslations } from 'next-intl';
@@ -32,6 +34,7 @@ const HeaderContent = () => {
   const { triggerInstall } = usePWAInstall();
   const t = useTranslations('nav');
   const tTheme = useTranslations('theme');
+  const offersChoice = brandProfile(useBrandName()).offersLocaleAndCurrency;
   const requestSupport = useSupportWidget((s) => s.requestOpen);
 
   useEffect(() => {
@@ -78,11 +81,14 @@ const HeaderContent = () => {
               </button>
             )}
 
-            {/* Language selector */}
-            <LocaleSelector />
-
-            {/* Currency selector */}
-            <CurrencySelector className="shrink-0" />
+            {/* Language and currency, for a brand that sells in more than one of each.
+                See `offersLocaleAndCurrency`: the locales still route either way. */}
+            {offersChoice && (
+              <>
+                <LocaleSelector />
+                <CurrencySelector className="shrink-0" />
+              </>
+            )}
 
             {/* Trips — from `sm` only. A phone has Trips in the bottom nav already, and with
                 this row's controls at a thumb's size there was no width left for it beside the

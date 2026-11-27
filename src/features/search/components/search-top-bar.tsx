@@ -13,6 +13,8 @@ import { StayEditor, type Stay } from './stay-editor';
 import { ACCENT, ICON_BTN, sortPalette } from './search-chrome';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
+import { useBrandName } from '@/shared/components/BrandProvider';
+import { brandProfile } from '@/shared/lib/brand';
 
 /**
  * The search page's toolbar, for both of its views.
@@ -100,6 +102,8 @@ export function SearchTopBar({
 }: SearchTopBarProps) {
     const tAll = useTranslations();
     const { chrome, rest, lit } = barStyles(tone);
+    // A brand selling in one country and one currency does not offer either as a choice.
+    const offersChoice = brandProfile(useBrandName()).offersLocaleAndCurrency;
 
     return (
         <div
@@ -203,7 +207,7 @@ export function SearchTopBar({
                     on a bar of glyphs and the only two controls with a
                     different silhouette. The value each one holds is in its
                     `aria-label` for anyone not reading the glyph. */}
-                {showRegionControls && (
+                {showRegionControls && offersChoice && (
                     <>
                         <CurrencySelector chrome={chrome} iconOnly />
                         <LocaleSelector chrome={chrome} iconOnly />

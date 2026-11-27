@@ -10,6 +10,8 @@ import {
 } from '@/features/search/components/search-top-bar';
 import { CurrencySelector } from '@/shared/components/common/CurrencySelector';
 import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
+import { useBrandName } from '@/shared/components/BrandProvider';
+import { brandProfile } from '@/shared/lib/brand';
 import { RouteEditor } from './route-editor';
 import { TripEditor, type Trip } from './trip-editor';
 
@@ -38,6 +40,8 @@ export function FlightSearchTopBar({
 }) {
     const tAll = useTranslations();
     const { chrome, rest } = barStyles(tone);
+    // A brand selling in one country and one currency does not offer either as a choice.
+    const offersChoice = brandProfile(useBrandName()).offersLocaleAndCurrency;
 
     return (
         <div
@@ -79,8 +83,12 @@ export function FlightSearchTopBar({
             <div className="flex basis-full items-center gap-1.5 md:gap-2 lg:ml-auto lg:basis-auto lg:shrink-0">
                 {filters && <BarFiltersButton tone={tone} barBackground={barBackground} {...filters} />}
                 <span aria-hidden="true" className="flex-1 lg:hidden" />
-                <CurrencySelector chrome={chrome} iconOnly />
-                <LocaleSelector chrome={chrome} iconOnly />
+                {offersChoice && (
+                    <>
+                        <CurrencySelector chrome={chrome} iconOnly />
+                        <LocaleSelector chrome={chrome} iconOnly />
+                    </>
+                )}
                 <BarThemeButton tone={tone} theme={theme} onToggle={onToggleTheme} />
                 <BarAccountButton tone={tone} />
             </div>
