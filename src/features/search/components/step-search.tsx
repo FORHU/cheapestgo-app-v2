@@ -64,9 +64,16 @@ const STEPS: Record<StepMode, StepId[]> = {
 const HOME_AIRPORT: Record<string, string> = { ko: 'ICN', ja: 'NRT' };
 const DEFAULT_AIRPORT = 'MNL';
 
-/** How many rows a list shows: enough to choose from, few enough that the stage — heading, tabs,
- *  question, list and the button under it — still fits the screen it is docked on. */
-const MAX_OPTIONS = 3;
+/** How many rows a list holds.
+ *
+ *  Three was chosen so the stage — heading, tabs, question, list and the button under it — fit
+ *  the screen it is docked on, and the list was given a scrollbar anyway. With properties now
+ *  offered alongside places, three rows is not a tidy list, it is a filter: "new york" matched
+ *  three hotels named after the city and New York itself never reached the screen.
+ *
+ *  The panel's height is still what keeps the stage on screen; this only decides how far it
+ *  scrolls. About five and a half rows are visible at the default 320px. */
+const MAX_OPTIONS = 8;
 
 /** "Manila (MNL)" → "Manila"; anything without a code is left alone. */
 function cityOf(title: string): string {
