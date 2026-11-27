@@ -12,6 +12,7 @@ import { LocaleSelector } from '@/shared/components/common/LocaleSelector';
 import { SELECTOR_TONES, type SelectorVariant } from '@/shared/components/common/selector-tone';
 import { LogoWordmark } from './logo-wordmark';
 import { useBrandName } from '@/shared/components/BrandProvider';
+import { brandProfile } from '@/shared/lib/brand';
 import SignInDropdown from '@/shared/auth/SignInDropdown';
 
 /**
@@ -32,6 +33,7 @@ import SignInDropdown from '@/shared/auth/SignInDropdown';
 function LandingHeaderContent({ tone }: { tone: SelectorVariant }) {
     const tAll = useTranslations();
     const brand = useBrandName();
+    const offersChoice = brandProfile(brand).offersLocaleAndCurrency;
     const themed = tone === 'default';
 
     return (
@@ -69,8 +71,15 @@ function LandingHeaderContent({ tone }: { tone: SelectorVariant }) {
                     >
                         {tAll('nav.bookings')}
                     </Link>
-                    <LocaleSelector variant={tone} />
-                    <CurrencySelector variant={tone} />
+                    {/* A brand selling to one country in one currency does not ask. See
+                        `offersLocaleAndCurrency` — the locales still route, this is the
+                        invitation to choose, not the choice. */}
+                    {offersChoice && (
+                        <>
+                            <LocaleSelector variant={tone} />
+                            <CurrencySelector variant={tone} />
+                        </>
+                    )}
                     {themed && <ThemeSwitch />}
 
                     <div className="ml-1">
